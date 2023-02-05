@@ -15,9 +15,12 @@ if [[ $ext == "ipynb" ]]; then
             if [[ -r $notebook ]]; then
                 if [[ $actual_dir/$dir == $posts_dir ]]; then
                     cd $posts_dir
-                    echo "TRANSLATING $name.$ext"
-                    # python ../../jupyter-translator/jupyter_translator.py -f $name.$ext -t EN PT
-                    echo "TRANSLATION DONE"
+                    read -p "Quieres traducirlo? (si/no): " traducir
+                    if [[ $traducir == "si" ]]; then
+                        echo "TRANSLATING $name.$ext"
+                        python ../../jupyter-translator/jupyter_translator.py -f $name.$ext -t EN PT
+                        echo "TRANSLATION DONE"
+                    fi
                     echo -e "\nGENERATING HTMLs"
                     python ../../jupyter-to-html/jupyter_to_html.py -f $name.$ext
                     python ../../jupyter-to-html/jupyter_to_html.py -f notebooks_translated/$name"_EN".$ext
@@ -25,6 +28,8 @@ if [[ $ext == "ipynb" ]]; then
                     echo "HTMLs GENERATED"
                 else
                     echo "The file is not in the posts directory"
+                    echo "Actual directory: $actual_dir/$dir"
+                    echo "Posts directory: $posts_dir"
                 fi
             else
                 echo "The file is not readable"

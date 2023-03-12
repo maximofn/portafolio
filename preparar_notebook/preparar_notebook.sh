@@ -1,13 +1,19 @@
 #!/bin/bash
 
 notebook=$1
-posts_dir="/home/wallabot/Documentos/web/portafolio/posts"
+posts_dir="/home/wallabot/Documentos/web/portafolio/posts/"
 
 # Get directory name and extension of the notebook
 dir=$(dirname "$notebook")
 ext=${notebook##*.} # "txt"
 name=$(basename "$notebook" .$ext)
 actual_dir=$(pwd)
+
+echo "dir: $dir"
+if [[ $dir == "." ]]; then
+    dir=""
+fi
+echo "dir: $dir"
 
 if [[ $ext == "ipynb" ]]; then
     if [[ -e $notebook ]]; then
@@ -18,7 +24,9 @@ if [[ $ext == "ipynb" ]]; then
                     read -p "Quieres traducirlo? (si/no): " traducir
                     if [[ $traducir == "si" ]]; then
                         echo "TRANSLATING $name.$ext"
+                        source ~/miniconda3/bin/activate translator
                         python ../../jupyter-translator/jupyter_translator.py -f $name.$ext -t EN PT
+                        source ~/miniconda3/bin/deactivate
                         echo "TRANSLATION DONE"
                     fi
                     echo -e "\nGENERATING HTMLs"

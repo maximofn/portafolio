@@ -9,11 +9,10 @@ ext=${notebook##*.} # "txt"
 name=$(basename "$notebook" .$ext)
 actual_dir=$(pwd)
 
-echo "dir: $dir"
+# Change path '.' to ''
 if [[ $dir == "." ]]; then
     dir=""
 fi
-echo "dir: $dir"
 
 if [[ $ext == "ipynb" ]]; then
     if [[ -e $notebook ]]; then

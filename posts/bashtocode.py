@@ -43,17 +43,19 @@ def main(file):
     cells = notebook['cells']   # Get only with the cells
     for cell in cells:
         if cell['cell_type'] == 'markdown':
-            # if "bashi" in cell['source'][0]:
-            #     if cell['source'][0].startswith('```') and cell['source'][-1].startswith('```'):
-            #         print(cell)
             if cell['source'][0].startswith('```') and cell['source'][-1].startswith('```'):
                 cell['cell_type'] = 'code'
                 cell['execution_count'] = 8
                 input = f"!{cell['source'][1]}"
                 input = input.replace("\n", "")
-                output = cell['source'][2:-1]
+                outputs = cell['source'][2:-1]
                 cell['source'] = [input]
-                cell['outputs'] = [{'output_type': 'stream', 'name': 'stdout', 'text': [output]}]
+                if len(outputs) > 0:
+                    output_string = ""
+                    for output in outputs:
+                        output_string += output
+                    output_string = output_string.replace("~", "~")
+                    cell['outputs'] = [{'output_type': 'stream', 'name': 'stdout', 'text': output_string}]
     
     # Save notebook
     path, name, extension, simplex_name = path_name_ext_from_file(file)

@@ -21,6 +21,9 @@ if [[ $ext == "ipynb" ]]; then
                 if [[ $actual_dir/$dir == $posts_dir ]]; then
                     cd $posts_dir
                     read -p "Quieres traducirlo? (si/no): " traducir
+                    while [[ $traducir != "si" && $traducir != "no" && $traducir != "SI" && $traducir != "NO" && $traducir != "Si" && $traducir != "No" && $traducir != "sI" && $traducir != "nO" ]]; do
+                        read -p "Quieres traducirlo? (si/no): " traducir
+                    done
                     if [[ $traducir == "si" ]]; then
                         echo "TRANSLATING $name.$ext"
                         source ~/miniconda3/bin/activate translator

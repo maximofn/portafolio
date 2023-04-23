@@ -3,6 +3,12 @@
 notebook=$1
 posts_dir="/home/wallabot/Documentos/web/portafolio/posts/"
 
+# If the notebook is not specified explain how to use the script and exit
+if [[ $notebook == "" ]]; then
+    echo "Usage: preparar_notebook.sh <notebook>"
+    exit 1
+fi
+
 # Get directory name and extension of the notebook
 dir=$(dirname "$notebook")
 ext=${notebook##*.} # "txt"
@@ -20,15 +26,17 @@ if [[ $ext == "ipynb" ]]; then
             if [[ -r $notebook ]]; then
                 if [[ $actual_dir/$dir == $posts_dir ]]; then
                     cd $posts_dir
-                    read -p "Quieres traducirlo? (si/no): " traducir
-                    while [[ $traducir != "si" && $traducir != "no" && $traducir != "SI" && $traducir != "NO" && $traducir != "Si" && $traducir != "No" && $traducir != "sI" && $traducir != "nO" ]]; do
-                        read -p "Quieres traducirlo? (si/no): " traducir
+                    read -p "Do you whant to translate it? (yes/no): " traducir
+                    traducir=$(echo $traducir | tr '[:upper:]' '[:lower:]') # Change the answer to lowercase
+                    while [[ $traducir != "yes" && $traducir != "no" ]]; do
+                        read -p "Do you whant to translate it? (yes/no): " traducir
+                        traducir=$(echo $traducir | tr '[:upper:]' '[:lower:]') # Change the answer to lowercase
                     done
-                    if [[ $traducir == "si" ]]; then
+                    if [[ $traducir == "yes" ]]; then
                         echo "TRANSLATING $name.$ext"
                         source ~/miniconda3/bin/activate translator
                         python ../../jupyter-translator/jupyter_translator.py -f $name.$ext -t EN PT
-                        source ~/miniconda3/bin/deactivate
+                        conda deactivate
                         echo "TRANSLATION DONE"
                     fi
                     echo -e "\nGENERATING HTMLs"
@@ -37,19 +45,24 @@ if [[ $ext == "ipynb" ]]; then
                     python ../../jupyter-to-html/jupyter_to_html.py -f notebooks_translated/$name"_PT".$ext
                     echo "HTMLs GENERATED"
                 else
-                    echo "The file is not in the posts directory"
+                    echo "You aren't into the posts directory"
                     echo "Actual directory: $actual_dir/$dir"
                     echo "Posts directory: $posts_dir"
+                    exit 1
                 fi
             else
                 echo "The file is not readable"
+                exit 1
             fi
         else
             echo "The file is not a regular file"
+            exit 1
         fi
     else
         echo "The file does not exist"
+        exit 1
     fi
 else
     echo "The file is not a notebook"
+    exit 1
 fi

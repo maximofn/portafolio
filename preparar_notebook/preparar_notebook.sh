@@ -2,6 +2,7 @@
 
 notebook=$1
 posts_dir="/home/wallabot/Documentos/web/portafolio/posts/"
+pages_dir="/home/wallabot/Documentos/web/portafolio/paginas/"
 
 # If the notebook is not specified explain how to use the script and exit
 if [[ $notebook == "" ]]; then
@@ -24,8 +25,13 @@ if [[ $ext == "ipynb" ]]; then
     if [[ -e $notebook ]]; then
         if [[ -f $notebook ]]; then
             if [[ -r $notebook ]]; then
-                if [[ $actual_dir/$dir == $posts_dir ]]; then
-                    cd $posts_dir
+                if [[ $actual_dir/$dir == $posts_dir || $actual_dir/$dir == $pages_dir ]]; then
+                    if [[ $actual_dir/$dir == $posts_dir ]]; then
+                        cd $posts_dir
+                    fi
+                    if [[ $actual_dir/$dir == $pages_dir ]]; then
+                        cd $pages_dir
+                    fi
                     read -p "Do you whant to translate it? (yes/no): " traducir
                     traducir=$(echo $traducir | tr '[:upper:]' '[:lower:]') # Change the answer to lowercase
                     while [[ $traducir != "yes" && $traducir != "no" ]]; do

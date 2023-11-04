@@ -2,7 +2,7 @@
 
 notebook=$1
 posts_dir="/home/wallabot/Documentos/web/portafolio/posts/"
-pages_dir="/home/wallabot/Documentos/web/portafolio/paginas/"
+pages_dir="/home/wallabot/Documentos/web/portafolio/paginas"
 
 # If the notebook is not specified explain how to use the script and exit
 if [[ $notebook == "" ]]; then
@@ -53,7 +53,8 @@ if [[ $ext == "ipynb" ]]; then
                 else
                     echo "You aren't into the posts directory"
                     echo "Actual directory: $actual_dir/$dir"
-                    echo "Posts directory: $posts_dir"
+                    echo "Posts directory:  $posts_dir"
+                    echo "Pages directory:  $pages_dir"
                     exit 1
                 fi
             else

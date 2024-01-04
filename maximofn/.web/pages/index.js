@@ -189,6 +189,38 @@ export default function Component() {
 </UnorderedList>
 </VStack>
 </VStack>
+  <VStack>
+  <Text>
+  {`Proyectos`}
+</Text>
+  <VStack>
+  <Text>
+  {`Proyecto de prueba 1`}
+</Text>
+</VStack>
+  <VStack>
+  <Text>
+  {`Proyecto de prueba 2`}
+</Text>
+</VStack>
+  <VStack>
+  <Text>
+  {`Proyecto de prueba 3`}
+</Text>
+</VStack>
+</VStack>
+  <VStack>
+  <Text>
+  {`Posts`}
+</Text>
+  <Box sx={{"width": "100%"}}>
+  <Center>
+  <Text>
+  {`Proyecto 1`}
+</Text>
+</Center>
+</Box>
+</VStack>
 </VStack>
 </Center>
   <HStack sx={{"width": "100%", "backgroundColor": "blue", "zIndex": 0, "bottom": 0}}>

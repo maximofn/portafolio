@@ -1,7 +1,7 @@
 import reflex as rx
 from maximofn.components.work_experience.custom_work_experience import custom_work_experience
 
-def arquimea_deep_learning() -> rx.Component:
+def arquimea_deep_learning(row_start: int, row_end: int, column: int) -> rx.Component:
     return custom_work_experience(
         company = "Arqimea",
         position = "Ingeniero de deep learning",
@@ -18,4 +18,7 @@ def arquimea_deep_learning() -> rx.Component:
             "Desarrollé los algoritmos de visión de forma que se descartara el uso de dispositivos comerciales que cuestan 2.000 € por unidad. Esto supone un gran ahorro por UAV, por lo que pueden venderse más baratos y destacar en el mercado.",
             "Gracias a un prototipo que se geoposiciona sin GPS, se ha abierto una nueva línea de investigación para futuros UAV para la guerra tecnológica.",
         ],
+        row_start=row_start,
+        row_end=row_end,
+        column=column,
     )

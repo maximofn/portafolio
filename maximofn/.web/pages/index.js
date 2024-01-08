@@ -1,8 +1,9 @@
 
 /** @jsxImportSource @emotion/react */import { Fragment } from "react"
 import { Fragment_fd0e7cb8f9fb4669a6805377d925fba0 } from "/utils/stateful_components"
-import { Box, Center, Flex, Heading, HStack, Image as ChakraImage, ListItem, Spacer, Text, UnorderedList, VStack } from "@chakra-ui/react"
+import { Box, Center, Flex, Heading, HStack, Image as ChakraImage, Link, ListItem, SimpleGrid, Spacer, Text, UnorderedList, VStack } from "@chakra-ui/react"
 import "focus-visible/dist/focus-visible"
+import NextLink from "next/link"
 import NextHead from "next/head"
 
 
@@ -12,19 +13,63 @@ export default function Component() {
   return (
     <Fragment>
   <Fragment_fd0e7cb8f9fb4669a6805377d925fba0/>
-  <Box>
-  <Center>
-  <VStack sx={{"width": "100%"}}>
-  <Flex sx={{"width": "100%", "backgroundColor": "blue", "position": "sticky", "zIndex": 999, "top": 0}}>
-  <Text as={`span`} sx={{"color": "white"}}>
+  <Box sx={{"display": "flex", "flexDirection": "column", "alignContent": "center", "backgroundColor": "gray", "justifyContent": "center", "width": "100%", "fontFamily": "Poopins", "fontWeight": "300"}}>
+  <Flex align={`center`} sx={{"width": "100%", "backgroundColor": "#07090d", "padding": "10px 20px", "height": "auto", "position": "sticky", "top": "0px", "left": "0px"}}>
+  <Flex align={`center`} sx={{"fontFamily": "Comfortaa", "fontWeight": "500"}}>
+  <Text as={`span`} sx={{"color": "#718ef4"}}>
   {`Maximo`}
 </Text>
-  <Text as={`span`} sx={{"color": "gray"}}>
+  <Text as={`span`} sx={{"color": "#bdc8f8"}}>
   {`FN`}
 </Text>
-  <Spacer/>
-  <ChakraImage src={`favicon.ico`}/>
 </Flex>
+  <Spacer/>
+  <Flex>
+  <SimpleGrid columns={[4, 6, 11]} spacing={`0.5em`} sx={{"marginRight": "1.5em", "alignItems": "flex-end"}}>
+  <Link as={NextLink} href={`https://www.linkedin.com/in/maximofn/`} isExternal={true}>
+  <ChakraImage alt={`linkedin`} src={`icons/linkedin-dark_mode.svg`} sx={{"width": "1em", "marginX": null}}/>
+</Link>
+  <Link as={NextLink} href={`https://huggingface.co/MaximoFN`} isExternal={true}>
+  <ChakraImage alt={`huggingface`} src={`icons/huggingface-dark_mode.svg`} sx={{"width": "1.25em", "marginX": null}}/>
+</Link>
+  <Link as={NextLink} href={`http://kaggle.com/maximofn`} isExternal={true}>
+  <ChakraImage alt={`kaggle`} src={`icons/kaggle-dark_mode.svg`} sx={{"width": "0.6em", "marginX": "0.25em"}}/>
+</Link>
+  <Link as={NextLink} href={`https://twitter.com/Maximo_fn`} isExternal={true}>
+  <ChakraImage alt={`x/twitter`} src={`icons/x-dark_mode.svg`} sx={{"width": "1em", "marginX": null}}/>
+</Link>
+  <Link as={NextLink} href={`https://www.facebook.com/profile.php?id=100085177670661`} isExternal={true}>
+  <ChakraImage alt={`facebook`} src={`icons/facebook-dark_mode.svg`} sx={{"width": "1em", "marginX": null}}/>
+</Link>
+  <Link as={NextLink} href={`https://www.instagram.com/maximo__fn/`} isExternal={true}>
+  <ChakraImage alt={`instagram`} src={`icons/instagram-dark_mode.svg`} sx={{"width": "1em", "marginX": null}}/>
+</Link>
+  <Link as={NextLink} href={`https://www.tiktok.com/@maximo__fn`} isExternal={true}>
+  <ChakraImage alt={`tiktok`} src={`icons/tiktok-dark_mode.svg`} sx={{"width": "1em", "marginX": null}}/>
+</Link>
+  <Link as={NextLink} href={`https://www.twitch.tv/maximofn/`} isExternal={true}>
+  <ChakraImage alt={`twitch`} src={`icons/twitch-dark_mode.svg`} sx={{"width": "1em", "marginX": null}}/>
+</Link>
+  <Link as={NextLink} href={`https://www.youtube.com/channel/UC4hFJZxXHr4bJQzQKgJ2Vhw`} isExternal={true}>
+  <ChakraImage alt={`youtube`} src={`icons/youtube-dark_mode.svg`} sx={{"width": "1em", "marginX": null}}/>
+</Link>
+  <Link as={NextLink} href={`https://www.threads.net/@maximo__fn`} isExternal={true}>
+  <ChakraImage alt={`threads`} src={`icons/threads-dark_mode.svg`} sx={{"width": "1em", "marginX": null}}/>
+</Link>
+  <Link as={NextLink} href={`https://www.github.com/MaximoFN/`} isExternal={true}>
+  <ChakraImage alt={`github`} src={`icons/github-dark_mode.svg`} sx={{"width": "1em", "marginX": null}}/>
+</Link>
+</SimpleGrid>
+  <Flex sx={{"marginRight": "1.5em"}}>
+  <ChakraImage alt={`English`} src={`languajes/english.svg`} sx={{"width": "1.25em", "marginRight": "0.5em"}}/>
+  <ChakraImage alt={`Portuguese`} src={`languajes/portuguese.svg`} sx={{"width": "1.25em"}}/>
+</Flex>
+  <Flex>
+  <ChakraImage alt={`Dark mode`} src={`icons/dark_mode.svg`}/>
+</Flex>
+</Flex>
+</Flex>
+  <VStack>
   <VStack>
   <HStack>
   <VStack>
@@ -46,13 +91,11 @@ export default function Component() {
   {`Experiencia laboral`}
 </Text>
   <VStack>
-  <Text>
+  <VStack>
+  <Text sx={{"color": "white", "fontSize": "20px", "fontWeight": "bold"}}>
   {`Ingeniero de deep learning en Sener Aeroespacial`}
 </Text>
-  <Text>
-  {`Julio 2022  - Actual`}
-</Text>
-  <Text>
+  <Text sx={{"color": "white", "fontSize": "15px", "fontWeight": "bold"}}>
   {`Responsabilidades:`}
 </Text>
   <UnorderedList>
@@ -69,7 +112,7 @@ export default function Component() {
   {`Liderar el grupo de inteligencia artificial, para realizar tareas de visión en el dispositivo, el reentrenamiento de las redes y el procesamiento de datos.`}
 </ListItem>
 </UnorderedList>
-  <Text>
+  <Text sx={{"color": "white", "fontSize": "15px", "fontWeight": "bold"}}>
   {`Logros:`}
 </Text>
   <UnorderedList>
@@ -83,15 +126,15 @@ export default function Component() {
   {`Mentor de becarios para que crecer profesionalmente.`}
 </ListItem>
 </UnorderedList>
+  <Text sx={{"float": "right", "color": "white"}}>
+  {`Julio 2022  - Actual`}
+</Text>
 </VStack>
   <VStack>
-  <Text>
+  <Text sx={{"color": "white", "fontSize": "20px", "fontWeight": "bold"}}>
   {`Ingeniero de deep learning en Arqimea`}
 </Text>
-  <Text>
-  {`Agosto 2019  - Julio 2022`}
-</Text>
-  <Text>
+  <Text sx={{"color": "white", "fontSize": "15px", "fontWeight": "bold"}}>
   {`Responsabilidades:`}
 </Text>
   <UnorderedList>
@@ -108,7 +151,7 @@ export default function Component() {
   {`Cuestionar los procesos del equipo, buscando formas de mejorarlos.`}
 </ListItem>
 </UnorderedList>
-  <Text>
+  <Text sx={{"color": "white", "fontSize": "15px", "fontWeight": "bold"}}>
   {`Logros:`}
 </Text>
   <UnorderedList>
@@ -122,15 +165,15 @@ export default function Component() {
   {`Gracias a un prototipo que se geoposiciona sin GPS, se ha abierto una nueva línea de investigación para futuros UAV para la guerra tecnológica.`}
 </ListItem>
 </UnorderedList>
+  <Text sx={{"float": "right", "color": "white"}}>
+  {`Agosto 2019  - Julio 2022`}
+</Text>
 </VStack>
   <VStack>
-  <Text>
+  <Text sx={{"color": "white", "fontSize": "20px", "fontWeight": "bold"}}>
   {`Ingeniero electrónico en Arqimea`}
 </Text>
-  <Text>
-  {`Octubre 2017  - Agosto 2019`}
-</Text>
-  <Text>
+  <Text sx={{"color": "white", "fontSize": "15px", "fontWeight": "bold"}}>
   {`Responsabilidades:`}
 </Text>
   <UnorderedList>
@@ -147,7 +190,7 @@ export default function Component() {
   {`Cuestionar los procesos del equipo, buscando formas de mejorarlos.`}
 </ListItem>
 </UnorderedList>
-  <Text>
+  <Text sx={{"color": "white", "fontSize": "15px", "fontWeight": "bold"}}>
   {`Logros:`}
 </Text>
   <UnorderedList>
@@ -155,31 +198,31 @@ export default function Component() {
   {`Antes de mi llegada había un diseño de HW diferente para cada UAV y para cada estación terrestre. Unifiqué los diseños en uno solo. Esto significaba que el 80%\ del desarrollo de FW de un UAV era heredado por el otro UAV, ahorrando así meses de desarrollo. También eliminó los diseños duplicados que hacían lo mismo.`}
 </ListItem>
 </UnorderedList>
+  <Text sx={{"float": "right", "color": "white"}}>
+  {`Octubre 2017  - Agosto 2019`}
+</Text>
 </VStack>
   <VStack>
-  <Text>
+  <Text sx={{"color": "white", "fontSize": "20px", "fontWeight": "bold"}}>
   {`Ingeniero electrónico en Indra`}
 </Text>
-  <Text>
+  <Text sx={{"color": "white", "fontSize": "15px", "fontWeight": "bold"}}>
+  {`Responsabilidades:`}
+</Text>
+  <UnorderedList>
+  <ListItem>
+  {`Desarrollo hardware y software`}
+</ListItem>
+</UnorderedList>
+  <Text sx={{"float": "right", "color": "white"}}>
   {`Mayo 2014 - Octubre 2017`}
 </Text>
-  <Text>
-  {`Responsabilidades:`}
-</Text>
-  <UnorderedList>
-  <ListItem>
-  {`Desarrollo hardware y software`}
-</ListItem>
-</UnorderedList>
 </VStack>
   <VStack>
-  <Text>
+  <Text sx={{"color": "white", "fontSize": "20px", "fontWeight": "bold"}}>
   {`Becario en Indra`}
 </Text>
-  <Text>
-  {`Enero 2013 - Mayo 2014`}
-</Text>
-  <Text>
+  <Text sx={{"color": "white", "fontSize": "15px", "fontWeight": "bold"}}>
   {`Responsabilidades:`}
 </Text>
   <UnorderedList>
@@ -187,6 +230,11 @@ export default function Component() {
   {`Desarrollo hardware y software`}
 </ListItem>
 </UnorderedList>
+  <Text sx={{"float": "right", "color": "white"}}>
+  {`Enero 2013 - Mayo 2014`}
+</Text>
+</VStack>
+  <Box sx={{"gridRowStart": "1", "gridRowEnd": [8], "gridColumnStart": "2", "backgroundColor": "lightgray", "border": "3px solid black", "borderRadius": "15px", "alignSelf": "stretch"}}/>
 </VStack>
 </VStack>
   <VStack>
@@ -222,7 +270,6 @@ export default function Component() {
 </Box>
 </VStack>
 </VStack>
-</Center>
   <HStack sx={{"width": "100%", "backgroundColor": "blue", "zIndex": 0, "bottom": 0}}>
   <Text>
   {`Política de privacidad`}

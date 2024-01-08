@@ -1,7 +1,7 @@
 import reflex as rx
 from maximofn.components.work_experience.custom_work_experience import custom_work_experience
 
-def sener() -> rx.Component:
+def sener(row_start: int, row_end: int, column: int) -> rx.Component:
     return custom_work_experience(
         company = "Sener Aeroespacial",
         position = "Ingeniero de deep learning",
@@ -18,4 +18,7 @@ def sener() -> rx.Component:
             "Compartí mis conocimientos con el grupo, para capacitarlos para crear mejores soluciones juntos y más rápido.",
             "Mentor de becarios para que crecer profesionalmente.",
         ],
+        row_start=row_start,
+        row_end=row_end,
+        column=column,
     )

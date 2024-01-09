@@ -1,21 +1,26 @@
-DEBUG = True
+from maximofn.styles.colors import Color
+
+DEBUG = False
+# DEBUG = True
 
 if DEBUG:
-    gap = "30px"
     border = "5px solid purple"
     border_radius = "15px"
 else:
-    gap = "0px"
     border = "0px"
     border_radius = "0px"
 
 content_style = {
-    "background-color": "black",
-    "justify-content": "flex-start",
-    "gap": gap,
+    "display": "flex",
+    "flex-direction": "column",                     # direction of the main axis
+    "align-items": "flex-start",                    # alignment of items on the cross axis
+    "justify-content": "flex-start",                    # alignment of content on the main axis
+    "align-content": "flex-start",                      # alignment of content on the cross axis
+    "max_width": "1500px",
+    "background-color": Color.BACKGROUND.value,
+    "gap": "100px",
+
+    # DEBUG
     "border": border,
     "border-radius": border_radius,
-    "align-items": "start",
-    "max-width": "1500px",
-    # "margin_top": "50px",
 }

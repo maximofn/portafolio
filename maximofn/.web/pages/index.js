@@ -13,7 +13,7 @@ export default function Component() {
   return (
     <Fragment>
   <Fragment_fd0e7cb8f9fb4669a6805377d925fba0/>
-  <Box sx={{"display": "flex", "flexDirection": "column", "alignContent": "center", "backgroundColor": "gray", "justifyContent": "center", "width": "100%", "fontFamily": "Poopins", "fontWeight": "300"}}>
+  <Box sx={{"display": "flex", "flexDirection": "column", "alignItems": "center", "justifyContent": "center", "alignContent": "center", "backgroundColor": "#07090d", "fontFamily": "Poopins", "fontWeight": "300", "border": "0px"}}>
   <Flex align={`center`} sx={{"width": "100%", "backgroundColor": "#07090d", "padding": "10px 20px", "height": "auto", "position": "sticky", "top": "0px", "left": "0px"}}>
   <Flex align={`center`} sx={{"fontFamily": "Comfortaa", "fontWeight": "500"}}>
   <Text as={`span`} sx={{"color": "#718ef4"}}>
@@ -69,23 +69,47 @@ export default function Component() {
 </Flex>
 </Flex>
 </Flex>
-  <VStack>
-  <VStack>
-  <HStack>
-  <VStack>
-  <Heading>
+  <Box sx={{"display": "flex", "flexDirection": "column", "alignItems": "flex-start", "justifyContent": "flex-start", "alignContent": "flex-start", "maxWidth": "1500px", "backgroundColor": "#07090d", "gap": "100px", "border": "0px", "borderRadius": "0px"}}>
+  <Box sx={{"display": "flex", "flexDirection": "row", "alignItems": "center", "justifyContent": "space-between", "alignContent": "flex-start", "width": "100%", "color": "#d5defb", "border": "5px solid yellow", "borderRadius": "15px"}}>
+  <VStack alignItems={`flex-start`} sx={{"borderColor": "#718ef4", "borderWidth": "2px"}}>
+  <Heading sx={{"color": "#718ef4", "fontSize": "3em", "fontWeight": "bold", "marginBottom": "8px", "border": "5px solid yellow", "borderRadius": "15px"}}>
   {`MaximoFN`}
 </Heading>
   <Box>
-  <Text as={`span`}>
+  <Text sx={{"color": "#fc895a"}}>
   {`Machine Learning`}
 </Text>
-  {` Engineer`}
+  <Text>
+  {` Engineer. Visión por computador y LLMs................`}
+</Text>
 </Box>
+  <Flex sx={{"borderColor": "#718ef4", "borderWidth": "2px", "margin": "0px"}}>
+  <Box sx={{"fontSize": "2em", "marginBottom": "12px"}}>
+  <Text as={`span`} sx={{"color": "#fc895a"}}>
+  {`Machine Learning`}
+</Text>
+  {` Engineer. Visión por computador y LLMs`}
+</Box>
+</Flex>
+  <Flex>
+  <Text sx={{"fontSize": "1em", "marginBottom": "6px"}}>
+  {`+5 años de experiencia en inteligencia artificial.`}
+</Text>
+</Flex>
+  <Flex sx={{"fontSize": "1em", "borderColor": "#fc895a", "borderWidth": "2px", "margin": "0px"}}>
+  {`Optimización de modelos con `}
+  <Text as={`span`} sx={{"color": "#0ca470"}}>
+  {` TensorRT`}
+</Text>
+  {`. Experiencia en dispositivos `}
+  <Text as={`span`} sx={{"color": "#0ca470"}}>
+  {` Jetson`}
+</Text>
+  {`.`}
+</Flex>
 </VStack>
   <ChakraImage src={`maximo-0014.webp`} sx={{"width": "200px"}}/>
-</HStack>
-</VStack>
+</Box>
   <VStack>
   <Text>
   {`Experiencia laboral`}
@@ -269,7 +293,7 @@ export default function Component() {
 </Center>
 </Box>
 </VStack>
-</VStack>
+</Box>
   <HStack sx={{"width": "100%", "backgroundColor": "blue", "zIndex": 0, "bottom": 0}}>
   <Text>
   {`Política de privacidad`}

@@ -2,7 +2,7 @@ import reflex as rx
 
 from maximofn.styles.colors import Color
 from maximofn.styles.sizes import Size
-from maximofn.styles.presentation_style import presentation_style, presentation_name_style, presentation_position_style
+from maximofn.styles.presentation_style import presentation_style, presentation_text_style, presentation_name_style, presentation_position_style, presentation_resume_style
 
 import time
 
@@ -12,6 +12,7 @@ def photo() -> rx.Component:
     return rx.image(
         src = "maximo-0014.webp",
         width = "200px",
+        border_radius = "5%",
     )
 
 def presentation_name() -> rx.Component:
@@ -21,71 +22,53 @@ def presentation_name() -> rx.Component:
     )
 
 def presentation_position() -> rx.Component:
-    return rx.vstack(
-        rx.text(
-            "Machine Learning",
-            color = Color.ORANGE.value,
+    return rx.flex(
+        rx.box(
+            rx.span(
+                "Machine Learning ", 
+                color=Color.ORANGE.value,
+            ),
+            "Engineer. Visión por computador y LLMs.",
+            style=presentation_position_style,
         ),
+    )
+
+def presentation_resume() -> rx.Component:
+    return rx.flex(
         rx.text(
-            " Engineer. Visión por computador y LLMs................",
+            f"+{time.localtime().tm_year - YEAR_START} años de experiencia en inteligencia artificial.",
         ),
-        # style=presentation_position_style,
+        rx.box(
+            "Optimización de modelos con ",
+            rx.span(
+                "TensorRT", 
+                color=Color.GREEN.value,
+            ),
+            ". Experiencia en dispositivos ",
+            rx.span(
+                "Jetson", 
+                color=Color.GREEN.value,
+            ),
+        ),
+        style=presentation_resume_style,
     )
 
 def presentation_text() -> rx.Component:
     presentation_text = rx.vstack(
         presentation_name(),
         presentation_position(),
-        rx.flex(
-            rx.box(
-                rx.span(
-                    "Machine Learning",
-                    color = Color.ORANGE.value,
-                ),
-                " Engineer. Visión por computador y LLMs",
-                font_size = Size.XXLARGE.value,
-                margin_bottom = "12px",
-            ),
-            border_color = Color.BLUE.value,
-            border_width = "2px",
-            margin= "0px",
-        ),
-        rx.flex(
-            rx.text(
-                f"+{time.localtime().tm_year - YEAR_START} años de experiencia en inteligencia artificial.",
-                font_size = Size.MEDIUM.value,
-                margin_bottom = "6px",
-            ),
-        ),
-        rx.flex(
-            "Optimización de modelos con ",
-            rx.span(
-                " TensorRT",
-                color = Color.GREEN.value,
-            ),
-            ". Experiencia en dispositivos ",
-            rx.span(
-                " Jetson",
-                color = Color.GREEN.value,
-            ),
-            ".",
-            font_size = Size.MEDIUM.value,
-            border_color = Color.ORANGE.value,
-            border_width = "2px",
-            margin = "0px"
-        ),
-        align_items="flex-start",
-        border_color = Color.BLUE.value,
-        border_width = "2px",
+        presentation_resume(),
+        style = presentation_text_style,
     )
-
     return presentation_text
 
 def presentation() -> rx.Component:
-    presentation = rx.box(
-        presentation_text(),
+    presentation = rx.responsive_grid(
         photo(),
+        presentation_text(),
         style=presentation_style,
+        columns = [1, 1, 1, 2, 2], # '30em', '48em', '62em', '80em', '96em',
+        margin_top = ["6px", "6px", "6px", "256px", "256px"],  # '30em', '48em', '62em', '80em', '96em',
     )
 
     return presentation

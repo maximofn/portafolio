@@ -2,7 +2,7 @@ import reflex as rx
 
 from maximofn.styles.colors import Color
 from maximofn.styles.sizes import Size
-from maximofn.styles.presentation_style import presentation_style, presentation_text_style, presentation_name_style, presentation_position_style, presentation_resume_style
+from maximofn.styles.presentation_style import presentation_style_desktop, presentation_style_mobile_tablet, presentation_text_style, presentation_name_style, presentation_position_style, presentation_resume_style
 
 import time
 
@@ -63,12 +63,29 @@ def presentation_text() -> rx.Component:
     return presentation_text
 
 def presentation() -> rx.Component:
-    presentation = rx.responsive_grid(
-        photo(),
-        presentation_text(),
-        style=presentation_style,
-        columns = [1, 1, 1, 2, 2], # '30em', '48em', '62em', '80em', '96em',
-        margin_top = ["6px", "6px", "6px", "256px", "256px"],  # '30em', '48em', '62em', '80em', '96em',
+
+    presentation = rx.box(
+        rx.desktop_only(
+            rx.box(
+                presentation_text(),
+                photo(),
+                style=presentation_style_desktop,
+            ),
+        ),
+        rx.mobile_and_tablet(
+            rx.box(
+                photo(),
+                presentation_text(),
+                style=presentation_style_mobile_tablet,
+            ),
+        )
     )
+    # presentation = rx.responsive_grid(
+    #     presentation_text(),
+    #     photo(),
+    #     columns = [1, 1, 1, 2, 2], # '30em', '48em', '62em', '80em', '96em',
+    #     margin_top = ["6px", "6px", "6px", "256px", "256px"],  # '30em', '48em', '62em', '80em', '96em',
+    #     justify_items = ["center", "center", "center", "flex-start", "flex-start"],
+    # )
 
     return presentation

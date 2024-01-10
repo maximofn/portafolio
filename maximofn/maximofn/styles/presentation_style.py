@@ -12,21 +12,28 @@ else:
     border = "0px"
     border_radius = "0px"
 
-presentation_style = {
-    # "display": "flex",
-    # "flex-direction": "row",                     # direction of the main axis
-    # "align-items": "center",                    # alignment of items on the cross axis
-    "align-content": "space-between",                    # alignment of content on the main axis
-    # "align-content": "flex-start",                      # alignment of content on the cross axis
-    # "background-color": Color.BACKGROUND.value,
-    "width": "100%",
-    "color": Color.SECONDARY.value,
-    # "margin_top": "256px",
+presentation_style_desktop = {
+    "display": "flex",
+    "flex-direction": "row",                     # direction of the main axis
+    "align-items": "center",                    # alignment of items on the cross axis
+    # "justify-content": "flex-start",                    # alignment of content on the main axis
+    "align-content": "flex-start",                      # alignment of content on the cross axis
+    "margin_top": "256px",
+    "gap": "200px",
     
     # DEBUG
     "border": border,
     "border-radius": border_radius,
+}
 
+presentation_style_mobile_tablet = {
+    "display": "flex",
+    "flex-direction": "column",                     # direction of the main axis
+    "align-items": "center",                    # alignment of items on the cross axis
+    
+    # DEBUG
+    "border": border,
+    "border-radius": border_radius,
 }
 
 presentation_text_style = {

@@ -1,7 +1,7 @@
 from maximofn.styles.colors import Color
 
 DEBUG = False
-# DEBUG = True
+DEBUG = True
 
 if DEBUG:
     border = "5px solid purple"

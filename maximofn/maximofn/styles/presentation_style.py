@@ -3,7 +3,7 @@ from maximofn.styles.colors import Color
 from maximofn.styles.sizes import Size
 
 DEBUG = False
-# DEBUG = True
+DEBUG = True
 
 if DEBUG:
     border = "5px solid yellow"

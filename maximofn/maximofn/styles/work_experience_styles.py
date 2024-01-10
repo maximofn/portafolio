@@ -1,53 +1,59 @@
+from maximofn.styles.colors import Color
+from maximofn.styles.sizes import Size
+
 DEBUG = True
 
+TIME_LINE_WIDTH = "10px"
+TIME_LINE_LINEWIDTH = "3px"
+
 if DEBUG:
-    gap = "30px"
-    border = "5px solid purple"
-    border_section = "5px solid yellow"
+    border = "5px solid yellow"
     border_radius = "15px"
-    background_color_title = "green"
-    background_color_stack = "red"
 else:
-    gap = "0px"
     border = "0px"
-    border_section = "0px"
     border_radius = "0px"
-    background_color_title = ""
-    background_color_stack = ""
 
 work_experience_style = {
-    "gap": gap,
+    "display": "flex",
+    "flex-direction": "column",                     # direction of the main axis
+    "align-items": "stretch",                    # alignment of items on the cross axis
+    "justify-content": "flex-start",                    # alignment of content on the main axis
+    "align-content": "flex-start",                  # alignment of content on the cross axis
+    "gap": "12px",
+
+    # DEBUG
     "border": border,
     "border-radius": border_radius,
-    "align-items": "flex-start",
 }
 
 work_experience_title_style = {
-    "font-size": "40px",
+    "color": Color.PRIMARY.value,
+    "font-size": Size.XXXLARGE.value,
     "font-weight": "bold",
-    border: border_section,
-    "background-color": background_color_title,
-}
 
-time_line_width = "3px"
+    # DEBUG
+    "border": border,
+}
 
 work_experience_stack_style = {
     "display": "grid",
-    "align-items": "center",    # Center vertically
-    "justify-items": "start",   # Left align horizontally
-    "grid-template-columns": f"auto {time_line_width} auto",
+    "align-content": "start",   # Top align vertically
+    "align-items": "start",    # Center vertically
+    "justify-content": "start",   # Left align horizontally
+    "justify-items": "center",   # Left align horizontally
+    "grid-template-columns": f"auto {TIME_LINE_WIDTH} auto",
+    "gap": "12px",
+
     # DEBUG
-    "background-color": background_color_stack,
-    # "gap": gap,
-    # "border": border_section,
+    "border": border,
 }
 
 work_experience_time_line_style = {
     "grid_row_start": "1",
     "grid_row_end": "",
     "grid_column_start": "2",
-    "background-color": "lightgray",
-    "border": f"{time_line_width} solid black",
+
+    "border": f"{TIME_LINE_LINEWIDTH} solid {Color.WHITE.value}",
     "border-radius": "15px",
     "align-self": "stretch",
 }

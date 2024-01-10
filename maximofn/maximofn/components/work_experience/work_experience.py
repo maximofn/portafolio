@@ -12,17 +12,17 @@ def work_experience() -> rx.Component:
     column_right = 3
 
     row_start_sener = 1
-    row_start_arquimea_deep_learning = 2
-    row_start_arquimea_electronic = 3
-    row_start_indra = 5
-    row_start_indra_trainee = 6
+    row_start_arquimea_deep_learning = row_start_sener + 1
+    row_start_arquimea_electronic = row_start_arquimea_deep_learning + 1
+    row_start_indra = row_start_arquimea_electronic + 2
+    row_start_indra_trainee = row_start_indra + 1
 
     num_rows = row_start_indra_trainee
 
     return rx.vstack(
         rx.text(
             "Experiencia laboral",
-            # style = work_experience_title_style,
+            style = work_experience_title_style,
         ),
         rx.vstack(
             sener(
@@ -53,7 +53,7 @@ def work_experience() -> rx.Component:
             time_line(
                 num_rows=num_rows,
             ),
-            # style = work_experience_stack_style,
+            style = work_experience_stack_style,
         ),
-        # style = work_experience_style,
+        style = work_experience_style,
     )

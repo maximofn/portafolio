@@ -13,7 +13,7 @@ else:
 content_style = {
     "display": "flex",
     "flex-direction": "column",                     # direction of the main axis
-    "align-items": "flex-start",                    # alignment of items on the cross axis
+    "align-items": "stretch",                    # alignment of items on the cross axis
     "justify-content": "flex-start",                    # alignment of content on the main axis
     "align-content": "flex-start",                      # alignment of content on the cross axis
     "max_width": "1500px",

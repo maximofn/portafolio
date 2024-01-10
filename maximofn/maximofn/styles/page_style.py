@@ -24,5 +24,6 @@ page_style = {
     "font_family": Font.DEFAULT.value,
     "font_weight": FontWeight.LIGHT.value,
 
+    # DEBUG
     "border": border,
 }

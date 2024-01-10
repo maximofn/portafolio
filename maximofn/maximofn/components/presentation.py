@@ -80,12 +80,5 @@ def presentation() -> rx.Component:
             ),
         )
     )
-    # presentation = rx.responsive_grid(
-    #     presentation_text(),
-    #     photo(),
-    #     columns = [1, 1, 1, 2, 2], # '30em', '48em', '62em', '80em', '96em',
-    #     margin_top = ["6px", "6px", "6px", "256px", "256px"],  # '30em', '48em', '62em', '80em', '96em',
-    #     justify_items = ["center", "center", "center", "flex-start", "flex-start"],
-    # )
 
     return presentation

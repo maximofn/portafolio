@@ -15,7 +15,7 @@ def custom_work_experience(company: str, position: str, date_start: str, date_en
                 rx.text("Logros:", style=custom_work_experience_subtitle_style),
                 rx.unordered_list(items=key_accomplishments, style=custom_work_experience_list_style),
                 rx.text(f"{date_start}  - {date_end}", style=custom_work_experience_date_style),
-                # style=custom_work_experience_style,
+                style=custom_work_experience_style,
         )
     elif responsabilities is not None and key_accomplishments is None:
         return rx.vstack(
@@ -23,7 +23,7 @@ def custom_work_experience(company: str, position: str, date_start: str, date_en
                 rx.text("Responsabilidades:", style=custom_work_experience_subtitle_style),
                 rx.unordered_list(items=responsabilities, style=custom_work_experience_list_style),
                 rx.text(f"{date_start} - {date_end}", style=custom_work_experience_date_style),
-                # style=custom_work_experience_style,
+                style=custom_work_experience_style,
         )
     elif responsabilities is None and key_accomplishments is not None:
         return rx.vstack(
@@ -31,11 +31,11 @@ def custom_work_experience(company: str, position: str, date_start: str, date_en
                 rx.text("Logros:", style=custom_work_experience_subtitle_style),
                 rx.unordered_list(items=key_accomplishments, style=custom_work_experience_list_style),
                 rx.text(f"{date_start} - {date_end}", style=custom_work_experience_date_style),
-                # style=custom_work_experience_style,
+                style=custom_work_experience_style,
         )
     else:
         return rx.vstack(
                 rx.text(f"{position} en {company}"),
                 rx.text(f"{date_start} - {date_end}"),
-                # style=custom_work_experience_style,
+                style=custom_work_experience_style,
         )

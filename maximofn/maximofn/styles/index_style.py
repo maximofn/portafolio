@@ -1,7 +1,7 @@
 from maximofn.styles.colors import Color
 
 DEBUG = False
-DEBUG = True
+# DEBUG = True
 
 if DEBUG:
     border = "5px solid purple"
@@ -19,6 +19,7 @@ content_style = {
     "max_width": "1500px",
     "background-color": Color.BACKGROUND.value,
     "gap": "100px",
+    "margin": "0px 12px",
 
     # DEBUG
     "border": border,

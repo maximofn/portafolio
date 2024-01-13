@@ -8,6 +8,7 @@ STYLESHEETS = [
 ]
 
 DEBUG = False
+# DEBUG = True
 
 if DEBUG:
     border = "5px solid purple"

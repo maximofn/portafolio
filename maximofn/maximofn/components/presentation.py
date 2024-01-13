@@ -9,11 +9,29 @@ import time
 YEAR_START = 2019
 
 def photo() -> rx.Component:
-    return rx.image(
-        src = "maximo-0014.webp",
-        width = "200px",
-        border_radius = "5%",
+    src = "maximo-0014.webp"
+    border_radius = "5%"
+
+    photo_box = rx.box(
+        rx.mobile_and_tablet(
+            rx.center(
+                rx.image(
+                    src = src,
+                    width = "200px",
+                    border_radius = border_radius,
+                    justify_content = "center",
+                )
+            )
+        ),
+        rx.desktop_only(
+            rx.image(
+                src = src,
+                width = "300px",
+                border_radius = border_radius,
+            ),
+        ),
     )
+    return photo_box
 
 def presentation_name() -> rx.Component:
     return rx.heading(

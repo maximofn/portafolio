@@ -1,7 +1,7 @@
 
 /** @jsxImportSource @emotion/react */import { Fragment } from "react"
 import { Fragment_fd0e7cb8f9fb4669a6805377d925fba0 } from "/utils/stateful_components"
-import { Box, Button, Center, Flex, Heading, HStack, Image as ChakraImage, Link, SimpleGrid, Spacer, Text, VStack } from "@chakra-ui/react"
+import { Button, Flex, Heading, HStack, Image as ChakraImage, Link, SimpleGrid, Spacer, Text, VStack } from "@chakra-ui/react"
 import "focus-visible/dist/focus-visible"
 import NextLink from "next/link"
 import NextHead from "next/head"
@@ -13,7 +13,7 @@ export default function Component() {
   return (
     <Fragment>
   <Fragment_fd0e7cb8f9fb4669a6805377d925fba0/>
-  <Box sx={{"display": "flex", "flexDirection": "column", "alignItems": "center", "justifyContent": "center", "alignContent": "center", "backgroundColor": "#17181c", "fontFamily": "Poopins", "fontWeight": "300", "border": "0px"}}>
+  <VStack sx={{"display": "flex", "flexDirection": "column", "alignItems": "center", "justifyContent": "center", "alignContent": "center", "backgroundColor": "#17181c", "fontFamily": "Poopins", "fontWeight": "300", "border": "0px"}}>
   <Flex sx={{"display": "flex", "flexDirection": "row", "alignItems": "stretch", "justifyContent": "stretch", "alignContent": "flex-start", "gap": "12px", "width": "100%", "backgroundColor": "#17181c", "padding": "10px 20px 10px 20px", "height": "auto", "position": "sticky", "top": "0px", "left": "0px", "align": "center", "opacity": "0.9", "borderBottom": "1px solid #ffffff"}}>
   <Flex align={`center`} sx={{"fontFamily": "Comfortaa", "fontSize": "1em", "fontWeight": "bold"}}>
   <Text as={`span`} sx={{"color": "#60a4fa"}}>
@@ -73,94 +73,38 @@ export default function Component() {
 </Button>
 </Flex>
 </Flex>
-  <Box sx={{"display": "flex", "flexDirection": "column", "alignItems": "stretch", "justifyContent": "flex-start", "alignContent": "flex-start", "maxWidth": "1500px", "backgroundColor": "#17181c", "gap": "100px", "margin": "0px 12px", "border": "0px", "borderRadius": "0px"}}>
-  <Box>
-  <Box sx={{"display": ["none", "none", "none", "block"]}}>
-  <Box sx={{"display": "flex", "flexDirection": "row", "alignItems": "center", "alignContent": "flex-start", "marginTop": "256px", "gap": "200px", "border": "0px", "borderRadius": "0px"}}>
-  <VStack sx={{"display": "flex", "flexDirection": "column", "alignItems": "flex-start", "justifyContent": "flex-start", "alignContent": "flex-start", "border": "0px", "borderRadius": "0px"}}>
-  <Heading sx={{"color": "#60a4fa", "fontSize": "3em", "fontWeight": "bold", "marginBottom": "12px", "border": "0px", "borderRadius": "0px"}}>
-  {`MaximoFN`}
+  <VStack sx={{"backgroundColor": "#17181c", "fontColor": "#ffffff"}}>
+  <Heading sx={{"fontColor": "#ffffff"}}>
+  {`Consideraciones previas`}
 </Heading>
-  <Flex>
-  <Box sx={{"color": "#d1d1d1", "fontSize": "2em", "fontWeight": "bold", "marginBottom": "8px", "border": "0px", "borderRadius": "0px"}}>
-  <Text as={`span`} sx={{"color": "#fc895a"}}>
-  {`Machine Learning `}
-</Text>
-  {`Engineer. Visión por computador y LLMs.`}
-</Box>
-</Flex>
-  <Flex sx={{"display": "flex", "flexDirection": "column", "color": "#d1d1d1", "fontSize": "1.5em", "marginBottom": "8px", "gap": "6px", "border": "0px", "borderRadius": "0px"}}>
   <Text>
-  {`+5 años de experiencia en inteligencia artificial.`}
+  {`Se entenderá por usuario toda persona que navegue en el sitio web https://maximofn.com en lo adelante, simplemente el sitio web.`}
 </Text>
-  <Box>
-  {`Optimización de modelos con `}
-  <Text as={`span`} sx={{"color": "#0ca470"}}>
-  {`TensorRT`}
+  <Text>
+  {`Se entenderá por editor el dueño del sitio web, quien es Máximo Fernández Núñez y está identificado en el aviso legal.`}
 </Text>
-  {`. Experiencia en dispositivos `}
-  <Text as={`span`} sx={{"color": "#0ca470"}}>
-  {`Jetson`}
+  <Text>
+  {`Las cookies utilizadas en el navegador del usuario se han instalado con su autorización. Si en algún momento desea revocar esta autorización, podrá hacerlo sin obstáculo alguno. Para ello puede visualizar la sección Desactivación o eliminación de cookies, que se encuentra descrita en estas políticas.`}
 </Text>
-</Box>
-</Flex>
-</VStack>
-  <Box>
-  <Box sx={{"display": ["block", "block", "block", "none"]}}>
-  <Center>
-  <ChakraImage src={`maximo-0014.webp`} sx={{"width": "200px", "borderRadius": "5%", "justifyContent": "center"}}/>
-</Center>
-</Box>
-  <Box sx={{"display": ["none", "none", "none", "block"]}}>
-  <ChakraImage src={`maximo-0014.webp`} sx={{"width": "300px", "borderRadius": "5%"}}/>
-</Box>
-</Box>
-</Box>
-</Box>
-  <Box sx={{"display": ["block", "block", "block", "none"]}}>
-  <Box sx={{"display": "flex", "flexDirection": "column", "alignItems": "stretch", "justifyContent": "stretch", "alignContent": "stretch", "marginTop": "12px", "border": "0px", "borderRadius": "0px"}}>
-  <Box>
-  <Box sx={{"display": ["block", "block", "block", "none"]}}>
-  <Center>
-  <ChakraImage src={`maximo-0014.webp`} sx={{"width": "200px", "borderRadius": "5%", "justifyContent": "center"}}/>
-</Center>
-</Box>
-  <Box sx={{"display": ["none", "none", "none", "block"]}}>
-  <ChakraImage src={`maximo-0014.webp`} sx={{"width": "300px", "borderRadius": "5%"}}/>
-</Box>
-</Box>
-  <VStack sx={{"display": "flex", "flexDirection": "column", "alignItems": "flex-start", "justifyContent": "flex-start", "alignContent": "flex-start", "border": "0px", "borderRadius": "0px"}}>
-  <Heading sx={{"color": "#60a4fa", "fontSize": "3em", "fontWeight": "bold", "marginBottom": "12px", "border": "0px", "borderRadius": "0px"}}>
-  {`MaximoFN`}
+  <Text>
+  {`El Editor está en total libertad de realizar los cambios que considere pertinentes en el sitio web. Para ello podrá añadir apartados, funcionalidades o cualquier elemento que quizás pueda generar el uso de nuevas cookies, por lo que se aconseja al usuario que verifique la presente política de cookies cada vez que acceda al sitio web, para que pueda mantenerse actualizado por cualquier cambio que se pueda haber dado desde la última visita realizada.`}
+</Text>
+  <Heading sx={{"fontColor": "#ffffff"}}>
+  {`Definición y función de las cookies`}
 </Heading>
-  <Flex>
-  <Box sx={{"color": "#d1d1d1", "fontSize": "2em", "fontWeight": "bold", "marginBottom": "8px", "border": "0px", "borderRadius": "0px"}}>
-  <Text as={`span`} sx={{"color": "#fc895a"}}>
-  {`Machine Learning `}
-</Text>
-  {`Engineer. Visión por computador y LLMs.`}
-</Box>
-</Flex>
-  <Flex sx={{"display": "flex", "flexDirection": "column", "color": "#d1d1d1", "fontSize": "1.5em", "marginBottom": "8px", "gap": "6px", "border": "0px", "borderRadius": "0px"}}>
   <Text>
-  {`+5 años de experiencia en inteligencia artificial.`}
+  {`Las cookies son informaciones que se almacenan en el navegador del usuario de un sitio web para poder consultar la actividad previa que ha tenido, así como recordar ciertos datos para una próxima visita. También pueden ser llamadas web beacons, píxel, bugs, rastreadores, pero a efectos de estas políticas, se entenderán solamente como cookies.`}
 </Text>
-  <Box>
-  {`Optimización de modelos con `}
-  <Text as={`span`} sx={{"color": "#0ca470"}}>
-  {`TensorRT`}
+  <Text>
+  {`Suelen almacenar datos de carácter técnico, estadísticas de uso, personalización de perfiles, enlaces a redes sociales, administración de preferencias personales, entre otras funciones, con el fin de poder adaptar el sitio web a las necesidades y configuraciones del usuario, mejorando así la experiencia de la navegación, el no aceptarlas podría entorpecer el servicio que el sitio web desea ofrecer.`}
 </Text>
-  {`. Experiencia en dispositivos `}
-  <Text as={`span`} sx={{"color": "#0ca470"}}>
-  {`Jetson`}
+  <Text>
+  {`No son archivos de virus, spam, troyanos, gusanos, spyware, ni programación publicitaria ya sea estática en la página o en formato de ventana emergente (pop-up).`}
 </Text>
-</Box>
-</Flex>
+  <Text>
+  {`La información almacenada se refiere al navegador (Internet Explorer, Safari, Chrome, Firefox, etc.), y no al usuario, para constatar esto puede entrar en el mismo dominio web y verificar en dos navegadores diferentes que puede configurar diferentes preferencias en cada uno.`}
+</Text>
 </VStack>
-</Box>
-</Box>
-</Box>
-</Box>
   <HStack sx={{"display": "flex", "flexDirection": "row", "alignItems": "stretch", "justifyContent": "stretch", "alignContent": "flex-start", "gap": "12px", "width": "100%", "backgroundColor": "#17181c", "padding": "10px 20px 10px 20px", "marginTop": "3em", "height": "auto", "align": "center", "border": "0px", "borderRadius": "0px"}}>
   <Text sx={{"color": "#d1d1d1"}}>
   {`Política de privacidad`}
@@ -175,7 +119,7 @@ export default function Component() {
   {`Contacto`}
 </Text>
 </HStack>
-</Box>
+</VStack>
   <NextHead>
   <title>
   {`Reflex App`}

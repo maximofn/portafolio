@@ -3,7 +3,7 @@ from maximofn.styles.colors import Color
 from maximofn.styles.sizes import Size
 
 DEBUG = False
-DEBUG = True
+# DEBUG = True
 
 if DEBUG:
     border = "5px solid yellow"
@@ -29,7 +29,10 @@ presentation_style_desktop = {
 presentation_style_mobile_tablet = {
     "display": "flex",
     "flex-direction": "column",                     # direction of the main axis
-    "align-items": "center",                    # alignment of items on the cross axis
+    "align-items": "stretch",                    # alignment of items on the cross axis
+    "justify-content": "stretch",                    # alignment of content on the main axis
+    "align-content": "stretch",                      # alignment of content on the cross axis
+    "margin_top": "12px",
     
     # DEBUG
     "border": border,
@@ -40,7 +43,7 @@ presentation_text_style = {
     "display": "flex",
     "flex-direction": "column",                     # direction of the main axis
     "align-items": "flex-start",                    # alignment of items on the cross axis
-    # "justify-content": "space-between",                    # alignment of content on the main axis
+    "justify-content": "flex-start",                    # alignment of content on the main axis
     "align-content": "flex-start",                      # alignment of content on the cross axis
     
     # DEBUG

@@ -6,7 +6,6 @@ def custom_work_experience(company: str, position: str, date_start: str, date_en
         custom_work_experience_style["grid_row_start"] = row_start
         custom_work_experience_style["grid_row_end"] = row_end
         custom_work_experience_style["grid_column_start"] = column
-        print(f"row_start: {row_start}, row_end: {row_end}, column: {column}")
     if responsabilities is not None and key_accomplishments is not None:
         return rx.vstack(
                 rx.text(f"{position} en {company}", style=custom_work_experience_title_style),

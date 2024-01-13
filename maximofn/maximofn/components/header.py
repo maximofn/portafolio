@@ -4,9 +4,9 @@ from maximofn.components.link_icon import link_icon
 import maximofn.components.constants as constants
 from maximofn.components.logo import logo_long
 
-from maximofn.styles.colors import Color
 from maximofn.styles.sizes import Size
-from maximofn.styles.fonts import Font, FontWeight
+
+from maximofn.styles.header_style import header_style, header_languajes_style, header_one_languaje_style
 
 LANGUAJES = True
 DARK_LIGHT_MODE = True
@@ -30,42 +30,44 @@ def icons() -> rx.Component:
         spacing = Size.XSMALL.value,
         columns=[4, 6, 11],
         margin_right=Size.XLARGE.value,
-        align_items="flex-end",
+        align_items="center",
     )
 
 def languajes() -> rx.Component:
     return rx.flex(
-        rx.image(
-            src="languajes/english.svg",
-            width=Size.LARGE.value,
-            alt="English",
-            margin_right=Size.XSMALL.value,
+        rx.link(
+            rx.image(
+                src="languajes/english.svg",
+                width=Size.LARGE.value,
+                alt="English",
+                margin_right=Size.XSMALL.value,
+            ),
+            # href=Languaje.change_language_to_english(),
+            style=header_one_languaje_style,
         ),
-        rx.image(
-            src="languajes/portuguese.svg",
-            width=Size.LARGE.value,
-            alt="Portuguese",
+        rx.link(
+            rx.image(
+                src="languajes/portuguese.svg",
+                width=Size.LARGE.value,
+                alt="Portuguese"
+            ),
+            # href=Languaje.change_language_to_portuguese(),
+            style=header_one_languaje_style,
         ),
-        margin_right=Size.XLARGE.value,
+        style=header_languajes_style,
     )
 
 def dark_light_mode() -> rx.Component:
-    return rx.flex(
+    return rx.button(
         rx.image(
             src="icons/dark_mode.svg",
             alt="Dark mode",
         ),
+        # on_click=rx.toggle_color_mode
+        style=header_one_languaje_style,
     )
 
 def header() -> rx.Component:
-    width = "100%"
-    background_color = Color.BACKGROUND.value
-    padding = "10px 20px"
-    height = "auto"
-    position = "sticky"
-    top = "0px"
-    left = "0px"
-    align = "center"
 
     if LANGUAJES and DARK_LIGHT_MODE:
         header_component = rx.flex(
@@ -76,14 +78,7 @@ def header() -> rx.Component:
                 languajes() ,
                 dark_light_mode(),
             ),
-            width=width,
-            background_color=background_color,
-            padding=padding,
-            height=height,
-            position=position,
-            top=top,
-            left=left,
-            align=align,
+            style = header_style,
         )
     elif LANGUAJES:
         header_component = rx.flex(
@@ -94,14 +89,7 @@ def header() -> rx.Component:
                 # languajes() ,
                 dark_light_mode(),
             ),
-            width=width,
-            background_color=background_color,
-            padding=padding,
-            height=height,
-            position=position,
-            top=top,
-            left=left,
-            align=align,
+            style = header_style,
         )
     elif DARK_LIGHT_MODE:
         header_component = rx.flex(
@@ -112,14 +100,6 @@ def header() -> rx.Component:
                 languajes() ,
                 # dark_light_mode(),
             ),
-            width=width,
-            background_color=background_color,
-            padding=padding,
-            height=height,
-            position=position,
-            top=top,
-            left=left,
-            align=align,
         )
     else:
         header_component = rx.flex(
@@ -130,14 +110,7 @@ def header() -> rx.Component:
                 # languajes() ,
                 # dark_light_mode(),
             ),
-            width=width,
-            background_color=background_color,
-            padding=padding,
-            height=height,
-            position=position,
-            top=top,
-            left=left,
-            align=align,
+            style = header_style,
         )
 
     return header_component

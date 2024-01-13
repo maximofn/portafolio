@@ -8,7 +8,10 @@ def indra_trainee(row_start: int, row_end: int, column: int) -> rx.Component:
         date_start = "Enero 2013",
         date_end = "Mayo 2014",
         responsabilities = [
-            "Desarrollo hardware y software",
+            "Desarrollo hardware",
+            "Test de hardware",
+            "Documentación",
+            "Ayuda en la gestión de proyectos",
         ],
         key_accomplishments = None,
         row_start=row_start,

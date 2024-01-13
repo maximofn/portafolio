@@ -1,9 +1,10 @@
 from maximofn.styles.colors import Color
 from maximofn.styles.sizes import Size
 
-DEBUG = True
+DEBUG = False
+# DEBUG = True
 
-TIME_LINE_WIDTH = "10px"
+TIME_LINE_WIDTH = "5px"
 TIME_LINE_LINEWIDTH = "3px"
 
 if DEBUG:
@@ -27,7 +28,7 @@ work_experience_style = {
 }
 
 work_experience_title_style = {
-    "color": Color.PRIMARY.value,
+    "color": Color.BLUE.value,
     "font-size": Size.XXXLARGE.value,
     "font-weight": "bold",
 
@@ -35,13 +36,25 @@ work_experience_title_style = {
     "border": border,
 }
 
-work_experience_stack_style = {
+work_experience_stack_style_desktop = {
     "display": "grid",
     "align-content": "start",   # Top align vertically
     "align-items": "start",    # Center vertically
     "justify-content": "start",   # Left align horizontally
-    "justify-items": "center",   # Left align horizontally
+    "justify-items": "stretch",   # Left align horizontally
     "grid-template-columns": f"auto {TIME_LINE_WIDTH} auto",
+    "gap": "12px",
+
+    # DEBUG
+    "border": border,
+}
+
+work_experience_stack_style_mobile_and_tablet = {
+    "display": "flex",
+    "flex-direction": "column",                     # direction of the main axis
+    "align-items": "stretch",                    # alignment of items on the cross axis
+    "justify-content": "flex-start",                    # alignment of content on the main axis
+    "align-content": "flex-start",                  # alignment of content on the cross axis
     "gap": "12px",
 
     # DEBUG
@@ -59,34 +72,44 @@ work_experience_time_line_style = {
 }
 
 custom_work_experience_style = {
-    "display": "block",
-    "background-color": "lightgray",
+    "display": "flex",
+    "flex-direction": "column",                     # direction of the main axis
+    "align-items": "stretch",                    # alignment of items on the cross axis
+    "justify-content": "flex-start",                    # alignment of content on the main axis
+    "align-content": "stretch",                  # alignment of content on the cross axis
+
+    "gap": "6px",
+    "background-color": Color.GRAY.value,
     "border-radius": "15px",
-    "width": "600px",
-    "color": "gray",
-    "padding": "10px 10px 10px 30px",
+    "border-bottom": f"2px solid {Color.WHITE.value}",
+    "border-right": f"2px solid {Color.WHITE.value}",
+
+    "padding": "12px",
 }
 
 custom_work_experience_date_style = {
-    "float": "right",
-    "color": "white",
+    "align-self": "flex-end",
+    "color": Color.WHITE.value,
+    "font-size": Size.LARGE.value,
+    "font-weight": "bold",
 }
 
 custom_work_experience_title_style = {
-    "color": "white",
-    "font-size": "20px",
+    "color": Color.WHITE.value,
+    "font-size": Size.XXLARGE.value,
     "font-weight": "bold",
 }
 
 custom_work_experience_subtitle_style = {
-    "color": "white",
-    "font-size": "15px",
+    "color": Color.WHITE.value,
+    "font-size": Size.XLARGE.value,
     "font-weight": "bold",
 }
 
 custom_work_experience_list_style = {
-    # "color": "white",
-    # "font-size": "10px",
+    "color": Color.SECONDARY.value,
+    "font-size": Size.LARGE.value,
     # "font-weight": "bold",
     # "list-style-type": "none",
+    "padding-left": "24px",
 }

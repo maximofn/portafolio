@@ -1,8 +1,13 @@
 #!/bin/bash
 
 notebook=$1
-posts_dir="/home/wallabot/Documentos/web/portafolio/posts/"
-pages_dir="/home/wallabot/Documentos/web/portafolio/paginas"
+user=$(whoami)
+if [[ $user == *"@AEROESPACIAL.SENER"* ]]; then
+    user=${user//@AEROESPACIAL.SENER/}
+    echo $user
+fi
+posts_dir="/home/$user/Documents/web/portafolio/posts/"
+pages_dir="/home/$user/Documents/web/portafolio/paginas"
 
 # If the notebook is not specified explain how to use the script and exit
 if [[ $notebook == "" ]]; then

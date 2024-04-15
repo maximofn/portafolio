@@ -8,8 +8,8 @@ if [[ $user == *"@AEROESPACIAL.SENER"* ]]; then
     documents="Documents"
     echo $user
 fi
-posts_dir="/home/$user/Documents/web/portafolio/posts/"
-pages_dir="/home/$user/Documents/web/portafolio/paginas"
+posts_dir="/home/$user/$documents/web/portafolio/posts/"
+pages_dir="/home/$user/$documents/web/portafolio/paginas"
 
 # If the notebook is not specified explain how to use the script and exit
 if [[ $notebook == "" ]]; then

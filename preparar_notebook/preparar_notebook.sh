@@ -2,8 +2,10 @@
 
 notebook=$1
 user=$(whoami)
+documents="Documentos"
 if [[ $user == *"@AEROESPACIAL.SENER"* ]]; then
     user=${user//@AEROESPACIAL.SENER/}
+    documents="Documents"
     echo $user
 fi
 posts_dir="/home/$user/Documents/web/portafolio/posts/"

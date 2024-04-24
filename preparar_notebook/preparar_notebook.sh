@@ -53,9 +53,9 @@ if [[ $ext == "ipynb" ]]; then
                         echo "TRANSLATION DONE"
                     fi
                     echo -e "\nGENERATING HTMLs"
-                    python ../../jupyter-to-html/jupyter_to_html.py -f $name.$ext
-                    python ../../jupyter-to-html/jupyter_to_html.py -f notebooks_translated/$name"_EN".$ext
-                    python ../../jupyter-to-html/jupyter_to_html.py -f notebooks_translated/$name"_PT".$ext
+                    python3 ../../jupyter-to-html/jupyter_to_html.py -f $name.$ext
+                    python3 ../../jupyter-to-html/jupyter_to_html.py -f notebooks_translated/$name"_EN".$ext
+                    python3 ../../jupyter-to-html/jupyter_to_html.py -f notebooks_translated/$name"_PT".$ext
                     echo "HTMLs GENERATED"
                 else
                     echo "You aren't into the posts directory"

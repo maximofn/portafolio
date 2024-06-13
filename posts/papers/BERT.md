@@ -1,4 +1,4 @@
-# Pre-training of Deep Bidirectional Transformers for Language Understanding
+# BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding
 
 Este documento presenta un nuevo modelo de representación lingüística llamado BERT, que significa "Bidirectional Encoder Representations from Transformers". A diferencia de los recientes modelos de representación lingüística (Peters et al., 2018a; Radford et al., 2018), BERT está diseñado para pre-entrenar representaciones bidireccionales profundas a partir de texto sin etiquetar condicionando conjuntamente en el contexto izquierdo y derecho en todas las capas. Como resultado, el modelo BERT pre-entrenado puede ser ajustado con solo una capa de salida adicional para crear modelos de última generación para una amplia gama de tareas, como la respuesta a preguntas y la inferencia lingüística, sin modificaciones sustanciales en la arquitectura específica de la tarea.
 BERT es conceptualmente simple y empíricamente potente. Obtiene nuevos resultados de última generación en once tareas de procesamiento del lenguaje natural, incluyendo el aumento de la puntuación GLUE al 80.5% (7.7 puntos de mejora absoluta), la precisión MultiNLI al 86.7% (4.6% de mejora absoluta), el F1 de prueba de SQuAD v1.1 para la respuesta a preguntas al 93.2 (1.5 puntos de mejora absoluta) y el F1 de prueba de SQuAD v2.0 al 83.1 (5.1 puntos de mejora absoluta).
@@ -34,6 +34,8 @@ ELMo y su predecesor (Peters et al., 2017, 2018a) generalizan la investigación 
 Al igual que con los enfoques basados en características, los primeros trabajos en esta dirección solo pre-entrenaban parámetros de incrustación de palabras a partir de texto sin etiquetar (Collobert y Weston, 2008).
 
 Más recientemente, los codificadores de oraciones o documentos que producen representaciones contextuales de tokens se han pre-entrenado a partir de texto sin etiquetar y se han ajustado finamente para una tarea posterior supervisada (Dai y Le, 2015; Howard y Ruder, 2018; Radford et al., 2018). La ventaja de estos enfoques es que se necesitan pocos parámetros para aprender desde cero. Al menos en parte debido a esta ventaja, OpenAI GPT (Radford et al., 2018) logró resultados previos de última generación en muchas tareas a nivel de oración del punto de referencia GLUE (Wang et al., 2018a). El modelado del lenguaje de izquierda a derecha y los objetivos de autocodificador se han utilizado para el pre-entrenamiento de estos modelos (Howard y Ruder, 2018; Radford et al., 2018; Dai y Le, 2015).
+
+![Figure 1](https://www.catalyzex.com/_next/image?url=https%3A%2F%2Fai2-s2-public.s3.amazonaws.com%2Ffigures%2F2017-08-08%2Fdf2b0e26d0599ce3e70df8a9da02e51594e0e992%2F3-Figure1-1.png&w=640&q=75)
 
 ### 2.3 Aprendizaje por Transferencia a partir de Datos Supervisados
 
@@ -84,6 +86,8 @@ Aunque esto nos permite obtener un modelo pre-entrenado bidireccional, una desve
 
 La tarea NSP está estrechamente relacionada con los objetivos de aprendizaje de representación utilizados en Jernite et al. (2017) y Logeswaran y Lee (2018). Sin embargo, en trabajos anteriores, solo las incrustaciones de oraciones se transfieren a tareas posteriores, donde BERT transfiere todos los parámetros para inicializar los parámetros del modelo de la tarea final.
 
+![FIgure 2](https://miro.medium.com/v2/resize:fit:1400/1*VlnzVIC9ZEy4TUqlbevxFA.png)
+
 **Datos de Pre-entrenamiento** El procedimiento de pre-entrenamiento sigue en gran medida la literatura existente sobre el pre-entrenamiento de modelos de lenguaje. Para el corpus de pre-entrenamiento, usamos el BooksCorpus (800M palabras) (Zhu et al., 2015) y la Wikipedia en inglés (2,500M palabras). Para Wikipedia, solo extraemos los pasajes de texto e ignoramos las listas, las tablas y los encabezados. Es fundamental utilizar un corpus a nivel de documento en lugar de un corpus a nivel de oración barajado como el Billion Word Benchmark (Chelba et al., 2013) para extraer secuencias contiguas largas.
 
 ### 3.2 Ajuste Fino de BERT
@@ -113,6 +117,14 @@ Los resultados se presentan en la Tabla 1. Tanto BERTBASE como BERTLARGE superan
 
 Encontramos que BERTLARGE supera significativamente a BERTBASE en todas las tareas, especialmente aquellas con muy pocos datos de entrenamiento. El efecto del tamaño del modelo se explora más a fondo en la Sección 5.2.
 
+| System | MNLI-(m/mm) | QQP | QNLI | SST-2 | CoLA | STS-B | MRPC | RTE | Average |
+| - | - | - | - | - | - | - | - | - | - |
+| Pre-OpenAI SOTA | 80.6/80.1 | 66.1 | 82.3 | 93.2 | 35.0 | 81.0 | 86.0 | 61.7 | 74.0 |
+| BiLSTM+ELMo+Attn | 76.4/76.1 | 64.8 | 79.8 | 90.4 | 36.0 | 73.3 | 84.9 | 56.8 | 71.0 |
+| OpenAI GPT | 82.1/81.4 | 70.3 | 87.4 | 91.3 | 45.4 | 80.0 | 82.3 | 56.0 | 75.1 |
+| BERTBASE | 84.6/83.4 | 71.2 | 90.5 | 93.5 | 52.1 | 85.8 | 88.9 | 66.4 | 79.6 |
+| BERTLARGE | 86.7/85.9 | 72.1 | 92.7 | 94.9 | 60.5 | 86.5 | 89.3 | 70.1 | 82.1 |
+
 ### 4.2 SQuAD v1.1
 
 El Stanford Question Answering Dataset (SQuAD v1.1) es una colección de 100,000 pares de preguntas / respuestas creados por la multitud (Rajpurkar et al., 2016). Dada una pregunta y un pasaje de Wikipedia que contiene la respuesta, la tarea es predecir el intervalo de texto de respuesta en el pasaje.
@@ -127,6 +139,50 @@ Se utiliza la fórmula análoga para el final del intervalo de respuesta. La pun
 La Tabla 2 muestra las entradas principales de la tabla de clasificación, así como los resultados de los principales sistemas publicados (Seo et al., 2017; Clark y Gardner, 2018; Peters et al., 2018a; Hu et al., 2018). Los principales resultados de la tabla de clasificación de SQuAD no tienen descripciones de sistemas públicas actualizadas disponibles,11 y se les permite utilizar cualquier dato público al entrenar sus sistemas. Por lo tanto, usamos un aumento de datos modesto en nuestro sistema ajustando finamente primero en TriviaQA (Joshi et al., 2017) antes de ajustar finamente en SQuAD.
 
 Nuestro sistema de mejor rendimiento supera al sistema principal de la tabla de clasificación en +1.5 F1 en el ensamblaje y +1.3 F1 como un solo sistema. De hecho, nuestro único modelo BERT supera al sistema de ensamblaje superior en términos de puntuación F1. Sin datos de ajuste fino de TriviaQA, solo perdemos 0.1-0.4 F1, superando a todos los sistemas existentes por un amplio margen.12
+
+| System |Dev EM | Dev FI| Test EM |Test F1 |
+| - |- |- |- |- |
+| Top Leaderboard Systems (Dec 10th, 2018) | - | - | - | - |
+| Human |- |- |82.3 |91.2 |
+| #1 Ensemble - nlnet |-  |- |86.0 |91.7 |
+| #2 Ensemble - QANet |- |- |84.5 |90.5 |
+| Published |- |- |- |- |
+| BiDAF+ELMo (Single) |- |85.6 |- |85.8 |
+| R.M. Reader (Ensemble) |81.2 |87.9 |82.3 |88.5 |
+| Ours | -|- |- |- |
+| BERTBASE (Single) |80.8 |88.5 |- |- | 
+| BERTLARGE (Single) |84.1 |90.9 |- |- |
+| BERTLARGE (Ensemble) |85.8 |91.8 |- |- |
+| BERTLARGE (Sgl.+TriviaQA) |84.2 |91.1 |85.1 |91.8 |
+| BERTLARGE (Ens.+TriviaQA) |86.2 |92.2 |87.4 |93.2 |
+
+Table 2
+
+| System | Dev EM | Dev F1 | Test EM | Test F1 |
+| - | - | - | - | - |
+| Top Leaderboard Systems (Dec 10th, 2018) | - | - | - | - |
+| Human | 86.3 | 89.0 | 86.9 | 89.5 |
+| #1 Single MIR-MRC (F-Net) | -  | - | 74.8 | 78.0 |
+| #2 Single - nlnet | - | - | 74.2 | 77.1 |
+| Published | - | - | - | - |
+| unet (Ensemble) | - | - | 71.4 | 74.9 |
+| SLQA+ (Single) | -  | - | 71.4 | 74.4 |
+| Ours | - | - | - | - |
+| BERTLARGE (Single) | 78.7 | 81.9 | 80.0 | 83.1 |
+
+Table 3
+
+| System | Dev | Test |
+| - | - | - |
+| ESIM+GloVe | 51.9 | 52.7 |
+| ESIM+ELMo | 59.1 | 59.2 |
+| OpenAI GPT | - | 78.0 |
+| BERTBASE | 81.6 | - |
+| BERTLARGE | 86.6 | 86.3 |
+| Human (expert)† | - | 85.0 |
+| Human (5 annotations)† | - | 88.0 |
+
+Table 4
 
 ### 4.3 SQuAD v2.0
 
@@ -152,6 +208,14 @@ Ajustamos finamente el modelo durante 3 épocas con una tasa de aprendizaje de 2
 # 5. Estudios de Ablación
 
 En esta sección, realizamos experimentos de ablación sobre una serie de facetas de BERT para comprender mejor su importancia relativa. Se pueden encontrar estudios de ablación adicionales en el Apéndice C.
+
+| Dev Set | - | - | - | - | - | - |
+| - | - | - | - | - | - | - |
+| Tasks | MNLI-m (Acc) | QNLI (Acc) | MRPC (Acc) | SST-2 (Acc) | SQuAD (F1) |
+| BERTBASE | 84.4 | 88.4 | 86.7 | 92.7 | 88.5 |
+| No NSP | 83.9 | 84.9 | 86.5 | 92.6 | 87.9 |
+| LTR & No NSP | 82.1 | 84.3 | 77.5 | 92.1 | 77.8 |
+| + BiLSTM | 82.1 | 84.1 | 75.7 | 91.6 | 84.9 |
 
 ### 5.1 Efecto de las Tareas de Pre-entrenamiento
 
@@ -184,6 +248,17 @@ Para ablacionar el enfoque de ajuste fino, aplicamos el enfoque basado en caract
 
 Los resultados se presentan en la Tabla 7. BERTLARGE funciona de manera competitiva con los métodos de última generación. El método de mejor rendimiento concatena las representaciones de tokens de las cuatro capas ocultas superiores del Transformer pre-entrenado, que solo tiene 0.3 F1 por detrás del ajuste fino de todo el modelo. Esto demuestra que BERT es efectivo tanto para los enfoques de ajuste fino como para los basados en características.
 
+| Hyperparams Dev Set Accuracy | - | - | - | - | - | - |
+| - | - | - | - | - | - | - |
+| #L | #H | #A | LM (ppl) | MNLI-m | MRPC | SST-2 |
+| - | - | - | - | - | - |
+| 3 | 768 | 12 | 5.84 | 77.9 | 79.8 | 88.4 |
+| 6 | 768 | 3 | 5.24 | 80.6 | 82.2 | 90.7 |
+| 6 | 768 | 12 | 4.68 | 81.9 | 84.8 | 91.3 |
+| 12 | 768 | 12 | 3.99 | 84.4 | 86.7 | 92.9 |
+| 12 | 1024 | 16 | 3.54 | 85.7 | 86.9 | 93.3 |
+| 24 | 1024 | 16 | 3.23 | 86.6 | 87.8 | 93.7 |
+
 # 6. Conclusión
 
 Las mejoras empíricas recientes debido al aprendizaje por transferencia con modelos de lenguaje han demostrado que el pre-entrenamiento rico y no supervisado es una parte integral de muchos sistemas de comprensión del lenguaje. En particular, estos resultados permiten que incluso las tareas de bajos recursos se beneficien de las arquitecturas unidireccionales profundas. Nuestra principal contribución es generalizar aún más estos hallazgos a las arquitecturas bidireccionales profundas, permitiendo que el mismo modelo pre-entrenado aborde con éxito una amplia gama de tareas de PNL.
@@ -215,6 +290,8 @@ Proporcionamos ejemplos de las tareas de pre-entrenamiento en lo siguiente.
 La ventaja de este procedimiento es que el codificador Transformer no sabe qué palabras se le pedirá que prediga o cuáles se han reemplazado por palabras aleatorias, por lo que se ve obligado a mantener una representación contextual distributiva de cada token de entrada. Además, debido a que el reemplazo aleatorio solo ocurre para el 1.5% de todos los tokens (es decir, el 10% del 15%), esto no parece perjudicar la capacidad de comprensión del lenguaje del modelo. En la Sección C.2, evaluamos el impacto de este procedimiento.
 
 En comparación con el entrenamiento del modelo de lenguaje estándar, el MLM solo realiza predicciones en el 15% de los tokens en cada lote, lo que sugiere que se pueden requerir más pasos de pre-entrenamiento para que el modelo converja. En la Sección C.1, demostramos que MLM converge marginalmente más lento que un modelo de izquierda a derecha (que predice cada token), pero las mejoras empíricas del modelo MLM superan con creces el costo de entrenamiento aumentado.
+
+![FIgure 3](https://lyusungwon.github.io/assets/images/bert1.png)
 
 **Predicción de la Oración Siguiente** La tarea de predicción de la oración siguiente se puede ilustrar en los siguientes ejemplos.
 
@@ -277,6 +354,8 @@ Nuestros resultados de GLUE en la Tabla 1 se obtienen de https://gluebenchmark.c
 
 **QNLI** Question Natural Language Inference es una versión del conjunto de datos de respuesta a preguntas de Stanford (Rajpurkar et al., 2016) que se ha convertido a una tarea de clasificación binaria (Wang et al., 2018a). Los ejemplos positivos son pares (pregunta, oración) que sí contienen la respuesta correcta, y los ejemplos negativos son (pregunta, oración) del mismo párrafo que no contiene la respuesta.
 
+![FIgure 4](https://d3i71xaburhd42.cloudfront.net/df2b0e26d0599ce3e70df8a9da02e51594e0e992/15-Figure4-1.png)
+
 **SST-2** The Stanford Sentiment Treebank es una tarea de clasificación binaria de una sola oración que consiste en oraciones extraídas de reseñas de películas con anotaciones humanas de su sentimiento (Socher et al., 2013).
 
 **CoLA** The Corpus of Linguistic Acceptability es una tarea de clasificación binaria de una sola oración, donde el objetivo es predecir si una oración en inglés es lingüísticamente "aceptable" o no (Warstadt et al., 2018).
@@ -305,6 +384,8 @@ La Figura 5 presenta la precisión de MNLI Dev después del ajuste fino a partir
 ### C.2 Ablación para Diferentes Procedimientos de Enmascaramiento
 
 En la Sección 3.1, mencionamos que BERT utiliza una estrategia mixta para enmascarar los tokens objetivo al pre-entrenar con el objetivo del modelo de lenguaje enmascarado (MLM). El siguiente es un estudio de ablación para evaluar el efecto de diferentes estrategias de enmascaramiento.
+
+![FIgure5](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSDPJzUNKv8viyeY0632cgbiNVWh5jE7QvhmA&s)
 
 Tenga en cuenta que el propósito de las estrategias de enmascaramiento es reducir la discrepancia entre el pre-entrenamiento y el ajuste fino, ya que el símbolo [MASK] nunca aparece durante la etapa de ajuste fino. Informamos los resultados de Dev tanto para MNLI como para NER. Para NER, informamos tanto los enfoques de ajuste fino como los basados en características, ya que esperamos que la discrepancia se amplifique para el enfoque basado en características, ya que el modelo no tendrá la oportunidad de ajustar las representaciones.
 

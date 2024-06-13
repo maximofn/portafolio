@@ -77,7 +77,7 @@ Esta representación de la entrada nos permite combinar los beneficios empírico
 
 ### 2.3. Modelo
 
-Utilizamos una arquitectura basada en Transformer (Vaswani et al., 2017) para nuestros LM. El modelo sigue en gran medida los detalles del modelo OpenAI GPT (Radford et al., 2018) con un Parámetros Capas dmodel
+Utilizamos una arquitectura basada en Transformer (Vaswani et al., 2017) para nuestros LM. El modelo sigue en gran medida los detalles del modelo OpenAI GPT (Radford et al., 2018) con un Parámetros Capas dmodel pocas modificaciones. La normalización de la capa (Ba et al., 2016) se trasladó a la entrada de cada sub-bloque, de forma similar a una red residual de pre-activación (He et al., 2016) y se añadió una normalización de la capa adicional después del bloque de autoatención final. Se utiliza una inicialización modificada que tiene en cuenta la acumulación en la ruta residual con la profundidad del modelo. Escalamos los pesos de las capas residuales en la inicialización por un factor de 1/√N donde N es el número de capas residuales. El vocabulario se amplía a 50.257. También aumentamos el tamaño del contexto de 512 a 1024 tokens y se utiliza un tamaño de lote mayor de 512.
 
 |Parameters|Layers|d_model|
 |---|---|---|
@@ -87,8 +87,6 @@ Utilizamos una arquitectura basada en Transformer (Vaswani et al., 2017) para nu
 | 1542M| 48| 1600|
 
 Tabla 2. Hiperparámetros de arquitectura para los 4 tamaños de modelo.
-
-pocas modificaciones. La normalización de la capa (Ba et al., 2016) se trasladó a la entrada de cada sub-bloque, de forma similar a una red residual de pre-activación (He et al., 2016) y se añadió una normalización de la capa adicional después del bloque de autoatención final. Se utiliza una inicialización modificada que tiene en cuenta la acumulación en la ruta residual con la profundidad del modelo. Escalamos los pesos de las capas residuales en la inicialización por un factor de 1/√N donde N es el número de capas residuales. El vocabulario se amplía a 50.257. También aumentamos el tamaño del contexto de 512 a 1024 tokens y se utiliza un tamaño de lote mayor de 512.
 
 ## 3. Experimentos
 

@@ -259,6 +259,26 @@ Los resultados se presentan en la Tabla 7. BERTLARGE funciona de manera competit
 | 12 | 1024 | 16 | 3.54 | 85.7 | 86.9 | 93.3 |
 | 24 | 1024 | 16 | 3.23 | 86.6 | 87.8 | 93.7 |
 
+Table 6
+
+| System | Dev F1 | Test F1 |
+| - | - | - |
+|ELMo (Peters et al., 2018a) |95.7| 92.2|
+|CVT (Clark et al., 2018) |- |92.6|
+|CSE (Akbik et al., 2018) |-| 93.1|
+|Fine-tuning approach|-|-|
+|BERTLARGE |96.6 |92.8|
+|BERTBASE |96.4| 92.4|
+|Feature-based approach (BERTBASE )|-|-|
+|Embeddings |91.0 |-|
+|Second-to-Last Hidden |95.6| -|
+|Last Hidden |94.9 |-|
+|Weighted Sum Last Four Hidden |95.9| -|
+|Concat Last Four Hidden |96.1 |-|
+|Weighted Sum All 12 Layers| 95.5| -|
+
+Table 7
+
 # 6. Conclusión
 
 Las mejoras empíricas recientes debido al aprendizaje por transferencia con modelos de lenguaje han demostrado que el pre-entrenamiento rico y no supervisado es una parte integral de muchos sistemas de comprensión del lenguaje. En particular, estos resultados permiten que incluso las tareas de bajos recursos se beneficien de las arquitecturas unidireccionales profundas. Nuestra principal contribución es generalizar aún más estos hallazgos a las arquitecturas bidireccionales profundas, permitiendo que el mismo modelo pre-entrenado aborde con éxito una amplia gama de tareas de PNL.

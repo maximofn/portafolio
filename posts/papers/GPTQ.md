@@ -1,0 +1,214 @@
+# GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers
+
+## Abstract
+
+Los modelos de Transformadores Generativos Pre-Entrenados, conocidos como GPT u OPT, se distinguen por su rendimiento excepcional en tareas complejas de modelado del lenguaje, pero también por sus costes computacionales y de almacenamiento extremadamente altos. Específicamente, debido a su enorme tamaño, incluso la inferencia para grandes modelos GPT altamente precisos puede requerir múltiples GPU de alto rendimiento, lo que limita la usabilidad de dichos modelos. Si bien existe un trabajo emergente para aliviar esta presión mediante la compresión de modelos, la aplicabilidad y el rendimiento de las técnicas de compresión existentes están limitados por la escala y la complejidad de los modelos GPT. En este artículo, abordamos este desafío y proponemos GPTQ, un nuevo método de cuantización de pesos de una sola pasada basado en información aproximada de segundo orden, que es altamente preciso y altamente eficiente. Específicamente, GPTQ puede cuantificar modelos GPT con 175 mil millones de parámetros en aproximadamente cuatro horas de GPU, reduciendo el ancho de bits a 3 o 4 bits por peso, con una degradación de precisión insignificante en relación con la línea de base sin comprimir. Nuestro método más que duplica las ganancias de compresión en relación con los métodos de cuantización de una sola pasada propuestos anteriormente, preservando la precisión, lo que nos permite por primera vez ejecutar un modelo de 175 mil millones de parámetros dentro de una sola GPU para inferencia generativa. Además, también mostramos que nuestro método aún puede proporcionar una precisión razonable en el régimen de cuantización extrema, en el que los pesos se cuantifican a niveles de cuantización de 2 bits o incluso ternarios. Mostramos experimentalmente que estas mejoras se pueden aprovechar para acelerar la inferencia de extremo a extremo sobre FP16, de alrededor de 3,25 veces cuando se usan GPU de gama alta (NVIDIA A100) y 4,5 veces cuando se usan GPU más rentables (NVIDIA A6000). La implementación está disponible en https://github.com/IST-DASLab/gptq.
+
+## 1 INTRODUCCIÓN
+
+Los modelos generativos pre-entrenados de la familia Transformer (Vaswani et al., 2017), comúnmente conocidos como GPT u OPT (Radford et al., 2019; Brown et al., 2020; Zhang et al., 2022), han demostrado un rendimiento excepcional para tareas complejas de modelado del lenguaje, lo que ha generado un interés académico y práctico masivo. Un obstáculo importante para su usabilidad es el coste computacional y de almacenamiento, que se encuentra entre los más altos para los modelos conocidos. Por ejemplo, las variantes de modelo de mejor rendimiento, por ejemplo, GPT3-175B, tienen alrededor de 175 mil millones de parámetros y requieren de decenas a cientos de años de GPU para entrenar (Zhang et al., 2022). Incluso la tarea más simple de inferir sobre un modelo pre-entrenado, que es nuestro enfoque en este artículo, es muy desafiante: por ejemplo, los parámetros de GPT3-175B ocupan 326 GB (contando en múltiplos de 1024) de memoria cuando se almacenan en un formato compacto float16. Esto excede la capacidad incluso de las GPU individuales de gama más alta y, por lo tanto, la inferencia debe realizarse utilizando configuraciones más complejas y costosas, como implementaciones de múltiples GPU.
+
+Aunque un enfoque estándar para eliminar estos gastos generales es la compresión de modelos, por ejemplo, (Hoefler et al., 2021; Gholami et al., 2021), sorprendentemente se sabe poco sobre la compresión de estos modelos para inferencia. Una razón es que los métodos más complejos para la cuantización de bajo ancho de bits o la poda de modelos generalmente requieren un nuevo entrenamiento del modelo, lo que es extremadamente costoso para los modelos de miles de millones de parámetros. Alternativamente, los métodos posteriores al entrenamiento (Nagel et al., 2020; Wang et al., 2020; Hubara et al., 2020; Nahshan et al., 2021), que comprimen el modelo de una sola vez, sin volver a entrenar, serían muy atractivos. Desafortunadamente, las variantes más precisas de estos métodos (Li et al., 2021; Hubara et al., 2021; Frantar et al., 2022) son complejas y difíciles de escalar a miles de millones de parámetros (Yao et al., 2022). Hasta la fecha, solo se han aplicado variantes básicas de cuantificación de redondeo al más cercano (RTN) (Yao et al., 2022; Dettmers et al., 2022) a la escala de GPT-175B; si bien esto funciona bien para objetivos de baja compresión, por ejemplo, pesos de 8 bits, no logran preservar la precisión a tasas más altas. Por lo tanto, permanece abierto si la cuantización posterior al entrenamiento de una sola pasada a tasas de compresión más altas es generalmente factible.
+
+[Imagen con pie de foto: "Figura 1: Cuantificación de modelos OPT a 4 y modelos BLOOM a 3 bits de precisión, comparando GPTQ con la línea de base FP16 y redondeo al más cercano (RTN) (Yao et al., 2022; Dettmers et al., 2022)."]
+
+**Contribución**. En este artículo, presentamos un nuevo método de cuantización posterior al entrenamiento, llamado GPTQ,1 que es lo suficientemente eficiente como para ejecutarse en modelos con cientos de miles de millones de parámetros en como máximo unas pocas horas, y lo suficientemente preciso como para comprimir dichos modelos a 3 o 4 bits por parámetro sin pérdida significativa de precisión. A modo de ilustración, GPTQ puede cuantificar los modelos más grandes disponibles públicamente, OPT-175B y BLOOM-176B, en aproximadamente cuatro horas de GPU, con un aumento mínimo de la perplejidad, que se sabe que es una métrica de precisión muy estricta.
+
+Además, mostramos que nuestro modelo también puede proporcionar resultados sólidos en el régimen de cuantización extrema, en el que los modelos se cuantifican a 2 bits por componente, o incluso valores ternarios. En el lado práctico, desarrollamos un arnés de ejecución que nos permite ejecutar los modelos comprimidos resultantes de manera eficiente para tareas generativas. Específicamente, podemos ejecutar el modelo OPT-175B comprimido por primera vez en una sola GPU NVIDIA A100, o utilizando solo dos GPU NVIDIA A6000 más rentables. También implementamos kernels de GPU personalizados que pueden aprovechar la compresión para una carga de memoria más rápida, lo que da como resultado aceleraciones de ≈ 3,25 × cuando se usan GPU A100 y 4,5 × cuando se usan GPU A6000.
+
+Que sepamos, somos los primeros en demostrar que los modelos de lenguaje extremadamente precisos con cientos de miles de millones de parámetros se pueden cuantificar a 3-4 bits/componente: los métodos posteriores al entrenamiento anteriores solo siguen siendo precisos a 8 bits (Yao et al., 2022; Dettmers et al., 2022), mientras que las técnicas anteriores basadas en el entrenamiento solo han abordado modelos que son más pequeños en uno o dos órdenes de magnitud (Wu et al., 2022). Este alto grado de compresión puede parecer natural, ya que estas redes están sobreparametrizadas; sin embargo, como discutimos en nuestro análisis detallado de los resultados, la compresión induce compensaciones no triviales entre la precisión del modelado del lenguaje (perplejidad), el ancho de bits y el tamaño del modelo original.
+
+Esperamos que nuestro trabajo estimule más investigación en esta área y pueda ser un paso más hacia hacer que estos modelos estén disponibles para una audiencia más amplia. En términos de limitaciones, nuestro método actualmente no proporciona aceleraciones para las multiplicaciones reales, debido a la falta de compatibilidad de hardware para operandos de precisión mixta (por ejemplo, FP16 x INT4) en arquitecturas convencionales. Además, nuestros resultados actuales no incluyen la cuantificación de activación, ya que no son un cuello de botella significativo en nuestros escenarios objetivo; sin embargo, esto puede admitirse utilizando técnicas ortogonales (Yao et al., 2022).
+
+## 2 TRABAJO RELACIONADO
+
+Los métodos de cuantificación se dividen en dos categorías: cuantificación durante el entrenamiento y métodos posteriores al entrenamiento. Los primeros cuantifican modelos durante un nuevo entrenamiento y/o ajuste fino típicamente extenso, utilizando algún mecanismo de diferenciación aproximado para la operación de redondeo (Gholami et al., 2021; Nagel et al., 2021). Por el contrario, los métodos posteriores al entrenamiento ("de una sola pasada") cuantifican un modelo preentrenado utilizando recursos modestos, típicamente unos pocos miles de muestras de datos y unas pocas horas de cálculo. Los enfoques posteriores al entrenamiento son particularmente interesantes para modelos masivos, para los que el entrenamiento completo del modelo o incluso el ajuste fino puede ser costoso. Nos centramos en este escenario aquí.
+
+**Cuantización posterior al entrenamiento**. La mayoría de los métodos posteriores al entrenamiento se han centrado en modelos de visión. Por lo general, los métodos precisos operan cuantificando capas individuales o pequeños bloques de capas consecutivas. (Consulte la Sección 3 para obtener más detalles). El método AdaRound (Nagel et al., 2020) calcula un redondeo dependiente de los datos mediante el recocido de un término de penalización, que anima a los pesos a moverse hacia puntos de la cuadrícula correspondientes a los niveles de cuantificación. BitSplit (Wang et al., 2020) construye valores cuantificados bit a bit utilizando un objetivo de error cuadrático en el error residual, mientras que AdaQuant (Hubara et al., 2021) realiza una optimización directa basada en estimaciones directas. BRECQ (Li et al., 2021) introduce información de Fisher en el objetivo y optimiza conjuntamente las capas dentro de un solo bloque residual. Finalmente, la cuantización cerebral óptima (OBQ) (Frantar et al., 2022) generaliza el marco clásico de poda de peso de segundo orden Optimal Brain Surgeon (OBS) (Hassibi et al., 1993; Singh & Alistarh, 2020; Frantar et al., 2021) para aplicar a la cuantificación. OBQ cuantifica los pesos uno por uno, en orden de error de cuantificación, siempre ajustando los pesos restantes. Si bien estos enfoques pueden producir buenos resultados para modelos de hasta ≈ 100 millones de parámetros en unas pocas horas de GPU, escalarlos a redes órdenes de magnitud más grandes es un desafío.
+
+**Cuantización de modelos grandes**. Con los recientes lanzamientos de código abierto de modelos de lenguaje como BLOOM (Laurençon et al., 2022) u OPT-175B (Zhang et al., 2022), los investigadores han comenzado a desarrollar métodos asequibles para comprimir estas redes gigantes para inferencia. Si bien todos los trabajos existentes (ZeroQuant (Yao et al., 2022), LLM.int8() (Dettmers et al., 2022) y nuQmm (Park et al., 2022)) seleccionan cuidadosamente la granularidad de cuantificación, por ejemplo, vectorial, finalmente solo redondean los pesos al nivel de cuantificación más cercano (RTN), para mantener tiempos de ejecución aceptables para modelos muy grandes. ZeroQuant propone además la destilación de conocimiento por capas, similar a AdaQuant, pero el modelo más grande al que puede aplicar este enfoque tiene solo 1.300 millones de parámetros. A esta escala, ZeroQuant ya tarda ≈ 3 horas en calcularse; GPTQ cuantifica modelos 100 veces más grandes en ≈ 4 horas. LLM.int8() observa que los valores atípicos de activación en unas pocas dimensiones de características rompen la cuantificación de modelos más grandes y propone solucionar este problema manteniendo esas dimensiones con mayor precisión. Por último, nuQmm desarrolla kernels de GPU eficientes para un esquema de cuantificación específico basado en codificación binaria.
+
+En relación con esta línea de trabajo, mostramos que un cuantificador significativamente más complejo y preciso se puede implementar de manera eficiente a escala de modelo grande. Específicamente, GPTQ más que duplica la cantidad de compresión en relación con estas técnicas anteriores, con una precisión similar.
+
+## 3 ANTECEDENTES
+
+**Cuantización por capas**. En un nivel alto, nuestro método sigue la estructura de los métodos de cuantificación posteriores al entrenamiento (PTQ) de última generación (Nagel et al., 2020; Wang et al., 2020; Hubara et al., 2021; Frantar et al., 2022), realizando la cuantificación capa por capa, resolviendo un problema de reconstrucción correspondiente para cada capa. Concretamente, sea Wlos pesos correspondientes a una capa lineal y sea X` la entrada de la capa correspondiente a un pequeño conjunto de m puntos de datos que se ejecutan a través de la red. Entonces, el objetivo es encontrar una matriz de pesos cuantificados Ŵ que minimice el error cuadrático, en relación con la salida de la capa de precisión total. Formalmente, esto se puede reformular como
+
+argmin Ŵ ||WX− ŴX||22. (1)
+
+Además, de manera similar a (Nagel et al., 2020; Li et al., 2021; Frantar et al., 2022), asumimos que la cuadrícula de cuantificación para Ŵ se fija antes del proceso y que los pesos individuales pueden moverse libremente como en (Hubara et al., 2021; Frantar et al., 2022).
+
+**Cuantización cerebral óptima**. Nuestro enfoque se basa en el método de cuantización cerebral óptima (OBQ) propuesto recientemente (Frantar et al., 2022) para resolver el problema de cuantificación por capas definido anteriormente, al que realizamos una serie de modificaciones importantes, que le permiten escalar a modelos de lenguaje grandes , proporcionando más de tres órdenes de magnitud de aceleración computacional. Para ayudar a la comprensión, primero resumimos brevemente el método OBQ original.
+
+El método OBQ parte de la observación de que la Ecuación (1) se puede escribir como la suma de los errores cuadráticos, sobre cada fila de W. Luego, OBQ maneja cada fila w de forma independiente, cuantificando un peso a la vez mientras actualiza siempre todos los pesos aún no cuantificados, para compensar el error incurrido al cuantificar un solo peso. Dado que el objetivo correspondiente es una cuadrática, cuyo Hessiano es HF = 2XFX > F , donde F denota el conjunto de pesos de precisión total restantes, el peso óptimo codicioso para cuantificar a continuación, que denotamos por wq , y la actualización óptima correspondiente de todos los pesos en F , denotado por δF , están dados por las siguientes fórmulas, donde quant(w) redondea w al valor más cercano en la cuadrícula de cuantificación:
+
+wq = argminwq
+(quant(wq)− wq) 2
+[H−1F ]qq , δF = −wq − quant(wq)
+[H−1F ]qq · (H−1F ):,q. (2)
+
+OBQ cuantifica los pesos iterativamente usando estas dos ecuaciones, hasta que todos los pesos de w están cuantificados. Esto se hace de manera eficiente, evitando nuevos cálculos completos costosos de H−1, eliminando la fila y la columna q-ésimas de H, lo cual es necesario después de cuantificar wq , directamente en la inversa mediante un paso de eliminación gaussiana. Es decir, la inversa actualizada viene dada por la fórmula
+
+H−1−q = ( H−1 − 1
+[H−1]qq H−1:,q H
+−1 q,:
+) −p . (3)
+
+Este método viene con una implementación vectorizada, que maneja múltiples filas de W en paralelo. Eventualmente, el algoritmo puede lograr tiempos de ejecución razonables en modelos de tamaño mediano: por ejemplo, puede cuantificar completamente el modelo ResNet-50 (25 millones de parámetros) en ≈ 1 hora en una sola GPU, lo que está aproximadamente en línea con otros métodos posteriores al entrenamiento que logran una precisión de última generación (Frantar et al., 2022). Sin embargo, el hecho de que el tiempo de ejecución de OBQ para una matriz de drow×dcol W tenga una dependencia de entrada cúbica O(drow · d3col) significa que aplicarlo a modelos con miles de millones de parámetros es extremadamente costoso.
+
+## 4 EL ALGORITMO GPTQ
+
+**Paso 1: Información de orden arbitrario**. Como se explicó en la sección anterior, OBQ cuantifica los pesos en orden codicioso, es decir, siempre elige el peso que actualmente incurre en el menor error de cuantificación adicional. Curiosamente, encontramos que, si bien esta estrategia bastante natural parece funcionar muy bien, su mejora sobre la cuantificación de los pesos en orden arbitrario es generalmente pequeña, en particular en capas grandes y altamente parametrizadas. Lo más probable es que esto se deba a que el número ligeramente menor de pesos cuantificados con un gran error individual se ve compensado por el hecho de que esos pesos se cuantifican hacia el final del proceso, cuando solo quedan unos pocos pesos no cuantificados que se pueden ajustar para la compensación. Como discutiremos ahora, esta idea de que cualquier orden fijo puede funcionar bien, especialmente en modelos grandes, tiene ramificaciones interesantes.
+
+[Imagen con pie de foto: "Figura 2: Procedimiento de cuantificación GPTQ. Los bloques de columnas consecutivas (en negrita) se cuantifican en un paso determinado, utilizando la información hessiana inversa almacenada en la descomposición de Cholesky, y los pesos restantes (azul) se actualizan al final del paso. El procedimiento de cuantificación se aplica recursivamente dentro de cada bloque: la columna central blanca se está cuantificando actualmente."]
+
+El método OBQ original cuantifica filas de W de forma independiente, en un orden específico definido por los errores correspondientes. Por el contrario, nuestro objetivo será cuantificar los pesos de todas las filas en el mismo orden y mostraremos que esto generalmente produce resultados con un error cuadrático final que es similar a las soluciones originales. Como consecuencia, el conjunto de pesos no cuantificados F y de manera similar H−1F es siempre el mismo para todas las filas (consulte la Figura 2 para ver una ilustración). Con más detalle, esto último se debe al hecho de que HF depende solo de las entradas de la capa XF , que son las mismas para todas las filas, y no de ningún peso. Por lo tanto, tenemos que realizar la actualización de H−1F dada por la Ecuación (3) solo dcol veces, una vez por columna, en lugar de drow·dcol veces, una vez por peso. Esto reduce el tiempo de ejecución general de O(drow · d3col) a O(max {drow · d2col, d
+
+3 col}), es decir, por un factor de
+
+min {drow, dcol}. Para modelos más grandes, esta diferencia consiste en varios órdenes de magnitud. Sin embargo, antes de que este algoritmo se pueda aplicar realmente a modelos muy grandes en la práctica, es necesario abordar dos problemas importantes adicionales.
+
+**Paso 2: Actualizaciones de lotes perezosas**. Primero, una implementación directa del esquema descrito anteriormente no será rápida en la práctica, porque el algoritmo tiene una relación cálculo-acceso a memoria relativamente baja. Por ejemplo, la Ecuación (3) necesita actualizar todos los elementos de una matriz potencialmente enorme utilizando solo unos pocos FLOP para cada entrada. Estas operaciones no pueden utilizar adecuadamente las capacidades de cálculo masivas de las GPU modernas y se verán obstaculizadas por el ancho de banda de memoria significativamente menor.
+
+Afortunadamente, este problema se puede resolver mediante la siguiente observación: las decisiones de redondeo finales para la columna i solo se ven afectadas por las actualizaciones realizadas en esta misma columna, por lo que las actualizaciones de columnas posteriores son irrelevantes en este punto del proceso. Esto permite "agrupar por lotes de forma perezosa" las actualizaciones, logrando así una utilización de la GPU mucho mejor. Concretamente, aplicamos el algoritmo a B = 128 columnas a la vez, manteniendo las actualizaciones contenidas en esas columnas y el bloque B × B correspondiente de H−1 (consulte también la Figura 2). Solo una vez que un bloque se ha procesado por completo, realizamos actualizaciones globales de la totalidad de las matrices H−1 y W utilizando las versiones de múltiples pesos de las Ecuaciones (2) y (3) que se dan a continuación, donde Q denota un conjunto de índices y H−1−Q denota la matriz inversa con las filas y columnas correspondientes eliminadas:
+
+δF = −(wQ − quant(wQ))([H −1 F ]QQ)
+−1(H−1F ):,Q, (4)
+H−1−Q = ( H−1 −H−1:,Q([H
+−1]QQ) −1H−1Q,:
+) −Q
+. (5)
+
+Aunque esta estrategia no reduce la cantidad teórica de cálculo, aborda eficazmente el cuello de botella del rendimiento de la memoria. Esto proporciona un aumento de velocidad de un orden de magnitud para modelos muy grandes en la práctica, lo que lo convierte en un componente crítico de nuestro algoritmo.
+
+**Paso 3: Reformulación de Cholesky**. El problema técnico final que debemos abordar está dado por inexactitudes numéricas, que pueden convertirse en un problema importante a la escala de los modelos existentes, especialmente cuando se combinan con las actualizaciones de bloque discutidas en el paso anterior. Específicamente, puede ocurrir que la matriz H−1F se vuelva indefinida, lo que notamos puede hacer que el algoritmo actualice agresivamente los pesos restantes en direcciones incorrectas, lo que da como resultado una cuantificación arbitrariamente mala de la capa correspondiente. En la práctica, observamos que la probabilidad de que esto suceda aumenta con el tamaño del modelo: concretamente, es casi seguro que ocurre para al menos unas pocas capas en modelos que son más grandes que unos pocos miles de millones de parámetros. El problema principal parecen ser las aplicaciones repetidas de la Ecuación (5), que acumulan varios errores numéricos, especialmente a través de la inversión de matriz adicional.
+
+Para modelos más pequeños, la aplicación de amortiguación, es decir, agregar una pequeña constante λ (siempre elegimos el 1% del valor diagonal promedio) a los elementos diagonales de H parece ser suficiente para evitar problemas numéricos. Sin embargo, los modelos más grandes requieren un enfoque más sólido y general.
+
+Para abordar esto, comenzamos por señalar que la única información requerida de H−1Fq , donde Fq denota el conjunto de pesos no cuantificados al cuantificar el peso q, es la fila q, o más precisamente, los elementos en esta fila comenzando con la diagonal. La consecuencia es que podríamos calcular previamente todas estas filas utilizando un método numéricamente más estable sin un aumento significativo en el consumo de memoria. De hecho, la eliminación de filas a través de (3) para nuestro H−1 simétrico esencialmente corresponde a tomar una descomposición de Cholesky, excepto por la pequeña diferencia de que esta última divide la fila q por ([H−1Fq
+
+]qq) 1/2. Por lo tanto, podemos aprovechar los kernels de Cholesky de última generación para calcular toda la información que necesitaremos de H−1 por adelantado. En combinación con una amortiguación leve, el método resultante es lo suficientemente robusto como para ejecutarse en modelos enormes sin problemas. Como beneficio adicional, el uso de un kernel de Cholesky bien optimizado también produce una mayor aceleración. Detallamos todos los pequeños cambios necesarios para la versión de Cholesky del algoritmo a continuación.
+
+El algoritmo completo. Finalmente, presentamos el pseudocódigo completo para GPTQ en el Algoritmo 1, incluidas las optimizaciones discutidas anteriormente.
+
+Algoritmo 1 Cuantificar W dada la inversa hessiana H−1 = (2XX> + λI)−1 y el tamaño del bloque B.
+
+Q← 0drow×dcol // salida cuantificada
+E← 0drow×B // errores de cuantificación del bloque
+H−1 ← Cholesky(H−1)> // información inversa hessiana
+para i = 0, B, 2B, . . . hacer
+para j = i, . . . , i+B − 1 hacer
+Q:,j ← quant(W:,j) // cuantificar columna
+E:,j−i ← (W:,j −Q:,j) / [H
+−1]jj // error de cuantificación
+W:,j:(i+B) ←W:,j:(i+B) −E:,j−i ·H−1
+j,j:(i+B) // actualizar pesos en bloque
+fin para
+W:,(i+B): ←W:,(i+B): −E ·H−1
+i:(i+B),(i+B): // actualizar todos los pesos restantes
+fin para
+
+## 5 VALIDACIÓN EXPERIMENTAL
+
+**Descripción general**. Comenzamos nuestros experimentos validando la precisión de GPTQ en relación con otros cuantificadores precisos pero costosos, en modelos más pequeños, para los que estos métodos brindan tiempos de ejecución razonables. A continuación, examinamos el escalado del tiempo de ejecución de GPTQ para modelos muy grandes. Luego, presentamos los resultados de cuantificación de 3 y 4 bits para todas las familias de modelos BLOOM y OPT, evaluados a través de la perplejidad en tareas desafiantes de generación de lenguaje. Además, mostramos que nuestro método también es estable para la cuantificación de 2 bits cuando la granularidad se reduce a pequeños bloques de pesos consecutivos. Para complementar este análisis de perplejidad, también evaluamos los modelos cuantificados resultantes en una serie de tareas estándar de cero disparos. Finalmente, nos centramos en los dos modelos disponibles públicamente más grandes (e interesantes), Bloom-176B y OPT-175B, donde realizamos una evaluación detallada de varias tareas. Para estos modelos, también presentamos mejoras prácticas, a saber, reducir la cantidad de GPU necesarias para la inferencia, así como acelerar la velocidad de extremo a extremo para tareas generativas.
+
+**Configuración**. Implementamos GPTQ en PyTorch (Paszke et al., 2019) y trabajamos con las integraciones de HuggingFace de las familias de modelos BLOOM (Laurençon et al., 2022) y OPT (Zhang et al., 2022). Cuantificamos todos los modelos (incluidas las variantes de 175 mil millones de parámetros) utilizando una sola GPU NVIDIA A100 con 80 GB de memoria. Todos nuestros datos de calibración GPTQ constan de 128 segmentos de tokens aleatorios de 2048 del conjunto de datos C4 (Raffel et al., 2020), es decir, extractos de sitios web rastreados aleatoriamente, que representan datos de texto genéricos. Enfatizamos que esto significa que GPTQ no ve ningún dato específico de la tarea, y nuestros resultados siguen siendo realmente "cero disparos". Realizamos una cuantificación asimétrica uniforme por fila estándar en la cuadrícula mínima-máxima, similar a Dettmers et al. (2022). Se pueden encontrar detalles de evaluación adicionales en el Apéndice A.2.1.
+
+Para garantizar que todo el procedimiento de compresión se pueda realizar con significativamente menos memoria de GPU de la que se necesitaría para ejecutar el modelo de precisión total, se debe tener cierto cuidado. Específicamente, siempre cargamos un bloque Transformer, que consta de 6 capas, a la vez en la memoria de la GPU y luego acumulamos los hessianos de capa y realizamos la cuantificación. Finalmente, las entradas del bloque actual se envían a través del bloque completamente cuantificado nuevamente para producir las nuevas entradas para la cuantificación del siguiente bloque. Por lo tanto, el proceso de cuantificación no opera sobre las entradas de la capa en el modelo de precisión total, sino sobre las entradas de la capa reales en el que ya está parcialmente cuantificado. Encontramos que esto trae mejoras notables a un costo adicional insignificante.
+
+**Líneas de base**. Nuestra línea de base principal, denotada por RTN, consiste en redondear todos los pesos al valor cuantificado más cercano en exactamente la misma cuadrícula asimétrica por fila que también se usa para GPTQ, lo que significa que corresponde precisamente a la cuantificación de peso de última generación de LLM.int8(). Este es actualmente el método de elección en todos los trabajos sobre cuantificación de modelos de lenguaje muy grandes (Dettmers et al., 2022; Yao et al., 2022; Park et al., 2022): su tiempo de ejecución escala bien a redes con muchos miles de millones de parámetros , ya que simplemente realiza un redondeo directo. Como también discutiremos más adelante, los métodos más precisos, como AdaRound (Nagel et al., 2020) o BRECQ (Li et al., 2021), son actualmente demasiado lentos para modelos con muchos miles de millones de parámetros, el enfoque principal de este trabajo. Sin embargo, también mostramos que GPTQ es competitivo con tales métodos para modelos pequeños, mientras que también escala a modelos enormes como OPT-175B.
+
+**Cuantificación de modelos pequeños**. Como primer estudio de ablación, comparamos el rendimiento de GPTQ en relación con los métodos de cuantificación posterior al entrenamiento (PTQ) de última generación, en ResNet18 y ResNet50, que son puntos de referencia de PTQ estándar, en la misma configuración que (Frantar et al. , 2022). Como se puede ver en la Tabla 1, GPTQ funciona a la par a 4 bits y ligeramente peor que los métodos más precisos a 3 bits. Al mismo tiempo, supera significativamente a AdaQuant, el más rápido entre los métodos PTQ anteriores. Además, comparamos con el método OBQ codicioso completo en dos modelos de lenguaje más pequeños: BERT-base (Devlin et al., 2019) y OPT-125M. Los resultados se muestran en la Tabla 8 del Apéndice. A 4 bits, ambos métodos funcionan de manera similar, y para 3 bits, GPTQ sorprendentemente funciona un poco mejor. Sospechamos que esto se debe a que algunas de las heurísticas adicionales utilizadas por OBQ, como el redondeo temprano de valores atípicos, pueden requerir ajustes cuidadosos para un rendimiento óptimo en modelos que no son de visión. En general, GPTQ parece ser competitivo con los métodos posteriores al entrenamiento de última generación para modelos más pequeños, mientras que toma solo < 1 minuto en lugar de ≈ 1 hora. Esto permite escalar a modelos mucho más grandes.
+
+Método	RN18 - 69,76 %	RN50 - 76,13%
+4bit	3bit
+AdaRound	69.34	68.37
+AdaQuant	68.12	59.21
+BRECQ	69.37	68.47
+OBQ	69.56	68.69
+GPTQ	69.37	67.88
+
+Tabla 1: Comparación con métodos de última generación posteriores al entrenamiento para modelos de visión.
+
+**Tiempo de ejecución**. A continuación, medimos el tiempo de cuantificación del modelo completo (en una sola GPU NVIDIA A100) a través de GPTQ; los resultados se muestran en la Tabla 2. Como se puede ver, GPTQ cuantifica modelos de parámetros de 1 a 3 mil millones en cuestión de minutos y de 175 mil millones en unas pocas horas. Como referencia, el método basado en transferencia directa ZeroQuant-LKD (Yao et al., 2022) informa un tiempo de ejecución de 3 horas (en el mismo hardware) para un modelo de 1,3 mil millones, que se extrapolaría linealmente a varios cientos de horas (unas pocas semanas) para modelos de 175 mil millones. Los métodos basados en redondeo adaptativo suelen emplear muchos más pasos de SGD y, por lo tanto, serían incluso más costosos (Nagel et al., 2020; Li et al., 2021).
+
+OPT	13B	30B	66B	175B
+Tiempo	20.9m	44.9m	1.6h	4.2h
+BLOOM	1.7B	3B	7.1B	176B
+Tiempo	2.9m	5.2m	10.0m	3.8h
+
+Tabla 2: Tiempo de ejecución de GPTQ para la cuantificación completa de los 4 modelos OPT y BLOOM más grandes.
+
+**Generación de lenguaje**. Comenzamos nuestro estudio a gran escala comprimiendo todas las familias de modelos OPT y BLOOM a 3 y 4 bits. Luego, evaluamos esos modelos en varias tareas de lenguaje, incluido WikiText2 (Merity et al., 2016) (consulte la Figura 1, así como las Tablas 3 y 4), Penn Treebank (PTB) (Marcus et al., 1994) y C4 (Raffel et al., 2020) (ambos en el Apéndice A.3). Nos centramos en estas tareas basadas en la perplejidad, ya que se sabe que son particularmente sensibles a la cuantificación del modelo (Yao et al., 2022). En los modelos OPT, GPTQ supera claramente a RTN, por márgenes significativos. Por ejemplo, GPTQ pierde solo 0,03 de perplejidad a 4 bits en el modelo de 175 mil millones, mientras que RTN cae 2,2 puntos, con un rendimiento peor que el modelo de 13 mil millones de precisión total 10 veces más pequeño. A 3 bits, RTN colapsa por completo, mientras que GPTQ aún puede mantener una perplejidad razonable, en particular para modelos más grandes. BLOOM muestra un patrón similar: sin embargo, las brechas entre los métodos suelen ser un poco más pequeñas, lo que indica que esta familia de modelos podría ser más fácil de cuantificar. Una tendencia interesante (ver también la Figura 1) es que los modelos más grandes generalmente (con la excepción de OPT-66B2) parecen más fáciles de cuantificar. Esta es una buena noticia para las aplicaciones prácticas, ya que estos son los casos en los que la compresión también es más necesaria.
+
+OPT @ Bits @ 125M @ 350M @ 1.3B @ 2.7B @ 6.7B @ 13B @ 30B @ 66B @ 175B
+-------@------@---------@---------@----------@----------@----------@---------@---------@----------@----------
+completo @ 16 @ 27.65 @ 22.00 @ 14.63 @ 12.47 @ 10.86 @ 10.13 @ 9.56 @ 9.34 @ 8.34
+RTN @ 4 @ 37.28 @ 25.94 @ 48.17 @ 16.92 @ 12.10 @ 11.32 @ 10.98 @ 110. @ 10.54
+GPTQ @ 4 @ 31.12 @ 24.24 @ 15.47 @ 12.87 @ 11.39 @ 10.31 @ 9.63 @ 9.55 @ 8.37
+RTN @ 3 @ 1.3e3 @ 64.57 @ 1.3e4 @ 1.6e4 @ 5.8e3 @ 3.4e3 @ 1.6e3 @ 6.1e3 @ 7.3e3
+GPTQ @ 3 @ 53.85 @ 33.79 @ 20.97 @ 16.88 @ 14.86 @ 11.61 @ 10.27 @ 14.16 @ 8.68
+
+Tabla 3: Resultados de perplejidad OPT en WikiText2.
+
+BLOOM @ Bits @ 560M @ 1.1B @ 1.7B @ 3B @ 7.1B @ 176B
+-------@------@---------@---------@---------@---------@---------@---------
+completo @ 16 @ 22.42 @ 17.69 @ 15.39 @ 13.48 @ 11.37 @ 8.11
+RTN @ 4 @ 25.90 @ 22.00 @ 16.97 @ 14.76 @ 12.10 @ 8.37
+GPTQ @ 4 @ 24.03 @ 19.05 @ 16.48 @ 14.20 @ 11.73 @ 8.21
+RTN @ 3 @ 57.08 @ 50.19 @ 63.59 @ 39.36 @ 17.38 @ 571
+GPTQ @ 3 @ 32.31 @ 25.08 @ 21.11 @ 17.40 @ 13.47 @ 8.64
+
+Tabla 4: Resultados de perplejidad BLOOM para WikiText2.
+
+**Modelos de 175 mil millones de parámetros**. Ahora examinamos BLOOM-176B y OPT-175B, los modelos abiertos densos más grandes disponibles. La Tabla 5 resume los resultados en Wikitext-2, PTB, C4. Observamos que, con 4 bits, los modelos GPTQ alcanzan solo ≤ 0.25 menos perplejidad que las versiones de precisión total, con una gran brecha con los resultados de RTN en OPT-175B. Con 3 bits, RTN colapsa, mientras que GPTQ aún puede mantener un buen rendimiento en la mayoría de las tareas, perdiendo solo 0.3 − 0.6 puntos para una compresión de más de 5×. Observamos que la precisión de GPTQ se puede mejorar aún más mediante la agrupación de granularidad más fina (Park et al., 2022): el tamaño de grupo 1024 (≈ 0.02 bits adicionales) mejora las perplejidades en aproximadamente 0.2 en promedio y el tamaño de grupo 128 (≈ 0.15 bits adicionales) ) por otros 0.1, que está a solo 0.1− 0.3 de la precisión sin comprimir.
+
+Observamos que la agrupación interactúa muy bien con GPTQ, ya que los parámetros del grupo se pueden determinar durante el proceso de cuantificación de cada capa, utilizando siempre los pesos actualizados más recientes.
+
+Método @ Bits @ OPT-175B @ BLOOM-176B
+-------@------@------------@------------
+@ @ Wiki2 @ PTB @ C4 @ LAMB. ↑ @ Wiki2 @ PTB @ C4 @ LAMB. ↑
+-------@------@-------@-------@-------@----------@-------@-------@-------@----------
+Línea de base @ 16 @ 8.34 @ 12.01 @ 10.13 @ 75.59 @ 8.11 @ 14.59 @ 11.71 @ 67.40
+RTN @ 4 @ 10.54 @ 14.22 @ 11.61 @ 71.34 @ 8.37 @ 15.00 @ 12.04 @ 66.70
+GPTQ @ 4 @ 8.37 @ 12.26 @ 10.28 @ 76.80 @ 8.21 @ 14.75 @ 11.81 @ 67.71
+RTN @ 3 @ 7.3e3 @ 8.0e3 @ 4.6e3 @ 0 @ 571. @ 107. @ 598. @ 0.17
+GPTQ @ 3 @ 8.68 @ 12.68 @ 10.67 @ 76.19 @ 8.64 @ 15.57 @ 12.27 @ 65.10
+GPTQ @ 3/g1024 @ 8.45 @ 12.48 @ 10.47 @ 77.39 @ 8.35 @ 15.01 @ 11.98 @ 67.47
+GPTQ @ 3/g128 @ 8.45 @ 12.37 @ 10.36 @ 76.42 @ 8.26 @ 14.89 @ 11.85 @ 67.86
+
+Tabla 5: Resumen de resultados para OPT-175B y BLOOM-176B. "g1024" y "g128" denotan resultados con agrupaciones de tamaño 1024 y 128, respectivamente.
+
+**Aceleraciones prácticas**. Finalmente, estudiamos aplicaciones prácticas. Como caso de uso interesante, nos centramos en el modelo OPT-175B: cuantificado a 3 bits, este modelo ocupa aproximadamente 63 GB de memoria, incluidas las incrustaciones y la capa de salida, que se mantienen en precisión FP16 completa. Además, almacenar el historial completo de claves y valores para todas las capas, una optimización común para tareas de generación, consume otros ≈ 9 GB para el máximo de 2048 tokens. Por lo tanto, podemos ajustar todo el modelo cuantificado en una sola GPU A100 de 80 GB, que se puede ejecutar des cuantificando dinámicamente las capas a medida que se requieren durante la inferencia (el modelo no encajaría completamente con 4 bits). Como referencia, la ejecución estándar de FP16 requiere 5 GPU de 80 GB, y el cuantificador LLM.int8() de 8 bits de última generación (Dettmers et al., 2022) requiere 3 de dichas GPU.
+
+A continuación, consideramos la generación de lenguaje, una de las aplicaciones más atractivas de estos modelos, con el objetivo de reducir la latencia. A diferencia de LLM.int8(), que reduce los costos de memoria pero tiene el mismo tiempo de ejecución que la línea de base FP16, mostramos que nuestros modelos cuantificados pueden lograr aceleraciones significativas para esta aplicación. Para la generación de lenguaje, el modelo procesa y genera un token a la vez, lo que para OPT-175B puede tomar fácilmente unos pocos cientos de milisegundos por token. Aumentar la velocidad a la que el usuario recibe los resultados generados es un desafío, ya que el cálculo está dominado por productos matriz-vector. A diferencia de los productos matriz-matriz, estos están limitados principalmente por el ancho de banda de la memoria. Abordamos este problema desarrollando un kernel de producto vector-matriz de precisión total de matriz cuantificada que realiza un producto vector-matriz des cuantificando dinámicamente los pesos cuando es necesario. En particular, esto no requiere ninguna cuantificación de activación. Si bien la des cuantificación consume más cálculos, el kernel tiene que acceder a mucha menos memoria, lo que genera aceleraciones significativas, como se muestra en la Tabla 6. Observamos que casi toda la aceleración se debe a nuestros kernels, ya que los costos de comunicación son insignificantes en nuestra configuración estándar similar a HuggingFace-accelerate (consulte el Apéndice A.2.2 para obtener más detalles).
+
+GPU @ FP16 @ 3bit @ Aceleración @ Reducción de GPU
+-------@---------@--------@-------------@------------------
+A6000 - 48GB @ 589ms @ 130ms @ 4.53× @ 8→ 2
+A100 - 80GB @ 230ms @ 71ms @ 3.24× @ 5→ 1
+
+Tabla 6: Latencia promedio por token (tamaño de lote 1) al generar secuencias de longitud 128.
+
+Por ejemplo, utilizando nuestros kernels, el modelo OPT-175B de 3 bits obtenido a través de GPTQ que se ejecuta en una sola A100 es aproximadamente 3,25 veces más rápido que la versión FP16 (que se ejecuta en 5 GPU) en términos de tiempo promedio por token. Las GPU más accesibles, como la NVIDIA A6000, tienen un ancho de banda de memoria mucho menor, por lo que esta estrategia es aún más efectiva: ejecutar el modelo OPT-175B de 3 bits en 2 GPU A6000 reduce la latencia de 589 milisegundos para la inferencia FP16 (en 8 GPU) a 130 milisegundos, una reducción de latencia de 4,5×.
+
+**Tareas de cero disparos**. Si bien nuestro enfoque está en la generación de lenguaje, también evaluamos el rendimiento de los modelos cuantificados en algunas tareas populares de cero disparos, a saber, LAMBADA (Paperno et al., 2016), ARC (Fácil y Desafío) (Boratko et al., 2018) y PIQA (Tata & Patel, 2003). La Figura 3 visualiza el rendimiento del modelo en LAMBADA (y consulte también los resultados de "Lamb" en la Tabla 5). Observamos un comportamiento similar al anterior: los valores atípicos son que 1) la cuantificación parece "más fácil" en todo el espectro de modelos a 4 bits, donde incluso RTN funciona relativamente bien, y 2) a 3 bits, RTN se descompone, mientras que GPTQ aún proporciona buena precisión. Brindamos resultados adicionales en el Apéndice A.4.
+
+Figura 3: La precisión de los modelos OPT y BLOOM después de GPTQ, medida en LAMBADA.
+
+**Trucos adicionales**. Si bien nuestros experimentos hasta ahora se han centrado exclusivamente en la cuantificación vanilla por filas, queremos enfatizar que GPTQ es compatible esencialmente con cualquier elección de cuadrícula de cuantificación. Por ejemplo, se puede combinar fácilmente con la agrupación estándar (Alistarh et al., 2017; Park et al., 2022), es decir, aplicar una cuantificación independiente a grupos de g pesos consecutivos. Como se muestra en las últimas filas de la Tabla 5, esto puede brindar una precisión adicional notable para los modelos más grandes con 3 bits. Además, como se visualiza en la Figura 4, reduce significativamente las pérdidas de precisión para modelos de tamaño mediano con una precisión de 4 bits.
+
+Modelo @ FP16 @ g128 @ g64 @ g32 @ 3 bits
+-------@-------@--------@--------@--------@---------
+OPT-175B @ 8.34 @ 9.58 @ 9.18 @ 8.94 @ 8.68
+BLOOM @ 8.11 @ 9.55 @ 9.17 @ 8.83 @ 8.64
+
+Tabla 7: Resultados de cuantificación GPTQ de 2 bits con diferentes tamaños de grupo; perplejidad en WikiText2.
+
+Figura 4: GPTQ a 4 bits con diferentes tamaños de grupo en modelos OPT de tamaño mediano.
+
+**Cuantización extrema**. Por último, la agrupación también permite lograr un rendimiento razonable para la cuantificación extrema, hasta alrededor de 2 bits por componente de media. La Tabla 7 muestra los resultados en WikiText2 al cuantificar los modelos más grandes a 2 bits con diferentes tamaños de grupo. Con ≈ 2,2 bits (tamaño de grupo 128; utilizando escala FP16 y punto cero de 2 bits por grupo), el aumento de perplejidad ya es inferior a 1,5 puntos, mientras que desciende a 0,6 - 0,7 con ≈ 2,6 bits (tamaño de grupo 32), que es solo un poco peor que 3 bits vainilla y podría ser interesante para implementaciones prácticas de kernel. Además, si reducimos el tamaño del grupo a 8, podemos aplicar la cuantificación ternaria (-1, 0, +1), que logra 9,20 WikiText2 PPL en OPT-175B, una caída de menos de 1 punto. Si bien esto conduce a una peor compresión en promedio en relación con los números de 2 bits anteriores, este patrón podría implementarse de manera eficiente en hardware personalizado como FPGA. En resumen, estos resultados son un primer paso alentador para impulsar la compresión de un solo paso de alta precisión de modelos de lenguaje muy grandes, incluso por debajo de 3 bits por valor en promedio.
+
+## 6 RESUMEN Y LIMITACIONES
+
+Hemos presentado GPTQ, un método aproximado de segundo orden para cuantificar modelos de lenguaje realmente grandes. GPTQ puede comprimir con precisión algunos de los modelos disponibles públicamente más grandes hasta 3 y 4 bits, lo que conduce a mejoras significativas en la usabilidad y a aceleraciones de extremo a extremo, con una pérdida de precisión baja. Esperamos que nuestro método haga que estos modelos sean accesibles para más investigadores y profesionales. Al mismo tiempo, enfatizamos algunas limitaciones significativas: desde el punto de vista técnico, nuestro método obtiene aceleraciones al reducir el movimiento de la memoria y no conduce a reducciones computacionales. Además, nuestro estudio se centra en tareas generativas y no considera la cuantificación de activación. Estas son direcciones naturales para el trabajo futuro, y creemos que esto se puede lograr con kernels de GPU cuidadosamente diseñados y técnicas existentes (Yao et al., 2022; Wu et al., 2022).

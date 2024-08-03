@@ -145,7 +145,8 @@ def header():
     style = 'outline: 1px solid green;' if debug else ''
     style += 'display: flex; justify-content: space-between;'
     style += 'align-items: center;'
-    style += 'width: 100%;'
+    style += 'width: 99%;'
+
     return Header(
         home_link(),
         right_header(),

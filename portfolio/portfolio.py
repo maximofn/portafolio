@@ -29,8 +29,8 @@ def about_me_info():
 def about_me_photo():
     style = 'outline: 1px solid blue;' if debug else ''
     width = 291
-    height = 436
-    style += f'width: {width}px; height: {height}px;'
+    # height = 436
+    style += f'max-width: {width}px; height: auto; width: 100%;'
 
     return Img(
         src=links.maximofn_photo_path,
@@ -41,7 +41,11 @@ def about_me_photo():
 
 def about_me():
     style = 'outline: 1px solid green;' if debug else ''
-    style += 'display: flex; flex-direction: row; flex-srink: 0;'
+    style += 'display: flex;'
+    style += 'flex-direction: row;'
+    style += 'flex-wrap: wrap;'
+    style += 'flex-flow: row wrap-reverse;'
+    # style += 'flex-srink: 0;'
     style += 'justify-content: space-around;'
     style += 'align-items: flex-end;'
     style += 'gap: 10px;'
@@ -138,15 +142,17 @@ def get():
     style = 'outline: 1px solid red;' if debug else ''
     background_color = colors.colors['950']
     style += f'background-color: {background_color};'
-    style += 'width: 100%;'
+    style += 'width: 100%; height: 100%;'
     style += 'display: flex;'
     style += 'flex-direction: column;'
     style += 'justify-content: flex-start;'
     style += 'align-items: center;'
     style += 'gap: 20px;'
     style += 'color: white;'    # font color
+    style += 'margin: 0px;'
+    style += 'padding: 0px;'
 
-    return Container(
+    return Body(
         header.header(),
         about_me(),
         projects_section(),

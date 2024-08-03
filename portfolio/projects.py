@@ -15,11 +15,15 @@ def project_card(title, description, img_path, project_link=None, code_link=None
     style += 'justify-content: flex-start;'
     style += 'align-items: center;'
 
+    max_width = 400
+    image_style = f'max-width: {max_width}px; height: auto; width: 100%;'
+
     project_card_tuple = (
         H3(title),
         Img(
             src=img_path,
             alt=title,
+            style=image_style,
         ),
         P(description),
     )

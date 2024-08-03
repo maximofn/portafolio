@@ -72,6 +72,7 @@ def projects_section():
     style_projects_cards_div = 'outline: 1px solid blue;' if debug else ''
     style_projects_cards_div += 'display: flex;'
     style_projects_cards_div += 'flex-direction: row;'
+    style_projects_cards_div += 'flex-wrap: wrap;'
     style_projects_cards_div += 'justify-content: space-around;'
 
     return Section(

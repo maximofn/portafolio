@@ -1,8 +1,7 @@
 from fasthtml.common import *
-import os
 import links
 
-debug = True
+debug = False
 
 def home_link():
     style = 'outline: 1px solid red;' if debug else ''
@@ -135,25 +134,21 @@ def right_header():
     style += 'display: flex; flex-direction: row; flex-wrap: wrap; justify-content: flex-end;'
     style += 'gap: 10px;'
     style += 'align-items: center;'
-    # style += 'display: flex; justify-content: space-between;'
-    return Header(
-        Div(
-            social_links(),
-            countries_flags(),
-            id='right-header',
-            style=style,
-        ),
-    )
+    return Div(
+        social_links(),
+        countries_flags(),
+        id='right-header',
+        style=style,
+    ),
 
 def header():
     style = 'outline: 1px solid green;' if debug else ''
     style += 'display: flex; justify-content: space-between;'
     style += 'align-items: center;'
+    style += 'width: 100%;'
     return Header(
-        Div(
-            home_link(),
-            right_header(),
-            id='header',
-            style=style,
-        ),
+        home_link(),
+        right_header(),
+        id='header',
+        style=style,
     )

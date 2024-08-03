@@ -1,6 +1,6 @@
 from fasthtml.common import *
 
-debug = True
+debug = False
 
 def view_button(link):
     return Button('Ver', href=link)
@@ -20,13 +20,8 @@ def project_card(title, description, img_path, project_link=None, code_link=None
         Img(
             src=img_path,
             alt=title,
-            # style='width: 100%; height: auto;',
         ),
         P(description),
-        # if project_link:
-        #     A('Ver proyecto', href=project_link),
-        # if code_link:
-        #     A('Ver código', href=code_link),
     )
     if project_link and code_link:
         project_card_tuple += (Div(

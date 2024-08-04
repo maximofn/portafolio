@@ -11,4 +11,8 @@ colors = {
     '900': '#2d384d',
     '950': '#131720',
 }
+
+color_white = '#fafafa'
+color_grid_dark = 'rgba(79, 79, 79, 0.2)'
+color_grid_light = '#4f4f4f2e'
     

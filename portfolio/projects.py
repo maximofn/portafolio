@@ -3,10 +3,18 @@ from fasthtml.common import *
 debug = False
 
 def view_button(link):
-    return Button('Ver', href=link)
+    return Button(A('Ver', href=link, target_id='_blank'))
 
 def code_button(link):
-    return Button('Código', href=link)
+    style = 'outline: 1px solid yellow;' if debug else ''
+
+    return A(
+        'Código',
+        href=link,
+        # cls='_blank',
+        id='_blank',
+        style=style,
+    )
 
 def project_card(title, description, img_path, project_link=None, code_link=None):
     style = 'outline: 1px solid yellow;' if debug else ''
@@ -23,6 +31,7 @@ def project_card(title, description, img_path, project_link=None, code_link=None
         Img(
             src=img_path,
             alt=title,
+            loading='lazy',
             style=image_style,
         ),
         P(description),

@@ -12,6 +12,7 @@ def home_link():
         Img(
             src=links.logo_path,
             alt="MaximoFN",
+            title="MaximoFN",
             cls="home-img",
             style=f'width: {width}px; height: {height}px;',),
         href='/',
@@ -48,9 +49,13 @@ def county_flag(img_path, img_alt):
 
 def social_links():
     style = 'outline: 1px solid red;' if debug else ''
-    style += 'display: flex; align-items: center;'
+    style += 'display: flex;'
+    style += 'flex-direction: row;'
+    style += 'flex-wrap: wrap;'
+    # style += 'flex-flow: row-reverse wrap;'
+    style += 'align-items: center;'
     style += 'gap: 1px;'
-    return Nav(
+    return Div(
         social_link(
             img_path=links.huggingface_svg_path,
             img_alt='HuggingFace',
@@ -113,7 +118,7 @@ def countries_flags():
     style = 'outline: 1px solid red;' if debug else ''
     style += 'display: flex; align-items: center;'
     style += 'gap: 2px;'
-    return Nav(
+    return Div(
         county_flag(
             img_path=links.spain_flag_svg_path,
             img_alt='Spain',
@@ -131,7 +136,10 @@ def countries_flags():
 
 def right_header():
     style = 'outline: 1px solid blue;' if debug else ''
-    style += 'display: flex; flex-direction: row; flex-wrap: wrap; justify-content: flex-end;'
+    style += 'display: flex;'
+    style += 'flex-direction: row;'
+    style += 'flex-wrap: wrap;'
+    style += 'justify-content: flex-end;'
     style += 'gap: 10px;'
     style += 'align-items: center;'
     return Div(
@@ -143,9 +151,15 @@ def right_header():
 
 def header():
     style = 'outline: 1px solid green;' if debug else ''
-    style += 'display: flex; justify-content: space-between;'
+    style += 'display: flex;'
+    style += 'flex-direction: row;'
+    style += 'flex-wrap: nowrap;'
+    style += 'justify-content: space-between;'
     style += 'align-items: center;'
     style += 'width: 99%;'
+    style += 'z-index: 10;'
+    style += 'position: sticky; top: 0;'
+    style += 'backdrop-filter: blur(3px);'
 
     return Header(
         home_link(),

@@ -29,6 +29,7 @@ def post_card(title, description, img_path, post_link):
             Img(
                 src=img_path,
                 alt=title,
+                loading='lazy',
                 style=image_style,
             ),
             href=post_link,

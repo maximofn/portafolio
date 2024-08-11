@@ -52,11 +52,24 @@ if [[ $ext == "ipynb" ]]; then
                         conda deactivate
                         echo "TRANSLATION DONE"
                     fi
+
+                    # replace "execution_count": "None", by "execution_count": 99, in notebooks translated
+                    echo -e "\nREPLACING execution_count None BY 99"
+                    sed -i 's/"execution_count": "None"/"execution_count": 99/g' notebooks_translated/$name"_EN".$ext
+                    sed -i 's/"execution_count": "None"/"execution_count": 99/g' notebooks_translated/$name"_PT".$ext
+
                     echo -e "\nGENERATING HTMLs"
-                    python3 ../../jupyter-to-html/jupyter_to_html.py -f $name.$ext
-                    python3 ../../jupyter-to-html/jupyter_to_html.py -f notebooks_translated/$name"_EN".$ext
-                    python3 ../../jupyter-to-html/jupyter_to_html.py -f notebooks_translated/$name"_PT".$ext
+                    echo -e "\n\tGENERATING SPANISH HTML"
+                    jupyter nbconvert --to html --template posts_template $name.$ext
+                    echo -e "\n\tGENERATING ENGLISH HTML"
+                    jupyter nbconvert --to html --template posts_template notebooks_translated/$name"_EN".$ext
+                    echo -e "\n\tGENERATING PORTUGUESSE HTML"
+                    jupyter nbconvert --to html --template posts_template notebooks_translated/$name"_PT".$ext
                     echo "HTMLs GENERATED"
+
+                    echo -e "\nMOVING HTMLs TO THE RIGHT DIRECTORY"
+                    mv notebooks_translated/$name"_EN".html html_files/
+                    mv notebooks_translated/$name"_PT".html html_files/
                 else
                     echo "You aren't into the posts directory"
                     echo "Actual directory: $actual_dir/$dir"

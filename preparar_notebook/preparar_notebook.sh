@@ -1,12 +1,56 @@
 #!/bin/bash
 
+# Enter post title: Python
+# Enter post end url: python
+# Enter post spanish description: Introducción a Python
+# Enter post english description: Python introduction
+# Enter post portugesse description: Uma introducion a Python
+# Enter post spanish keywords: python, introducción
+# Enter post english keywords: python, introduction
+# Enter post portugesse keywords: python, introducion
+# Enter post image path: images/alfred.webp
+
 notebook=$1
-title=$2
-end_url=$3
-description=$4
-keywords=$5
-languaje=$6
-image=$7
+
+# read -p "Enter post title: " title
+# read -p "Enter post end url: " end_url
+# read -p "Enter post spanish description: " description_es
+# read -p "Enter post english description: " description_en
+# read -p "Enter post portugesse description: " description_pt
+# read -p "Enter post spanish keywords: " keywords_es
+# read -p "Enter post english keywords: " keywords_en
+# read -p "Enter post portugesse keywords: " keywords_pt
+# read -p "Enter post image path: " image
+title="Python"
+end_url="python"
+description_es="Introducción a Python"
+description_en="Python introduction"
+description_pt="Uma introducion a Python"
+keywords_es="python, introducción"
+keywords_en="python, introduction"
+keywords_pt="python, introducion"
+image="images/alfred.webp"
+
+echo -e "\nConfiguration of the post:"
+echo -e "\tTitle: $title"
+echo -e "\tEnd URL: $end_url"
+echo -e "\tSpanish Description: $description_es"
+echo -e "\tEnglish Description: $description_en"
+echo -e "\tPortugesse Description: $description_pt"
+echo -e "\tSpanish Keywords: $keywords_es"
+echo -e "\tEnglish Keywords: $keywords_en"
+echo -e "\tPortugesse Keywords: $keywords_pt"
+echo -e "\tImage Path: $image"
+read -p "Is it correct? (yes/no)" correct
+correct=$(echo $correct | tr '[:upper:]' '[:lower:]') # Change the answer to lowercase
+while [[ $correct != "yes" && $correct != "no" ]]; do
+    read -p "Is it correct? (yes/no): " correct
+    correct=$(echo $correct | tr '[:upper:]' '[:lower:]') # Change the answer to lowercase
+done
+if [[ $correct == "no" ]]; then
+    exit 1
+fi
+
 user=$(whoami)
 documents="Documentos"
 if [[ $user == *"@AEROESPACIAL.SENER"* ]]; then
@@ -78,8 +122,12 @@ if [[ $ext == "ipynb" ]]; then
                     mv notebooks_translated/$name"_EN".html html_files/
                     mv notebooks_translated/$name"_PT".html html_files/
 
-                    echo -e "\nADDING HTMLs TO ASTRO"
-                    ../preparar_notebook/add_htmls_to_astro.sh html_files/$name.html "$title" "$end_url" "$description" "$keywords" "$languaje" "$image"
+                    echo -e "\nADDING ES HTML TO ASTRO"
+                    ../preparar_notebook/add_htmls_to_astro.sh html_files/$name.html "$title" "$end_url" "$description_es" "$keywords_es" "ES" "$image"
+                    echo -e "\nADDING EN HTML TO ASTRO"
+                    ../preparar_notebook/add_htmls_to_astro.sh html_files/$name"_EN".html "$title" "$end_url" "$description_en" "$keywords_en" "EN" "$image"
+                    echo -e "\nADDING PT HTML TO ASTRO"
+                    ../preparar_notebook/add_htmls_to_astro.sh html_files/$name"_PT".html "$title" "$end_url" "$description_pt" "$keywords_pt" "PT" "$image"
                 else
                     echo "You aren't into the posts directory"
                     echo "Actual directory: $actual_dir/$dir"

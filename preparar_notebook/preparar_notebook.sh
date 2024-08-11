@@ -1,6 +1,12 @@
 #!/bin/bash
 
 notebook=$1
+title=$2
+end_url=$3
+description=$4
+keywords=$5
+languaje=$6
+image=$7
 user=$(whoami)
 documents="Documentos"
 if [[ $user == *"@AEROESPACIAL.SENER"* ]]; then
@@ -68,8 +74,12 @@ if [[ $ext == "ipynb" ]]; then
                     echo "HTMLs GENERATED"
 
                     echo -e "\nMOVING HTMLs TO THE RIGHT DIRECTORY"
+                    mv $name.html html_files/
                     mv notebooks_translated/$name"_EN".html html_files/
                     mv notebooks_translated/$name"_PT".html html_files/
+
+                    echo -e "\nADDING HTMLs TO ASTRO"
+                    ../preparar_notebook/add_htmls_to_astro.sh html_files/$name.html "$title" "$end_url" "$description" "$keywords" "$languaje" "$image"
                 else
                     echo "You aren't into the posts directory"
                     echo "Actual directory: $actual_dir/$dir"

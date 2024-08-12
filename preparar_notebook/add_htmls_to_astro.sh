@@ -35,9 +35,34 @@ const closing_brace = '}';
     theme_color={colors.background_color}
     end_url={end_url}
     image_path={image_path}
->"
+>
 
-botom_file="</PostLayout>"
+<section class=\"post-body-post\">"
+
+post_index="
+
+<div class=\"post-index\">
+
+"
+
+# Find lines starting with '<hX id="' where X is 1-6 and add them to the 'post_index' variable
+echo -e "\tFINDING HEADINGS WITH ID ATTRIBUTES:"
+while IFS= read -r line; do
+    if grep -Eq '^<h[1-6] id="' <<< "$line"; then
+        post_index+="$line"
+    fi
+done < "$html_file"
+post_index+="</div>"
+post_index+=" "
+post_index+="<div class=\"post-content\">"
+post_index+=" "
+
+botom_file="
+</div>
+
+</section>
+
+</PostLayout>"
 
 # Change all '{' to '{opening_brace}' into html_file
 echo -e "\tCHANGE ALL '{' TO '{opening_brace}' INTO $html_file"
@@ -71,8 +96,18 @@ else
     echo "$header_file" > ../portfolio/src/pages/$end_url.astro
 fi
 
-# Add html
-echo -e "\tADDING HTML TO $end_url.astro"
+# Add html index
+echo -e "\tADDING HTML INDEX TO $end_url.astro"
+if [[ $languaje == "EN" ]]; then
+    echo "$post_index" >> ../portfolio/src/pages/en/$end_url.astro
+elif [[ $languaje == "PT" ]]; then
+    echo "$post_index" >> ../portfolio/src/pages/pt-br/$end_url.astro
+else
+    echo "$post_index" >> ../portfolio/src/pages/$end_url.astro
+fi
+
+# Add html content
+echo -e "\tADDING HTML CONTENT TO $end_url.astro"
 if [[ $languaje == "EN" ]]; then
     cat $html_file >> ../portfolio/src/pages/en/$end_url.astro
 elif [[ $languaje == "PT" ]]; then

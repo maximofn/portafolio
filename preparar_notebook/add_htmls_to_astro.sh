@@ -14,6 +14,7 @@ import PostLayout from '../layouts/PostLayout.astro';
 
 const { metadata_page } = await import('../../consts.json');
 const { colors } = await import('../../consts.json');
+const { svg_paths } = await import('@portfolio/consts.json');
 
 const page_title = '$title';
 const end_url = '$end_url';
@@ -71,6 +72,11 @@ sed -i 's/{/{opening_brace}/g' $html_file
 # Change all '<section' to '\<section' into html_file
 echo -e "\tCHANGE ALL '<section' TO '\ n<section' INTO $html_file"
 sed -i 's/<section/\n<section/g' $html_file
+
+# Change all '¶' to '<img class="link-img" alt="link-svg" src={svg_paths.link_svg_path}/>' into html_file
+echo -e "\tCHANGE ALL '¶' TO '<img class="link-img" alt="link-svg" src={svg_paths.link_svg_path}/>' INTO $html_file"
+# sed -i 's/¶/<img class="link-img" alt="link-svg" src={svg_paths.link_svg_path}/>/g' $html_file
+sed -i 's/¶/<img class="link-img" alt="link-svg" src=\{svg_paths.link_svg_path\}\/>/g' $html_file
 
 # Create page
 echo -e "\tCREATING PAGE: $end_url.astro"

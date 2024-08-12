@@ -8,7 +8,7 @@
 # Enter post spanish keywords: python, introducción
 # Enter post english keywords: python, introduction
 # Enter post portugesse keywords: python, introducion
-# Enter post image path: images/alfred.webp
+# Enter post image path: /images/alfred.webp
 
 notebook=$1
 
@@ -29,7 +29,7 @@ description_pt="Uma introducion a Python"
 keywords_es="python, introducción"
 keywords_en="python, introduction"
 keywords_pt="python, introducion"
-image="images/alfred.webp"
+image="/images/alfred.webp"
 
 echo -e "\nConfiguration of the post:"
 echo -e "\tTitle: $title"

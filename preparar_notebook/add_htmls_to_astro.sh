@@ -45,28 +45,42 @@ post_index="
 
 "
 
+# exit_counter=0
 # Find lines starting with '<hX id="' where X is 1-6 and add them to the 'post_index' variable
 echo -e "\tFINDING HEADINGS WITH ID ATTRIBUTES:"
 while IFS= read -r line; do
     if grep -Eq '^<h[2-6] id="' <<< "$line"; then
-        # This is an example of line: <h2 id=2.-Tipos-de-datos-de-Python>2. Tipos de datos de Python<a class=anchor-link href=#2.-Tipos-de-datos-de-Python>¶</a></h2>
+        # This is an example of line: <h2 id="2.-%C2%BFQu%C3%A9-es-Pandas?">2. ¿Qué es Pandas?<a class="anchor-link" href="#2.-%C2%BFQu%C3%A9-es-Pandas?">¶</a></h2>
 
-        # Extract the anchor element
-        anchor=$(echo "$line" | sed -E 's/.*(<a[^>]*>.*<\/a>).*/\1/')   # In an example achor is: <a class=anchor-link href=#2.-Tipos-de-datos-de-Python>¶</a>
+        # Get the anchor element
+        anchor=$(echo "$line" | sed -E 's/.*(<a[^>]*>.*<\/a>).*/\1/')   # In an example achor is: <a class=anchor-link href=#2.-%C2%BFQu%C3%A9-es-Pandas?>¶</a>
 
-        # Extract the heading element
-        heading_element=$(echo "$line" | sed -E "s@$anchor@@")  # In an example heading_element is: <h2 id=2.-Tipos-de-datos-de-Python>2. Tipos de datos de Python</h2>
+        # Get the heading element
+        anchor_position=$(echo "$line" | awk '{print index($0, "<a")}') # In an example anchor_position is: 57
+        heading_element="${line:0:$anchor_position-1}"                  # In an example heading_element is: <h2 id=2.-%C2%BFQu%C3%A9-es-Pandas?>2. ¿Qué es Pandas?<a
+        # if heading_element ends with "<a" then remove it
+        if [[ "${heading_element: -2}" == "<a" ]]; then
+            heading_element="${heading_element:0:-2}"                   # In an example heading_element is: <h2 id=2.-%C2%BFQu%C3%A9-es-Pandas?>2. ¿Qué es Pandas?
+        # if heading_element ends with "<" then remove it
+        elif [[ "${heading_element: -1}" == "<" ]]; then
+            heading_element="${heading_element:0:-1}"                   # In an example heading_element is: <h2 id=2.-%C2%BFQu%C3%A9-es-Pandas?>2. ¿Qué es Pandas
+        fi
+        heading_element+="${line: -5}"                                  # In an example heading_element is: <h2 id=2.-%C2%BFQu%C3%A9-es-Pandas?>2. ¿Qué es Pandas?</h2>
 
         # Remove id attribute from heading element
-        first_closing_tag=$(echo "$heading_element" | awk '{print index($0, ">")}') # In an example first_closing_tag is: 35
+        first_closing_tag=$(echo "$heading_element" | awk '{print index($0, ">")}') # In an example first_closing_tag is: 36
         cleaned_heading_element="${heading_element:0:3}"                    # In an example cleaned_heading_element is: <h2
         cleaned_heading_element+=">"                                        # In an example cleaned_heading_element is: <h2>
-        cleaned_heading_element+="${heading_element:$first_closing_tag}"    # In an example cleaned_heading_element is: <h2>2. Tipos de datos de Python</h2>
+        cleaned_heading_element+="${heading_element:$first_closing_tag}"    # In an example cleaned_heading_element is: <h2>2. ¿Qué es Pandas?</h2>
 
         # Create modified line
-        modified_line="${anchor:0:-5}"              # In an example modified_line is: <a class=anchor-link href=#2.-Tipos-de-datos-de-Python>
-        modified_line+="$cleaned_heading_element"   # In an example modified_line is: <a class=anchor-link href=#2.-Tipos-de-datos-de-Python><h2>2. Tipos de datos de Python</h2>
-        modified_line+="</a>"                       # In an example modified_line is: <a class=anchor-link href=#2.-Tipos-de-datos-de-Python><h2>2. Tipos de datos de Python</h2></a>
+        modified_line="${anchor:0:-5}"              # In an example modified_line is: <a class=anchor-link href=#2.-%C2%BFQu%C3%A9-es-Pandas?>
+        modified_line+="$cleaned_heading_element"   # In an example modified_line is: <a class=anchor-link href=#2.-%C2%BFQu%C3%A9-es-Pandas?><h2>2. ¿Qué es Pandas?</h2>
+        modified_line+="</a>"                       # In an example modified_line is: <a class=anchor-link href=#2.-%C2%BFQu%C3%A9-es-Pandas?><h2>2. ¿Qué es Pandas?</h2></a>
+        # if [[ $exit_counter -eq 1 ]]; then
+            # exit 0
+        # fi
+        # exit_counter+=1
 
         # Add modified line to post_index
         post_index+="$modified_line

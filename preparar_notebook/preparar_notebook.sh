@@ -1,35 +1,25 @@
 #!/bin/bash
 
-# Enter post title: Python
-# Enter post end url: python
-# Enter post spanish description: Introducción a Python
-# Enter post english description: Python introduction
-# Enter post portugesse description: Uma introducion a Python
-# Enter post spanish keywords: python, introducción
-# Enter post english keywords: python, introduction
-# Enter post portugesse keywords: python, introducion
-# Enter post image path: /images/alfred.webp
-
 notebook=$1
 
-# read -p "Enter post title: " title
-# read -p "Enter post end url: " end_url
-# read -p "Enter post spanish description: " description_es
-# read -p "Enter post english description: " description_en
-# read -p "Enter post portugesse description: " description_pt
-# read -p "Enter post spanish keywords: " keywords_es
-# read -p "Enter post english keywords: " keywords_en
-# read -p "Enter post portugesse keywords: " keywords_pt
-# read -p "Enter post image path: " image
-title="Python"
-end_url="python"
-description_es="Introducción a Python"
-description_en="Python introduction"
-description_pt="Uma introducion a Python"
-keywords_es="python, introducción"
-keywords_en="python, introduction"
-keywords_pt="python, introducion"
-image="/images/alfred.webp"
+read -p "Enter post title: " title
+read -p "Enter post end url: " end_url
+read -p "Enter post spanish description: " description_es
+read -p "Enter post english description: " description_en
+read -p "Enter post portugesse description: " description_pt
+read -p "Enter post spanish keywords: " keywords_es
+read -p "Enter post english keywords: " keywords_en
+read -p "Enter post portugesse keywords: " keywords_pt
+read -p "Enter post image path: " image
+# title="Test"
+# end_url="test"
+# description_es="Post de test"
+# description_en="Test post"
+# description_pt="Post de teste"
+# keywords_es="test, post"
+# keywords_en="test, post"
+# keywords_pt="test, post"
+# image="/images/alfred.webp"
 
 echo -e "\nConfiguration of the post:"
 echo -e "\tTitle: $title"

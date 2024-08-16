@@ -48,8 +48,29 @@ post_index="
 # Find lines starting with '<hX id="' where X is 1-6 and add them to the 'post_index' variable
 echo -e "\tFINDING HEADINGS WITH ID ATTRIBUTES:"
 while IFS= read -r line; do
-    if grep -Eq '^<h[1-6] id="' <<< "$line"; then
-        post_index+="$line"
+    if grep -Eq '^<h[2-6] id="' <<< "$line"; then
+        # This is an example of line: <h2 id=2.-Tipos-de-datos-de-Python>2. Tipos de datos de Python<a class=anchor-link href=#2.-Tipos-de-datos-de-Python>¶</a></h2>
+
+        # Extract the anchor element
+        anchor=$(echo "$line" | sed -E 's/.*(<a[^>]*>.*<\/a>).*/\1/')   # In an example achor is: <a class=anchor-link href=#2.-Tipos-de-datos-de-Python>¶</a>
+
+        # Extract the heading element
+        heading_element=$(echo "$line" | sed -E "s@$anchor@@")  # In an example heading_element is: <h2 id=2.-Tipos-de-datos-de-Python>2. Tipos de datos de Python</h2>
+
+        # Remove id attribute from heading element
+        first_closing_tag=$(echo "$heading_element" | awk '{print index($0, ">")}') # In an example first_closing_tag is: 35
+        cleaned_heading_element="${heading_element:0:3}"                    # In an example cleaned_heading_element is: <h2
+        cleaned_heading_element+=">"                                        # In an example cleaned_heading_element is: <h2>
+        cleaned_heading_element+="${heading_element:$first_closing_tag}"    # In an example cleaned_heading_element is: <h2>2. Tipos de datos de Python</h2>
+
+        # Create modified line
+        modified_line="${anchor:0:-5}"              # In an example modified_line is: <a class=anchor-link href=#2.-Tipos-de-datos-de-Python>
+        modified_line+="$cleaned_heading_element"   # In an example modified_line is: <a class=anchor-link href=#2.-Tipos-de-datos-de-Python><h2>2. Tipos de datos de Python</h2>
+        modified_line+="</a>"                       # In an example modified_line is: <a class=anchor-link href=#2.-Tipos-de-datos-de-Python><h2>2. Tipos de datos de Python</h2></a>
+
+        # Add modified line to post_index
+        post_index+="$modified_line
+"
     fi
 done < "$html_file"
 post_index+="</div>"

@@ -1,8 +1,10 @@
 import argparse
 import json
 from PIL import Image
+import os
 
 def get_image_width_height(image_path):
+    image_path = "../portfolio/public" + image_path
     with Image.open(image_path) as img:
         width, height = img.size
     return width, height

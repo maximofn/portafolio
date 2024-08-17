@@ -12,8 +12,7 @@ image_height=$9
 image_extension=${10}
 date=${11}
 
-date_time = date + "T00:00:00Z"
-
+date_time=$date+"T00:00:00Z"
 
 header_file="---
 import PostLayout from '@layouts/PostLayout.astro';

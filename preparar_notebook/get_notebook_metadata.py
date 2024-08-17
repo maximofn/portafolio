@@ -16,7 +16,9 @@ def get_notebook_metadata(notebook_path):
     with open(notebook_path, 'r') as f:
         notebook = json.load(f)
     
-    title = "none"
+    title_es = "none"
+    title_en = "none"
+    title_pt = "none"
     end_url = "none"
     description_es = "none"
     description_en = "none"
@@ -29,7 +31,9 @@ def get_notebook_metadata(notebook_path):
 
     metadata = notebook.get('metadata', {})
     if 'maximofn' in metadata.keys():
-        if ('title' in metadata['maximofn'].keys()) and \
+        if ('title_es' in metadata['maximofn'].keys()) and \
+            ('title_en' in metadata['maximofn'].keys()) and \
+            ('title_pt' in metadata['maximofn'].keys()) and \
             ('end_url' in metadata['maximofn'].keys()) and \
             ('description_es' in metadata['maximofn'].keys()) and \
             ('description_en' in metadata['maximofn'].keys()) and \
@@ -39,7 +43,9 @@ def get_notebook_metadata(notebook_path):
             ('keywords_pt' in metadata['maximofn'].keys()) and \
             ('image' in metadata['maximofn'].keys()) and \
             ('date' in metadata['maximofn'].keys()):
-                title = metadata['maximofn']['title']
+                title_es = metadata['maximofn']['title_es']
+                title_en = metadata['maximofn']['title_en']
+                title_pt = metadata['maximofn']['title_pt']
                 end_url = metadata['maximofn']['end_url']
                 description_es = metadata['maximofn']['description_es']
                 description_en = metadata['maximofn']['description_en']
@@ -59,7 +65,9 @@ def get_notebook_metadata(notebook_path):
         print('No maximofn key in metadata')
 
     return_string = ""
-    return_string += f"{title}$"
+    return_string += f"{title_es}$"
+    return_string += f"{title_en}$"
+    return_string += f"{title_pt}$"
     return_string += f"{end_url}$"
     return_string += f"{description_es}$"
     return_string += f"{description_en}$"

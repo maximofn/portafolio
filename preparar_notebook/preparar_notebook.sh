@@ -3,10 +3,12 @@
 notebook=$1
 
 echo "GETING METADATA OF $notebook"
-IFS=$'$' read -r title end_url description_es description_en description_pt keywords_es keywords_en keywords_pt image image_width image_height image_extension date < <(python ../preparar_notebook/get_notebook_metadata.py $notebook)
+IFS=$'$' read -r title_es title_en title_pt end_url description_es description_en description_pt keywords_es keywords_en keywords_pt image image_width image_height image_extension date < <(python ../preparar_notebook/get_notebook_metadata.py $notebook)
 
 echo -e "\nConfiguration of the post:"
-echo -e "\tTitle: $title"
+echo -e "\tSpanish title: $title_es"
+echo -e "\tEnglish title: $title_en"
+echo -e "\tPortugesse title: $title_pt"
 echo -e "\tEnd URL: $end_url"
 echo -e "\tSpanish Description: $description_es"
 echo -e "\tEnglish Description: $description_en"
@@ -101,11 +103,11 @@ if [[ $ext == "ipynb" ]]; then
                     mv notebooks_translated/$name"_PT".html html_files/
 
                     echo -e "\nADDING ES HTML TO ASTRO"
-                    ../preparar_notebook/add_htmls_to_astro.sh html_files/$name.html "$title" "$end_url" "$description_es" "$keywords_es" "ES" "$image" "$image_width" "$image_height" "$image_extension" "$date"
+                    ../preparar_notebook/add_htmls_to_astro.sh html_files/$name.html "$title_es" "$end_url" "$description_es" "$keywords_es" "ES" "$image" "$image_width" "$image_height" "$image_extension" "$date"
                     echo -e "\nADDING EN HTML TO ASTRO"
-                    ../preparar_notebook/add_htmls_to_astro.sh html_files/$name"_EN".html "$title" "$end_url" "$description_en" "$keywords_en" "EN" "$image" "$image_width" "$image_height" "$image_extension" "$date"
+                    ../preparar_notebook/add_htmls_to_astro.sh html_files/$name"_EN".html "$title_en" "$end_url" "$description_en" "$keywords_en" "EN" "$image" "$image_width" "$image_height" "$image_extension" "$date"
                     echo -e "\nADDING PT HTML TO ASTRO"
-                    ../preparar_notebook/add_htmls_to_astro.sh html_files/$name"_PT".html "$title" "$end_url" "$description_pt" "$keywords_pt" "PT" "$image" "$image_width" "$image_height" "$image_extension" "$date"
+                    ../preparar_notebook/add_htmls_to_astro.sh html_files/$name"_PT".html "$title_pt" "$end_url" "$description_pt" "$keywords_pt" "PT" "$image" "$image_width" "$image_height" "$image_extension" "$date"
                 else
                     echo "You aren't into the posts directory"
                     echo "Actual directory: $actual_dir/$dir"

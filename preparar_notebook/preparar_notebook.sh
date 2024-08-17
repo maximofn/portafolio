@@ -2,24 +2,8 @@
 
 notebook=$1
 
-read -p "Enter post title: " title
-read -p "Enter post end url: " end_url
-read -p "Enter post spanish description: " description_es
-read -p "Enter post english description: " description_en
-read -p "Enter post portugesse description: " description_pt
-read -p "Enter post spanish keywords: " keywords_es
-read -p "Enter post english keywords: " keywords_en
-read -p "Enter post portugesse keywords: " keywords_pt
-read -p "Enter post image path: " image
-# title="Test"
-# end_url="test"
-# description_es="Post de test"
-# description_en="Test post"
-# description_pt="Post de teste"
-# keywords_es="test, post"
-# keywords_en="test, post"
-# keywords_pt="test, post"
-# image="/images/alfred.webp"
+echo "GETING METADATA OF $notebook"
+IFS=$'$' read -r title end_url description_es description_en description_pt keywords_es keywords_en keywords_pt image image_width image_height image_extension date < <(python ../preparar_notebook/get_notebook_metadata.py $notebook)
 
 echo -e "\nConfiguration of the post:"
 echo -e "\tTitle: $title"
@@ -31,6 +15,10 @@ echo -e "\tSpanish Keywords: $keywords_es"
 echo -e "\tEnglish Keywords: $keywords_en"
 echo -e "\tPortugesse Keywords: $keywords_pt"
 echo -e "\tImage Path: $image"
+echo -e "\tImage width: $image_width"
+echo -e "\tImage height: $image_height"
+echo -e "\tImage extension: $image_extension"
+echo -e "\tDate: $date"
 read -p "Is it correct? (yes/no)" correct
 correct=$(echo $correct | tr '[:upper:]' '[:lower:]') # Change the answer to lowercase
 while [[ $correct != "yes" && $correct != "no" ]]; do
@@ -113,11 +101,11 @@ if [[ $ext == "ipynb" ]]; then
                     mv notebooks_translated/$name"_PT".html html_files/
 
                     echo -e "\nADDING ES HTML TO ASTRO"
-                    ../preparar_notebook/add_htmls_to_astro.sh html_files/$name.html "$title" "$end_url" "$description_es" "$keywords_es" "ES" "$image"
+                    ../preparar_notebook/add_htmls_to_astro.sh html_files/$name.html "$title" "$end_url" "$description_es" "$keywords_es" "ES" "$image" "$image_width" "$image_height" "$image_extension" "$date"
                     echo -e "\nADDING EN HTML TO ASTRO"
-                    ../preparar_notebook/add_htmls_to_astro.sh html_files/$name"_EN".html "$title" "$end_url" "$description_en" "$keywords_en" "EN" "$image"
+                    ../preparar_notebook/add_htmls_to_astro.sh html_files/$name"_EN".html "$title" "$end_url" "$description_en" "$keywords_en" "EN" "$image" "$image_width" "$image_height" "$image_extension" "$date"
                     echo -e "\nADDING PT HTML TO ASTRO"
-                    ../preparar_notebook/add_htmls_to_astro.sh html_files/$name"_PT".html "$title" "$end_url" "$description_pt" "$keywords_pt" "PT" "$image"
+                    ../preparar_notebook/add_htmls_to_astro.sh html_files/$name"_PT".html "$title" "$end_url" "$description_pt" "$keywords_pt" "PT" "$image" "$image_width" "$image_height" "$image_extension" "$date"
                 else
                     echo "You aren't into the posts directory"
                     echo "Actual directory: $actual_dir/$dir"

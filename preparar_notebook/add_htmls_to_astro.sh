@@ -7,6 +7,12 @@ description=$4
 keywords=$5
 languaje=$6
 image=$7
+image_width=$8
+image_height=$9
+image_extension=${10}
+date=${11}
+
+date_time = date + "T00:00:00Z"
 
 
 header_file="---
@@ -34,7 +40,10 @@ const closing_brace = '}';
     author={metadata_page.author}
     theme_color={colors.background_color}
     end_url={end_url}
-    image_path={image_path}
+    image_path={image_path}image_width="$image_width"
+    image_height="$image_height"
+    image_extension="$image_extension"
+    article_date="$date_time"
 >
 
 <section class=\"post-body-post\">"

@@ -159,8 +159,8 @@ echo -e "\tCHANGE ALL '¶' TO '<img class="link-img" alt="link-svg" src={svg_pat
 sed -i 's/¶/<img class="link-img" alt="link-svg" src=\{svg_paths.link_svg_path\}\/>/g' $html_file
 
 # Add six spaces at start of each line in html_file
-echo -e "\tADD SIX SPACES AT START OF EACH LINE IN $html_file"
-sed -i 's/^/      /' $html_file
+# echo -e "\tADD SIX SPACES AT START OF EACH LINE IN $html_file"
+# sed -i 's/^/      /' $html_file
 
 # Add html content
 echo -e "\tADDING HTML CONTENT TO $end_url.astro"

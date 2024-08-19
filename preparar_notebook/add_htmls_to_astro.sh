@@ -18,6 +18,17 @@ date_time=$date+"T00:00:00Z"
 
 
 
+# -------------------------------- Check for new classes in the html file ---------------------
+python ../preparar_notebook/check_for_new_classes.py $html_file
+exit_code=$?
+if [[ $exit_code -ne 0 ]]; then
+    exit 1
+fi
+# --------------------------------------------------------------------------------------------
+
+
+
+
 # -------------------------------- Create astro file --------------------------------
 echo -e "\tCREATING PAGE: $end_url.astro"
 if [[ $languaje == "EN" ]]; then

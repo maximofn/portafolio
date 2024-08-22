@@ -1,6 +1,6 @@
 import argparse
 
-REPLACE = False
+REPLACE = True
 STOP_COUNTER = False
 
 start_input_code_block = """<CodeBlockInputCell
@@ -102,10 +102,6 @@ def format_code_blocks(path_file):
                                                     lines[i] = lines[i] + '\n' + end_output_code_block
 
                                                     if REPLACE:
-                                                        print("!"*100)
-                                                        print(f"i: {i}")
-                                                        print(f"j: {j}")
-                                                        print(f"k: {k}")
                                                         for pos in range(i+1, k+5):
                                                             lines[pos] = ''
                                                     else:
@@ -122,15 +118,13 @@ def format_code_blocks(path_file):
                                 # Insert the formatted code blockbefore the line 0
                                 line_i = lines[i]
                                 lines[i] = start_input_code_block
-                                for k in range(len(input_cell_code)):
-                                    lines[i] = lines[i] + '\n' + input_cell_code[k]
+                                for pos in range(len(input_cell_code)):
+                                    lines[i] = lines[i] + '\n' + input_cell_code[pos]
                                 lines[i] = lines[i] + '\n' + end_input_code_block
                                 
                                 if REPLACE:
-                                    for pos in range(i+1, j+1):
-                                        print(f"lines[{i}]: {lines[i]}")
+                                    for pos in range(i+1, j+3):
                                         lines[pos] = ''
-                                        print(f"\tlines[{i}]: {lines[i]}")
                                 else:
                                     lines[i] = lines[i] + '\n' + line_i
 

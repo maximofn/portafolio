@@ -33,6 +33,7 @@ clases = [
     'si',
     'vm',
     'w',
+    'err',
 ]
 
 def check_for_new_classes(path_file):
@@ -49,7 +50,10 @@ def check_for_new_classes(path_file):
     class_name_set
 
     # Check if there are any new classes in class_name_set that are not in clases
-    new_classes = class_name_set - set(clases)
+    new_classes = []
+    for class_name in class_name_set:
+        if class_name not in clases:
+            new_classes.append(class_name)
 
     if new_classes:
         print("""
@@ -61,7 +65,7 @@ def check_for_new_classes(path_file):
               New classes found:
               """)
         for new_class in new_classes:
-            print(new_class)
+            print("New class: ", new_class)
         exit(1)
     else:
         exit(0)

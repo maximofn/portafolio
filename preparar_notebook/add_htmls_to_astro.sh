@@ -46,6 +46,8 @@ fi
 # Header file
 header_file="---
 import PostLayout from '@layouts/PostLayout.astro';
+import CodeBlockInputCell from '@components/CodeBlockInputCell.astro';
+import CodeBlockOutputCell from '@components/CodeBlockOutputCell.astro';
 
 const { metadata_page } = await import('@portfolio/consts.json');
 const { colors } = await import('@portfolio/consts.json');
@@ -168,6 +170,194 @@ sed -i 's/<section/\n<section/g' $html_file
 # Change all '¶' to '<img class="link-img" alt="link-svg" src={svg_paths.link_svg_path}/>' into html_file
 echo -e "\tCHANGE ALL '¶' TO '<img class="link-img" alt="link-svg" src={svg_paths.link_svg_path}/>' INTO $html_file"
 sed -i 's/¶/<img class="link-img" alt="link-svg" src=\{svg_paths.link_svg_path\}\/>/g' $html_file
+
+# Change '<div class="highlight hl-ipython3">' to '<div class="highlight hl-ipython3">\n'
+echo -e "\tCHANGE '<div class=\"highlight hl-ipython3\">' TO '<div class=\"highlight hl-ipython3\"> n' INTO $html_file"
+sed -i 's/<div class=\"highlight hl-ipython3\">/<div class=\"highlight hl-ipython3\">\n/g' $html_file
+
+# CHANGES FOR PYTHON POST
+echo -e "\tCHANGES FOR PYTHON POST"
+
+# If html_file is html_files/2021-02-11-Introduccion-a-Python.html
+if [[ $html_file == "html_files/2021-02-11-Introduccion-a-Python.html" ]]; then
+    # Cahnge '<span class="se">\"' to '<span class="se">\\"'
+    echo -e "\t\tCHANGE '<span class="se">\\\"' TO '<span class="se">\\\\\"' INTO $html_file"
+    sed -i 's/<span class="se">\\"/<span class="se">\\\\"/g' $html_file
+
+    # Cahnge '<span class="se">\'' to '<span class="se">\\''
+    echo -e "\t\tCHANGE '<span class="se">\\\"' TO '<span class="se">\\\\\"' INTO $html_file"
+    line=$(grep -n "Lo mismo con la comilla simple, añadimos" $html_file | cut -d: -f1)
+    # echo -e "\t\tLINE: $line"
+    line=$((line+6))
+    # sed -n "$((line))p" $html_file
+    # Add \ into position 132 and 191 of line line
+    sed -i "${line}s/^\(.\{132\}\)/\1\\\\/" $html_file
+    sed -i "${line}s/^\(.\{191\}\)/\1\\\\/" $html_file
+    # sed -n "$((line))p" $html_file
+
+    # Cahnge 'Este es el blog de </span><span class="se">\\</span><span class="s1">MaximoFN</span><span class="se">\\</span>' to 'Este es el blog de </span><span class="se">\\\\</span><span class="s1">MaximoFN</span><span class="se">\\\\</span>'
+    echo -e "\t\tCHANGE 'Este es el blog de </span><span class=\"se\">\\</span><span class=\"s1\">MaximoFN</span><span class=\"se\">\\</span>' TO 'Este es el blog de </span><span class=\"se\">\\\\</span><span class=\"s1\">MaximoFN</span><span class=\"se\">\\\\</span>' INTO $html_file"
+    sed -i 's/Este es el blog de <\/span><span class="se">\\\\<\/span><span class="s1">MaximoFN<\/span><span class="se">\\\\<\/span>/Este es el blog de <\/span><span class="se">\\\\\\\\<\/span><span class="s1">MaximoFN<\/span><span class="se">\\\\\\\\<\/span>/g' $html_file
+
+    # Change '<span class="se">\n' to '<span class="se">\\n'
+    echo -e "\t\tCHANGE '<span class=\"se\">\\ n' TO '<span class=\"se\">\\\\ n' INTO $html_file"
+    sed -i 's/<span class="se">\\n/<span class="se">\\\\n/g' $html_file
+
+    # Change '<span class="se">\r' to '<span class="se">\\r'
+    echo -e "\t\tCHANGE '<span class=\"se\">\\ r' TO '<span class=\"se\">\\\\ r' INTO $html_file"
+    sed -i 's/<span class="se">\\r/<span class="se">\\\\r/g' $html_file
+
+    # Change '<span class="se">\t' to '<span class="se">\\t'
+    echo -e "\t\tCHANGE '<span class=\"se\">\\ t' TO '<span class=\"se\">\\\\ t' INTO $html_file"
+    sed -i 's/<span class="se">\\t/<span class="se">\\\\t/g' $html_file
+
+    # Change '<span class="se">\b' to '<span class="se">\\b'
+    echo -e "\t\tCHANGE '<span class=\"se\">\\ b' TO '<span class=\"se\">\\\\ b' INTO $html_file"
+    sed -i 's/<span class="se">\\b/<span class="se">\\\\b/g' $html_file
+
+    # Cahnge '<pre>Este es el blog de \MaximoFN\' to '<pre>Este es el blog de \\MaximoFN\\'
+    echo -e "\t\tCHANGE '<pre>Este es el blog de \MaximoFN\' TO '<pre>Este es el blog de \\MaximoFN\\' INTO $html_file"
+    sed -i 's/<pre>Este es el blog de \\MaximoFN\\/<pre>Este es el blog de \\\\MaximoFN\\\\/g' $html_file
+
+    # Change '\115\141\170\151\155\157\106\116' to '\\115\\141\\170\\151\\155\\157\\106\\116'
+    echo -e "\t\tCHANGE '\115\141\170\151\155\157\106\116' TO '\\115\\141\\170\\151\\155\\157\\106\\116' INTO $html_file"
+    sed -i 's/\\115\\141\\170\\151\\155\\157\\106\\116/\\\\115\\\\141\\\\170\\\\151\\\\155\\\\157\\\\106\\\\116/g' $html_file
+
+    # Change '\x4d\x61\x78\x69\x6d\x6f\x46\x4e' to '\\x4d\\x61\\x78\\x69\\x6d\\x6f\\x46\\x4e'
+    echo -e "\t\tCHANGE '\x4d\x61\x78\x69\x6d\x6f\x46\x4e' TO '\\x4d\\x61\\x78\\x69\\x6d\\x6f\\x46\\x4e' INTO $html_file"
+    sed -i 's/\\x4d\\x61\\x78\\x69\\x6d\\x6f\\x46\\x4e/\\\\x4d\\\\x61\\\\x78\\\\x69\\\\x6d\\\\x6f\\\\x46\\\\x4e/g' $html_file
+
+    # Change 'La variable </span><span class="se">\'</span><span class="s2">variable_no_declarada</span><span class="se">\'</span>' to 'La variable </span><span class="se">\'</span><span class="s2">variable_no_declarada</span><span class="se">\'</span>'
+    echo -e "\t\tCHANGE 'La variable </span><span class=\"se\">\\'</span><span class=\"s2\">variable_no_declarada</span><span class=\"se\">\\'</span>' TO 'La variable </span><span class=\"se\">\\\\'</span><span class=\"s2\">variable_no_declarada</span><span class=\"se\">\\\\'</span>' INTO $html_file"
+    line=$(grep -n "Se pueden definir tantos bloques de excepción como se desee, por ejemplo, si se quiere ejecutar un bloque de código especial para un tipo de error especial" $html_file | cut -d: -f1)
+    # echo -e "\t\tLINE: $line"
+    line=$((line+9))
+    # sed -n "$((line))p" $html_file
+    # Add \ into position 132 and 191 of line line
+    sed -i "${line}s/^\(.\{110\}\)/\1\\\\/" $html_file
+    sed -i "${line}s/^\(.\{182\}\)/\1\\\\/" $html_file
+    # sed -n "$((line))p" $html_file
+elif [[ $html_file == "html_files/2021-02-11-Introduccion-a-Python_EN.html" ]]; then
+    # Cahnge '<span class="se">\"' to '<span class="se">\\"'
+    echo -e "\t\tCHANGE '<span class="se">\\\"' TO '<span class="se">\\\\\"' INTO $html_file"
+    sed -i 's/<span class="se">\\"/<span class="se">\\\\"/g' $html_file
+
+    # Cahnge '<span class="se">\'' to '<span class="se">\\''
+    echo -e "\t\tCHANGE '<span class="se">\\\"' TO '<span class="se">\\\\\"' INTO $html_file"
+    line=$(grep -n "The same with the single quotation mark, we add" $html_file | cut -d: -f1)
+    # echo -e "LINE: $line"
+    line=$((line+6))
+    # sed -n "$((line))p" $html_file
+    # Add \ into position 132 and 191 of line line
+    sed -i "${line}s/^\(.\{132\}\)/\1\\\\/" $html_file
+    sed -i "${line}s/^\(.\{191\}\)/\1\\\\/" $html_file
+    # sed -n "$((line))p" $html_file
+
+    # Cahnge 'Este es el blog de </span><span class="se">\\</span><span class="s1">MaximoFN</span><span class="se">\\</span>' to 'Este es el blog de </span><span class="se">\\\\</span><span class="s1">MaximoFN</span><span class="se">\\\\</span>'
+    echo -e "\t\tCHANGE 'Este es el blog de </span><span class=\"se\">\\</span><span class=\"s1\">MaximoFN</span><span class=\"se\">\\</span>' TO 'Este es el blog de </span><span class=\"se\">\\\\</span><span class=\"s1\">MaximoFN</span><span class=\"se\">\\\\</span>' INTO $html_file"
+    sed -i 's/Este es el blog de <\/span><span class="se">\\\\<\/span><span class="s1">MaximoFN<\/span><span class="se">\\\\<\/span>/Este es el blog de <\/span><span class="se">\\\\\\\\<\/span><span class="s1">MaximoFN<\/span><span class="se">\\\\\\\\<\/span>/g' $html_file
+
+    # Change '<span class="se">\n' to '<span class="se">\\n'
+    echo -e "\t\tCHANGE '<span class=\"se\">\\ n' TO '<span class=\"se\">\\\\ n' INTO $html_file"
+    sed -i 's/<span class="se">\\n/<span class="se">\\\\n/g' $html_file
+
+    # Change '<span class="se">\r' to '<span class="se">\\r'
+    echo -e "\t\tCHANGE '<span class=\"se\">\\ r' TO '<span class=\"se\">\\\\ r' INTO $html_file"
+    sed -i 's/<span class="se">\\r/<span class="se">\\\\r/g' $html_file
+
+    # Change '<span class="se">\t' to '<span class="se">\\t'
+    echo -e "\t\tCHANGE '<span class=\"se\">\\ t' TO '<span class=\"se\">\\\\ t' INTO $html_file"
+    sed -i 's/<span class="se">\\t/<span class="se">\\\\t/g' $html_file
+
+    # Change '<span class="se">\b' to '<span class="se">\\b'
+    echo -e "\t\tCHANGE '<span class=\"se\">\\ b' TO '<span class=\"se\">\\\\ b' INTO $html_file"
+    sed -i 's/<span class="se">\\b/<span class="se">\\\\b/g' $html_file
+
+    # Cahnge '<pre>Este es el blog de \MaximoFN\' to '<pre>Este es el blog de \\MaximoFN\\'
+    echo -e "\t\tCHANGE '<pre>Este es el blog de \MaximoFN\' TO '<pre>Este es el blog de \\MaximoFN\\' INTO $html_file"
+    sed -i 's/<pre>Este es el blog de \\MaximoFN\\/<pre>Este es el blog de \\\\MaximoFN\\\\/g' $html_file
+
+    # Change '\115\141\170\151\155\157\106\116' to '\\115\\141\\170\\151\\155\\157\\106\\116'
+    echo -e "\t\tCHANGE '\115\141\170\151\155\157\106\116' TO '\\115\\141\\170\\151\\155\\157\\106\\116' INTO $html_file"
+    sed -i 's/\\115\\141\\170\\151\\155\\157\\106\\116/\\\\115\\\\141\\\\170\\\\151\\\\155\\\\157\\\\106\\\\116/g' $html_file
+
+    # Change '\x4d\x61\x78\x69\x6d\x6f\x46\x4e' to '\\x4d\\x61\\x78\\x69\\x6d\\x6f\\x46\\x4e'
+    echo -e "\t\tCHANGE '\x4d\x61\x78\x69\x6d\x6f\x46\x4e' TO '\\x4d\\x61\\x78\\x69\\x6d\\x6f\\x46\\x4e' INTO $html_file"
+    sed -i 's/\\x4d\\x61\\x78\\x69\\x6d\\x6f\\x46\\x4e/\\\\x4d\\\\x61\\\\x78\\\\x69\\\\x6d\\\\x6f\\\\x46\\\\x4e/g' $html_file
+
+    # Change 'La variable </span><span class="se">\'</span><span class="s2">variable_no_declarada</span><span class="se">\'</span>' to 'La variable </span><span class="se">\'</span><span class="s2">variable_no_declarada</span><span class="se">\'</span>'
+    echo -e "\t\tCHANGE 'La variable </span><span class=\"se\">\\'</span><span class=\"s2\">variable_no_declarada</span><span class=\"se\">\\'</span>' TO 'La variable </span><span class=\"se\">\\\\'</span><span class=\"s2\">variable_no_declarada</span><span class=\"se\">\\\\'</span>' INTO $html_file"
+    line=$(grep -n "You can define as many exception blocks as you want, for example, if you want to execute a special code block for a special error type" $html_file | cut -d: -f1)
+    # echo -e "LINE: $line"
+    line=$((line+9))
+    # sed -n "$((line))p" $html_file
+    # Add \ into position 132 and 191 of line line
+    sed -i "${line}s/^\(.\{110\}\)/\1\\\\/" $html_file
+    sed -i "${line}s/^\(.\{182\}\)/\1\\\\/" $html_file
+    # sed -n "$((line))p" $html_file
+elif [[ $html_file == "html_files/2021-02-11-Introduccion-a-Python_PT.html" ]]; then
+    # Cahnge '<span class="se">\"' to '<span class="se">\\"'
+    echo -e "\t\tCHANGE '<span class="se">\\\"' TO '<span class="se">\\\\\"' INTO $html_file"
+    sed -i 's/<span class="se">\\"/<span class="se">\\\\"/g' $html_file
+
+    # Cahnge '<span class="se">\'' to '<span class="se">\\''
+    echo -e "\t\tCHANGE '<span class="se">\\\"' TO '<span class="se">\\\\\"' INTO $html_file"
+    line=$(grep -n "O mesmo acontece com as aspas simples, adicionamos" $html_file | cut -d: -f1)
+    # echo -e "LINE: $line"
+    line=$((line+6))
+    # sed -n "$((line))p" $html_file
+    # Add \ into position 132 and 191 of line line
+    sed -i "${line}s/^\(.\{132\}\)/\1\\\\/" $html_file
+    sed -i "${line}s/^\(.\{191\}\)/\1\\\\/" $html_file
+    # sed -n "$((line))p" $html_file
+
+    # Cahnge 'Este es el blog de </span><span class="se">\\</span><span class="s1">MaximoFN</span><span class="se">\\</span>' to 'Este es el blog de </span><span class="se">\\\\</span><span class="s1">MaximoFN</span><span class="se">\\\\</span>'
+    echo -e "\t\tCHANGE 'Este es el blog de </span><span class=\"se\">\\</span><span class=\"s1\">MaximoFN</span><span class=\"se\">\\</span>' TO 'Este es el blog de </span><span class=\"se\">\\\\</span><span class=\"s1\">MaximoFN</span><span class=\"se\">\\\\</span>' INTO $html_file"
+    sed -i 's/Este es el blog de <\/span><span class="se">\\\\<\/span><span class="s1">MaximoFN<\/span><span class="se">\\\\<\/span>/Este es el blog de <\/span><span class="se">\\\\\\\\<\/span><span class="s1">MaximoFN<\/span><span class="se">\\\\\\\\<\/span>/g' $html_file
+
+    # Change '<span class="se">\n' to '<span class="se">\\n'
+    echo -e "\t\tCHANGE '<span class=\"se\">\\ n' TO '<span class=\"se\">\\\\ n' INTO $html_file"
+    sed -i 's/<span class="se">\\n/<span class="se">\\\\n/g' $html_file
+
+    # Change '<span class="se">\r' to '<span class="se">\\r'
+    echo -e "\t\tCHANGE '<span class=\"se\">\\ r' TO '<span class=\"se\">\\\\ r' INTO $html_file"
+    sed -i 's/<span class="se">\\r/<span class="se">\\\\r/g' $html_file
+
+    # Change '<span class="se">\t' to '<span class="se">\\t'
+    echo -e "\t\tCHANGE '<span class=\"se\">\\ t' TO '<span class=\"se\">\\\\ t' INTO $html_file"
+    sed -i 's/<span class="se">\\t/<span class="se">\\\\t/g' $html_file
+
+    # Change '<span class="se">\b' to '<span class="se">\\b'
+    echo -e "\t\tCHANGE '<span class=\"se\">\\ b' TO '<span class=\"se\">\\\\ b' INTO $html_file"
+    sed -i 's/<span class="se">\\b/<span class="se">\\\\b/g' $html_file
+
+    # Cahnge '<pre>Este es el blog de \MaximoFN\' to '<pre>Este es el blog de \\MaximoFN\\'
+    echo -e "\t\tCHANGE '<pre>Este es el blog de \MaximoFN\' TO '<pre>Este es el blog de \\MaximoFN\\' INTO $html_file"
+    sed -i 's/<pre>Este es el blog de \\MaximoFN\\/<pre>Este es el blog de \\\\MaximoFN\\\\/g' $html_file
+
+    # Change '\115\141\170\151\155\157\106\116' to '\\115\\141\\170\\151\\155\\157\\106\\116'
+    echo -e "\t\tCHANGE '\115\141\170\151\155\157\106\116' TO '\\115\\141\\170\\151\\155\\157\\106\\116' INTO $html_file"
+    sed -i 's/\\115\\141\\170\\151\\155\\157\\106\\116/\\\\115\\\\141\\\\170\\\\151\\\\155\\\\157\\\\106\\\\116/g' $html_file
+
+    # Change '\x4d\x61\x78\x69\x6d\x6f\x46\x4e' to '\\x4d\\x61\\x78\\x69\\x6d\\x6f\\x46\\x4e'
+    echo -e "\t\tCHANGE '\x4d\x61\x78\x69\x6d\x6f\x46\x4e' TO '\\x4d\\x61\\x78\\x69\\x6d\\x6f\\x46\\x4e' INTO $html_file"
+    sed -i 's/\\x4d\\x61\\x78\\x69\\x6d\\x6f\\x46\\x4e/\\\\x4d\\\\x61\\\\x78\\\\x69\\\\x6d\\\\x6f\\\\x46\\\\x4e/g' $html_file
+
+    # Change 'La variable </span><span class="se">\'</span><span class="s2">variable_no_declarada</span><span class="se">\'</span>' to 'La variable </span><span class="se">\'</span><span class="s2">variable_no_declarada</span><span class="se">\'</span>'
+    echo -e "\t\tCHANGE 'La variable </span><span class=\"se\">\\'</span><span class=\"s2\">variable_no_declarada</span><span class=\"se\">\\'</span>' TO 'La variable </span><span class=\"se\">\\\\'</span><span class=\"s2\">variable_no_declarada</span><span class=\"se\">\\\\'</span>' INTO $html_file"
+    line=$(grep -n "Você pode definir quantos blocos de exceção desejar, por exemplo, se quiser executar um bloco de código especial para um tipo especial de erro" $html_file | cut -d: -f1)
+    # echo -e "LINE: $line"
+    line=$((line+9))
+    # sed -n "$((line))p" $html_file
+    # Add \ into position 132 and 191 of line line
+    sed -i "${line}s/^\(.\{110\}\)/\1\\\\/" $html_file
+    sed -i "${line}s/^\(.\{182\}\)/\1\\\\/" $html_file
+    # sed -n "$((line))p" $html_file
+fi
+
+# Replace code cells with CodeBlockInputCell and CodeBlockOutputCell component
+echo -e "\tREPLACE CODE CELLS WITH CodeBlockInputCell and CodeBlockOutputCell COMPONENT INTO $html_file"
+python ../preparar_notebook/format_code_blocks.py $html_file
 
 # Add six spaces at start of each line in html_file
 # echo -e "\tADD SIX SPACES AT START OF EACH LINE IN $html_file"

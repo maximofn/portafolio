@@ -360,8 +360,8 @@ echo -e "\tREPLACE CODE CELLS WITH CodeBlockInputCell and CodeBlockOutputCell CO
 python ../preparar_notebook/format_code_blocks.py $html_file
 
 # Add six spaces at start of each line in html_file
-# echo -e "\tADD SIX SPACES AT START OF EACH LINE IN $html_file"
-# sed -i 's/^/      /' $html_file
+echo -e "\tADD SIX SPACES AT START OF EACH LINE IN $html_file"
+sed -i 's/^/      /' $html_file
 
 # Add html content
 echo -e "\tADDING HTML CONTENT TO $end_url.astro"

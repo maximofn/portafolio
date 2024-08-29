@@ -77,7 +77,7 @@ const closing_brace = '}';
     article_date="$date_time"
 >
 
-  <section class=\"post-body-post\">"
+  <section class=\"post-body\">"
 
 # Add header
 echo -e "\tADDING HEADER TO $end_url.astro"

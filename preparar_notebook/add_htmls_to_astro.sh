@@ -157,7 +157,7 @@ fi
 
 
 # -------------------------------- Content of the astro file --------------------------------
-post_content+="    <div class=\"post-content\">"
+post_content+="    <div class=\"post-body-content\">"
 
 # Change all '{' to '{opening_brace}' into html_file
 echo -e "\tCHANGE ALL '{' TO '{opening_brace}' INTO $html_file"

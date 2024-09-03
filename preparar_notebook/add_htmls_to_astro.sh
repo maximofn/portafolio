@@ -167,9 +167,9 @@ sed -i 's/{/{opening_brace}/g' $html_file
 echo -e "\tCHANGE ALL '<section' TO '\ n<section' INTO $html_file"
 sed -i 's/<section/\n<section/g' $html_file
 
-# Change all '¶' to '<img class="link-img" alt="link-svg" src={svg_paths.link_svg_path}/>' into html_file
-echo -e "\tCHANGE ALL '¶' TO '<img class="link-img" alt="link-svg" src={svg_paths.link_svg_path}/>' INTO $html_file"
-sed -i 's/¶/<img class="link-img" alt="link-svg" src=\{svg_paths.link_svg_path\}\/>/g' $html_file
+# Change all '¶' to '<img class="link-img" alt="link-svg" src={svg_paths.link_svg_path} loading="lazy"/>' into html_file
+echo -e "\tCHANGE ALL '¶' TO '<img class="link-img" alt="link-svg" src={svg_paths.link_svg_path} loading="lazy"/>' INTO $html_file"
+sed -i 's/¶/<img class="link-img" alt="link-svg" src=\{svg_paths.link_svg_path\} loading="lazy"\/>/g' $html_file
 
 # Change '<div class="highlight hl-ipython3">' to '<div class="highlight hl-ipython3">\n'
 echo -e "\tCHANGE '<div class=\"highlight hl-ipython3\">' TO '<div class=\"highlight hl-ipython3\"> n' INTO $html_file"

@@ -96,6 +96,11 @@ for (const project in last_projects) {
 		width: 100%;
 		margin-top: 200px;
 	}
+	@media (max-width: 1010px) {
+		.hero {
+			margin-top: 100px;
+		}
+	}
 
 	.hero img {
 		display: flex;
@@ -162,26 +167,53 @@ for (const project in last_projects) {
 </style>
 
 <script>
-	const counters = document.querySelectorAll('.value');
-	const animation_time_in_miliseconds = 500;
-
-	counters.forEach( counter => {
-		const animate = () => {
-			const value = +counter.getAttribute('akhi');
-			const data = +counter.innerText;
-			
+	// Esperamos a que el contenido de la página se cargue
+	document.addEventListener('DOMContentLoaded', () => {
+		const counters = document.querySelectorAll('.value');
+		const animationTime = 500; // Tiempo de animación en milisegundos
+  
+		const options = {
+			root: null, // El viewport como raíz
+			rootMargin: '0px', // Sin margen
+			threshold: 0.1 // Se dispara cuando el 10% del elemento es visible
+		};
+  
+		// Función para animar los contadores
+		const animateCounter = (counter) => {
+			const targetValue = parseInt(counter.getAttribute('akhi'));
+			let currentValue = 0;
 			const increment = 1;
-			const timeout = animation_time_in_miliseconds/value;
-			console.log("value: ", value, "data: ", data, "increment: ", increment);
-			if(data < value) {
-				counter.innerText = Math.ceil(data + increment);
-				setTimeout(animate, timeout);
-			}else{
-				counter.innerText = value;
+			const timeout = animationTime / targetValue;
+  
+			const updateCounter = () => {
+			currentValue += increment;
+			counter.innerText = currentValue;
+	
+			if (currentValue < targetValue) {
+				setTimeout(updateCounter, timeout);
+			} else {
+				counter.innerText = targetValue;
 			}
-			
-		}
-		
-		animate();
+			};
+	
+			updateCounter();
+		};
+  
+		// Creamos el Intersection Observer
+		const observer = new IntersectionObserver((entries) => {
+			entries.forEach(entry => {
+			if (entry.isIntersecting) {
+				// El elemento es visible, animamos el contador
+				animateCounter(entry.target);
+				// Dejamos de observar el elemento para no volver a animarlo
+				observer.unobserve(entry.target);
+			}
+			});
+		}, options);
+  
+		// Observamos cada contador
+		counters.forEach(counter => {
+			observer.observe(counter);
+		});
 	});
 </script>

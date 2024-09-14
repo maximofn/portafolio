@@ -3,8 +3,7 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 import json
 import argparse
-
-QUOTA_EXCEEDED_ERROR = 429
+from error_codes import QUOTA_EXCEEDED_ERROR
 
 def load_gemini_api_key():
     load_dotenv()

@@ -4,6 +4,8 @@ from PIL import Image
 import pathlib
 import os
 
+BYPASS_CHECK_METADATA = False
+
 MAXIMO_FN_KEY = 'maximofn'
 
 PORTAFOLIO_FOLDER = 'portafolio'    # portAfolio not portfolio
@@ -161,7 +163,7 @@ def check_if_notebook_metadata_is_ok(metadata):
     while answer.lower() not in ['y', 'n', 'yes', 'no']:
         print("Please, write 'y' or 'n': ", end='')
         answer = input()
-    if answer.lower() == 'y' or answer.lower() == 'yes':
+    if BYPASS_CHECK_METADATA or answer.lower() == 'y' or answer.lower() == 'yes':
         return True
     else:
         return False

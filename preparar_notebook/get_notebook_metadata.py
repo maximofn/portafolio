@@ -159,11 +159,13 @@ def check_if_notebook_metadata_is_ok(metadata):
     print(f"\tImage extension: {metadata[13]}")
     print(f"\tDate: {metadata[14]}")
     print("Is this metadata ok? (y/n): ", end='')
+    if BYPASS_CHECK_METADATA:
+        return True
     answer = input()
     while answer.lower() not in ['y', 'n', 'yes', 'no']:
         print("Please, write 'y' or 'n': ", end='')
         answer = input()
-    if BYPASS_CHECK_METADATA or answer.lower() == 'y' or answer.lower() == 'yes':
+    if answer.lower() == 'y' or answer.lower() == 'yes':
         return True
     else:
         return False

@@ -26,6 +26,7 @@ if __name__ == "__main__":
         print("Metadata is not ok")
         exit(1)
     
+    # Correct ortographic errors
     print("Do you want correct ortographic errors? (y/n)", end=' ')
     answer = input()
     while answer.lower() not in ['y', 'n', 'yes', 'no']:

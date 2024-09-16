@@ -26,13 +26,19 @@ if __name__ == "__main__":
         print("Metadata is not ok")
         exit(1)
     
-    # Get corrections from gemini and save them in a json
-    if corrections_path is None:
-        notebook_correctios_dict = create_corrections_dict(notebook_path)
-    
-    # Get corrections from a json
-    with open(corrections_path, 'r') as archivo:
-        notebook_correctios_dict = json.load(archivo)
-    
-    # Apply corrections
-    apply_corrections(notebook_path, notebook_correctios_dict)
+    print("Do you want correct ortographic errors? (y/n)", end=' ')
+    answer = input()
+    while answer.lower() not in ['y', 'n', 'yes', 'no']:
+        print("Please, write 'y' or 'n'", end=' ')
+        answer = input()
+    if answer.lower() in ['y', 'yes']:
+        # Get corrections from gemini and save them in a json if there aren't corrections json file
+        if corrections_path is None:
+            notebook_correctios_dict = create_corrections_dict(notebook_path)
+        
+        # Get corrections from a json
+        with open(corrections_path, 'r') as archivo:
+            notebook_correctios_dict = json.load(archivo)
+        
+        # Apply corrections
+        apply_corrections(notebook_path, notebook_correctios_dict)

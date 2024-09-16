@@ -9,11 +9,7 @@ from sentence_transformers import SentenceTransformer
 import torch
 from torch.nn.functional import cosine_similarity
 
-print("Loading encoder model...")
-encoder_model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
-encoder_model.eval()
-print("Encoder model loaded")
-
+ENCODER_MODEL = None
 SIMILARITY_THRESHOLD = 0.9
 
 def load_gemini_api_key():
@@ -250,9 +246,16 @@ def codification_characters_to_ansi(text):
     # ÿ	   Ã¿	u00ff	&#255;
     return text.replace('\u00a0', '').replace('\u00a1', '¡').replace('\u00a2', '¢').replace('\u00a3', '£').replace('\u00a4', '¤').replace('\u00a5', '¥').replace('\u00a6', '¦').replace('\u00a7', '§').replace('\u00a8', '¨').replace('\u00a9', '©').replace('\u00aa', 'ª').replace('\u00ab', '«').replace('\u00ac', '¬').replace('\u00ad', '­').replace('\u00ae', '®').replace('\u00af', '¯').replace('\u00b0', '°').replace('\u00b1', '±').replace('\u00b2', '²').replace('\u00b3', '³').replace('\u00b4', '´').replace('\u00b5', 'µ').replace('\u00b6', '¶').replace('\u00b7', '·').replace('\u00b8', '¸').replace('\u00b9', '¹').replace('\u00ba', 'º').replace('\u00bb', '»').replace('\u00bc', '¼').replace('\u00bd', '½').replace('\u00be', '¾').replace('\u00bf', '¿').replace('\u00c0', 'À').replace('\u00c1', 'Á').replace('\u00c2', 'Â').replace('\u00c3', 'Ã').replace('\u00c4', 'Ä').replace('\u00c5', 'Å').replace('\u00c6', 'Æ').replace('\u00c7', 'Ç').replace('\u00c8', 'È').replace('\u00c9', 'É').replace('\u00ca', 'Ê').replace('\u00cb', 'Ë').replace('\u00cc', 'Ì').replace('\u00cd', 'Í').replace('\u00ce', 'Î').replace('\u00cf', 'Ï').replace('\u00d0', 'Ð').replace('\u00d1', 'Ñ').replace('\u00d2', 'Ò').replace('\u00d3', 'Ó').replace('\u00d4', 'Ô').replace('\u00d5', 'Õ').replace('\u00d6', 'Ö').replace('\u00d7', '×').replace('\u00d8', 'Ø').replace('\u00d9', 'Ù').replace('\u00da', 'Ú').replace('\u00db', 'Û').replace('\u00dc', 'Ü').replace('\u00dd', 'Ý').replace('\u00de', 'Þ').replace('\u00df', 'ß').replace('\u00e0', 'à').replace('\u00e1', 'á').replace('\u00e2', 'â').replace('\u00e3', 'ã').replace('\u00e4', 'ä').replace('\u00e5', 'å').replace('\u00e6', 'æ').replace('\u00e7', 'ç').replace('\u00e8', 'è').replace('\u00e9', 'é').replace('\u00ea', 'ê').replace('\u00eb', 'ë').replace('\u00ec', 'ì').replace('\u00ed', 'í').replace('\u00ee', 'î').replace('\u00ef', 'ï').replace('\u00f0', 'ð').replace('\u00f1', 'ñ').replace('\u00f2', 'ò').replace('\u00f3', 'ó').replace('\u00f4', 'ô').replace('\u00f5', 'õ').replace('\u00f6', 'ö').replace('\u00f7', '÷').replace('\u00f8', 'ø').replace('\u00f9', 'ù').replace('\u00fa', 'ú').replace('\u00fb', 'û').replace('\u00fc', 'ü').replace('\u00fd', 'ý').replace('\u00fe', 'þ').replace('\u00ff', 'ÿ')
 
+def load_encoder_model():
+    global ENCODER_MODEL
+    print("Loading encoder model...")
+    ENCODER_MODEL = SentenceTransformer('paraphrase-MiniLM-L6-v2')
+    ENCODER_MODEL.eval()
+    print("Encoder model loaded")
+
 def get_similarity_between_strings(string1, string2):
-    embedding1 = torch.from_numpy(encoder_model.encode(string1))
-    embedding2 = torch.from_numpy(encoder_model.encode(string2))
+    embedding1 = torch.from_numpy(ENCODER_MODEL.encode(string1))
+    embedding2 = torch.from_numpy(ENCODER_MODEL.encode(string2))
 
     similarity = cosine_similarity(embedding1.unsqueeze(0), embedding2.unsqueeze(0))
     return similarity.item()
@@ -262,6 +265,9 @@ def apply_corrections(notebook_path, corrections_dict):
     with open(notebook_path, 'r') as file:
         notebook_content = file.read()
     notebook_content_dict = json.loads(notebook_content)
+
+    # Init encoder model
+    load_encoder_model()
     
     # Apply corrections
     total_number_corrections = len(corrections_dict)

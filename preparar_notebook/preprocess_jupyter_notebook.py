@@ -8,6 +8,7 @@ from get_notebook_metadata import get_portafolio_path
 from sentence_transformers import SentenceTransformer
 import torch
 from torch.nn.functional import cosine_similarity
+from utils import ask_for_something
 
 ENCODER_MODEL = None
 SIMILARITY_THRESHOLD = 0.9
@@ -286,12 +287,7 @@ def apply_corrections(notebook_path, corrections_dict):
                     # print(f"\tOriginal : {original_text}")
                     print(f"\tOriginal : {cell['source'][j]}")
                     print(f"\tCorrected: {corrected_text}")
-                    print("Do you want to apply this correction? (y/n)", end=' ')
-                    answer = input()
-                    while answer.lower() not in ['y', 'n', 'yes', 'no']:
-                        print("Please, write 'y' or 'n'", end=' ')
-                        answer = input()
-                    if answer.lower() in ['y', 'yes']:
+                    if ask_for_something("Do you want to apply this correction? (y/n)", ['y', 'yes'], ['n', 'no']):
                         cell['source'][j] = cell['source'][j].replace(original_text, corrected_text)
                         print("Correction applied")
                     else:
@@ -305,12 +301,7 @@ def apply_corrections(notebook_path, corrections_dict):
             print(f"\nCorrection {i} not found: {explain_text}")
             print(f"\tOriginal : {original_text}")
             print(f"\tCorrected: {corrected_text}")
-            print("Change it manually. Done? type 'done' or 'd' to continue", end=' ')
-            answer = input()
-            while answer.lower() not in ['done', 'd']:
-                print("Please, write 'done' or 'd'", end=' ')
-                answer = input()
-            if answer.lower() in ['done', 'd']:
+            if ask_for_something("Change it manually. Done? type 'done' or 'd' to continue", ['d', 'done'], ['']):
                 print("Correction applied manually")
 
     # Save the corrected notebook

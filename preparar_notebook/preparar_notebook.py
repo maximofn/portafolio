@@ -4,6 +4,7 @@ from get_notebook_metadata import get_notebook_metadata, check_if_notebook_metad
 from preprocess_jupyter_notebook import create_corrections_dict, apply_corrections
 from error_codes import QUOTA_EXCEEDED_ERROR
 import json
+from utils import ask_for_something
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Preparar notebook')
@@ -27,12 +28,7 @@ if __name__ == "__main__":
         exit(1)
     
     # Correct ortographic errors
-    print("Do you want correct ortographic errors? (y/n)", end=' ')
-    answer = input()
-    while answer.lower() not in ['y', 'n', 'yes', 'no']:
-        print("Please, write 'y' or 'n'", end=' ')
-        answer = input()
-    if answer.lower() in ['y', 'yes']:
+    if ask_for_something("Do you want correct ortographic errors? (y/n)", ['y', 'yes'], ['n', 'no']):
         # Get corrections from gemini and save them in a json if there aren't corrections json file
         if corrections_path is None:
             notebook_correctios_dict = create_corrections_dict(notebook_path)

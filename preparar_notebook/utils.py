@@ -2,6 +2,7 @@
 def ask_for_something(string, optionsTrue, optionsFalse):
     print(string, end=' ')
     answer = input()
+    options = optionsTrue + optionsFalse
     while answer.lower() not in options:
         print(f"Please, write {optionsTrue} {optionsFalse}", end=' ')
         answer = input()

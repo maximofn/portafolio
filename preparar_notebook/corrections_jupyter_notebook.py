@@ -92,6 +92,7 @@ def apply_corrections(model, line):
     if type(correction_string) != str:
         print(f"Gemini Error: {correction_string}")
         exit(1)
+
     correction_dict = notebook_string_content_to_dict(correction_string)
     if "explicación" in correction_dict.keys():
         if len(correction_dict['explicación']) > 0:
@@ -123,17 +124,19 @@ def ortografic_corrections_jupyter_notebook(notebook_path):
     bar = tqdm(cells, bar_format='{l_bar}{bar:10}{r_bar}{bar:-10b}')
     number_markdown_cell = 0
     for number_cell, cell in enumerate(bar):
-        if number_cell == 10:
-            break
+        # if number_cell == 4:
+        #     break
         if cell['cell_type'] == 'markdown':
             if type(cell['source']) == str:
-                # cell['source'] = apply_corrections(model, cell['source'])
-                apply_corrections(model, cell['source'])
+                cell['source'] = apply_corrections(model, cell['source'])
             elif type(cell['source']) == list:
                 for number_line, line in enumerate(cell['source']):
-                    # line = apply_corrections(model, line)
-                    apply_corrections(model, line)
+                    cell['source'][number_line] = apply_corrections(model, line)
             number_markdown_cell += 1
             sleep(0.1)
         bar.set_description(f"\t\tCell {number_markdown_cell}/{total_markdown_cells}")
     print(f"\tEnd of translation")
+
+    # Save the notebook with the corrections
+    with open(notebook_path, 'w') as file:
+        json.dump(notebook_content_dict, file, indent=2)

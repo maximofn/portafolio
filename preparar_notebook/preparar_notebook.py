@@ -29,3 +29,8 @@ if __name__ == "__main__":
     if ask_for_something("Do you want correct ortographic errors? (y/n)", ['y', 'yes'], ['n', 'no']):
         # Get corrections from gemini and save them in a json if there aren't corrections json file
         ortografic_corrections_jupyter_notebook(notebook_path)
+
+    # Translate notebook
+    if ask_for_something("Do you want to translate the notebook? (y/n)", ['y', 'yes'], ['n', 'no']):
+        # Translate notebook
+        pass

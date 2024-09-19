@@ -2,10 +2,7 @@ import json
 from utils import ask_for_something, string_to_dict
 from tqdm import tqdm
 from gemini import Gemini
-
-def get_notebook_content(notebook_path):
-    with open(notebook_path, 'r') as f:
-        return json.load(f)
+from notebook import Notebook
 
 def apply_corrections(model, line):
     correction_string = model.chat_with_gemini(line)
@@ -54,7 +51,8 @@ def ortografic_corrections_jupyter_notebook(notebook_path):
     )
 
     # Get notebook content as a dictionary
-    notebook_content_dict = get_notebook_content(notebook_path)
+    notebook = Notebook(notebook_path)
+    notebook_content_dict = notebook.get_content_as_json()
     cells = notebook_content_dict['cells']   # Get only with the cells
     total_cells = len(cells)
     markdown_cells = [cell for cell in cells if cell['cell_type'] == 'markdown']

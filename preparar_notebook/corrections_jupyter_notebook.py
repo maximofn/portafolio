@@ -1,17 +1,11 @@
 import json
-from utils import ask_for_something
+from utils import ask_for_something, string_to_dict
 from tqdm import tqdm
 from gemini import Gemini
 
 def get_notebook_content(notebook_path):
     with open(notebook_path, 'r') as f:
         return json.load(f)
-
-def notebook_string_content_to_dict(notebook_content):
-    filter_text = notebook_content.replace('```json', '').replace('\n', '').replace('```', '')
-    notebook_content_json = json.loads(filter_text)
-    notebook_content_dict = dict(notebook_content_json)
-    return notebook_content_dict
 
 def apply_corrections(model, line):
     correction_string = model.chat_with_gemini(line)
@@ -22,7 +16,7 @@ def apply_corrections(model, line):
         print(f"LLM Error: {correction_string}")
         exit(1)
 
-    correction_dict = notebook_string_content_to_dict(correction_string)
+    correction_dict = string_to_dict(correction_string)
     if "explicación" in correction_dict.keys():
         if len(correction_dict['explicación']) > 0:
             original = correction_dict['original']

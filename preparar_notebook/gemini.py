@@ -23,7 +23,7 @@ class Gemini:
             system_instruction=system_instruction,
         )
     
-    def chat_with_gemini(self, input_text):
+    def chat(self, input_text):
         try:
             response = self.model.generate_content(input_text)
         except Exception as e:

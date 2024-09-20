@@ -1,6 +1,7 @@
 from utils import ask_for_something, string_to_dict
 from tqdm import tqdm
 from gemini import Gemini
+from gpt4o import GPT4o
 from notebook import Notebook
 
 KEY_ORIGINAL = "original"
@@ -27,7 +28,7 @@ SYSTEM_INSTRUCTION = """
 """
 
 def apply_corrections(model, line):
-    correction_string = model.chat_with_gemini(line)
+    correction_string = model.chat(line)
     # correction_string = "```json\n{"
     # corr = "corr "
     # correction_string = correction_string + f"\n    \"{KEY_ORIGINAL}\": \"{line}\",\n    \"{KEY_CORRECTION}\": \"{corr+line}\",\n    \"{KEY_EXPLANATION}\": \"test\"\n"
@@ -53,8 +54,9 @@ def apply_corrections(model, line):
             return line
 
 def ortografic_corrections_jupyter_notebook(notebook_path):
-    # load gemini model
-    model = Gemini(system_instruction=SYSTEM_INSTRUCTION)
+    # load LLM
+    # model = Gemini(system_instruction=SYSTEM_INSTRUCTION)
+    model = GPT4o(system_instruction=SYSTEM_INSTRUCTION)
 
     # Get notebook content as a dictionary
     notebook = Notebook(notebook_path)

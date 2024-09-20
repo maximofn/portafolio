@@ -78,23 +78,27 @@ def get_notebook_metadata(notebook_path):
     keywords_en = None
     keywords_pt = None
     image = None
+    witdh = None
+    height = None
+    image_extension = None
     date = None
 
     metadata = notebook.get('metadata', {})
-    title_es_in_metadata = TITLE_ES_KEY in metadata[MAXIMO_FN_KEY].keys()
-    title_en_in_metadata = TITLE_EN_KEY in metadata[MAXIMO_FN_KEY].keys()
-    title_pt_in_metadata = TITLE_PT_KEY in metadata[MAXIMO_FN_KEY].keys()
-    end_url_in_metadata = END_URL_KEY in metadata[MAXIMO_FN_KEY].keys()
-    description_es_in_metadata = DESCRIPTION_ES_KEY in metadata[MAXIMO_FN_KEY].keys()
-    description_en_in_metadata = DESCRIPTION_EN_KEY in metadata[MAXIMO_FN_KEY].keys()
-    description_pt_in_metadata = DESCRIPTION_PT_KEY in metadata[MAXIMO_FN_KEY].keys()
-    keywords_es_in_metadata = KEYWORDS_ES_KEY in metadata[MAXIMO_FN_KEY].keys()
-    keywords_en_in_metadata = KEYWORDS_EN_KEY in metadata[MAXIMO_FN_KEY].keys()
-    keywords_pt_in_metadata = KEYWORDS_PT_KEY in metadata[MAXIMO_FN_KEY].keys()
-    image_in_metadata = IMAGE_KEY in metadata[MAXIMO_FN_KEY].keys()
-    date_in_metadata = DATE_KEY in metadata[MAXIMO_FN_KEY].keys()
 
     if MAXIMO_FN_KEY in metadata.keys():
+        title_es_in_metadata = TITLE_ES_KEY in metadata[MAXIMO_FN_KEY].keys()
+        title_en_in_metadata = TITLE_EN_KEY in metadata[MAXIMO_FN_KEY].keys()
+        title_pt_in_metadata = TITLE_PT_KEY in metadata[MAXIMO_FN_KEY].keys()
+        end_url_in_metadata = END_URL_KEY in metadata[MAXIMO_FN_KEY].keys()
+        description_es_in_metadata = DESCRIPTION_ES_KEY in metadata[MAXIMO_FN_KEY].keys()
+        description_en_in_metadata = DESCRIPTION_EN_KEY in metadata[MAXIMO_FN_KEY].keys()
+        description_pt_in_metadata = DESCRIPTION_PT_KEY in metadata[MAXIMO_FN_KEY].keys()
+        keywords_es_in_metadata = KEYWORDS_ES_KEY in metadata[MAXIMO_FN_KEY].keys()
+        keywords_en_in_metadata = KEYWORDS_EN_KEY in metadata[MAXIMO_FN_KEY].keys()
+        keywords_pt_in_metadata = KEYWORDS_PT_KEY in metadata[MAXIMO_FN_KEY].keys()
+        image_in_metadata = IMAGE_KEY in metadata[MAXIMO_FN_KEY].keys()
+        date_in_metadata = DATE_KEY in metadata[MAXIMO_FN_KEY].keys()
+
         if title_es_in_metadata and title_en_in_metadata and title_pt_in_metadata and end_url_in_metadata and \
             description_es_in_metadata and description_en_in_metadata and description_pt_in_metadata and \
             keywords_es_in_metadata and keywords_en_in_metadata and keywords_pt_in_metadata and \
@@ -120,24 +124,6 @@ def get_notebook_metadata(notebook_path):
     else:
         print('No maximofn key in metadata')
 
-    # TODO: BORRAR hasta el print
-    # return_string = ""
-    # return_string += f"{title_es}$"
-    # return_string += f"{title_en}$"
-    # return_string += f"{title_pt}$"
-    # return_string += f"{end_url}$"
-    # return_string += f"{description_es}$"
-    # return_string += f"{description_en}$"
-    # return_string += f"{description_pt}$"
-    # return_string += f"{keywords_es}$"
-    # return_string += f"{keywords_en}$"
-    # return_string += f"{keywords_pt}$"
-    # return_string += f"{image}$"
-    # return_string += f"{witdh}$"
-    # return_string += f"{height}$"
-    # return_string += f"{image_extension}$"
-    # return_string += f"{date}$"
-    # print(return_string)
     return title_es, title_en, title_pt, end_url, description_es, description_en, description_pt, \
         keywords_es, keywords_en, keywords_pt, image, witdh, height, image_extension, date
 

@@ -1,4 +1,3 @@
-import json
 from utils import ask_for_something, string_to_dict
 from tqdm import tqdm
 from gemini import Gemini
@@ -29,7 +28,10 @@ SYSTEM_INSTRUCTION = """
 
 def apply_corrections(model, line):
     correction_string = model.chat_with_gemini(line)
-    # correction_string = f"```json\n{\n    \"{KEY_EXPLANATION}\": \"\",\n    \"{KEY_CORRECTION}\": \"\",\n    \"{KEY_EXPLANATION}\": \"\"\n}\n```"
+    # correction_string = "```json\n{"
+    # corr = "corr "
+    # correction_string = correction_string + f"\n    \"{KEY_ORIGINAL}\": \"{line}\",\n    \"{KEY_CORRECTION}\": \"{corr+line}\",\n    \"{KEY_EXPLANATION}\": \"test\"\n"
+    # correction_string = correction_string + "}\n```"
 
     # if correction_string is not string, it's an error
     if type(correction_string) != str:
@@ -57,17 +59,15 @@ def ortografic_corrections_jupyter_notebook(notebook_path):
     # Get notebook content as a dictionary
     notebook = Notebook(notebook_path)
     notebook_content_dict = notebook.get_content_as_json()
-    cells = notebook_content_dict['cells']   # Get only with the cells
-    total_cells = len(cells)
-    markdown_cells = [cell for cell in cells if cell['cell_type'] == 'markdown']
-    total_markdown_cells = len(markdown_cells)
+    cells = notebook.cells()   # Get only with the cells
+    total_markdown_cells = notebook.number_markdown_cells()
 
     # Iterate for each cell in the notebook
     print(f"\tCorrections of {notebook_path}")
     bar = tqdm(cells, bar_format='{l_bar}{bar:10}{r_bar}{bar:-10b}')
-    number_markdown_cell = 0
-    for number_cell, cell in enumerate(bar):
-        # if number_cell == 4:
+    markdown_cell_counter = 0
+    for cell_counter, cell in enumerate(bar):
+        # if cell_counter == 4:
         #     break
         if cell['cell_type'] == 'markdown':
             if type(cell['source']) == str:
@@ -75,10 +75,9 @@ def ortografic_corrections_jupyter_notebook(notebook_path):
             elif type(cell['source']) == list:
                 for number_line, line in enumerate(cell['source']):
                     cell['source'][number_line] = apply_corrections(model, line)
-            number_markdown_cell += 1
-        bar.set_description(f"\t\tCell {number_markdown_cell}/{total_markdown_cells}")
+            markdown_cell_counter += 1
+        bar.set_description(f"\t\tCell {markdown_cell_counter}/{total_markdown_cells}")
     print(f"\tEnd of translation")
 
     # Save the notebook with the corrections
-    with open(notebook_path, 'w') as file:
-        json.dump(notebook_content_dict, file, indent=2)
+    notebook.save_cells(cells)

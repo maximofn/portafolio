@@ -1,4 +1,10 @@
 import json
+import pathlib
+
+COUNTER = 0
+LIMIT_COUNTER = 10
+
+PORTAFOLIO_FOLDER = 'portafolio'    # portAfolio not portfolio
 
 def ask_for_something(string, optionsTrue, optionsFalse):
     print(string, end=' ')
@@ -17,3 +23,20 @@ def string_to_dict(notebook_content):
     json_content = json.loads(filter_text)
     dict_content = dict(json_content)
     return dict_content
+
+def get_portafolio_path(path):
+    global COUNTER
+    path = pathlib.Path(path)
+    parent = path.parent
+    last_folder = path.parts[-1]
+    if last_folder == PORTAFOLIO_FOLDER:
+        return pathlib.Path(path)
+    else:
+        if COUNTER < LIMIT_COUNTER:
+            COUNTER += 1
+            return get_portafolio_path(parent)
+        else:
+            raise Exception('Portafolio folder not found')
+
+def get_pwd_path():
+    return pathlib.Path().absolute()

@@ -1,19 +1,15 @@
 import argparse
 import json
 from PIL import Image
-import pathlib
 import os
+from utils import get_portafolio_path, get_pwd_path, ask_for_something
 
 BYPASS_CHECK_METADATA = False
 
 MAXIMO_FN_KEY = 'maximofn'
 
-PORTAFOLIO_FOLDER = 'portafolio'    # portAfolio not portfolio
 WEB_PORTFOLIO_PATH = 'portfolio'    # portfolio not portAfolio
 WEB_PUBLIC_PATH = 'public'
-
-COUNTER = 0
-LIMIT_COUNTER = 10
 
 TITLE_ES_KEY = 'title_es'
 TITLE_EN_KEY = 'title_en'
@@ -28,29 +24,17 @@ KEYWORDS_PT_KEY = 'keywords_pt'
 IMAGE_KEY = 'image'
 DATE_KEY = 'date'
 
-def get_portafolio_path(path):
-    global COUNTER
-    path = pathlib.Path(path)
-    parent = path.parent
-    last_folder = path.parts[-1]
-    if last_folder == PORTAFOLIO_FOLDER:
-        return path
-    else:
-        if COUNTER < LIMIT_COUNTER:
-            COUNTER += 1
-            return get_portafolio_path(parent)
-        else:
-            raise Exception('Portafolio folder not found')
+
 
 def get_image_width_height(image_path):
     if image_path[0] == '/':
         image_path = image_path[1:]
 
     # Get current path
-    pwd_path = pathlib.Path().absolute()
+    pwd_path = get_pwd_path()
 
     # Get portafolio path, this is the main git repository path
-    portafolio_path = pathlib.Path(get_portafolio_path(pwd_path))
+    portafolio_path = get_portafolio_path(pwd_path)
 
     # Get image absolute path
     image_absolute_path = portafolio_path / WEB_PORTFOLIO_PATH / WEB_PUBLIC_PATH / image_path
@@ -65,7 +49,7 @@ def get_image_extension(image_path):
 
 def get_notebook_metadata(notebook_path):
     with open(notebook_path, 'r') as f:
-        notebook = json.load(f)
+        notebook_json = json.load(f)
     
     title_es = None
     title_en = None
@@ -83,26 +67,26 @@ def get_notebook_metadata(notebook_path):
     image_extension = None
     date = None
 
-    metadata = notebook.get('metadata', {})
+    metadata = notebook_json.get('metadata', {})
 
     if MAXIMO_FN_KEY in metadata.keys():
-        title_es_in_metadata = TITLE_ES_KEY in metadata[MAXIMO_FN_KEY].keys()
-        title_en_in_metadata = TITLE_EN_KEY in metadata[MAXIMO_FN_KEY].keys()
-        title_pt_in_metadata = TITLE_PT_KEY in metadata[MAXIMO_FN_KEY].keys()
-        end_url_in_metadata = END_URL_KEY in metadata[MAXIMO_FN_KEY].keys()
-        description_es_in_metadata = DESCRIPTION_ES_KEY in metadata[MAXIMO_FN_KEY].keys()
-        description_en_in_metadata = DESCRIPTION_EN_KEY in metadata[MAXIMO_FN_KEY].keys()
-        description_pt_in_metadata = DESCRIPTION_PT_KEY in metadata[MAXIMO_FN_KEY].keys()
-        keywords_es_in_metadata = KEYWORDS_ES_KEY in metadata[MAXIMO_FN_KEY].keys()
-        keywords_en_in_metadata = KEYWORDS_EN_KEY in metadata[MAXIMO_FN_KEY].keys()
-        keywords_pt_in_metadata = KEYWORDS_PT_KEY in metadata[MAXIMO_FN_KEY].keys()
-        image_in_metadata = IMAGE_KEY in metadata[MAXIMO_FN_KEY].keys()
-        date_in_metadata = DATE_KEY in metadata[MAXIMO_FN_KEY].keys()
+        is_title_es_in_metadata = TITLE_ES_KEY in metadata[MAXIMO_FN_KEY].keys()
+        is_title_en_in_metadata = TITLE_EN_KEY in metadata[MAXIMO_FN_KEY].keys()
+        is_title_pt_in_metadata = TITLE_PT_KEY in metadata[MAXIMO_FN_KEY].keys()
+        is_end_url_in_metadata = END_URL_KEY in metadata[MAXIMO_FN_KEY].keys()
+        is_description_es_in_metadata = DESCRIPTION_ES_KEY in metadata[MAXIMO_FN_KEY].keys()
+        is_description_en_in_metadata = DESCRIPTION_EN_KEY in metadata[MAXIMO_FN_KEY].keys()
+        is_description_pt_in_metadata = DESCRIPTION_PT_KEY in metadata[MAXIMO_FN_KEY].keys()
+        is_keywords_es_in_metadata = KEYWORDS_ES_KEY in metadata[MAXIMO_FN_KEY].keys()
+        is_keywords_en_in_metadata = KEYWORDS_EN_KEY in metadata[MAXIMO_FN_KEY].keys()
+        is_keywords_pt_in_metadata = KEYWORDS_PT_KEY in metadata[MAXIMO_FN_KEY].keys()
+        is_image_in_metadata = IMAGE_KEY in metadata[MAXIMO_FN_KEY].keys()
+        is_date_in_metadata = DATE_KEY in metadata[MAXIMO_FN_KEY].keys()
 
-        if title_es_in_metadata and title_en_in_metadata and title_pt_in_metadata and end_url_in_metadata and \
-            description_es_in_metadata and description_en_in_metadata and description_pt_in_metadata and \
-            keywords_es_in_metadata and keywords_en_in_metadata and keywords_pt_in_metadata and \
-            image_in_metadata and date_in_metadata:
+        if is_title_es_in_metadata and is_title_en_in_metadata and is_title_pt_in_metadata and is_end_url_in_metadata and \
+            is_description_es_in_metadata and is_description_en_in_metadata and is_description_pt_in_metadata and \
+            is_keywords_es_in_metadata and is_keywords_en_in_metadata and is_keywords_pt_in_metadata and \
+            is_image_in_metadata and is_date_in_metadata:
                 title_es = metadata[MAXIMO_FN_KEY][TITLE_ES_KEY]
                 title_en = metadata[MAXIMO_FN_KEY][TITLE_EN_KEY]
                 title_pt = metadata[MAXIMO_FN_KEY][TITLE_PT_KEY]
@@ -120,9 +104,21 @@ def get_notebook_metadata(notebook_path):
         
         else:
             print('Some metadata keys are missing')
+            if not is_title_es_in_metadata: print(f'\tNo {TITLE_ES_KEY} key in metadata')
+            if not is_title_en_in_metadata: print(f'\tNo {TITLE_EN_KEY} key in metadata')
+            if not is_title_pt_in_metadata: print(f'\tNo {TITLE_PT_KEY} key in metadata')
+            if not is_end_url_in_metadata: print(f'\tNo {END_URL_KEY} key in metadata')
+            if not is_description_es_in_metadata: print(f'\tNo {DESCRIPTION_ES_KEY} key in metadata')
+            if not is_description_en_in_metadata: print(f'\tNo {DESCRIPTION_EN_KEY} key in metadata')
+            if not is_description_pt_in_metadata: print(f'\tNo {DESCRIPTION_PT_KEY} key in metadata')
+            if not is_keywords_es_in_metadata: print(f'\tNo {KEYWORDS_ES_KEY} key in metadata')
+            if not is_keywords_en_in_metadata: print(f'\tNo {KEYWORDS_EN_KEY} key in metadata')
+            if not is_keywords_pt_in_metadata: print(f'\tNo {KEYWORDS_PT_KEY} key in metadata')
+            if not is_image_in_metadata: print(f'\tNo {IMAGE_KEY} key in metadata')
+            if not is_date_in_metadata: print(f'\tNo {DATE_KEY} key in metadata')
 
     else:
-        print('No maximofn key in metadata')
+        print(f'No {MAXIMO_FN_KEY} key in metadata')
 
     return title_es, title_en, title_pt, end_url, description_es, description_en, description_pt, \
         keywords_es, keywords_en, keywords_pt, image, witdh, height, image_extension, date
@@ -144,14 +140,9 @@ def check_if_notebook_metadata_is_ok(metadata):
     print(f"\tHeight: {metadata[12]}")
     print(f"\tImage extension: {metadata[13]}")
     print(f"\tDate: {metadata[14]}")
-    print("Is this metadata ok? (y/n): ", end='')
     if BYPASS_CHECK_METADATA:
         return True
-    answer = input()
-    while answer.lower() not in ['y', 'n', 'yes', 'no']:
-        print("Please, write 'y' or 'n': ", end='')
-        answer = input()
-    if answer.lower() == 'y' or answer.lower() == 'yes':
+    if ask_for_something("Is this metadata ok? (y/n)", ['y', 'yes'], ['n', 'no']):
         return True
     else:
         return False

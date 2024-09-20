@@ -4,6 +4,9 @@ from tqdm import tqdm
 from gemini import Gemini
 from notebook import Notebook
 
+KEY_ORIGINAL = "original"
+KEY_CORRECTION = "correccion"
+KEY_EXPLANATION = "explicación"
 SYSTEM_INSTRUCTION = """
     Eres un experto corrector de texto markdown. Tu misión es corregir ortograficamente texto markdown.
 
@@ -26,7 +29,7 @@ SYSTEM_INSTRUCTION = """
 
 def apply_corrections(model, line):
     correction_string = model.chat_with_gemini(line)
-    # correction_string = "```json\n{\n    \"original\": \"\",\n    \"correccion\": \"\",\n    \"explicación\": \"\"\n}\n```"
+    # correction_string = f"```json\n{\n    \"{KEY_EXPLANATION}\": \"\",\n    \"{KEY_CORRECTION}\": \"\",\n    \"{KEY_EXPLANATION}\": \"\"\n}\n```"
 
     # if correction_string is not string, it's an error
     if type(correction_string) != str:
@@ -34,16 +37,16 @@ def apply_corrections(model, line):
         exit(1)
 
     correction_dict = string_to_dict(correction_string)
-    if "explicación" in correction_dict.keys():
-        if len(correction_dict['explicación']) > 0:
-            original = correction_dict['original']
-            correccion = correction_dict['correccion']
-            explicacion = correction_dict['explicación']
-            print(f"\nOriginal  : {original}\nCorrección: {correccion}\nExplicación: {explicacion}")
+    if f"{KEY_EXPLANATION}" in correction_dict.keys():
+        if len(correction_dict[f'{KEY_EXPLANATION}']) > 0:
+            original_value = correction_dict[f'{KEY_ORIGINAL}']
+            correction_vaue = correction_dict[f'{KEY_CORRECTION}']
+            explanation_value = correction_dict[f'{KEY_EXPLANATION}']
+            print(f"\n{KEY_ORIGINAL}  : {original_value}\n{KEY_CORRECTION}: {correction_vaue}\n{KEY_EXPLANATION}: {explanation_value}")
             if ask_for_something("Do you want to apply this correction? (y/n)", ['y', 'yes'], ['n', 'no']):
-                return correccion
+                return correction_vaue
             else:
-                return original
+                return original_value
         else:
             return line
 

@@ -2,6 +2,7 @@ from utils import ask_for_something, string_to_dict
 from tqdm import tqdm
 from gemini import Gemini
 from gpt4o import GPT4o
+from groq_llm import Groq_llama3_1_70B
 from notebook import Notebook
 
 KEY_ORIGINAL = "original"
@@ -57,6 +58,7 @@ def ortografic_corrections_jupyter_notebook(notebook_path):
     # load LLM
     # model = Gemini(system_instruction=SYSTEM_INSTRUCTION)
     model = GPT4o(system_instruction=SYSTEM_INSTRUCTION)
+    # model = Groq_llama3_1_70B(system_instruction=SYSTEM_INSTRUCTION)
 
     # Get notebook content as a dictionary
     notebook = Notebook(notebook_path)

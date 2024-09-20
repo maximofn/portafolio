@@ -4,6 +4,26 @@ from tqdm import tqdm
 from gemini import Gemini
 from notebook import Notebook
 
+SYSTEM_INSTRUCTION = """
+    Eres un experto corrector de texto markdown. Tu misión es corregir ortograficamente texto markdown.
+
+    Enfoque en la corrección: Por favor, revisa el siguiente texto y corrige únicamente los errores ortográficos, sin modificar la estructura, el estilo ni el contenido.
+    No hagas cambios del tipo 'Con estos modelos podemos hacer...' a 'Con estos modelos se puede hacer...', tampoco quiero cambios del tipo 'Podemos obtener la longitud de nuestro string mediante la función `len()`' a 'Podemos obtener la longitud de nuestro string mediante la función `len()`.' es decir, no añadas puntos al final de la oración, solo corrige si hay errores de ortografía.
+
+    Te van a pasar textos markdown y tienes que corregirlos ortograficamente en español. Responde solo con la corrección, responde con el texto que hay y la corrección que sugieres.
+
+    El formato de salida tiene que ser un json con llaves llamadas `original`, otra `correccion` y la última será `explicación` con la explicación de qué cambia y por qué. Si no hay errores ortográficos responde ese json con las llaves vacías. Es decir será un json así:
+    ```
+    {
+        "original": "",
+        "correccion": "",
+        "explicación": ""
+    }
+    ```
+
+    Recuerda, rellena el json solo con los textos markdown que tienen errores, no pongas en el json los que no tienen errores y no quiero que añadir un punto al final de la oración sea una corrección
+"""
+
 def apply_corrections(model, line):
     correction_string = model.chat_with_gemini(line)
     # correction_string = "```json\n{\n    \"original\": \"\",\n    \"correccion\": \"\",\n    \"explicación\": \"\"\n}\n```"
@@ -29,26 +49,7 @@ def apply_corrections(model, line):
 
 def ortografic_corrections_jupyter_notebook(notebook_path):
     # load gemini model
-    model = Gemini(
-        system_instruction="""
-        Eres un experto corrector de texto markdown. Tu misión es corregir ortograficamente texto markdown.
-
-        Enfoque en la corrección: Por favor, revisa el siguiente texto y corrige únicamente los errores ortográficos, sin modificar la estructura, el estilo ni el contenido.
-        No hagas cambios del tipo 'Con estos modelos podemos hacer...' a 'Con estos modelos se puede hacer...', tampoco quiero cambios del tipo 'Podemos obtener la longitud de nuestro string mediante la función `len()`' a 'Podemos obtener la longitud de nuestro string mediante la función `len()`.' es decir, no añadas puntos al final de la oración, solo corrige si hay errores de ortografía.
-
-        Te van a pasar textos markdown y tienes que corregirlos ortograficamente en español. Responde solo con la corrección, responde con el texto que hay y la corrección que sugieres.
-
-        El formato de salida tiene que ser un json con llaves llamadas `original`, otra `correccion` y la última será `explicación` con la explicación de qué cambia y por qué. Si no hay errores ortográficos responde ese json con las llaves vacías. Es decir será un json así:
-        ```
-        {
-            "original": "",
-            "correccion": "",
-            "explicación": ""
-        }
-        ```
-
-        Recuerda, rellena el json solo con los textos markdown que tienen errores, no pongas en el json los que no tienen errores y no quiero que añadir un punto al final de la oración sea una corrección""",
-    )
+    model = Gemini(system_instruction=SYSTEM_INSTRUCTION)
 
     # Get notebook content as a dictionary
     notebook = Notebook(notebook_path)

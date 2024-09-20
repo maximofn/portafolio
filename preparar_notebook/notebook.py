@@ -1,8 +1,11 @@
 import json
 
 class Notebook:
-    def __init__(self, path):
+    def __init__(self, path, end_name=None):
         self.path = path
+        self.content = None
+        if end_name:
+            self.path = self.path.parent / f"{self.path.stem}_{end_name}{self.path.suffix}"
 
     def get_content_as_json(self):
         with open(self.path, 'r') as f:

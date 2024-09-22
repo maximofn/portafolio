@@ -27,6 +27,10 @@ SYSTEM_INSTRUCTION = """
 
     Recuerda, rellena el json solo con los textos markdown que tienen errores, no pongas en el json los que no tienen errores y no quiero que añadir un punto al final de la oración sea una corrección
 """
+GEMINI_LLM = "Gemini"
+GPT4O_LLM = "GPT4o"
+GROQ_LLM = "Groq_llama3_1_70B"
+MODEL = GPT4O_LLM
 
 def apply_corrections(model, line):
     correction_string = model.chat(line)
@@ -56,9 +60,12 @@ def apply_corrections(model, line):
 
 def ortografic_corrections_jupyter_notebook(notebook_path):
     # load LLM
-    # model = Gemini(system_instruction=SYSTEM_INSTRUCTION)
-    model = GPT4o(system_instruction=SYSTEM_INSTRUCTION)
-    # model = Groq_llama3_1_70B(system_instruction=SYSTEM_INSTRUCTION)
+    if MODEL == GEMINI_LLM:
+        model = Gemini(system_instruction=SYSTEM_INSTRUCTION)
+    elif MODEL == GPT4O_LLM:
+        model = GPT4o(system_instruction=SYSTEM_INSTRUCTION)
+    elif MODEL == GROQ_LLM:
+        model = Groq_llama3_1_70B(system_instruction=SYSTEM_INSTRUCTION)
 
     # Get notebook content as a dictionary
     notebook = Notebook(notebook_path)

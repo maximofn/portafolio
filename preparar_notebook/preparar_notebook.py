@@ -21,17 +21,17 @@ if __name__ == "__main__":
 
     # Check if metadata is ok
     if check_if_notebook_metadata_is_ok(notebook_metadata):
-        print("Metadata is ok\n")
+        print("Metadata is ok")
     else:
         print("Metadata is not ok")
         exit(1)
     
     # Correct ortographic errors
-    if ask_for_something("Do you want correct ortographic errors? (y/n)", ['y', 'yes'], ['n', 'no']):
+    if ask_for_something("\nDo you want correct ortographic errors? (y/n)", ['y', 'yes'], ['n', 'no']):
         # Get corrections from gemini and save them in a json if there aren't corrections json file
         ortografic_corrections_jupyter_notebook(notebook_path)
 
     # Translate notebook
-    if ask_for_something("Do you want to translate the notebook? (y/n)", ['y', 'yes'], ['n', 'no']):
+    if ask_for_something("\nDo you want to translate the notebook? (y/n)", ['y', 'yes'], ['n', 'no']):
         # Translate notebook
         translate_jupyter_notebook(notebook_path)

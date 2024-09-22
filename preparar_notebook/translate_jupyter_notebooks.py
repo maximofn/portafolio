@@ -40,9 +40,6 @@ TRANSLATOR_MODEL = GPT4o_LLM
 CHECKER_MODEL = GEMINI_LLM
 
 def translate_text(model, line):
-    global translation_counter
-    global translation_limit
-
     # if line has not text, return it. Check with regex if line has only spaces
     if re.match(r"^\s*$", line):
         return line
@@ -54,8 +51,9 @@ def translate_text(model, line):
 
     # if correction_string is not string, it's an error
     if type(correction_string) != str:
-        print(f"LLM Error ({translation_counter}): {correction_string}")
-        exit(1)
+        print(f"LLM Error: {correction_string}")
+        # exit(1)
+        print(f"\tline to translate: {line}")
 
     return correction_string
 
@@ -132,13 +130,13 @@ def translate_jupyter_notebook(notebook_path):
         """
         translation_check = checker_model.chat(prompt)
         if translation_check == "Error":
-            print(f"Error in {TARGET_LANGUAGES[notebook_number]} translation")
+            print(f"Error in {TARGET_LANGUAGES[notebook_number].upper()} translation")
             print(f"Error: {translation_check}")
-            exit(1)
+            # exit(1)
         elif translation_check != "Todo correcto":
-            print(f"Error in {TARGET_LANGUAGES[notebook_number]} translation")
+            print(f"Error in {TARGET_LANGUAGES[notebook_number].upper()} translation")
             print(f"Error: {translation_check}")
-            exit(1)
+            # exit(1)
 
     # Append at position 1 the disclaimer
     cells_en.insert(1, cells_en[0].copy())

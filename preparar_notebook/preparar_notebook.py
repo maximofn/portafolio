@@ -2,6 +2,7 @@ import argparse
 import pathlib
 from get_notebook_metadata import get_notebook_metadata, check_if_notebook_metadata_is_ok, get_portafolio_path
 from corrections_jupyter_notebook import ortografic_corrections_jupyter_notebook
+from translate_jupyter_notebooks import translate_jupyter_notebook
 from error_codes import QUOTA_EXCEEDED_ERROR
 import json
 from utils import ask_for_something
@@ -33,4 +34,4 @@ if __name__ == "__main__":
     # Translate notebook
     if ask_for_something("Do you want to translate the notebook? (y/n)", ['y', 'yes'], ['n', 'no']):
         # Translate notebook
-        pass
+        translate_jupyter_notebook(notebook_path)

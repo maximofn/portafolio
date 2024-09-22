@@ -43,11 +43,9 @@ def translate_text(model, line):
     # if line has not text, return it. Check with regex if line has only spaces
     if re.match(r"^\s*$", line):
         return line
+    
+    # Translate line with the model
     correction_string = model.chat(line)
-    # correction_string = "```json\n{"
-    # corr = "corr "
-    # correction_string = correction_string + f"\n    \"{KEY_ORIGINAL}\": \"{line}\",\n    \"{KEY_CORRECTION}\": \"{corr+line}\",\n    \"{KEY_EXPLANATION}\": \"test\"\n"
-    # correction_string = correction_string + "}\n```"
 
     # if correction_string is not string, it's an error
     if type(correction_string) != str:
@@ -80,7 +78,6 @@ def translate_jupyter_notebook(notebook_path):
 
     # Get notebook content as a dictionary
     notebook = Notebook(notebook_path)
-    notebook_content_dict = notebook.get_content_as_json()
     cells = notebook.cells()   # Get only with the cells
     total_markdown_cells = notebook.number_markdown_cells()
 

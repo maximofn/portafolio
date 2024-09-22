@@ -1,6 +1,8 @@
 from dotenv import load_dotenv
 import os
 from openai import AzureOpenAI
+from error_codes import OPENAI_APICONNECTIONERROR
+import time
 
 class GPT4o:
     def __init__(self, system_instruction, temperature=0.7, top_p=0.95, max_tokens=800):
@@ -19,6 +21,8 @@ class GPT4o:
         self.temperature = temperature
         self.top_p = top_p
         self.max_tokens = max_tokens
+        self.translation_counter = 0
+        self.translation_limit = 10
     
     def load_api_key(self):
         load_dotenv()
@@ -30,19 +34,30 @@ class GPT4o:
             raise ValueError("GPT4o_API_KEY is not set")
 
     def chat(self, input_text, response_raw=False):
-        response = self.client.chat.completions.create(
-            model=self.gpt_model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": self.system_instruction
-                },
-                {
-                    "role": "user",
-                    "content": input_text
-                }
-            ]
-        )
+        try:
+            response = self.client.chat.completions.create(
+                model=self.gpt_model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": self.system_instruction
+                    },
+                    {
+                        "role": "user",
+                        "content": input_text
+                    }
+                ]
+            )
+        except Exception as e:
+            print(f'Error: {e}')
+            if self.translation_counter < self.translation_limit:
+                self.translation_counter += 1
+                time.sleep(1)
+                return self.chat(input_text)
+            else:
+                print(f"Translation limit reached")
+                self.translation_counter = 0
+            return OPENAI_APICONNECTIONERROR
         if response_raw:
             return response
         

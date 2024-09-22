@@ -4,6 +4,7 @@ from gpt4o import GPT4o
 from groq_llm import Groq_llama3_1_70B
 from notebook import Notebook
 import re
+from utils import ask_for_something
 
 ENGLISH = 'en'
 PORTUGUESE = 'pt'
@@ -60,6 +61,25 @@ def translate_text(model, line):
         print(f"\tline to translate: {line}")
 
     return correction_string
+
+def analyze_translation_errors(error):
+    # Get json
+    if "```json" in error:
+        error_json_raw = re.search(r"```json(.*)```", error, re.DOTALL).group(1)
+    else:
+        error_json_raw = re.search(r"```(.*)```", error, re.DOTALL).group(1)
+    
+    # Clean json
+    error_json_raw_cleaned = error_json_raw.replace("'", "\"").replace("{\"", "{\n\"").replace("\"original\"", "\t\"original\"").replace("\"traduccion\"", "\n\t\"traduccion\"").replace("\"error\"", "\n\t\"error\"").replace(", \"", ", \n\"").replace("\"},", "\"\n\t},").replace("\"}}", "\"\n\t}\n}").replace("\n\n", "").replace("[\"", "\"").replace("\"]", "\"")
+
+    # Split json in lines
+    lines = error_json_raw_cleaned.split("\n")
+
+    # Get cells IDs
+    for line in lines:
+        if line.startswith("\"") and line.endswith("{"):
+            key = re.search(r"\"(.*?)\"", line, re.DOTALL).group(1)
+            print(f"key: {key}")
 
 def translate_jupyter_notebook(notebook_path):
     # load translator LLM
@@ -119,6 +139,18 @@ def translate_jupyter_notebook(notebook_path):
         bar.set_description(f"\t\tCell {markdown_cell_counter}/{total_markdown_cells}")
     print(f"\tEnd of translation")
 
+    # Append at position 1 the disclaimer
+    print(f"\tAdding disclaimer to target notebooks")
+    cells_en.insert(1, cells_en[0].copy())
+    cells_pt.insert(1, cells_pt[0].copy())
+    cells_en[1]['source'] = [DISCLAIMER_EN]
+    cells_pt[1]['source'] = [DISCLAIMER_PT]
+
+    # Save translated notebooks
+    print(f"\tSaving target notebooks")
+    for notebook_number, notebook in enumerate(target_notebooks):
+        notebook.save_cells(target_cells[notebook_number])
+
     # Check translations
     print(f"\tChecking translations")
     markdown_cells = [cell for cell in cells if cell['cell_type'] == 'markdown']
@@ -139,28 +171,18 @@ def translate_jupyter_notebook(notebook_path):
             ```
             ¿Podrías revisarlo y decirme si hay algún error? 
             Si crees que está todo bien respondeme con "Todo correcto".
-            Si crees que hay algún error respondeme con "Error" y a continuación el error.
+            Si crees que hay algún error respondeme con "Error" y a continuación el error que lo mostrarás mediante un json con una clave con cada ID de celda que tiene error.
+            Dentro de esa clave habrá otros tres conjuntos de clave valor
+             * Uno con la clave `original` y el valor con el contenido original de la celda
+             * Otro con la clave `traduccion` y el valor con la traducción de la celda
+             * Otro con la clave `error` y el valor con el error que has encontrado
+            
             Recuerda, responde solo lo que te pido, tu respuesta forma parte de un script de automatización que va a comprobar si tu salida es una de las esperadas.
         """
         translation_check = checker_model.chat(prompt)
-        if translation_check == "Error":
+        if translation_check != "Todo correcto":
             print(f"\tError in {TARGET_LANGUAJES_DICT[TARGET_LANGUAJES[notebook_number]].upper()} translation")
-            print(f"\tError: {translation_check}")
-            # exit(1)
-        elif translation_check != "Todo correcto":
-            print(f"\tError in {TARGET_LANGUAJES_DICT[TARGET_LANGUAJES[notebook_number]].upper()} translation")
-            print(f"\tError: {translation_check}")
+            analyze_translation_errors(translation_check)
             # exit(1)
     print(f"\tEnd of translation check")
-
-    # Append at position 1 the disclaimer
-    print(f"\tAdding disclaimer to target notebooks")
-    cells_en.insert(1, cells_en[0].copy())
-    cells_pt.insert(1, cells_pt[0].copy())
-    cells_en[1]['source'] = [DISCLAIMER_EN]
-    cells_pt[1]['source'] = [DISCLAIMER_PT]
-
-    # Save translated notebooks
-    print(f"\tSaving target notebooks")
-    for notebook_number, notebook in enumerate(target_notebooks):
-        notebook.save_cells(target_cells[notebook_number])
+    ask_for_something("\nHave you changed this mistakes? (y/n)", ['y', 'yes'], ['n', 'no'])

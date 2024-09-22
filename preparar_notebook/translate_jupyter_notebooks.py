@@ -126,14 +126,14 @@ def translate_jupyter_notebook(notebook_path):
     markdown_cells_pt = [cell for cell in cells_pt if cell['cell_type'] == 'markdown']
     target_markdown_cells = [markdown_cells_en, markdown_cells_pt]
     for notebook_number, notebook in enumerate(target_notebooks):
-        prompt = """
+        prompt = f"""
             Hola, tengo este jupyter notebook en español
             ```
-            """ + str(markdown_cells) + """
+            {markdown_cells}
             ```
-            y lo he traducido al """ + str(TARGET_LANGUAJES_DICT[TARGET_LANGUAJES[notebook_number]]) + """
+            y lo he traducido al {TARGET_LANGUAJES_DICT[TARGET_LANGUAJES[notebook_number]]}
             ```
-            """ + str(target_markdown_cells[notebook_number]) + """
+            {target_markdown_cells[notebook_number]}
             ```
             ¿Podrías revisarlo y decirme si hay algún error? 
             Si crees que está todo bien respondeme con "Todo correcto".

@@ -49,7 +49,7 @@ class GPT4o:
                 ]
             )
         except Exception as e:
-            print(f'Error: {e}')
+            print(f'Error ({self.translation_counter}): {e}')
             if self.translation_counter < self.translation_limit:
                 self.translation_counter += 1
                 time.sleep(1)
@@ -69,7 +69,9 @@ class GPT4o:
             return "Incomplete model output because of the max_tokens parameter or the token limit"
         elif finish_reason == "content_filter":
             content_filter_results = response.choices[0].content_filter_results
-            return content_filter_results
+            message_content = response.choices[0].message.content
+            result = "content_filter_results: " + str(content_filter_results) + "\nmessage_content: " + str(message_content)
+            return result
 
 
 if __name__ == "__main__":

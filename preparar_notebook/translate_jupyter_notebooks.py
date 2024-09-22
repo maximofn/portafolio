@@ -7,7 +7,11 @@ import re
 
 ENGLISH = 'en'
 PORTUGUESE = 'pt'
-TARGET_LANGUAGES = [ENGLISH, PORTUGUESE]
+TARGET_LANGUAJES_DICT = {
+    'en': 'english',
+    'pt': 'portuguese'
+}
+TARGET_LANGUAJES = [ENGLISH, PORTUGUESE]
 SYSTEM_INSTRUCTION_EN = """
     Eres un experto traductor al inglés de texto markdown. Tu misión es traducir al inglés texto markdown.
 
@@ -57,6 +61,7 @@ def translate_text(model, line):
 
 def translate_jupyter_notebook(notebook_path):
     # load translator LLM
+    print(f"\tLoading translator model {TRANSLATOR_MODEL}")
     if TRANSLATOR_MODEL == GEMINI_LLM:
         translator_model_en = Gemini(system_instruction=SYSTEM_INSTRUCTION_EN)
         translator_model_pt = Gemini(system_instruction=SYSTEM_INSTRUCTION_PT)
@@ -69,6 +74,7 @@ def translate_jupyter_notebook(notebook_path):
     translations_models = [translator_model_en, translator_model_pt]
 
     # load checker LLM
+    print(f"\tLoading checker model {CHECKER_MODEL}")
     if CHECKER_MODEL == GEMINI_LLM:
         checker_model = Gemini(system_instruction=SYSTEM_INSTRUCTION_CHECKER)
     elif CHECKER_MODEL == GPT4o_LLM:
@@ -77,11 +83,13 @@ def translate_jupyter_notebook(notebook_path):
         checker_model = Groq_llama3_1_70B(system_instruction=SYSTEM_INSTRUCTION_CHECKER)
 
     # Get notebook content as a dictionary
+    print(f"\tLoading notebook {notebook_path}")
     notebook = Notebook(notebook_path)
     cells = notebook.cells()   # Get only with the cells
     total_markdown_cells = notebook.number_markdown_cells()
 
     # Create a new notebook for each target language
+    print(f"\tCreating target notebooks")
     notebook_en = Notebook(notebook_path, add_path='notebooks_translated', end_name=ENGLISH)
     notebook_pt = Notebook(notebook_path, add_path='notebooks_translated', end_name=PORTUGUESE)
     notebook_en.copy_from(notebook)
@@ -110,15 +118,22 @@ def translate_jupyter_notebook(notebook_path):
     print(f"\tEnd of translation")
 
     # Check translations
+    print(f"\tChecking translations")
+    markdown_cells = [cell for cell in cells if cell['cell_type'] == 'markdown']
+    cells_en = notebook_en.cells()
+    cells_pt = notebook_pt.cells()
+    markdown_cells_en = [cell for cell in cells_en if cell['cell_type'] == 'markdown']
+    markdown_cells_pt = [cell for cell in cells_pt if cell['cell_type'] == 'markdown']
+    target_markdown_cells = [markdown_cells_en, markdown_cells_pt]
     for notebook_number, notebook in enumerate(target_notebooks):
         prompt = """
             Hola, tengo este jupyter notebook en español
             ```
-            """ + str(notebook.content['cells']) + """
+            """ + str(markdown_cells) + """
             ```
-            y lo he traducido al """ + TARGET_LANGUAGES[notebook_number] + """
+            y lo he traducido al """ + str(TARGET_LANGUAJES_DICT[TARGET_LANGUAJES[notebook_number]]) + """
             ```
-            """ + str(target_notebooks[notebook_number].content['cells']) + """
+            """ + str(target_markdown_cells[notebook_number]) + """
             ```
             ¿Podrías revisarlo y decirme si hay algún error? 
             Si crees que está todo bien respondeme con "Todo correcto".
@@ -127,20 +142,23 @@ def translate_jupyter_notebook(notebook_path):
         """
         translation_check = checker_model.chat(prompt)
         if translation_check == "Error":
-            print(f"Error in {TARGET_LANGUAGES[notebook_number].upper()} translation")
-            print(f"Error: {translation_check}")
+            print(f"\tError in {TARGET_LANGUAJES_DICT[TARGET_LANGUAJES[notebook_number]].upper()} translation")
+            print(f"\tError: {translation_check}")
             # exit(1)
         elif translation_check != "Todo correcto":
-            print(f"Error in {TARGET_LANGUAGES[notebook_number].upper()} translation")
-            print(f"Error: {translation_check}")
+            print(f"\tError in {TARGET_LANGUAJES_DICT[TARGET_LANGUAJES[notebook_number]].upper()} translation")
+            print(f"\tError: {translation_check}")
             # exit(1)
+    print(f"\tEnd of translation check")
 
     # Append at position 1 the disclaimer
+    print(f"\tAdding disclaimer to target notebooks")
     cells_en.insert(1, cells_en[0].copy())
     cells_pt.insert(1, cells_pt[0].copy())
     cells_en[1]['source'] = [DISCLAIMER_EN]
     cells_pt[1]['source'] = [DISCLAIMER_PT]
 
     # Save translated notebooks
+    print(f"\tSaving target notebooks")
     for notebook_number, notebook in enumerate(target_notebooks):
         notebook.save_cells(target_cells[notebook_number])

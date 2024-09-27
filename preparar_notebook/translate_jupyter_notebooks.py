@@ -63,23 +63,59 @@ def translate_text(model, line):
     return correction_string
 
 def analyze_translation_errors(error):
+    print(error)
     # Get json
     if "```json" in error:
         error_json_raw = re.search(r"```json(.*)```", error, re.DOTALL).group(1)
     else:
         error_json_raw = re.search(r"```(.*)```", error, re.DOTALL).group(1)
     
+    # Clean format if LLM checkers return it with a wrong format
+    if error_json_raw.startswith("Error") and not error_json_raw.startswith("Error\n"):
+        error_json_raw = error_json_raw[5:]
+    elif error_json_raw.startswith("Error\n"):
+        error_json_raw = error_json_raw[6:]
+    elif error_json_raw.startswith("\nError") and not error_json_raw.startswith("\nError\n"):
+        error_json_raw = error_json_raw[6:]
+    elif error_json_raw.startswith("\nError\n"):
+        error_json_raw = error_json_raw[7:]
+    else:
+        error_json_raw = error_json_raw
+    
     # Clean json
     error_json_raw_cleaned = error_json_raw.replace("'", "\"").replace("{\"", "{\n\"").replace("\"original\"", "\t\"original\"").replace("\"traduccion\"", "\n\t\"traduccion\"").replace("\"error\"", "\n\t\"error\"").replace(", \"", ", \n\"").replace("\"},", "\"\n\t},").replace("\"}}", "\"\n\t}\n}").replace("\n\n", "").replace("[\"", "\"").replace("\"]", "\"")
 
-    # Split json in lines
+    # Split json in lines beacuse if I try to convert it to a dictionary, it gives me an error because LLM checker return wrong json
     lines = error_json_raw_cleaned.split("\n")
 
-    # Get cells IDs
-    for line in lines:
+    # Get cells IDs, original, translation and error and create a dictionary with them
+    translation_errors_dict = {}
+    for number_line, line in enumerate(lines):
         if line.startswith("\"") and line.endswith("{"):
             key = re.search(r"\"(.*?)\"", line, re.DOTALL).group(1)
-            print(f"key: {key}")
+            original = lines[number_line + 1]
+            translation = lines[number_line + 2]
+            error_explained = lines[number_line + 3]
+            
+            if original.startswith("\t"):
+                original = original[1:]
+            if translation.startswith("\t"):
+                translation = translation[1:]
+            if error_explained.startswith("\t"):
+                error_explained = error_explained[1:]
+            
+            if original.startswith("\"original\": ") and translation.startswith("\"traduccion\": ") and error_explained.startswith("\"error\": "):
+                original = original.replace("\"original\": ", "")
+                translation = translation.replace("\"traduccion\": ", "")
+                error_explained = error_explained.replace("\"error\": ", "")
+                translation_errors_dict[key] = {"original": original, "translation": translation, "error": error_explained}
+            else:
+                continue
+                
+            print(f"\t\tkey: {key}")
+            print(f"\t\t\toriginal:    {original}")
+            print(f"\t\t\ttranslation: {translation}")
+            print(f"\t\t\terror:       {error_explained}")
 
 def translate_jupyter_notebook(notebook_path):
     # load translator LLM
@@ -112,8 +148,8 @@ def translate_jupyter_notebook(notebook_path):
 
     # Create a new notebook for each target language
     print(f"\tCreating target notebooks")
-    notebook_en = Notebook(notebook_path, add_path='notebooks_translated', end_name=ENGLISH)
-    notebook_pt = Notebook(notebook_path, add_path='notebooks_translated', end_name=PORTUGUESE)
+    notebook_en = Notebook(notebook_path, add_path='notebooks_translated', end_name=ENGLISH.upper())
+    notebook_pt = Notebook(notebook_path, add_path='notebooks_translated', end_name=PORTUGUESE.upper())
     notebook_en.copy_from(notebook)
     notebook_pt.copy_from(notebook)
     cells_en = notebook_en.cells()
@@ -144,12 +180,9 @@ def translate_jupyter_notebook(notebook_path):
     cells_en.insert(1, cells_en[0].copy())
     cells_pt.insert(1, cells_pt[0].copy())
     cells_en[1]['source'] = [DISCLAIMER_EN]
+    cells_en[1]['metadata']['id'] += '_discalimer'
     cells_pt[1]['source'] = [DISCLAIMER_PT]
-
-    # Save translated notebooks
-    print(f"\tSaving target notebooks")
-    for notebook_number, notebook in enumerate(target_notebooks):
-        notebook.save_cells(target_cells[notebook_number])
+    cells_pt[1]['metadata']['id'] += '_discalimer'
 
     # Check translations
     print(f"\tChecking translations")
@@ -182,7 +215,14 @@ def translate_jupyter_notebook(notebook_path):
         translation_check = checker_model.chat(prompt)
         if translation_check != "Todo correcto":
             print(f"\tError in {TARGET_LANGUAJES_DICT[TARGET_LANGUAJES[notebook_number]].upper()} translation")
-            analyze_translation_errors(translation_check)
+            print(translation_check)
+            # analyze_translation_errors(translation_check)
+            ask_for_something("\nHave you changed this mistakes? (y/n)", ['y', 'yes'], ['n', 'no'])
             # exit(1)
+
+    # Save translated notebooks
+    print(f"\tSaving target notebooks")
+    for notebook_number, notebook in enumerate(target_notebooks):
+        notebook.save_cells(target_cells[notebook_number])
+
     print(f"\tEnd of translation check")
-    ask_for_something("\nHave you changed this mistakes? (y/n)", ['y', 'yes'], ['n', 'no'])

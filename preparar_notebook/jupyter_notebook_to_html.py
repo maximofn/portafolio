@@ -46,7 +46,7 @@ def add_content_html(html_content):
         if "<section class" in line:
             content_html += "      \n"
         if "¶" in line:
-            line = line.replace("¶", f'<img decoding="async" class="link-img" alt="link-svg" src={open_brace}svg_paths.link_svg_path{closing_brace}/>')
+            line = line.replace("¶", f'<img decoding="async" class="link-img" width="24px" height="24px" src={open_brace}svg_paths.link_svg_path{closing_brace}/>')
         content_html += f"      {line}\n"
     return content_html
 

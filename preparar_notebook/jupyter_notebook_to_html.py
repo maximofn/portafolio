@@ -50,6 +50,45 @@ def add_content_html(html_content):
         content_html += f"      {line}\n"
     return content_html
 
+def format_anchor_links(html_content):
+    content_html = ""
+    html_content_lines = html_content.split("\n")
+    for line in html_content_lines:
+        if "<a" in line:
+            # Get the position of the start and end of the open anchor
+            start_open_anchor_position = None
+            end_open_anchor_position = None
+            for i in range(len(line)):
+                if line[i:].startswith("<a"):
+                    start_open_anchor_position = i     # start anchor position is the position of `<a` in the line
+                    break
+            if start_open_anchor_position:
+                for i in range(start_open_anchor_position, len(line)):
+                    if line[i:].startswith("\">"):
+                        end_open_anchor_position = i+1     # end anchor position is the position of `>` in the line
+                        break
+            if start_open_anchor_position and end_open_anchor_position:
+                # Get href
+                for i in range(start_open_anchor_position, end_open_anchor_position):
+                    href = None
+                    if line[i:].startswith("href"):
+                        start_href_position = i + 6
+                        end_href_position = end_open_anchor_position - 1
+                        href = line[start_href_position:end_href_position]
+                        external = False
+                        break
+                if href:
+                    # Check if the href is internal or external
+                    if ("http:" in href or "https:" in href or "www." in href) and not "maximofn.com" in href:
+                        external = True
+                    if href.startswith("#"):
+                        external = False
+                    
+                    if external:
+                        line = line[:start_open_anchor_position] + f'<a href="{href}" target="_blank" rel="nofollow noreferrer">' + line[end_open_anchor_position+1:]
+        content_html += f"{line}\n"
+    return content_html
+
 def convert_to_html(notebook_path, metadata):
     # Get path, name and extension of the notebook
     notebook_path = pathlib.Path(notebook_path)
@@ -159,6 +198,7 @@ const closing_brace = '{closing_brace}';
         content_html = content_html.replace('<div class="highlight hl-ipython3">', '<div class="highlight hl-ipython3">\n')
         content_html = format_code_blocks(content_html)
         content_html = content_html.replace('\n      </code></pre>', '</code></pre>')
+        content_html = format_anchor_links(content_html)
 
         with open(astro_file_path, 'w') as astro_file:
             astro_file.write(header_file)

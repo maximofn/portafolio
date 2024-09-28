@@ -4,7 +4,7 @@ from check_for_new_classes import check_for_new_classes
 from utils import get_portafolio_path
 from format_code_blocks import format_code_blocks
 
-CONVERT_TO_HTML_WITH_NBCONVERT = False
+CONVERT_TO_HTML_WITH_NBCONVERT = True
 
 HTML_FILES = "html_files"
 NOTEBOOKS_TRANSLATED = "notebooks_translated"

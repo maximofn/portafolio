@@ -60,12 +60,12 @@ def format_anchor_links(html_content):
             end_open_anchor_position = None
             for i in range(len(line)):
                 if line[i:].startswith("<a"):
-                    start_open_anchor_position = i     # start anchor position is the position of `<a` in the line
+                    start_open_anchor_position = i     # start anchor position if the string starts with `<a` in the line
                     break
             if start_open_anchor_position:
                 for i in range(start_open_anchor_position, len(line)):
                     if line[i:].startswith("\">"):
-                        end_open_anchor_position = i+1     # end anchor position is the position of `>` in the line
+                        end_open_anchor_position = i+1     # end anchor position if the string ends with `">` in the line
                         break
             if start_open_anchor_position and end_open_anchor_position:
                 # Get href
@@ -86,6 +86,30 @@ def format_anchor_links(html_content):
                     
                     if external:
                         line = line[:start_open_anchor_position] + f'<a href="{href}" target="_blank" rel="nofollow noreferrer">' + line[end_open_anchor_position+1:]
+        content_html += f"{line}\n"
+    return content_html
+
+def format_images(html_content):
+    content_html = ""
+    html_content_lines = html_content.split("\n")
+    for line in html_content_lines:
+        if "<img" in line:
+            # Get the position of the start and end of the img
+            start_img_position = None
+            end_img_position = None
+            for i in range(len(line)):
+                if line[i:].startswith("<img"):
+                    start_img_position = i     # start img position if the string starts with `<img` in the line
+                    break
+            if start_img_position:
+                for i in range(start_img_position, len(line)):
+                    if line[i:].startswith(">"):
+                        end_img_position = i+1     # end img position if the string ends with `">` in the line
+                        break
+            if start_img_position and end_img_position:
+                img_html_item = line[start_img_position:end_img_position]
+                if "decoding" not in img_html_item:
+                    line = line[:start_img_position+4] + ' decoding="async"' + line[start_img_position+4:]
         content_html += f"{line}\n"
     return content_html
 
@@ -199,6 +223,7 @@ const closing_brace = '{closing_brace}';
         content_html = format_code_blocks(content_html)
         content_html = content_html.replace('\n      </code></pre>', '</code></pre>')
         content_html = format_anchor_links(content_html)
+        content_html = format_images(content_html)
 
         with open(astro_file_path, 'w') as astro_file:
             astro_file.write(header_file)

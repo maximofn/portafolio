@@ -199,9 +199,9 @@ const closing_brace = '{closing_brace}';
 """
         post_index="""
 
-    <div class=\"post-index\">
+    <aside class=\"post-index\">
 """
-        close_post_index="""    </div>
+        close_post_index="""    </aside>
 
 
 """

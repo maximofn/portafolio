@@ -47,4 +47,5 @@ if __name__ == "__main__":
             translate_jupyter_notebook(notebook_path)
     
     # Convert to HTML
-    # convert_to_html(notebook_path, notebook_path.with_suffix('.html'))
+    print("\nConverting to HTML")
+    convert_to_html(notebook_path, notebook_metadata)

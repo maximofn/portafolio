@@ -158,6 +158,7 @@ const closing_brace = '{closing_brace}';
         content_html = add_content_html(html_content)
         content_html = content_html.replace('<div class="highlight hl-ipython3">', '<div class="highlight hl-ipython3">\n')
         content_html = format_code_blocks(content_html)
+        content_html = content_html.replace('\n      </code></pre>', '</code></pre>')
 
         with open(astro_file_path, 'w') as astro_file:
             astro_file.write(header_file)

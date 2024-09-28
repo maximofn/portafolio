@@ -125,6 +125,17 @@ def format_code_blocks(content):
                                                         # Remove the first 6 spaces from pos+1 to the end
                                                         if pos > 0:
                                                             input_cell_code[pos] = input_cell_code[pos][0] + input_cell_code[pos][7:]
+                                                        # TODO revisar si usar esto solo para el post de python o para todos
+                                                        input_cell_code[pos] = input_cell_code[pos].replace(">\\\"<", ">\\\\\"<")
+                                                        input_cell_code[pos] = input_cell_code[pos].replace(">\\\\\'<", ">\\\\\\\'<")
+                                                        input_cell_code[pos] = input_cell_code[pos].replace(">\\\\<", ">\\\\\\\\<")
+                                                        input_cell_code[pos] = input_cell_code[pos].replace(">\\n<", ">\\\\n<")
+                                                        input_cell_code[pos] = input_cell_code[pos].replace(">\\r<", ">\\\\r<")
+                                                        input_cell_code[pos] = input_cell_code[pos].replace(">\\t<", ">\\\\t<")
+                                                        input_cell_code[pos] = input_cell_code[pos].replace(">\\b<", ">\\\\b<")
+                                                        input_cell_code[pos] = input_cell_code[pos].replace(">\\115\\141\\170\\151\\155\\157\\106\\116<", ">\\\\115\\\\141\\\\170\\\\151\\\\155\\\\157\\\\106\\\\116<")
+                                                        input_cell_code[pos] = input_cell_code[pos].replace(">\\x4d\\x61\\x78\\x69\\x6d\\x6f\\x46\\x4e<", ">\\\\x4d\\\\x61\\\\x78\\\\x69\\\\x6d\\\\x6f\\\\x46\\\\x4e<")
+                                                        # input_cell_code[pos] = input_cell_code[pos].replace("", "")
                                                         lines[i] = lines[i] + '\n          ' + input_cell_code[pos]
                                                     lines[i] = lines[i] + '\n' + end_input_code_block
                                                     lines[i] = lines[i] + '\n' + start_output_code_block
@@ -144,6 +155,8 @@ def format_code_blocks(content):
                                                         if pos > 0:
                                                             output_cell_code[pos] = output_cell_code[pos][0] + output_cell_code[pos][7:]
                                                         output_cell_code[pos] = output_cell_code[pos].replace("</pre>", "").replace(" <pre>", "")
+                                                        # TODO revisar si usar esto solo para el post de python o para todos
+                                                        output_cell_code[pos] = output_cell_code[pos].replace("\\MaximoFN\\", "\\\\MaximoFN\\\\")
                                                         # Check if the line contains only comments
                                                         if not (output_cell_code[pos][0]=="'" and output_cell_code[pos][1]=="'"):
                                                             lines[i] = lines[i] + '\n          ' + output_cell_code[pos]

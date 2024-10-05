@@ -218,6 +218,7 @@ const closing_brace = '{closing_brace}';
         with open(full_destiny_path, 'r') as html_file:
             html_content = html_file.read()
         index_html = add_index_html(html_content)
+        html_content = html_content.replace('<img', '<img onerror="this.parentNode.removeChild(this)"')
         content_html = add_content_html(html_content)
         content_html = content_html.replace('<div class="highlight hl-ipython3">', '<div class="highlight hl-ipython3">\n')
         content_html = format_code_blocks(content_html)

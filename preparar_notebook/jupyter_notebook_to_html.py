@@ -113,6 +113,26 @@ def format_images(html_content):
         content_html += f"{line}\n"
     return content_html
 
+def replace_braces(html_content):
+    content_html = ""
+    html_content_lines = html_content.split("\n")
+    for number_line, line in enumerate(html_content_lines):
+        if "<section" in line: # Start section
+            # print(line)
+            start_section_line = number_line
+            # Find the end of the section
+            for i in range(number_line, len(html_content_lines)):
+                if "</section" in html_content_lines[i]:
+                    end_section_line = i
+                    break
+            # Replace the braces in the section
+            for i in range(start_section_line, end_section_line):
+                if '<p' in html_content_lines[i]:
+                    html_content_lines[i] = html_content_lines[i].replace("{", "{opening_brace").replace("}", "closing_brace}").replace("{opening_brace", "{opening_brace}").replace("closing_brace}", "{closing_brace}")
+                # print(html_content_lines[i])
+        content_html += f"{html_content_lines[number_line]}\n"
+    return content_html
+
 def convert_to_html(notebook_path, metadata):
     # Get path, name and extension of the notebook
     notebook_path = pathlib.Path(notebook_path)
@@ -225,6 +245,7 @@ const closing_brace = '{closing_brace}';
         content_html = content_html.replace('\n      </code></pre>', '</code></pre>')
         content_html = format_anchor_links(content_html)
         content_html = format_images(content_html)
+        content_html = replace_braces(content_html)
 
         with open(astro_file_path, 'w') as astro_file:
             astro_file.write(header_file)

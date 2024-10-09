@@ -20,6 +20,8 @@ LANGUAJES_DICT = {SPANISH: "spanish", ENGLISH: "english", PORTUGUESE: "portugues
 open_brace = "{"
 closing_brace = "}"
 
+link_img_counter = 0
+
 def add_index_html(html_content):
     index_html = ""
     html_content_lines = html_content.split("\n")
@@ -40,13 +42,16 @@ def add_index_html(html_content):
     return index_html
 
 def add_content_html(html_content):
+    global link_img_counter
+
     content_html = ""
     html_content_lines = html_content.split("\n")
     for line in html_content_lines:
         if "<section class" in line:
             content_html += "      \n"
         if "¶" in line:
-            line = line.replace("¶", f'<img decoding="async" class="link-img" width="24px" height="24px" src={open_brace}svg_paths.link_svg_path{closing_brace}/>')
+            line = line.replace("¶", f'<img decoding="async" class="link-img" width="24px" height="24px" alt="link image {link_img_counter}" src={open_brace}svg_paths.link_svg_path{closing_brace}/>')
+            link_img_counter += 1
         content_html += f"      {line}\n"
     return content_html
 

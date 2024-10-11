@@ -50,6 +50,7 @@ class GPT4o:
             )
         except Exception as e:
             print(f'Error ({self.translation_counter}): {e}')
+            print(f"input_text: {input_text}")
             if self.translation_counter < self.translation_limit:
                 self.translation_counter += 1
                 time.sleep(1)

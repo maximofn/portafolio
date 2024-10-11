@@ -184,6 +184,11 @@ def translate_jupyter_notebook(notebook_path):
     cells_pt[1]['source'] = [DISCLAIMER_PT]
     cells_pt[1]['metadata']['id'] += '_discalimer'
 
+    # Save translated notebooks
+    print(f"\tSaving target notebooks")
+    for notebook_number, notebook in enumerate(target_notebooks):
+        notebook.save_cells(target_cells[notebook_number])
+
     # Check translations
     print(f"\tChecking translations")
     markdown_cells = [cell for cell in cells if cell['cell_type'] == 'markdown']

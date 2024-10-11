@@ -32,7 +32,7 @@ GEMINI_LLM = "Gemini"
 GPT4O_LLM = "GPT4o"
 GROQ_LLM = "Groq_llama3_1_70B"
 QWEN_2_5_72B = "Qwen2.5-72B"
-MODEL = QWEN_2_5_72B
+MODEL = GPT4O_LLM
 
 def apply_corrections(model, line):
     correction_string = model.chat(line)
@@ -44,10 +44,10 @@ def apply_corrections(model, line):
     # if correction_string is not string, it's an error
     if type(correction_string) != str:
         print(f"LLM Error: {correction_string}")
-        exit(1)
+        return line
 
     correction_dict = string_to_dict(correction_string)
-    if f"{KEY_EXPLANATION}" in correction_dict.keys():
+    if f"{KEY_EXPLANATION}" in correction_dict.keys() and f"{KEY_CORRECTION}" in correction_dict.keys() and f"{KEY_ORIGINAL}" in correction_dict.keys():
         if len(correction_dict[f'{KEY_EXPLANATION}']) > 0:
             original_value = correction_dict[f'{KEY_ORIGINAL}']
             correction_vaue = correction_dict[f'{KEY_CORRECTION}']
@@ -59,6 +59,8 @@ def apply_corrections(model, line):
                 return original_value
         else:
             return line
+    else:
+        return line
 
 def ortografic_corrections_jupyter_notebook(notebook_path):
     # load LLM

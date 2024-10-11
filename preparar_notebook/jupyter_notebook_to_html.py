@@ -6,6 +6,7 @@ from format_code_blocks import format_code_blocks
 from PIL import Image
 import requests
 from io import BytesIO
+from img_base64 import base64_to_webp
 
 CONVERT_TO_HTML_WITH_NBCONVERT = True
 
@@ -20,10 +21,13 @@ PORTUGUESE = "PT"
 LANGUAGES = [SPANISH, ENGLISH, PORTUGUESE]
 LANGUAJES_DICT = {SPANISH: "spanish", ENGLISH: "english", PORTUGUESE: "portuguese"}
 
+CLOUDFLARE_HREF = "https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/"
+
 open_brace = "{"
 closing_brace = "}"
 
 link_img_counter = 0
+webp_img_counter = 0
 
 def add_index_html(html_content):
     index_html = ""
@@ -141,6 +145,36 @@ def replace_braces(html_content):
         content_html += f"{html_content_lines[number_line]}\n"
     return content_html
 
+def img_base64_to_webp(html_content, notebook_title):
+    global webp_img_counter
+
+    content_html = ""
+    html_content_lines = html_content.split("\n")
+    for line in html_content_lines:
+        if "<img" in line:
+            start_src_position = None
+            # Get src
+            src = None
+            for i in range(len(line)):
+                if line[i:].startswith("src"):
+                    start_src_position = i + 5
+                    if line[start_src_position-1] != '"':
+                            start_src_position = None
+                    if start_src_position:
+                        end_src_position = line.find('"', start_src_position)
+                        src = line[start_src_position:end_src_position]
+                        break
+            # Open image and get width and height
+            if src:
+                if src.startswith("data:image"):
+                    notebook_title_without_extension = notebook_title.split(".")[0]
+                    image_name = notebook_title_without_extension + str(webp_img_counter) + ".webp"
+                    base64_to_webp(src, image_name)
+                    webp_img_counter += 1
+                    line = f'      <img src="{CLOUDFLARE_HREF}{image_name}" alt="image {notebook_title_without_extension} {webp_img_counter}" loading="lazy">'
+        content_html += f"{line}\n"
+    return content_html
+
 def add_witdh_and_height_to_image(html_content):
     content_html = ""
     html_content_lines = html_content.split("\n")
@@ -167,7 +201,9 @@ def add_witdh_and_height_to_image(html_content):
         content_html += f"{line}\n"
     return content_html
 
-def convert_to_html(notebook_path, metadata):
+def convert_to_html(notebook_path, metadata, notebook_title):
+    global webp_img_counter
+
     # Get path, name and extension of the notebook
     notebook_path = pathlib.Path(notebook_path)
     path = notebook_path.parent
@@ -280,6 +316,8 @@ const closing_brace = '{closing_brace}';
         content_html = format_anchor_links(content_html)
         content_html = format_images(content_html)
         content_html = replace_braces(content_html)
+        content_html = img_base64_to_webp(content_html, notebook_title)
+        webp_img_counter = 0
         content_html = add_witdh_and_height_to_image(content_html)
 
         with open(astro_file_path, 'w') as astro_file:

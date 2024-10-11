@@ -48,4 +48,5 @@ if __name__ == "__main__":
     
     # Convert to HTML
     print("\nConverting to HTML")
-    convert_to_html(notebook_path, notebook_metadata)
+    notebook_title = notebook_metadata[3]
+    convert_to_html(notebook_path, notebook_metadata, notebook_title)

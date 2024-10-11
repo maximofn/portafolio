@@ -31,6 +31,7 @@ clases = [
     'sd',
     'se',
     'si',
+    'sb',
     'vm',
     'w',
     'err',

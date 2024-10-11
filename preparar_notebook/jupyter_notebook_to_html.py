@@ -3,6 +3,9 @@ import pathlib
 from check_for_new_classes import check_for_new_classes
 from utils import get_portafolio_path
 from format_code_blocks import format_code_blocks
+from PIL import Image
+import requests
+from io import BytesIO
 
 CONVERT_TO_HTML_WITH_NBCONVERT = True
 
@@ -138,6 +141,33 @@ def replace_braces(html_content):
         content_html += f"{html_content_lines[number_line]}\n"
     return content_html
 
+def add_witdh_and_height_to_image(html_content):
+    content_html = ""
+    html_content_lines = html_content.split("\n")
+    for line in html_content_lines:
+        if "<img" in line:
+            start_src_position = None
+            # Get src
+            src = None
+            for i in range(len(line)):
+                if line[i:].startswith("src"):
+                    for j in range(i, len(line)):
+                        if line[j] == '"':
+                            start_src_position = j + 1
+                            break
+                    if start_src_position:
+                        end_src_position = line.find('"', start_src_position)
+                        src = line[start_src_position:end_src_position]
+                        break
+            # Open image and get width and height
+            if src:
+                with Image.open(BytesIO(requests.get(src).content)) as img:
+                    width, height = img.size
+                # Add width and height into end_src_position position
+                line = line[:end_src_position+1] + f' width="{width}" height="{height}"' + line[end_src_position+1:]
+        content_html += f"{line}\n"
+    return content_html
+
 def convert_to_html(notebook_path, metadata):
     # Get path, name and extension of the notebook
     notebook_path = pathlib.Path(notebook_path)
@@ -251,6 +281,7 @@ const closing_brace = '{closing_brace}';
         content_html = format_anchor_links(content_html)
         content_html = format_images(content_html)
         content_html = replace_braces(content_html)
+        content_html = add_witdh_and_height_to_image(content_html)
 
         with open(astro_file_path, 'w') as astro_file:
             astro_file.write(header_file)

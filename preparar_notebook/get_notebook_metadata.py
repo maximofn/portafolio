@@ -3,6 +3,8 @@ import json
 from PIL import Image
 import os
 from utils import get_portafolio_path, get_pwd_path, ask_for_something
+import requests
+from io import BytesIO
 
 BYPASS_CHECK_METADATA = False
 
@@ -27,20 +29,8 @@ DATE_KEY = 'date'
 
 
 def get_image_width_height(image_path):
-    if image_path[0] == '/':
-        image_path = image_path[1:]
-
-    # Get current path
-    pwd_path = get_pwd_path()
-
-    # Get portafolio path, this is the main git repository path
-    portafolio_path = get_portafolio_path(pwd_path)
-
-    # Get image absolute path
-    image_absolute_path = portafolio_path / WEB_PORTFOLIO_PATH / WEB_PUBLIC_PATH / image_path
-
     # Open image and get width and height
-    with Image.open(image_absolute_path) as img:
+    with Image.open(BytesIO(requests.get(image_path).content)) as img:
         width, height = img.size
     return width, height
 

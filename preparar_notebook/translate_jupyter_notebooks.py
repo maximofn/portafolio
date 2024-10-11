@@ -180,9 +180,10 @@ def translate_jupyter_notebook(notebook_path):
     cells_en.insert(1, cells_en[0].copy())
     cells_pt.insert(1, cells_pt[0].copy())
     cells_en[1]['source'] = [DISCLAIMER_EN]
-    cells_en[1]['metadata']['id'] += '_discalimer'
     cells_pt[1]['source'] = [DISCLAIMER_PT]
-    cells_pt[1]['metadata']['id'] += '_discalimer'
+    if 'id' in cells_en[1]['metadata']:
+        cells_en[1]['metadata']['id'] += '_discalimer'
+        cells_pt[1]['metadata']['id'] += '_discalimer'
 
     # Save translated notebooks
     print(f"\tSaving target notebooks")

@@ -194,10 +194,15 @@ def add_witdh_and_height_to_image(html_content):
                         break
             # Open image and get width and height
             if src:
-                with Image.open(BytesIO(requests.get(src).content)) as img:
-                    width, height = img.size
-                # Add width and height into end_src_position position
-                line = line[:end_src_position+1] + f' width="{width}" height="{height}"' + line[end_src_position+1:]
+                try:
+                    with Image.open(BytesIO(requests.get(src).content)) as img:
+                        width, height = img.size
+                    # Add width and height into end_src_position position
+                    line = line[:end_src_position+1] + f' width="{width}" height="{height}"' + line[end_src_position+1:]
+                except Exception as e:
+                    print(f"Error: {e}")
+                    print(f"src: {src}")
+                    exit(1)
         content_html += f"{line}\n"
     return content_html
 

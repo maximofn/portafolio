@@ -151,10 +151,9 @@ def add_witdh_and_height_to_image(html_content):
             src = None
             for i in range(len(line)):
                 if line[i:].startswith("src"):
-                    for j in range(i, len(line)):
-                        if line[j] == '"':
-                            start_src_position = j + 1
-                            break
+                    start_src_position = i + 5
+                    if line[start_src_position-1] != '"':
+                            start_src_position = None
                     if start_src_position:
                         end_src_position = line.find('"', start_src_position)
                         src = line[start_src_position:end_src_position]

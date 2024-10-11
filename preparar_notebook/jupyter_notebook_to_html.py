@@ -139,7 +139,7 @@ def replace_braces(html_content):
                     break
             # Replace the braces in the section
             for i in range(start_section_line, end_section_line):
-                if '<p' in html_content_lines[i]:
+                if '<p' in html_content_lines[i] or '<span' in html_content_lines[i]:
                     html_content_lines[i] = html_content_lines[i].replace("{", "{opening_brace").replace("}", "closing_brace}").replace("{opening_brace", "{opening_brace}").replace("closing_brace}", "{closing_brace}")
                 # print(html_content_lines[i])
         content_html += f"{html_content_lines[number_line]}\n"

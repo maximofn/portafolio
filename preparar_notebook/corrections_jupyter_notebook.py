@@ -35,31 +35,36 @@ QWEN_2_5_72B = "Qwen2.5-72B"
 MODEL = GPT4O_LLM
 
 def apply_corrections(model, line):
-    correction_string = model.chat(line)
-    # correction_string = "```json\n{"
-    # corr = "corr "
-    # correction_string = correction_string + f"\n    \"{KEY_ORIGINAL}\": \"{line}\",\n    \"{KEY_CORRECTION}\": \"{corr+line}\",\n    \"{KEY_EXPLANATION}\": \"test\"\n"
-    # correction_string = correction_string + "}\n```"
+    try:
+        correction_string = model.chat(line)
+        # correction_string = "```json\n{"
+        # corr = "corr "
+        # correction_string = correction_string + f"\n    \"{KEY_ORIGINAL}\": \"{line}\",\n    \"{KEY_CORRECTION}\": \"{corr+line}\",\n    \"{KEY_EXPLANATION}\": \"test\"\n"
+        # correction_string = correction_string + "}\n```"
 
-    # if correction_string is not string, it's an error
-    if type(correction_string) != str:
-        print(f"LLM Error: {correction_string}")
-        return line
+        # if correction_string is not string, it's an error
+        if type(correction_string) != str:
+            print(f"LLM Error: {correction_string}")
+            return line
 
-    correction_dict = string_to_dict(correction_string)
-    if f"{KEY_EXPLANATION}" in correction_dict.keys() and f"{KEY_CORRECTION}" in correction_dict.keys() and f"{KEY_ORIGINAL}" in correction_dict.keys():
-        if len(correction_dict[f'{KEY_EXPLANATION}']) > 0:
-            original_value = correction_dict[f'{KEY_ORIGINAL}']
-            correction_vaue = correction_dict[f'{KEY_CORRECTION}']
-            explanation_value = correction_dict[f'{KEY_EXPLANATION}']
-            print(f"\n{KEY_ORIGINAL}  : {original_value}\n{KEY_CORRECTION}: {correction_vaue}\n{KEY_EXPLANATION}: {explanation_value}")
-            if ask_for_something("Do you want to apply this correction? (y/n)", ['y', 'yes'], ['n', 'no']):
-                return correction_vaue
+        correction_dict = string_to_dict(correction_string)
+        if f"{KEY_EXPLANATION}" in correction_dict.keys() and f"{KEY_CORRECTION}" in correction_dict.keys() and f"{KEY_ORIGINAL}" in correction_dict.keys():
+            if len(correction_dict[f'{KEY_EXPLANATION}']) > 0:
+                original_value = correction_dict[f'{KEY_ORIGINAL}']
+                correction_vaue = correction_dict[f'{KEY_CORRECTION}']
+                explanation_value = correction_dict[f'{KEY_EXPLANATION}']
+                print(f"\n{KEY_ORIGINAL}  : {original_value}\n{KEY_CORRECTION}: {correction_vaue}\n{KEY_EXPLANATION}: {explanation_value}")
+                if ask_for_something("Do you want to apply this correction? (y/n)", ['y', 'yes'], ['n', 'no']):
+                    return correction_vaue
+                else:
+                    return original_value
             else:
-                return original_value
+                return line
         else:
             return line
-    else:
+    
+    except Exception as e:
+        print(f"Error: {e}")
         return line
 
 def ortografic_corrections_jupyter_notebook(notebook_path):

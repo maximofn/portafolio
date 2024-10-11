@@ -22,7 +22,7 @@ class GPT4o:
         self.top_p = top_p
         self.max_tokens = max_tokens
         self.translation_counter = 0
-        self.translation_limit = 10
+        self.translation_limit = 5
     
     def load_api_key(self):
         load_dotenv()

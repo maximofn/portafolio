@@ -3,6 +3,7 @@ from tqdm import tqdm
 from gemini import Gemini
 from gpt4o import GPT4o
 from groq_llm import Groq_llama3_1_70B
+from qwen2_5_72B import Qwen2_5_72B
 from notebook import Notebook
 
 KEY_ORIGINAL = "original"
@@ -30,7 +31,8 @@ SYSTEM_INSTRUCTION = """
 GEMINI_LLM = "Gemini"
 GPT4O_LLM = "GPT4o"
 GROQ_LLM = "Groq_llama3_1_70B"
-MODEL = GPT4O_LLM
+QWEN_2_5_72B = "Qwen2.5-72B"
+MODEL = QWEN_2_5_72B
 
 def apply_corrections(model, line):
     correction_string = model.chat(line)
@@ -66,6 +68,8 @@ def ortografic_corrections_jupyter_notebook(notebook_path):
         model = GPT4o(system_instruction=SYSTEM_INSTRUCTION)
     elif MODEL == GROQ_LLM:
         model = Groq_llama3_1_70B(system_instruction=SYSTEM_INSTRUCTION)
+    elif MODEL == QWEN_2_5_72B:
+        model = Qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION)
 
     # Get notebook content as a dictionary
     notebook = Notebook(notebook_path)

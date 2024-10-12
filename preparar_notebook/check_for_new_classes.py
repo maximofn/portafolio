@@ -17,6 +17,8 @@ clases = [
     'ansi-bold',
     'ansi-cyan-intense-fg ansi-bold',
     'ansi-magenta-fg',
+    'ansi-magenta-intense-fg ansi-bold',
+    'ansi-black-intense-fg',
     'bp',
     'c1',
     'ch',

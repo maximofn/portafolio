@@ -13,6 +13,7 @@ clases = [
     'ansi-yellow-intense-fg ansi-bold',
     'ansi-white-fg',
     'ansi-red-intense-fg',
+    'ansi-blue-intense-fg ansi-bold',
     'bp',
     'c1',
     'ch',

@@ -202,7 +202,10 @@ def add_witdh_and_height_to_image(html_content):
                 except Exception as e:
                     print(f"Error: {e}")
                     print(f"src: {src}")
-                    exit(1)
+                    if ".svg" in src:
+                        pass
+                    else:
+                        exit(1)
         content_html += f"{line}\n"
     return content_html
 

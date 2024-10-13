@@ -1,0 +1,253 @@
+---
+import PostLayout from '@layouts/PostLayout.astro';
+import CodeBlockInputCell from '@components/CodeBlockInputCell.astro';
+import CodeBlockOutputCell from '@components/CodeBlockOutputCell.astro';
+
+const { metadata_page } = await import('@portfolio/consts.json');
+const { colors } = await import('@portfolio/consts.json');
+const { svg_paths } = await import('@portfolio/consts.json');
+
+const page_title = 'llm.int8() – 8-bit Matrix Multiplication for Transformers at Scale';
+const end_url = 'llm-int8';
+const description = '¡Prepárate para ahorrar espacio y acelerar tus modelos! 💥 En este post, voy a explorar el método llm.int8(), una técnica de cuantización que te permite reducir el tamaño de tus modelos de aprendizaje automático sin sacrificar demasiada precisión. 📊 ¡Eso significa que podrás entrenar y desplegar modelos más grandes y complejos en menos espacio y con menor consumo de recursos! 💻 Vamos a ver cómo utilizar llm.int8() con transformers para cuantizar un modelo y hacer que sea más eficiente, sin perder la esencia de su inteligencia artificial. 🤖';
+const keywords = 'llm.int8(), transformers, cuantización, aprendizaje automático, inteligencia artificial, INT8, FP16';
+const languaje = 'ES';
+const image_path = 'https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8()-thumbnail.webp';
+const opening_brace = '{';
+const closing_brace = '}';
+---
+
+<PostLayout 
+    title={page_title}
+    languaje={languaje}
+    description={description}
+    keywords={keywords}
+    author={metadata_page.author}
+    theme_color={colors.background_color}
+    end_url={end_url}
+    image_path={image_path}
+    image_width=1920
+    image_height=1440
+    image_extension=webp
+    article_date=2024-07-23+T00:00:00Z
+>
+
+  <section class="post-body">
+
+
+    <aside class="post-index">
+      <a class="anchor-link" href="#Cuantizaci%C3%B3n-vectorial"><h2>Cuantización vectorial</h2></a>
+      <a class="anchor-link" href="#Valor-umbral-%CE%B1"><h2>Valor umbral α</h2></a>
+      <a class="anchor-link" href="#Uso-de-llm.int8()"><h2>Uso de llm.int8()</h2></a>
+    </aside>
+
+
+    <div class="post-body-content">
+      
+      <section class="section-block-markdown-cell">
+      <h1 id="llm.int8()---8-bit-Matrix-Multiplication-for-Transformers-at-Scale">llm.int8() - 8-bit Matrix Multiplication for Transformers at Scale<a class="anchor-link" href="#llm.int8()---8-bit-Matrix-Multiplication-for-Transformers-at-Scale"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 0" src={svg_paths.link_svg_path}/></a></h1>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>En el post <a href="https://maximofn.com/llms-quantization/">LLMs quantization</a> explicamos la importancia de la cuantización de los LLMs para ahorrar memoria. Además explicamos que existe una manera de cuantización que es la <a href="https://maximofn.com/llms-quantization/#Cuantizaci%C3%B3n-de-punto-cero">cuantización de punto cero</a> que consiste en transformar los valores de los parámetros de los pesos linealmente, pero esto tiene el problema de la degradación de los modelos de lenguaje a partir del momento que superan los 2.7B de parámetros</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="llm.int8()-degradation" src="https://maximofn.com/wp-content/uploads/2024/07/llm.int8-degradation.webp" width="868" height="702"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Cuantizaci%C3%B3n-vectorial">Cuantización vectorial<a class="anchor-link" href="#Cuantizaci%C3%B3n-vectorial"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 1" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Como la cuantización de todos los parámetros de los modelos produce error en los grandes modelos de lenguaje, lo que proponen en el paper <a href="https://arxiv.org/abs/2208.07339" target="_blank" rel="nofollow noreferrer">llm.int8()</a> es realizar la cuantización vectorial, es decir, separar las matrices de los pesos en vectores, de manera que algunos de esos vectores se pueden cuantizar en 8 bits, mientras que otros no. Por lo que los que si se pueden cuantizar en 8 bits se cuantizan y se realizan las multiplicaciones matriciales en formato INT8, mientras que los vectores que no pueden ser cuantizados se mantienen en formato FP16 y se realizan las multiplicaciones en formato FP16.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Veámoslo con un ejemplo</p>
+      <p>Supongamos que tenemos la matriz</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="llm.int8()-A" src="https://maximofn.com/wp-content/uploads/2024/07/llm.int8-A.webp" width="378" height="227"/></p>
+      <p>y la queremos multiplicar por la matriz</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="llm.int8()-B" src="https://maximofn.com/wp-content/uploads/2024/07/llm.int8-B.webp" width="151" height="378"/></p>
+      <p>Establecemos un valor umbral y todas las columnas de la primera matriz que tengan un valor mayor a ese umbral se dejan en formato FP16, las filas equivalentes a las filas de la primera matriz, en la segunda matriz también se dejan en formato FP16.</p>
+      <p>Lo explico más claro, como la segunda y cuarta columna de la primera matriz (columnas amarillas) tienen valores mayores a un cierto umbral, entonces la segunda y la cuarta fila de la segunda matriz (filas amarillas) se dejan en formato FP16</p>
+      <p>En caso de tener valores umbrales en la segunda matriz se haría lo mismo, por ejemplo, si en la seguna matriz una fila tuviese un valor mayor a un umbral se dejaría en formato FP16, y esa columna en la primera matriz se dejaría en formato FP16</p>
+      <p>El resto de filas y columnas que no se dejan en formato FP16 se cuantizan en 8 bits y se realizan las multiplicaciones en formato INT8</p>
+      <p>Así que separamos la primera matriz en las dos matrices</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="llm.int8()-A_separated" src="https://maximofn.com/wp-content/uploads/2024/07/llm.int8-A_separated_.webp" width="794" height="487"/></p>
+      <p>Y la segunda matriz en las dos matrices</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="llm.int8()-B_separated" src="https://maximofn.com/wp-content/uploads/2024/07/llm.int8-B_separated_.webp" width="518" height="454"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Multiplicamos las matrices en INT8 por un lado</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="llm.int8()-AxB-int8" src="https://maximofn.com/wp-content/uploads/2024/07/llm.int8-AxB-int8_.webp" width="680" height="227"/></p>
+      <p>y las que están en formato FP16 por otro lado</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="llm.int8()-AxB-fp16" src="https://maximofn.com/wp-content/uploads/2024/07/llm.int8-AxB-fp16_.webp" width="605" height="227"/></p>
+      <p>Como se puede ver, multiplicado las matrices en formato INT8 nos da como resultado una matriz de tamaño 3x2, y multiplicando las matrices en formato FP16 nos da como resultado otra matriz de tamaño 3x2, por lo que si las sumamos</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="llm.int8()-fp16+int8" src="https://maximofn.com/wp-content/uploads/2024/07/llm.int8-fp16int8_.webp" width="605" height="227"/></p>
+      <p>Curiosamente nos da el mismo resultado que si hubiésemos multiplicado las matrices originales</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="llm.int8()-AxB" src="https://maximofn.com/wp-content/uploads/2024/07/llm.int8-AxB_.webp" width="832" height="378"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Para poder ver por qué ocurre esto, si desarrollamos el producto vectorial de las dos matrices originales</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="llm.int8()-AxB-explained" src="https://maximofn.com/wp-content/uploads/2024/07/llm.int8-AxB-explained.webp" width="1020" height="490"/></p>
+      <p>Vemos que la separación que hemos hecho no da problemas</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Por tanto, podemos concluir, que podemos separar filas y columnas de las matrices para realizar las multiplicaciones matriciales. Esta separación se hará cuando algún elemento de la fila o la columna sea mayor que un valor umbral, de manera que als filas o columnas que no tengan un valor mayor a ese umbral se codificarán en INT8 ocupando solo un byte y las filas o columnas que tengan algún elemento mayor que ese umbral se pasarán a FP16 ocupando 2 bytes. De esta manera no tendremos problemas de redondeo, ya que los cálculos que hagamos en INT8 los haremos con valores que hagan que las multiplicaciones no superen el rango de los 8 bits.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Valor-umbral-%CE%B1">Valor umbral α<a class="anchor-link" href="#Valor-umbral-%CE%B1"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 2" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Como hemos dicho vamos a separar en filas y columnas que tengan algún elemento mayor que un valor umbral, pero ¿Qué valor umbral debemos elegir? Los autores del paper hicieron experimentos con varios valores y determinaron que ese valor umbral debía ser α=6. Por encima de ese valor empezaron a obtener degradaciones en los modelos de lenguaje</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Uso-de-llm.int8()">Uso de llm.int8()<a class="anchor-link" href="#Uso-de-llm.int8()"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 3" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos a ver cómo cuantizar un modelo con llm.int8() con la librería transformers. Para ello hay que tener instalado <code>bitsandbytes</code></p>
+      <div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>bitsandbytes
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Cargamos un modelo de 1B de parámetros dos veces, una de manera normal y la segunda cuantizándolo con llm.int8()</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">AutoTokenizer</span>',
+          '<span class="kn">import</span> <span class="nn">torch</span>',
+          '',
+          '<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span><span class="p">)</span>',
+          '<span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"TinyLlama/TinyLlama-1.1B-Chat-v1.0"</span>',
+          '',
+          '<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>',
+          '<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
+          '<span class="n">model_8bit</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">,</span> <span class="n">load_in_8bit</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'The `load_in_4bit` and `load_in_8bit` arguments are deprecated and will be removed in the future versions. Please, pass a `BitsAndBytesConfig` object in `quantization_config` argument instead.',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vemos cuánta memoria ocupa cada uno de los modelos</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">model</span><span class="o">.</span><span class="n">get_memory_footprint</span><span class="p">()</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">),</span> <span class="n">model_8bit</span><span class="o">.</span><span class="n">get_memory_footprint</span><span class="p">()</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '(4.098002195358276, 1.1466586589813232)',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Como se puede ver, el modelo cuantizado ocupa mucha menos memoria</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos ahora a hacer una prueba de generación de texto con los dos modelos</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">"Hello my name is Maximo and I am a Machine Learning Engineer"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
+          '<span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'tensor([[    1, 15043,   590,  1024,   338,  5918,  4200,   322,   306,   626,',
+          '           263,  6189, 29257, 10863,   261]], device=\'cuda:0\')',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vemos la salida con el modelo normal</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">import</span> <span class="nn">time</span>',
+          '',
+          '<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>',
+          '<span class="n">max_new_tokens</span> <span class="o">=</span> <span class="mi">50</span>',
+          '<span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>',
+          '    <span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>',
+          '    <span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>',
+          '    <span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>',
+          '<span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Hello my name is Maximo and I am a Machine Learning Engineer. I am currently working at [Company Name] as a Machine Learning Engineer. I have a Bachelor\'s degree in Computer Science from [University Name] and a Master\'s degree in Computer Science from [University Name]. I',
+          '1.7616662979125977',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Y ahora con el modelo cuantizado</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>',
+          '<span class="n">max_new_tokens</span> <span class="o">=</span> <span class="mi">50</span>',
+          '<span class="n">outputs</span> <span class="o">=</span> <span class="n">model_8bit</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>',
+          '    <span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>',
+          '    <span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>',
+          '    <span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>',
+          '<span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Hello my name is Maximo and I am a Machine Learning Engineer. I am currently working at [Company Name] as a Machine Learning Engineer. I have a Bachelor\'s degree in Computer Science from [University Name] and a Master\'s degree in Computer Science from [University Name]. I',
+          '9.100712776184082',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vemos dos cosas, por un lado que a la salida obtenemos el mismo texto, por lo que con un modelo mucho más pequeño podemos obtener la misma salida, sin embargo el modelo cuantizado tarda mucho más en ejecutarse, por lo que si se necesita usar este modelo en tiempo real no sería recomendable.</p>
+      <p>Esto es contradictorio, porque podríamos pensar que un modelo más pequeño tendría que ejecutarse más rápido, pero hay que pensar que en realidad los dos modelos, el normal y el cuantizado, realizan las mismas operaciones, solo que uno realiza todas las operaciones en FP32 y el otro las hace en INT8 y FP16, sin embargo el modelo cuantizado tiene que buscar filas y columnas con valores mayores al valor umbral, separarlas, realizar las operaciones en INT8 y FP16 y luego volver a juntar los resultados, por lo que el modelo cuantizado tarda más en ejecutarse.</p>
+      </section>
+      
+
+
+
+
+
+
+    </div>
+
+  </section>
+
+</PostLayout>

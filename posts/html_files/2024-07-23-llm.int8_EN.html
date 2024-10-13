@@ -1,0 +1,189 @@
+<section class="section-block-markdown-cell">
+<h1 id="llm.int8()---8-bit-Matrix-Multiplication-for-Transformers-at-Scale">llm.int8() - 8-bit Matrix Multiplication for Transformers at Scale<a class="anchor-link" href="#llm.int8()---8-bit-Matrix-Multiplication-for-Transformers-at-Scale">¶</a></h1>
+</section>
+<section class="section-block-markdown-cell">
+<p>This notebook has been automatically translated to make it accessible to more people, please let me know if you see any typos.</p>
+</section>
+<section class="section-block-markdown-cell">
+<p>In the post <a href="https://maximofn.com/llms-quantization/">LLMs quantization</a> we explained the importance of quantization of LLMs to save memory. We also explained that there is a way of quantization which is <a href="https://maximofn.com/llms-quantization/#Cuantizaci%C3%B3n-de-punto-cero">zero-point quantization</a> that consists in transforming the parameter values of the weights linearly, but this has the problem of the degradation of the language models from the moment they exceed 2.7B parameters.</p>
+<p><img alt="llm.int8()-degradation" src="https://maximofn.com/wp-content/uploads/2024/07/llm.int8-degradation.webp"/></p>
+</section>
+<section class="section-block-markdown-cell">
+<h2 id="Vector-quantization">Vector quantization<a class="anchor-link" href="#Vector-quantization">¶</a></h2>
+</section>
+<section class="section-block-markdown-cell">
+<p>Since the quantization of all the parameters of the models produces errors in the large language models, what they propose in the paper <a href="https://arxiv.org/abs/2208.07339">llm.int8()</a> is to perform vector quantization, that is, to separate the matrices of the weights into vectors, so that some of these vectors can be quantized in 8 bits, while others cannot. So those that can be quantized in 8 bits are quantized and matrix multiplications are performed in INT8 format, while those vectors that cannot be quantized are kept in FP16 format and multiplications are performed in FP16 format.</p>
+</section>
+<section class="section-block-markdown-cell">
+<p>Let's see it with an example</p>
+<p>Suppose we have the matrix</p>
+<p><img alt="llm.int8()-A" src="https://maximofn.com/wp-content/uploads/2024/07/llm.int8-A.webp"/></p>
+<p>and we want to multiply it by the matrix</p>
+<p><img alt="llm.int8()-B" src="https://maximofn.com/wp-content/uploads/2024/07/llm.int8-B.webp"/></p>
+<p>We set a threshold value and all the columns of the first matrix that have a value greater than that threshold are left in FP16 format, the rows equivalent to the rows of the first matrix, in the second matrix are also left in FP16 format.</p>
+<p>Let me explain it more clearly, as the second and fourth columns of the first matrix (yellow columns) have values greater than a certain threshold, then the second and fourth rows of the second matrix (yellow rows) are left in FP16 format.</p>
+<p>In case of having threshold values in the second matrix the same would be done, for example, if in the second matrix a row had a value greater than a threshold, it would be left in FP16 format, and that column in the first matrix would be left in FP16 format.</p>
+<p>The remaining rows and columns that are not left in FP16 format are quantized in 8 bits and multiplications are performed in INT8 format.</p>
+<p>So we separate the first matrix into the two matrices</p>
+<p><img alt="llm.int8()-A_separated" src="https://maximofn.com/wp-content/uploads/2024/07/llm.int8-A_separated_.webp"/></p>
+<p>And the second matrix in the two matrices</p>
+<p><img alt="llm.int8()-B_separated" src="https://maximofn.com/wp-content/uploads/2024/07/llm.int8-B_separated_.webp"/></p>
+</section>
+<section class="section-block-markdown-cell">
+<p>We multiply the matrices in INT8 on one side</p>
+<p><img alt="llm.int8()-AxB-int8" src="https://maximofn.com/wp-content/uploads/2024/07/llm.int8-AxB-int8_.webp"/></p>
+<p>and those in FP16 format on the other hand</p>
+<p><img alt="llm.int8()-AxB-fp16" src="https://maximofn.com/wp-content/uploads/2024/07/llm.int8-AxB-fp16_.webp"/></p>
+<p>As you can see, multiplying the matrices in INT8 format gives us a matrix of size 3x2, and multiplying the matrices in FP16 format gives us another matrix of size 3x2, so if we add them together</p>
+<p><img alt="llm.int8()-fp16+int8" src="https://maximofn.com/wp-content/uploads/2024/07/llm.int8-fp16int8_.webp"/></p>
+<p>Interestingly, it gives us the same result as if we had multiplied the original matrices</p>
+<p><img alt="llm.int8()-AxB" src="https://maximofn.com/wp-content/uploads/2024/07/llm.int8-AxB_.webp"/></p>
+</section>
+<section class="section-block-markdown-cell">
+<p>In order to see why this happens, if we develop the vector product of the two original matrices</p>
+<p><img alt="llm.int8()-AxB-explained" src="https://maximofn.com/wp-content/uploads/2024/07/llm.int8-AxB-explained.webp"/></p>
+<p>We see that the separation we have made does not cause problems.</p>
+</section>
+<section class="section-block-markdown-cell">
+<p>Therefore, we can conclude that we can separate rows and columns of matrices to perform matrix multiplications. This separation will be done when any element of the row or column is greater than a threshold value, so that the rows or columns that do not have a value greater than that threshold will be coded in INT8 occupying only one byte and the rows or columns that have an element greater than that threshold will be passed to FP16 occupying 2 bytes. In this way we will not have rounding problems, since the calculations we do in INT8 will be done with values that do not exceed the range of 8 bits.</p>
+</section>
+<section class="section-block-markdown-cell">
+<h2 id="Threshold-value-%CE%B1">Threshold value α<a class="anchor-link" href="#Threshold-value-%CE%B1">¶</a></h2>
+</section>
+<section class="section-block-markdown-cell">
+<p>As we have said we are going to separate into rows and columns that have some element greater than a threshold value, but what threshold value should we choose? The authors of the paper did experiments with several values and determined that this threshold value should be α=6. Above that value they started to get degradations in the language models.</p>
+</section>
+<section class="section-block-markdown-cell">
+<h2 id="Use-of-llm.int8()">Use of llm.int8()<a class="anchor-link" href="#Use-of-llm.int8()">¶</a></h2>
+</section>
+<section class="section-block-markdown-cell">
+<p>Let's see how to quantize a model with llm.int8() with the transformers library. To do this you must have <code>bitsandbytes</code> installed.</p>
+<div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>bitsandbytes
+<span class="sb">```</span>
+</pre></div>
+</section>
+<section class="section-block-markdown-cell">
+<p>We load a 1B parameter model twice, once normally and the second time quantizing it with llm.int8().</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">AutoTokenizer</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span><span class="p">)</span>
+<span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"TinyLlama/TinyLlama-1.1B-Chat-v1.0"</span>
+
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+<span class="n">model_8bit</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">,</span> <span class="n">load_in_8bit</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stderr-output-text">
+<pre>The `load_in_4bit` and `load_in_8bit` arguments are deprecated and will be removed in the future versions. Please, pass a `BitsAndBytesConfig` object in `quantization_config` argument instead.
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<p>Let's see how much memory each model takes up</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">get_memory_footprint</span><span class="p">()</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">),</span> <span class="n">model_8bit</span><span class="o">.</span><span class="n">get_memory_footprint</span><span class="p">()</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt-output-prompt">Out[6]:</div>
+<div class="output-text-output-subareaoutput_execute_result">
+<pre>(4.098002195358276, 1.1466586589813232)</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<p>As can be seen, the quantized model occupies much less memory.</p>
+</section>
+<section class="section-block-markdown-cell">
+<p>Let's now do a text generation test with the two models</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">"Hello my name is Maximo and I am a Machine Learning Engineer"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+<span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span>
+</pre></div>
+</div>
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt-output-prompt">Out[5]:</div>
+<div class="output-text-output-subareaoutput_execute_result">
+<pre>tensor([[    1, 15043,   590,  1024,   338,  5918,  4200,   322,   306,   626,
+           263,  6189, 29257, 10863,   261]], device='cuda:0')</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<p>We see the output with the normal model</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">time</span>
+
+<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="n">max_new_tokens</span> <span class="o">=</span> <span class="mi">50</span>
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+    <span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>
+    <span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>
+    <span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>Hello my name is Maximo and I am a Machine Learning Engineer. I am currently working at [Company Name] as a Machine Learning Engineer. I have a Bachelor's degree in Computer Science from [University Name] and a Master's degree in Computer Science from [University Name]. I
+1.7616662979125977
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<p>And now with the quantized model</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="n">max_new_tokens</span> <span class="o">=</span> <span class="mi">50</span>
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">model_8bit</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+    <span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>
+    <span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>
+    <span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>Hello my name is Maximo and I am a Machine Learning Engineer. I am currently working at [Company Name] as a Machine Learning Engineer. I have a Bachelor's degree in Computer Science from [University Name] and a Master's degree in Computer Science from [University Name]. I
+9.100712776184082
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<p>We see two things, on the one hand we get the same text at the output, so with a much smaller model we can get the same output, however the quantized model takes much longer to run, so if you need to use this model in real time it would not be advisable.</p>
+<p>This is contradictory, because we might think that a smaller model would have to run faster, but we have to think that in reality the two models, the normal and the quantized, perform the same operations, only that one performs all the operations in FP32 and the other does them in INT8 and FP16, however the quantized model has to search for rows and columns with values greater than the threshold value, separate them, perform the operations in INT8 and FP16 and then put the results back together, so the quantized model takes longer to run.</p>
+</section>

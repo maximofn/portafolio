@@ -1,0 +1,2707 @@
+---
+import PostLayout from '@layouts/PostLayout.astro';
+import CodeBlockInputCell from '@components/CodeBlockInputCell.astro';
+import CodeBlockOutputCell from '@components/CodeBlockOutputCell.astro';
+
+const { metadata_page } = await import('@portfolio/consts.json');
+const { colors } = await import('@portfolio/consts.json');
+const { svg_paths } = await import('@portfolio/consts.json');
+
+const page_title = 'GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers';
+const end_url = 'gptq';
+const description = 'Attention developers! 🚨 Do you have a language model that is too big and heavy for your application? 🤯 Don\'t worry, GPTQ is here to help you! 🤖 This quantization algorithm is like a wizard that makes unnecessary bits and bytes disappear, reducing the size of your model without losing too much precision. 🎩 It\'s like compressing a file without losing quality - it\'s a way to make your models more efficient and faster! 🚀';
+const keywords = 'gptq, quantization, compression, model efficiency, model speed, model size, model optimization';
+const languaje = 'EN';
+const image_path = 'https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/GPTQ-thumbnail.webp';
+const opening_brace = '{';
+const closing_brace = '}';
+---
+
+<PostLayout 
+    title={page_title}
+    languaje={languaje}
+    description={description}
+    keywords={keywords}
+    author={metadata_page.author}
+    theme_color={colors.background_color}
+    end_url={end_url}
+    image_path={image_path}
+    image_width=1024
+    image_height=1024
+    image_extension=webp
+    article_date=2024-07-27+T00:00:00Z
+>
+
+  <section class="post-body">
+
+
+    <aside class="post-index">
+      <a class="anchor-link" href="#Works-on-which-it-is-based"><h2>Works on which it is based</h2></a>
+      <a class="anchor-link" href="#Quantization-by-layers"><h3>Quantization by layers</h3></a>
+      <a class="anchor-link" href="#Optimal-brain-quantization-(OBQ)"><h3>Optimal brain quantization (OBQ)</h3></a>
+      <a class="anchor-link" href="#GPTQ-Algorithm"><h2>GPTQ Algorithm</h2></a>
+      <a class="anchor-link" href="#Step-1:-Arbitrary-order-information"><h3>Step 1: Arbitrary order information</h3></a>
+      <a class="anchor-link" href="#Step-2:-Lazy-batch-updates"><h3>Step 2: Lazy batch updates</h3></a>
+      <a class="anchor-link" href="#Step-3:-Cholesky-reformulation"><h3>Step 3: Cholesky reformulation</h3></a>
+      <a class="anchor-link" href="#GPTQ-Results"><h2>GPTQ Results</h2></a>
+      <a class="anchor-link" href="#Extreme-quantization"><h2>Extreme quantization</h2></a>
+      <a class="anchor-link" href="#Dynamic-discounting-in-inference"><h2>Dynamic discounting in inference</h2></a>
+      <a class="anchor-link" href="#Speed-of-inference"><h2>Speed of inference</h2></a>
+      <a class="anchor-link" href="#Libraries"><h2>Libraries</h2></a>
+      <a class="anchor-link" href="#Quantization-of-a-model"><h2>Quantization of a model</h2></a>
+      <a class="anchor-link" href="#Unquantized-model-inference"><h3>Unquantized model inference</h3></a>
+      <a class="anchor-link" href="#Quantization-of-the-model-to-4-bits"><h3>Quantization of the model to 4 bits</h3></a>
+      <a class="anchor-link" href="#Quantization-of-the-model-to-3-bits"><h3>Quantization of the model to 3 bits</h3></a>
+      <a class="anchor-link" href="#Quantization-of-the-model-to-2-bits"><h3>Quantization of the model to 2 bits</h3></a>
+      <a class="anchor-link" href="#Quantization-of-the-model-to-1-bit"><h3>Quantization of the model to 1 bit</h3></a>
+      <a class="anchor-link" href="#Quantization-summary"><h2>Quantization summary</h2></a>
+      <a class="anchor-link" href="#Loading-of-the-saved-model"><h2>Loading of the saved model</h2></a>
+      <a class="anchor-link" href="#Loading-of-the-model-uploaded-to-the-hub"><h2>Loading of the model uploaded to the hub</h2></a>
+    </aside>
+
+
+    <div class="post-body-content">
+      
+      <section class="section-block-markdown-cell">
+      <h1 id="GPTQ:-Accurate-Post-Training-Quantization-for-Generative-Pre-trained-Transformers">GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers<a class="anchor-link" href="#GPTQ:-Accurate-Post-Training-Quantization-for-Generative-Pre-trained-Transformers"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 22" src={svg_paths.link_svg_path}/></a></h1>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>In the paper <a href="https://arxiv.org/abs/2210.17323" target="_blank" rel="nofollow noreferrer">GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers</a> the need to create a post-training quantization method that does not degrade the quality of the model is exposed. In this post we have seen the method <a href="https://maximofn.com/llm-int8/">llm.int8()</a> that quantizes to INT8 some vectors of the weight matrices, as long as none of their values exceeds a threshold value, which is fine, but they do not quantize all the weights of the model. In this paper they propose a method that quantizes all the weights of the model to 4 and 3 bits, without degrading the quality of the model. This saves considerable memory, not only because all the weights are quantized, but also because it is done at 4, 3 bits (and even 1 and 2 bits under certain conditions), instead of 8 bits.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>This notebook has been automatically translated to make it accessible to more people, please let me know if you see any typos.</p>
+      <h2 id="Works-on-which-it-is-based">Works on which it is based<a class="anchor-link" href="#Works-on-which-it-is-based"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 23" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Quantization-by-layers">Quantization by layers<a class="anchor-link" href="#Quantization-by-layers"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 24" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>On the one hand, they are based on the works <code>Nagel et al., 2020</code>; <code>Wang et al., 2020</code>; <code>Hubara et al., 2021</code> and <code>Frantar et al., 2022</code>, which propose to quantize the weights of the layers of a neural network to 4 and 3 bits, without degrading the quality of the model.</p>
+      <p>Having a data set <code>m</code> coming from a dataset, to each layer <code>l</code> you put the data and you get the output of the weights <code>W</code> of that layer. So what we do is to look for new quantized <code>Ŵ</code> weights that minimize the quadratic error in relation to the output of the total accuracy layer</p>
+      <p><code>argmin_Ŵ||WX- ŴX|||^2</code></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>The values of <code>Ŵ</code> are set before performing the quantization process and during the process, each parameter of <code>Ŵ</code> can change its value independently without depending on the value of the other parameters of <code>Ŵ</code>.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Optimal-brain-quantization-(OBQ)">Optimal brain quantization (OBQ)<a class="anchor-link" href="#Optimal-brain-quantization-(OBQ)"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 25" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>In the <code>OBQ</code> work of <code>Frantar et al., 2022</code> they optimize the above layered quantization process, making it up to 3 times faster. This helps with large models, as quantizing a large model can take a long time.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>The <code>OBQ</code> method is an approach to solve the layered quantization problem in language models. <code>OBQ</code> starts from the idea that the quadratic error can be decomposed into the sum of individual errors for each row of the weight matrix. The method then quantizes each weight independently, always updating the unquantized weights to compensate for the error incurred by the quantization.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>The method is capable of quantifying medium-sized models in reasonable times, but as it is a cubic complexity algorithm it is extremely expensive to apply to models with billions of parameters.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="GPTQ-Algorithm">GPTQ Algorithm<a class="anchor-link" href="#GPTQ-Algorithm"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 26" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Step-1:-Arbitrary-order-information">Step 1: Arbitrary order information<a class="anchor-link" href="#Step-1:-Arbitrary-order-information"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 27" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>In <code>OBQ</code> they searched for the row of weights that created the lowest mean square error to quantize, but they realized that doing it randomly did not increase the final mean square error much. So instead of looking for the row that minimizes the mean square error, which created a cubic complexity in the algorithm, it is always done in the same order. Thanks to this, the execution time of the quantization algorithm is greatly reduced.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Step-2:-Lazy-batch-updates">Step 2: Lazy batch updates<a class="anchor-link" href="#Step-2:-Lazy-batch-updates"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 28" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>As the update of the weights is done row by row, it makes it a slow process and does not take full advantage of the hardware. Therefore, they propose to perform the updates in batches of <code>B=128</code> rows. This makes better use of the hardware and reduces the execution time of the algorithm.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Step-3:-Cholesky-reformulation">Step 3: Cholesky reformulation<a class="anchor-link" href="#Step-3:-Cholesky-reformulation"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 29" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>The problem with doing batch updates is that, due to the large scale of the models, numerical errors can occur that affect the accuracy of the algorithm. Specifically, undefined matrices can be obtained, causing the algorithm to update the remaining weights in the wrong directions, resulting in very poor quantization.</p>
+      <p>To solve this, the authors of the paper propose to use a Cholesky reformulation, which is a more numerically stable method.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="GPTQ-Results">GPTQ Results<a class="anchor-link" href="#GPTQ-Results"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 30" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Below are two graphs with the perplexity measure in the <code>WikiText2</code> dataset for all sizes of the OPT and BLOOM models. It can be seen that with the RTN quantization technique, the perplexity at some sizes increases a lot, while with GPTQ it remains similar to that obtained with the FP16 model.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="GPTQ-figure1" src="https://maximofn.com/wp-content/uploads/2024/07/GPTQ-figure1.webp" width="1097" height="419"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Other plots are shown below, but with the measurement of the accuracy in the <code>LAMBADA</code> dataset. The same thing happens, while GPTQ remains similar to that obtained with FP16, other quantization methods greatly degrade the quality of the model.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="GPTQ-figure3" src="https://maximofn.com/wp-content/uploads/2024/07/GPTQ-figure3.webp" width="1099" height="430"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Extreme-quantization">Extreme quantization<a class="anchor-link" href="#Extreme-quantization"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 31" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>In the previous graphs we have shown the results of quantizing the model to 3 and 4 bits, but we can quantize them to 2 bits, and even to 1 bit.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>By modifying the size of the batches when using the algorithm we can obtain good results quantizing both the model</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <table>
+      <thead>
+      <tr>
+      <th>Modelo</th>
+      <th>FP16</th>
+      <th>g128</th>
+      <th>g64</th>
+      <th>g32</th>
+      <th>3 bits</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+      <td>OPT-175B</td>
+      <td>8.34</td>
+      <td>9.58</td>
+      <td>9.18</td>
+      <td>8.94</td>
+      <td>8.68</td>
+      </tr>
+      <tr>
+      <td>BLOOM</td>
+      <td>8.11</td>
+      <td>9.55</td>
+      <td>9.17</td>
+      <td>8.83</td>
+      <td>8.64</td>
+      </tr>
+      </tbody>
+      </table>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>In the table above you can see the result of the perplexity in the <code>WikiText2</code> dataset for the <code>OPT-175B</code> and <code>BLOOM</code> models quantized to 3 bits. It can be seen that as smaller batches are used, the perplexity decreases, which means that the quality of the quantized model is better. But it has the problem that the algorithm takes longer to run.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Dynamic-discounting-in-inference">Dynamic discounting in inference<a class="anchor-link" href="#Dynamic-discounting-in-inference"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 32" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>During the inference, something called <code>dynamic dequantization</code> is performed in order to perform the inference. Each layer is dequantized as it is passed through.</p>
+      <p>To do this, they developed a kernel that de-quantifies the matrices and performs the matrix products. Although the quantization consumes more computation, the kernel has to access much less memory, which generates significant speedups.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>The inference is performed in FP16 by discounting the weights as you go through the layers and the activation function of each layer is also performed in FP16. Although this means that more calculations have to be done, because the weights have to be discounted, these calculations make the overall process faster, because less data has to be fetched from memory. The weights have to be fetched from memory in fewer bits, so in the end, in matrices of many parameters it saves a lot of data. The bottleneck is usually in fetching the data from memory, so even if you have to do more calculations, in the end the inference is faster.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Speed-of-inference">Speed of inference<a class="anchor-link" href="#Speed-of-inference"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 33" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>The authors of the paper performed a test quantizing the BLOOM-175B model to 3 bits, which occupied about 63 GB of VRAM memory, including the embeddings and the output layer that are kept in FP16. In addition maintaining the 2048 token context window consumes about 9 GB of memory, totaling about 72 GB of VRAM memory. They quantized in 3 bits and not 4 bits to be able to perform this experiment and to be able to fit the model on a single Nvidia A100 GPU with 80 GB of VRAM memory.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>For comparison, normal FP16 inference requires about 350 GB of VRAM memory, which is equivalent to 5 Nvidia A100 GPUs with 80 GB of VRAM memory. And 8-bit quantizing inference using <a href="https://maximofn.com/llm-int8/">llm.int8()</a> requires 3 such GPUs.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Below is a table with the model inference in FP16 and quantized to 3 bits and Nvidia A100 GPUs with 80 GB of VRAM memory and Nvidia A6000 with 48 GB of VRAM memory.</p>
+      <table>
+      <thead>
+      <tr>
+      <th>GPU (VRAM)</th>
+      <th>Average time per token in FP16 (ms)</th>
+      <th>Average time per token in 3 bit (ms)</th>
+      <th>Acceleration</th>
+      <th>Reduction of GPUs required</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+      <td>A6000 (48GB)</td>
+      <td>589</td>
+      <td>130</td>
+      <td>×4.53</td>
+      <td>8→ 2</td>
+      </tr>
+      <tr>
+      <td>A100 (80GB)</td>
+      <td>230</td>
+      <td>71</td>
+      <td>71 ×3.24</td>
+      <td>5→ 1</td>
+      </tr>
+      </tbody>
+      </table>
+      <p>For example, using the kernels, the 3-bit OPT-175B model runs on a single A100 (instead of 5) and is approximately 3.25 times faster than the FP16 version in terms of average time per token.</p>
+      <p>The NVIDIA A6000 GPU has a much lower memory bandwidth, making this strategy even more effective: running the 3-bit OPT-175B model on 2 A6000 GPUs (instead of 8) is approximately 4.53 times faster than the FP16 version.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Libraries">Libraries<a class="anchor-link" href="#Libraries"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 34" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>The authors of the paper implemented the <a href="https://github.com/IST-DASLab/gptq" target="_blank" rel="nofollow noreferrer">GPTQ</a> library. Other libraries were created such as <a href="https://github.com/qwopqwop200/GPTQ-for-LLaMa">GPTQ-for-LLaMa</a>, <a href="https://github.com/turboderp/exllama">exllama</a> and <a href="https://github.com/ggerganov/llama.cpp/">llama.cpp</a>. However these libraries focus only on the llama architecture, so the <a href="https://github.com/AutoGPTQ/AutoGPTQ">AutoGPTQ</a> library gained the most popularity because it has a wider coverage of architectures.</p>
+      <p>Therefore, this library <a href="https://github.com/AutoGPTQ/AutoGPTQ" target="_blank" rel="nofollow noreferrer">AutoGPTQ</a> was integrated by means of an API inside the <a href="https://maximofn.com/hugging-face-transformers/">transformers</a> library. In order to use it, it is necessary to install it as indicated in the <a href="https://github.com/AutoGPTQ/AutoGPTQ#installation">Installation</a> section of its repository and to have the <a href="https://maximofn.com/hugging-face-optimun/">optimun</a> library installed.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>In addition to what is indicated in the <a href="https://github.com/AutoGPTQ/AutoGPTQ#installation" target="_blank" rel="nofollow noreferrer">Installation</a> section of your repository, it is also advisable to do the following:</p>
+      <div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/PanQiWei/AutoGPTQ
+      <span class="nb">cd</span><span class="w"> </span>AutoGPTQ
+      pip<span class="w"> </span>install<span class="w"> </span>.
+      <span class="sb">```</span>
+      
+      For<span class="w"> </span>the<span class="w"> </span>GPU<span class="w"> </span>quantization<span class="w"> </span>kernels<span class="w"> </span>developed<span class="w"> </span>by<span class="w"> </span>the<span class="w"> </span>authors<span class="w"> </span>of<span class="w"> </span>the<span class="w"> </span>paper<span class="w"> </span>to<span class="w"> </span>be<span class="w"> </span>installed.
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Quantization-of-a-model">Quantization of a model<a class="anchor-link" href="#Quantization-of-a-model"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 35" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's see how to quantize a model with the <a href="https://maximofn.com/hugging-face-optimun/">optimun</a> library and the <a href="https://github.com/AutoGPTQ/AutoGPTQ">AutoGPTQ</a> API.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Unquantized-model-inference">Unquantized model inference<a class="anchor-link" href="#Unquantized-model-inference"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 36" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We are going to quantize the <a href="https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct" target="_blank" rel="nofollow noreferrer">meta-flame/Meta-Flame-3-8B-Instruct</a> model which as its name indicates is an 8B parameter model, so in FP16 we would need 16 GB of VRAM memory. First we run the model to see the memory it occupies and the output it generates</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>As to use this model we have to ask permission to Meta, we log in to HuggingFace to download the tokenizer and the model.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">notebook_login</span>',
+      '      ',
+      '      <span class="n">notebook_login</span><span class="p">()</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Instantiate the tokenizer and the model</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">notebook_login</span>',
+      '      ',
+      '      <span class="n">notebook_login</span><span class="p">()</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">AutoTokenizer</span>',
+      '      <span class="kn">import</span> <span class="nn">torch</span>',
+      '      ',
+      '      <span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span><span class="p">)</span>',
+      '      <span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"meta-llama/Meta-Llama-3-8B-Instruct"</span>',
+      '      ',
+      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>',
+      '      <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span><span class="o">.</span><span class="n">half</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's take a look at the memory occupied in FP16</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">notebook_login</span>',
+          '',
+          '<span class="n">notebook_login</span><span class="p">()</span>',
+          '</span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">AutoTokenizer</span>',
+          '<span class="kn">import</span> <span class="nn">torch</span>',
+          '',
+          '<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span><span class="p">)</span>',
+          '<span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"meta-llama/Meta-Llama-3-8B-Instruct"</span>',
+          '',
+          '<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>',
+          '<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span><span class="o">.</span><span class="n">half</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
+          '</span><span class="n">model_memory</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_memory_footprint</span><span class="p">()</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Model memory: </span><span class="si">{</span><span class="n">model_memory</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> GB"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Model memory: 14.96 GB',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>We see that it occupies almost 15 GB, more or less the 16 GB that we had said it should occupy, but why this difference? Surely this model does not have exactly 8B of parameters, but it has a little less, but when indicating the number of parameters it is rounded to 8B.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We make an inference to see how it does it and how long it takes.</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="kn">import</span> <span class="nn">time</span>
+      
+      <span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">"Hello my name is Maximo and I am a Machine Learning Engineer"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+      
+      <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+      <span class="n">max_new_tokens</span> <span class="o">=</span> <span class="mi">50</span>
+      <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+          <span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>
+          <span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>
+          <span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>
+      <span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+      <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Inference time: </span><span class="si">{opening_brace}</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">t0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">{closing_brace}</span><span class="s2"> s"</span><span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Setting `pad_token_id` to `eos_token_id`:128001 for open-end generation.
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>Hello my name is Maximo and I am a Machine Learning Engineer at a startup in the Bay Area. I am passionate about building AI systems that can help humans make better decisions and improve their lives.
+      
+      I have a background in computer science and mathematics, and I have been working with machine learning for several years. I
+      Inference time: 4.14 s
+      </pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Quantization-of-the-model-to-4-bits">Quantization of the model to 4 bits<a class="anchor-link" href="#Quantization-of-the-model-to-4-bits"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 37" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's quantize it to 4 bits. I restart the notebook to avoid memory problems, so we log into Hugging Face again.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">import</span> <span class="nn">time</span>',
+      '      ',
+      '      <span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">"Hello my name is Maximo and I am a Machine Learning Engineer"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>',
+      '      ',
+      '      <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>',
+      '      <span class="n">max_new_tokens</span> <span class="o">=</span> <span class="mi">50</span>',
+      '      <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>',
+      '          <span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>',
+      '          <span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>',
+      '          <span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>',
+      '      <span class="p">)</span>',
+      '      <span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>',
+      '      <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Inference time: </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">t0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">notebook_login</span>',
+      '      ',
+      '      <span class="n">notebook_login</span><span class="p">()</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>First I create the tokenizer</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">import</span> <span class="nn">time</span>',
+          '',
+          '<span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">"Hello my name is Maximo and I am a Machine Learning Engineer"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>',
+          '',
+          '<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>',
+          '<span class="n">max_new_tokens</span> <span class="o">=</span> <span class="mi">50</span>',
+          '<span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>',
+          '    <span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>',
+          '    <span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>',
+          '    <span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>',
+          '<span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Inference time: </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">t0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>',
+          '</span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">notebook_login</span>',
+          '',
+          '<span class="n">notebook_login</span><span class="p">()</span>',
+          '</span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span>',
+          '',
+          '<span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"meta-llama/Meta-Llama-3-8B-Instruct"</span>',
+          '<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Setting `pad_token_id` to `eos_token_id`:128001 for open-end generation.',
+          'Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Now we create the quantization configuration. As we have said, this algorithm calculates the error of the quantized weights over the original weights based on inputs from a dataset, so in the configuration we have to pass it with which dataset we want to quantize the model.</p>
+      <p>The available defaults are <code>wikitext2</code>,<code>c4</code>,<code>c4-new</code>,<code>ptb</code> and <code>ptb-new</code>.</p>
+      <p>We can also create a dataset ourselves from a list of strings</p>
+      <div class="highlight"><pre><span></span><span class="n">dataset</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"auto-gptq is an easy-to-use model quantization library with user-friendly apis, based on GPTQ algorithm."</span><span class="p">]</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We also have to tell it the number of bits that the quantized model has by means of the <code>bits</code> parameter.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">GPTQConfig</span>',
+      '      ',
+      '      <span class="n">quantization_config</span> <span class="o">=</span> <span class="n">GPTQConfig</span><span class="p">(</span><span class="n">bits</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">dataset</span> <span class="o">=</span> <span class="s2">"c4"</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>We quantify the model</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span>
+      <span class="kn">import</span> <span class="nn">time</span>
+      
+      <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+      <span class="n">model_4bits</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">,</span> <span class="n">quantization_config</span><span class="o">=</span><span class="n">quantization_config</span><span class="p">)</span>
+      <span class="n">t_quantization</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
+      <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Quantization time: </span><span class="si">{opening_brace}</span><span class="n">t_quantization</span><span class="si">:</span><span class="s2">.2f</span><span class="si">{closing_brace}</span><span class="s2"> s = </span><span class="si">{opening_brace}</span><span class="n">t_quantization</span><span class="o">/</span><span class="mi">60</span><span class="si">:</span><span class="s2">.2f</span><span class="si">{closing_brace}</span><span class="s2"> min"</span><span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Loading checkpoint shards: 100%|██████████| 4/4 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing model.layers blocks : 100%|██████████|32/32 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>/usr/local/lib/python3.10/dist-packages/transformers/modeling_utils.py:4565: FutureWarning: `_is_quantized_training_enabled` is going to be deprecated in transformers 4.39.0. Please use `model.hf_quantizer.is_trainable` instead
+        warnings.warn(
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>Quantization time: 1932.09 s = 32.20 min
+      </pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>As the quantization process calculates the smallest error between the quantized weights and the original weights by passing inputs through each layer, the quantization process takes time. In this case it took about half an hour</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's see how much memory it occupies now</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">GPTQConfig</span>',
+          '',
+          '<span class="n">quantization_config</span> <span class="o">=</span> <span class="n">GPTQConfig</span><span class="p">(</span><span class="n">bits</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">dataset</span> <span class="o">=</span> <span class="s2">"c4"</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">)</span>',
+          '</span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span>',
+          '<span class="kn">import</span> <span class="nn">time</span>',
+          '',
+          '<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>',
+          '<span class="n">model_4bits</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">,</span> <span class="n">quantization_config</span><span class="o">=</span><span class="n">quantization_config</span><span class="p">)</span>',
+          '<span class="n">t_quantization</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Quantization time: </span><span class="si">{</span><span class="n">t_quantization</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s = </span><span class="si">{</span><span class="n">t_quantization</span><span class="o">/</span><span class="mi">60</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> min"</span><span class="p">)</span>',
+          '</span><span class="n">model_4bits_memory</span> <span class="o">=</span> <span class="n">model_4bits</span><span class="o">.</span><span class="n">get_memory_footprint</span><span class="p">()</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Model memory: </span><span class="si">{</span><span class="n">model_4bits_memory</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> GB"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Loading checkpoint shards: 100%|██████████| 4/4 [00:00&lt;?, ?it/s]',
+          'Model memory: 5.34 GB',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Here we can see a benefit of quantization. While the original model occupied about 15 GB of VRAM, now the quantized model occupies about 5 GB, almost a third of the original size.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We make the inference and see how long it takes</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="kn">import</span> <span class="nn">time</span>
+      
+      <span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">"Hello my name is Maximo and I am a Machine Learning Engineer"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model_4bits</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+      
+      <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+      <span class="n">max_new_tokens</span> <span class="o">=</span> <span class="mi">50</span>
+      <span class="n">outputs</span> <span class="o">=</span> <span class="n">model_4bits</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+          <span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>
+          <span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>
+          <span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>
+      <span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+      <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Inference time: </span><span class="si">{opening_brace}</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">t0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">{closing_brace}</span><span class="s2"> s"</span><span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Setting `pad_token_id` to `eos_token_id`:128001 for open-end generation.
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>Hello my name is Maximo and I am a Machine Learning Engineer. I have a strong background in computer science and mathematics, and I am passionate about developing innovative solutions that can positively impact society. I am excited to be a part of this community and to learn from and contribute to the discussions here. I am particularly
+      Inference time: 2.34 s
+      </pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>The unquantized model took 4.14 seconds, while now quantized to 4 bits it has taken 2.34 seconds and also generated the text well. We have managed to reduce the inference by almost half.</p>
+      <p>As the size of the quantized model is almost one third of the model in FP16, we could think that the inference speed should be about three times faster with the quantized model. But we have to remember that in each layer the weights are quantized and the computations are performed in FP16, so we only managed to reduce the inference time by half and not by one third.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Now we save the model</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">import</span> <span class="nn">time</span>',
+          '',
+          '<span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">"Hello my name is Maximo and I am a Machine Learning Engineer"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model_4bits</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>',
+          '',
+          '<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>',
+          '<span class="n">max_new_tokens</span> <span class="o">=</span> <span class="mi">50</span>',
+          '<span class="n">outputs</span> <span class="o">=</span> <span class="n">model_4bits</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>',
+          '    <span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>',
+          '    <span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>',
+          '    <span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>',
+          '<span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Inference time: </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">t0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>',
+          '</span><span class="n">save_folder</span> <span class="o">=</span> <span class="s2">"./model_4bits/"</span>',
+          '<span class="n">model_4bits</span><span class="o">.</span><span class="n">save_pretrained</span><span class="p">(</span><span class="n">save_folder</span><span class="p">)</span>',
+          '<span class="n">tokenizer</span><span class="o">.</span><span class="n">save_pretrained</span><span class="p">(</span><span class="n">save_folder</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Setting `pad_token_id` to `eos_token_id`:128001 for open-end generation.',
+          '(\'./model_4bits/tokenizer_config.json\',',
+          ' \'./model_4bits/special_tokens_map.json\',',
+          ' \'./model_4bits/tokenizer.json\')',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>And we upload it to the hub</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">repo_id</span> <span class="o">=</span> <span class="s2">"Llama-3-8B-Instruct-GPTQ-4bits"</span>
+      <span class="n">commit_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"AutoGPTQ model for </span><span class="si">{opening_brace}</span><span class="n">checkpoint</span><span class="si">{closing_brace}</span><span class="s2">: </span><span class="si">{opening_brace}</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">bits</span><span class="si">{closing_brace}</span><span class="s2">bits, gr</span><span class="si">{opening_brace}</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">group_size</span><span class="si">{closing_brace}</span><span class="s2">, desc_act=</span><span class="si">{opening_brace}</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">desc_act</span><span class="si">{closing_brace}</span><span class="s2">"</span>
+      <span class="n">model_4bits</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="n">repo_id</span><span class="p">,</span> <span class="n">commit_message</span><span class="o">=</span><span class="n">commit_message</span><span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>README.md: 100%|██████████| 5.17/5.17k [00:00&lt;?, ?B/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>CommitInfo(commit_url='https://huggingface.co/Maximofn/Llama-3-8B-Instruct-GPTQ-4bits/commit/44cfdcad78db260122943d3f57858c1b840bda17', commit_message='AutoGPTQ model for meta-llama/Meta-Llama-3-8B-Instruct: 4bits, gr128, desc_act=False', commit_description='', oid='44cfdcad78db260122943d3f57858c1b840bda17', pr_url=None, pr_revision=None, pr_num=None)</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We also upload the tokenizer. Although we have not changed the tokenizer, we upload it because if a person downloads our model from the hub, he/she does not need to know which tokenizer we have used, so he/she will probably want to download the model and the tokenizer together. We can indicate in the model card which tokenizer we have used to download it, but most likely they will not read the model card, try to download the tokenizer, get an error and not know what to do. So we upload it to save us that problem.</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">repo_id</span> <span class="o">=</span> <span class="s2">"Llama-3-8B-Instruct-GPTQ-4bits"</span>
+      <span class="n">commit_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Tokenizers for </span><span class="si">{opening_brace}</span><span class="n">checkpoint</span><span class="si">{closing_brace}</span><span class="s2">: </span><span class="si">{opening_brace}</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">bits</span><span class="si">{closing_brace}</span><span class="s2">bits, gr</span><span class="si">{opening_brace}</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">group_size</span><span class="si">{closing_brace}</span><span class="s2">, desc_act=</span><span class="si">{opening_brace}</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">desc_act</span><span class="si">{closing_brace}</span><span class="s2">"</span>
+      <span class="n">tokenizer</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="n">repo_id</span><span class="p">,</span> <span class="n">commit_message</span><span class="o">=</span><span class="n">commit_message</span><span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>README.md: 100%|██████████| 0.00/5.17k [00:00&lt;?, ?B/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt-output-prompt">Out[5]:</div>
+      <div class="output-text-output-subareaoutput_execute_result">
+      <pre>CommitInfo(commit_url='https://huggingface.co/Maximofn/Llama-3-8B-Instruct-GPTQ-4bits/commit/75600041ca6e38b5f1fb912ad1803b66656faae4', commit_message='Tokenizers for meta-llama/Meta-Llama-3-8B-Instruct: 4bits, gr128, desc_act=False', commit_description='', oid='75600041ca6e38b5f1fb912ad1803b66656faae4', pr_url=None, pr_revision=None, pr_num=None)</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Quantization-of-the-model-to-3-bits">Quantization of the model to 3 bits<a class="anchor-link" href="#Quantization-of-the-model-to-3-bits"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 38" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's quantize it to 3 bits. I restart the notebook to avoid memory problems and log in to Hugging Face again.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">repo_id</span> <span class="o">=</span> <span class="s2">"Llama-3-8B-Instruct-GPTQ-4bits"</span>',
+      '      <span class="n">commit_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"AutoGPTQ model for </span><span class="si">{</span><span class="n">checkpoint</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">bits</span><span class="si">}</span><span class="s2">bits, gr</span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">group_size</span><span class="si">}</span><span class="s2">, desc_act=</span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">desc_act</span><span class="si">}</span><span class="s2">"</span>',
+      '      <span class="n">model_4bits</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="n">repo_id</span><span class="p">,</span> <span class="n">commit_message</span><span class="o">=</span><span class="n">commit_message</span><span class="p">)</span>',
+      '<span></span><span class="n">repo_id</span> <span class="o">=</span> <span class="s2">"Llama-3-8B-Instruct-GPTQ-4bits"</span>',
+      '      <span class="n">commit_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Tokenizers for </span><span class="si">{</span><span class="n">checkpoint</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">bits</span><span class="si">}</span><span class="s2">bits, gr</span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">group_size</span><span class="si">}</span><span class="s2">, desc_act=</span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">desc_act</span><span class="si">}</span><span class="s2">"</span>',
+      '      <span class="n">tokenizer</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="n">repo_id</span><span class="p">,</span> <span class="n">commit_message</span><span class="o">=</span><span class="n">commit_message</span><span class="p">)</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">notebook_login</span>',
+      '      ',
+      '      <span class="n">notebook_login</span><span class="p">()</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>First I create the tokenizer</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">repo_id</span> <span class="o">=</span> <span class="s2">"Llama-3-8B-Instruct-GPTQ-4bits"</span>',
+          '<span class="n">commit_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"AutoGPTQ model for </span><span class="si">{</span><span class="n">checkpoint</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">bits</span><span class="si">}</span><span class="s2">bits, gr</span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">group_size</span><span class="si">}</span><span class="s2">, desc_act=</span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">desc_act</span><span class="si">}</span><span class="s2">"</span>',
+          '<span class="n">model_4bits</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="n">repo_id</span><span class="p">,</span> <span class="n">commit_message</span><span class="o">=</span><span class="n">commit_message</span><span class="p">)</span>',
+          '</span><span class="n">repo_id</span> <span class="o">=</span> <span class="s2">"Llama-3-8B-Instruct-GPTQ-4bits"</span>',
+          '<span class="n">commit_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Tokenizers for </span><span class="si">{</span><span class="n">checkpoint</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">bits</span><span class="si">}</span><span class="s2">bits, gr</span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">group_size</span><span class="si">}</span><span class="s2">, desc_act=</span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">desc_act</span><span class="si">}</span><span class="s2">"</span>',
+          '<span class="n">tokenizer</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="n">repo_id</span><span class="p">,</span> <span class="n">commit_message</span><span class="o">=</span><span class="n">commit_message</span><span class="p">)</span>',
+          '</span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">notebook_login</span>',
+          '',
+          '<span class="n">notebook_login</span><span class="p">()</span>',
+          '</span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span>',
+          '',
+          '<span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"meta-llama/Meta-Llama-3-8B-Instruct"</span>',
+          '<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'README.md: 100%|██████████| 5.17/5.17k [00:00&lt;?, ?B/s]',
+          'README.md: 100%|██████████| 0.00/5.17k [00:00&lt;?, ?B/s]',
+          'Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>We create the quantization configuration, now we indicate that we want to quantize to 3 bits</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">GPTQConfig</span>',
+      '      ',
+      '      <span class="n">quantization_config</span> <span class="o">=</span> <span class="n">GPTQConfig</span><span class="p">(</span><span class="n">bits</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">dataset</span> <span class="o">=</span> <span class="s2">"c4"</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>We quantify the model</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span>
+      <span class="kn">import</span> <span class="nn">time</span>
+      
+      <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+      <span class="n">model_3bits</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">,</span> <span class="n">quantization_config</span><span class="o">=</span><span class="n">quantization_config</span><span class="p">)</span>
+      <span class="n">t_quantization</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
+      <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Quantization time: </span><span class="si">{opening_brace}</span><span class="n">t_quantization</span><span class="si">:</span><span class="s2">.2f</span><span class="si">{closing_brace}</span><span class="s2"> s = </span><span class="si">{opening_brace}</span><span class="n">t_quantization</span><span class="o">/</span><span class="mi">60</span><span class="si">:</span><span class="s2">.2f</span><span class="si">{closing_brace}</span><span class="s2"> min"</span><span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Loading checkpoint shards: 100%|██████████| 4/4 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing model.layers blocks : 100%|██████████|32/32 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>/usr/local/lib/python3.10/dist-packages/transformers/modeling_utils.py:4565: FutureWarning: `_is_quantized_training_enabled` is going to be deprecated in transformers 4.39.0. Please use `model.hf_quantizer.is_trainable` instead
+        warnings.warn(
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>Quantization time: 1912.69 s = 31.88 min
+      </pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>As before, it has taken about half an hour.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's see how much memory it occupies now</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">GPTQConfig</span>',
+          '',
+          '<span class="n">quantization_config</span> <span class="o">=</span> <span class="n">GPTQConfig</span><span class="p">(</span><span class="n">bits</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">dataset</span> <span class="o">=</span> <span class="s2">"c4"</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">)</span>',
+          '</span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span>',
+          '<span class="kn">import</span> <span class="nn">time</span>',
+          '',
+          '<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>',
+          '<span class="n">model_3bits</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">,</span> <span class="n">quantization_config</span><span class="o">=</span><span class="n">quantization_config</span><span class="p">)</span>',
+          '<span class="n">t_quantization</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Quantization time: </span><span class="si">{</span><span class="n">t_quantization</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s = </span><span class="si">{</span><span class="n">t_quantization</span><span class="o">/</span><span class="mi">60</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> min"</span><span class="p">)</span>',
+          '</span><span class="n">model_3bits_memory</span> <span class="o">=</span> <span class="n">model_3bits</span><span class="o">.</span><span class="n">get_memory_footprint</span><span class="p">()</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Model memory: </span><span class="si">{</span><span class="n">model_3bits_memory</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> GB"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Loading checkpoint shards: 100%|██████████| 4/4 [00:00&lt;?, ?it/s]',
+          'Model memory: 4.52 GB',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>The memory occupied by the 3-bit model is also almost 5 GB. The 4-bit model occupied 5.34 GB, while now in 3-bit it occupies 4.52 GB, so we have managed to reduce the size of the model a little more.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We make the inference and see how long it takes</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="kn">import</span> <span class="nn">time</span>
+      
+      <span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">"Hello my name is Maximo and I am a Machine Learning Engineer"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model_3bits</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+      
+      <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+      <span class="n">max_new_tokens</span> <span class="o">=</span> <span class="mi">50</span>
+      <span class="n">outputs</span> <span class="o">=</span> <span class="n">model_3bits</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+          <span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>
+          <span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>
+          <span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>
+      <span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+      <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Inference time: </span><span class="si">{opening_brace}</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">t0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">{closing_brace}</span><span class="s2"> s"</span><span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Setting `pad_token_id` to `eos_token_id`:128001 for open-end generation.
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>Hello my name is Maximo and I am a Machine Learning Engineer at Google. I am excited to be here today to talk about my work in the field of Machine Learning and to share some of the insights I have gained through my experiences.
+      I am a Machine Learning Engineer at Google, and I am excited to be
+      Inference time: 2.89 s
+      </pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Although the output on 3 bits is good, now the inference time has been 2.89 seconds, while on 4 bits it was 2.34 seconds. More testing should be done to see if it always takes less time on 4 bits, or maybe the difference is so small that sometimes the 3-bit inference is faster and sometimes the 4-bit inference is faster.</p>
+      <p>In addition, although the output makes sense, it starts to become repetitive.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Save the model</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">import</span> <span class="nn">time</span>',
+          '',
+          '<span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">"Hello my name is Maximo and I am a Machine Learning Engineer"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model_3bits</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>',
+          '',
+          '<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>',
+          '<span class="n">max_new_tokens</span> <span class="o">=</span> <span class="mi">50</span>',
+          '<span class="n">outputs</span> <span class="o">=</span> <span class="n">model_3bits</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>',
+          '    <span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>',
+          '    <span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>',
+          '    <span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>',
+          '<span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Inference time: </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">t0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>',
+          '</span><span class="n">save_folder</span> <span class="o">=</span> <span class="s2">"./model_3bits/"</span>',
+          '<span class="n">model_3bits</span><span class="o">.</span><span class="n">save_pretrained</span><span class="p">(</span><span class="n">save_folder</span><span class="p">)</span>',
+          '<span class="n">tokenizer</span><span class="o">.</span><span class="n">save_pretrained</span><span class="p">(</span><span class="n">save_folder</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Setting `pad_token_id` to `eos_token_id`:128001 for open-end generation.',
+          '(\'./model_3bits/tokenizer_config.json\',',
+          ' \'./model_3bits/special_tokens_map.json\',',
+          ' \'./model_3bits/tokenizer.json\')',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>And we upload it to the hub</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">repo_id</span> <span class="o">=</span> <span class="s2">"Llama-3-8B-Instruct-GPTQ-3bits"</span>
+      <span class="n">commit_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"AutoGPTQ model for </span><span class="si">{opening_brace}</span><span class="n">checkpoint</span><span class="si">{closing_brace}</span><span class="s2">: </span><span class="si">{opening_brace}</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">bits</span><span class="si">{closing_brace}</span><span class="s2">bits, gr</span><span class="si">{opening_brace}</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">group_size</span><span class="si">{closing_brace}</span><span class="s2">, desc_act=</span><span class="si">{opening_brace}</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">desc_act</span><span class="si">{closing_brace}</span><span class="s2">"</span>
+      <span class="n">model_3bits</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="n">repo_id</span><span class="p">,</span> <span class="n">commit_message</span><span class="o">=</span><span class="n">commit_message</span><span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>model.safetensors: 100%|██████████| 4.85/4.85G [00:00&lt;?, ?B/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt-output-prompt">Out[14]:</div>
+      <div class="output-text-output-subareaoutput_execute_result">
+      <pre>CommitInfo(commit_url='https://huggingface.co/Maximofn/Llama-3-8B-Instruct-GPTQ-3bits/commit/422fd94a031234c10224ddbe09c0e029a5e9c01f', commit_message='AutoGPTQ model for meta-llama/Meta-Llama-3-8B-Instruct: 3bits, gr128, desc_act=False', commit_description='', oid='422fd94a031234c10224ddbe09c0e029a5e9c01f', pr_url=None, pr_revision=None, pr_num=None)</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We also upload the tokenizer</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">repo_id</span> <span class="o">=</span> <span class="s2">"Llama-3-8B-Instruct-GPTQ-3bits"</span>
+      <span class="n">commit_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Tokenizers for </span><span class="si">{opening_brace}</span><span class="n">checkpoint</span><span class="si">{closing_brace}</span><span class="s2">: </span><span class="si">{opening_brace}</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">bits</span><span class="si">{closing_brace}</span><span class="s2">bits, gr</span><span class="si">{opening_brace}</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">group_size</span><span class="si">{closing_brace}</span><span class="s2">, desc_act=</span><span class="si">{opening_brace}</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">desc_act</span><span class="si">{closing_brace}</span><span class="s2">"</span>
+      <span class="n">tokenizer</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="n">repo_id</span><span class="p">,</span> <span class="n">commit_message</span><span class="o">=</span><span class="n">commit_message</span><span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>README.md: 100%|██████████| 0.00/5.17k [00:00&lt;?, ?B/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>CommitInfo(commit_url='https://huggingface.co/Maximofn/Llama-3-8B-Instruct-GPTQ-4bits/commit/75600041ca6e38b5f1fb912ad1803b66656faae4', commit_message='Tokenizers for meta-llama/Meta-Llama-3-8B-Instruct: 4bits, gr128, desc_act=False', commit_description='', oid='75600041ca6e38b5f1fb912ad1803b66656faae4', pr_url=None, pr_revision=None, pr_num=None)</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Quantization-of-the-model-to-2-bits">Quantization of the model to 2 bits<a class="anchor-link" href="#Quantization-of-the-model-to-2-bits"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 39" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's quantize it to 2 bits. I restart the notebook to avoid memory problems and log in again in Hugging Face</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">repo_id</span> <span class="o">=</span> <span class="s2">"Llama-3-8B-Instruct-GPTQ-3bits"</span>',
+      '      <span class="n">commit_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"AutoGPTQ model for </span><span class="si">{</span><span class="n">checkpoint</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">bits</span><span class="si">}</span><span class="s2">bits, gr</span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">group_size</span><span class="si">}</span><span class="s2">, desc_act=</span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">desc_act</span><span class="si">}</span><span class="s2">"</span>',
+      '      <span class="n">model_3bits</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="n">repo_id</span><span class="p">,</span> <span class="n">commit_message</span><span class="o">=</span><span class="n">commit_message</span><span class="p">)</span>',
+      '<span></span><span class="n">repo_id</span> <span class="o">=</span> <span class="s2">"Llama-3-8B-Instruct-GPTQ-3bits"</span>',
+      '      <span class="n">commit_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Tokenizers for </span><span class="si">{</span><span class="n">checkpoint</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">bits</span><span class="si">}</span><span class="s2">bits, gr</span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">group_size</span><span class="si">}</span><span class="s2">, desc_act=</span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">desc_act</span><span class="si">}</span><span class="s2">"</span>',
+      '      <span class="n">tokenizer</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="n">repo_id</span><span class="p">,</span> <span class="n">commit_message</span><span class="o">=</span><span class="n">commit_message</span><span class="p">)</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">notebook_login</span>',
+      '      ',
+      '      <span class="n">notebook_login</span><span class="p">()</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>First I create the tokenizer</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">repo_id</span> <span class="o">=</span> <span class="s2">"Llama-3-8B-Instruct-GPTQ-3bits"</span>',
+          '<span class="n">commit_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"AutoGPTQ model for </span><span class="si">{</span><span class="n">checkpoint</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">bits</span><span class="si">}</span><span class="s2">bits, gr</span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">group_size</span><span class="si">}</span><span class="s2">, desc_act=</span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">desc_act</span><span class="si">}</span><span class="s2">"</span>',
+          '<span class="n">model_3bits</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="n">repo_id</span><span class="p">,</span> <span class="n">commit_message</span><span class="o">=</span><span class="n">commit_message</span><span class="p">)</span>',
+          '</span><span class="n">repo_id</span> <span class="o">=</span> <span class="s2">"Llama-3-8B-Instruct-GPTQ-3bits"</span>',
+          '<span class="n">commit_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Tokenizers for </span><span class="si">{</span><span class="n">checkpoint</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">bits</span><span class="si">}</span><span class="s2">bits, gr</span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">group_size</span><span class="si">}</span><span class="s2">, desc_act=</span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">desc_act</span><span class="si">}</span><span class="s2">"</span>',
+          '<span class="n">tokenizer</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="n">repo_id</span><span class="p">,</span> <span class="n">commit_message</span><span class="o">=</span><span class="n">commit_message</span><span class="p">)</span>',
+          '</span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">notebook_login</span>',
+          '',
+          '<span class="n">notebook_login</span><span class="p">()</span>',
+          '</span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span>',
+          '',
+          '<span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"meta-llama/Meta-Llama-3-8B-Instruct"</span>',
+          '<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'model.safetensors: 100%|██████████| 4.85/4.85G [00:00&lt;?, ?B/s]',
+          'README.md: 100%|██████████| 0.00/5.17k [00:00&lt;?, ?B/s]',
+          'Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>We create the quantization configuration. Now we tell it to quantize to 2 bits. In addition we must indicate how many vectors of the weight matrix quantize at a time by means of the parameter <code>group_size</code>, before by default it had the value 128 and we did not touch it, but now when quantizing to 2 bits, to have less error we put a smaller value. If we leave it at 128, the quantized model would work very badly, in this case I am going to put a value of 16.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">GPTQConfig</span>',
+      '      ',
+      '      <span class="n">quantization_config</span> <span class="o">=</span> <span class="n">GPTQConfig</span><span class="p">(</span><span class="n">bits</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">dataset</span> <span class="o">=</span> <span class="s2">"c4"</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">group_size</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span>
+      <span class="kn">import</span> <span class="nn">time</span>
+      
+      <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+      <span class="n">model_2bits</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">,</span> <span class="n">quantization_config</span><span class="o">=</span><span class="n">quantization_config</span><span class="p">)</span>
+      <span class="n">t_quantization</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
+      <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Quantization time: </span><span class="si">{opening_brace}</span><span class="n">t_quantization</span><span class="si">:</span><span class="s2">.2f</span><span class="si">{closing_brace}</span><span class="s2"> s = </span><span class="si">{opening_brace}</span><span class="n">t_quantization</span><span class="o">/</span><span class="mi">60</span><span class="si">:</span><span class="s2">.2f</span><span class="si">{closing_brace}</span><span class="s2"> min"</span><span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Loading checkpoint shards: 100%|██████████| 4/4 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing model.layers blocks : 100%|██████████|32/32 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>/usr/local/lib/python3.10/dist-packages/transformers/modeling_utils.py:4565: FutureWarning: `_is_quantized_training_enabled` is going to be deprecated in transformers 4.39.0. Please use `model.hf_quantizer.is_trainable` instead
+        warnings.warn(
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>Quantization time: 1973.12 s = 32.89 min
+      </pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We see that it has also taken about half an hour.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's see how much memory it occupies now</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">GPTQConfig</span>',
+          '',
+          '<span class="n">quantization_config</span> <span class="o">=</span> <span class="n">GPTQConfig</span><span class="p">(</span><span class="n">bits</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">dataset</span> <span class="o">=</span> <span class="s2">"c4"</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">group_size</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>',
+          '</span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span>',
+          '<span class="kn">import</span> <span class="nn">time</span>',
+          '',
+          '<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>',
+          '<span class="n">model_2bits</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">,</span> <span class="n">quantization_config</span><span class="o">=</span><span class="n">quantization_config</span><span class="p">)</span>',
+          '<span class="n">t_quantization</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Quantization time: </span><span class="si">{</span><span class="n">t_quantization</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s = </span><span class="si">{</span><span class="n">t_quantization</span><span class="o">/</span><span class="mi">60</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> min"</span><span class="p">)</span>',
+          '</span><span class="n">model_2bits_memory</span> <span class="o">=</span> <span class="n">model_2bits</span><span class="o">.</span><span class="n">get_memory_footprint</span><span class="p">()</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Model memory: </span><span class="si">{</span><span class="n">model_2bits_memory</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> GB"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Loading checkpoint shards: 100%|██████████| 4/4 [00:00&lt;?, ?it/s]',
+          'Model memory: 4.50 GB',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>While quantized at 4 bits it occupied 5.34 GB and at 3 bits it occupied 4.52 GB, now quantized at 2 bits it occupies 4.50 GB, so we have managed to reduce the size of the model a little more.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We make the inference and see how long it takes</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="kn">import</span> <span class="nn">time</span>
+      
+      <span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">"Hello my name is Maximo and I am a Machine Learning Engineer"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model_2bits</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+      
+      <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+      <span class="n">max_new_tokens</span> <span class="o">=</span> <span class="mi">50</span>
+      <span class="n">outputs</span> <span class="o">=</span> <span class="n">model_2bits</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+          <span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>
+          <span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>
+          <span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>
+      <span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+      <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Inference time: </span><span class="si">{opening_brace}</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">t0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">{closing_brace}</span><span class="s2"> s"</span><span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Setting `pad_token_id` to `eos_token_id`:128001 for open-end generation.
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>Hello my name is Maximo and I am a Machine Learning Engineer.  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+      Inference time: 2.92 s
+      </pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We see that the output is already not good, and the inference time is 2.92 seconds, more or less the same as with 3 and 4 bits.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Save the model</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">import</span> <span class="nn">time</span>',
+          '',
+          '<span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">"Hello my name is Maximo and I am a Machine Learning Engineer"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model_2bits</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>',
+          '',
+          '<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>',
+          '<span class="n">max_new_tokens</span> <span class="o">=</span> <span class="mi">50</span>',
+          '<span class="n">outputs</span> <span class="o">=</span> <span class="n">model_2bits</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>',
+          '    <span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>',
+          '    <span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>',
+          '    <span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>',
+          '<span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Inference time: </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">t0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>',
+          '</span><span class="n">save_folder</span> <span class="o">=</span> <span class="s2">"./model_2bits/"</span>',
+          '<span class="n">model_2bits</span><span class="o">.</span><span class="n">save_pretrained</span><span class="p">(</span><span class="n">save_folder</span><span class="p">)</span>',
+          '<span class="n">tokenizer</span><span class="o">.</span><span class="n">save_pretrained</span><span class="p">(</span><span class="n">save_folder</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Setting `pad_token_id` to `eos_token_id`:128001 for open-end generation.',
+          '(\'./model_2bits/tokenizer_config.json\',',
+          ' \'./model_2bits/special_tokens_map.json\',',
+          ' \'./model_2bits/tokenizer.json\')',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>We upload it to the hub</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">repo_id</span> <span class="o">=</span> <span class="s2">"Llama-3-8B-Instruct-GPTQ-2bits"</span>
+      <span class="n">commit_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"AutoGPTQ model for </span><span class="si">{opening_brace}</span><span class="n">checkpoint</span><span class="si">{closing_brace}</span><span class="s2">: </span><span class="si">{opening_brace}</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">bits</span><span class="si">{closing_brace}</span><span class="s2">bits, gr</span><span class="si">{opening_brace}</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">group_size</span><span class="si">{closing_brace}</span><span class="s2">, desc_act=</span><span class="si">{opening_brace}</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">desc_act</span><span class="si">{closing_brace}</span><span class="s2">"</span>
+      <span class="n">model_2bits</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="n">repo_id</span><span class="p">,</span> <span class="n">commit_message</span><span class="o">=</span><span class="n">commit_message</span><span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>model.safetensors: 100%|██████████| 4.83/4.83G [00:00&lt;?, ?B/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt-output-prompt">Out[8]:</div>
+      <div class="output-text-output-subareaoutput_execute_result">
+      <pre>CommitInfo(commit_url='https://huggingface.co/Maximofn/Llama-3-8B-Instruct-GPTQ-2bits/commit/13ede006ce0dbbd8aca54212e960eff98ea5ec63', commit_message='AutoGPTQ model for meta-llama/Meta-Llama-3-8B-Instruct: 2bits, gr16, desc_act=False', commit_description='', oid='13ede006ce0dbbd8aca54212e960eff98ea5ec63', pr_url=None, pr_revision=None, pr_num=None)</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Quantization-of-the-model-to-1-bit">Quantization of the model to 1 bit<a class="anchor-link" href="#Quantization-of-the-model-to-1-bit"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 40" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's quantize it to 1 bit. I restart the notebook to avoid memory problems and log in again in Hugging Face</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">repo_id</span> <span class="o">=</span> <span class="s2">"Llama-3-8B-Instruct-GPTQ-2bits"</span>',
+      '      <span class="n">commit_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"AutoGPTQ model for </span><span class="si">{</span><span class="n">checkpoint</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">bits</span><span class="si">}</span><span class="s2">bits, gr</span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">group_size</span><span class="si">}</span><span class="s2">, desc_act=</span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">desc_act</span><span class="si">}</span><span class="s2">"</span>',
+      '      <span class="n">model_2bits</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="n">repo_id</span><span class="p">,</span> <span class="n">commit_message</span><span class="o">=</span><span class="n">commit_message</span><span class="p">)</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">notebook_login</span>',
+      '      ',
+      '      <span class="n">notebook_login</span><span class="p">()</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>First I create the tokenizer</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">repo_id</span> <span class="o">=</span> <span class="s2">"Llama-3-8B-Instruct-GPTQ-2bits"</span>',
+          '<span class="n">commit_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"AutoGPTQ model for </span><span class="si">{</span><span class="n">checkpoint</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">bits</span><span class="si">}</span><span class="s2">bits, gr</span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">group_size</span><span class="si">}</span><span class="s2">, desc_act=</span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">desc_act</span><span class="si">}</span><span class="s2">"</span>',
+          '<span class="n">model_2bits</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="n">repo_id</span><span class="p">,</span> <span class="n">commit_message</span><span class="o">=</span><span class="n">commit_message</span><span class="p">)</span>',
+          '</span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">notebook_login</span>',
+          '',
+          '<span class="n">notebook_login</span><span class="p">()</span>',
+          '</span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span>',
+          '',
+          '<span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"meta-llama/Meta-Llama-3-8B-Instruct"</span>',
+          '<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'model.safetensors: 100%|██████████| 4.83/4.83G [00:00&lt;?, ?B/s]',
+          'Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>We create the quantization configuration, now we tell it to quantize to only 1 bit and also to use a <code>group_size</code> of 8</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">GPTQConfig</span>',
+      '      ',
+      '      <span class="n">quantization_config</span> <span class="o">=</span> <span class="n">GPTQConfig</span><span class="p">(</span><span class="n">bits</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">dataset</span> <span class="o">=</span> <span class="s2">"c4"</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">group_size</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span>
+      <span class="kn">import</span> <span class="nn">time</span>
+      
+      <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+      <span class="n">model_1bits</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">,</span> <span class="n">quantization_config</span><span class="o">=</span><span class="n">quantization_config</span><span class="p">)</span>
+      <span class="n">t_quantization</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
+      <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Quantization time: </span><span class="si">{opening_brace}</span><span class="n">t_quantization</span><span class="si">:</span><span class="s2">.2f</span><span class="si">{closing_brace}</span><span class="s2"> s = </span><span class="si">{opening_brace}</span><span class="n">t_quantization</span><span class="o">/</span><span class="mi">60</span><span class="si">:</span><span class="s2">.2f</span><span class="si">{closing_brace}</span><span class="s2"> min"</span><span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Loading checkpoint shards: 100%|██████████| 4/4 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing model.layers blocks : 100%|██████████|32/32 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Quantizing layers inside the block: 100%|██████████| 7/7 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>/usr/local/lib/python3.10/dist-packages/transformers/modeling_utils.py:4565: FutureWarning: `_is_quantized_training_enabled` is going to be deprecated in transformers 4.39.0. Please use `model.hf_quantizer.is_trainable` instead
+        warnings.warn(
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>Quantization time: 2030.38 s = 33.84 min
+      </pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We see that it also takes about half an hour to quantize</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's see how much memory it occupies now</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">GPTQConfig</span>',
+          '',
+          '<span class="n">quantization_config</span> <span class="o">=</span> <span class="n">GPTQConfig</span><span class="p">(</span><span class="n">bits</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">dataset</span> <span class="o">=</span> <span class="s2">"c4"</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">group_size</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>',
+          '</span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span>',
+          '<span class="kn">import</span> <span class="nn">time</span>',
+          '',
+          '<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>',
+          '<span class="n">model_1bits</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">,</span> <span class="n">quantization_config</span><span class="o">=</span><span class="n">quantization_config</span><span class="p">)</span>',
+          '<span class="n">t_quantization</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Quantization time: </span><span class="si">{</span><span class="n">t_quantization</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s = </span><span class="si">{</span><span class="n">t_quantization</span><span class="o">/</span><span class="mi">60</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> min"</span><span class="p">)</span>',
+          '</span><span class="n">model_1bits_memory</span> <span class="o">=</span> <span class="n">model_1bits</span><span class="o">.</span><span class="n">get_memory_footprint</span><span class="p">()</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Model memory: </span><span class="si">{</span><span class="n">model_1bits_memory</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> GB"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Loading checkpoint shards: 100%|██████████| 4/4 [00:00&lt;?, ?it/s]',
+          'Model memory: 5.42 GB',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>We see that in this case it occupies even more than quantized to 2 bits, 4.52 GB.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We make the inference and see how long it takes</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="kn">import</span> <span class="nn">time</span>
+      
+      <span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">"Hello my name is Maximo and I am a Machine Learning Engineer"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model_1bits</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+      
+      <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+      <span class="n">max_new_tokens</span> <span class="o">=</span> <span class="mi">50</span>
+      <span class="n">outputs</span> <span class="o">=</span> <span class="n">model_1bits</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+          <span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>
+          <span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>
+          <span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>
+      <span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+      <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Inference time: </span><span class="si">{opening_brace}</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">t0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">{closing_brace}</span><span class="s2"> s"</span><span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Setting `pad_token_id` to `eos_token_id`:128001 for open-end generation.
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>Hello my name is Maximo and I am a Machine Learning Engineerimerszuimersimerspinsimersimersingoingoimersurosimersimersimersoleningoimersingopinsimersbirpinsimersimersimersorgeingoimersiringimersimersimersimersimersimersimersンディorge_REFERER ingest羊imersorgeimersimersendetingoШАhandsingo
+      Inference time: 3.12 s
+      </pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We see that the output is very bad and also takes longer than when we have quantized to 2 bits.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Save the model</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">import</span> <span class="nn">time</span>',
+          '',
+          '<span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">"Hello my name is Maximo and I am a Machine Learning Engineer"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model_1bits</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>',
+          '',
+          '<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>',
+          '<span class="n">max_new_tokens</span> <span class="o">=</span> <span class="mi">50</span>',
+          '<span class="n">outputs</span> <span class="o">=</span> <span class="n">model_1bits</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>',
+          '    <span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>',
+          '    <span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>',
+          '    <span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>',
+          '<span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Inference time: </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">t0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>',
+          '</span><span class="n">save_folder</span> <span class="o">=</span> <span class="s2">"./model_1bits/"</span>',
+          '<span class="n">model_1bits</span><span class="o">.</span><span class="n">save_pretrained</span><span class="p">(</span><span class="n">save_folder</span><span class="p">)</span>',
+          '<span class="n">tokenizer</span><span class="o">.</span><span class="n">save_pretrained</span><span class="p">(</span><span class="n">save_folder</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Setting `pad_token_id` to `eos_token_id`:128001 for open-end generation.',
+          '(\'./model_1bits/tokenizer_config.json\',',
+          ' \'./model_1bits/special_tokens_map.json\',',
+          ' \'./model_1bits/tokenizer.json\')',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>We upload it to the hub</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">repo_id</span> <span class="o">=</span> <span class="s2">"Llama-3-8B-Instruct-GPTQ-1bits"</span>
+      <span class="n">commit_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"AutoGPTQ model for </span><span class="si">{opening_brace}</span><span class="n">checkpoint</span><span class="si">{closing_brace}</span><span class="s2">: </span><span class="si">{opening_brace}</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">bits</span><span class="si">{closing_brace}</span><span class="s2">bits, gr</span><span class="si">{opening_brace}</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">group_size</span><span class="si">{closing_brace}</span><span class="s2">, desc_act=</span><span class="si">{opening_brace}</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">desc_act</span><span class="si">{closing_brace}</span><span class="s2">"</span>
+      <span class="n">model_1bits</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="n">repo_id</span><span class="p">,</span> <span class="n">commit_message</span><span class="o">=</span><span class="n">commit_message</span><span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>README.md: 100%|██████████| 0.00/5.17k [00:00&lt;?, ?B/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>Upload 2 LFS files: 100%|██████████| 0/2 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>model-00002-of-00002.safetensors: 100%|██████████| 0.00/1.05G [00:00&lt;?, ?B/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>model-00001-of-00002.safetensors: 100%|██████████| 0.00/4.76G [00:00&lt;?, ?B/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt-output-prompt">Out[8]:</div>
+      <div class="output-text-output-subareaoutput_execute_result">
+      <pre>CommitInfo(commit_url='https://huggingface.co/Maximofn/Llama-3-8B-Instruct-GPTQ-2bits/commit/e59ccffc03247e7dcc418f98b482cc02dc7a168d', commit_message='AutoGPTQ model for meta-llama/Meta-Llama-3-8B-Instruct: 2bits, gr8, desc_act=False', commit_description='', oid='e59ccffc03247e7dcc418f98b482cc02dc7a168d', pr_url=None, pr_revision=None, pr_num=None)</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Quantization-summary">Quantization summary<a class="anchor-link" href="#Quantization-summary"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 41" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's buy the quantization to 4, 3, 2 and 1 bits</p>
+      <table>
+      <thead>
+      <tr>
+      <th>Bits</th>
+      <th>Quantization time (min)</th>
+      <th>Memory (GB)</th>
+      <th>Inference time (s)</th>
+      <th>Quality of the output</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+      <td>FP16</td>
+      <td>0</td>
+      <td>14.96</td>
+      <td>4.14</td>
+      <td>Good</td>
+      </tr>
+      <tr>
+      <td>4</td>
+      <td>32.20</td>
+      <td>5.34</td>
+      <td>2.34</td>
+      <td>Good</td>
+      </tr>
+      <tr>
+      <td>3</td>
+      <td>31.88</td>
+      <td>4.52</td>
+      <td>2.89</td>
+      <td>Good</td>
+      </tr>
+      <tr>
+      <td>2</td>
+      <td>32.89</td>
+      <td>4.50</td>
+      <td>2.92</td>
+      <td>Poor</td>
+      </tr>
+      <tr>
+      <td>1</td>
+      <td>33.84</td>
+      <td>5.42</td>
+      <td>3.12</td>
+      <td>Poor</td>
+      </tr>
+      </tbody>
+      </table>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Looking at this table we see that it does not make sense, in this example, to quantize to less than 4 bits.</p>
+      <p>Quantizing at 1 and 2 bits clearly does not make sense because the output quality is poor.</p>
+      <p>But although the output when quantizing at 3 bits is good, it started to be repetitive, so in the long run, it would probably not be a good idea to use that model. Besides neither the savings in quantization time, the savings in VRAM and the savings in inference time is significant compared to quantizing to 4 bits.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Loading-of-the-saved-model">Loading of the saved model<a class="anchor-link" href="#Loading-of-the-saved-model"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 42" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Now that we have compared the quantization of models, let's see how it would be done to load the 4-bit model that we have saved, since as we have seen, it is the best choice</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>First we load the tokenizer that we have used</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">repo_id</span> <span class="o">=</span> <span class="s2">"Llama-3-8B-Instruct-GPTQ-1bits"</span>',
+          '<span class="n">commit_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"AutoGPTQ model for </span><span class="si">{</span><span class="n">checkpoint</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">bits</span><span class="si">}</span><span class="s2">bits, gr</span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">group_size</span><span class="si">}</span><span class="s2">, desc_act=</span><span class="si">{</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">desc_act</span><span class="si">}</span><span class="s2">"</span>',
+          '<span class="n">model_1bits</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">(</span><span class="n">repo_id</span><span class="p">,</span> <span class="n">commit_message</span><span class="o">=</span><span class="n">commit_message</span><span class="p">)</span>',
+          '</span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span>',
+          '',
+          '<span class="n">path</span> <span class="o">=</span> <span class="s2">"./model_4bits"</span>',
+          '<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'README.md: 100%|██████████| 0.00/5.17k [00:00&lt;?, ?B/s]',
+          'Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Now we load the model we have saved</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span>',
+          '',
+          '<span class="n">load_model_4bits</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Loading checkpoint shards: 100%|██████████| 2/2 [00:00&lt;?, ?it/s]',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>We see the memory occupied by</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">load_model_4bits_memory</span> <span class="o">=</span> <span class="n">load_model_4bits</span><span class="o">.</span><span class="n">get_memory_footprint</span><span class="p">()</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Model memory: </span><span class="si">{</span><span class="n">load_model_4bits_memory</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> GB"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Model memory: 5.34 GB',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>We see that it occupies the same memory as when we quantized it, which is logical.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We make the inference and see how long it takes</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="kn">import</span> <span class="nn">time</span>
+      
+      <span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">"Hello my name is Maximo and I am a Machine Learning Engineer"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">load_model_4bits</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+      
+      <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+      <span class="n">max_new_tokens</span> <span class="o">=</span> <span class="mi">50</span>
+      <span class="n">outputs</span> <span class="o">=</span> <span class="n">load_model_4bits</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+          <span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>
+          <span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>
+          <span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>
+      <span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+      <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Inference time: </span><span class="si">{opening_brace}</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">t0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">{closing_brace}</span><span class="s2"> s"</span><span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Setting `pad_token_id` to `eos_token_id`:128001 for open-end generation.
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>Hello my name is Maximo and I am a Machine Learning Engineer. I have a strong background in computer science and mathematics, and I have been working with machine learning models for several years. I am excited to be a part of this community and to share my knowledge and experience with others. I am particularly interested in
+      Inference time: 3.82 s
+      </pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We see that the inference is good and it took 3.82 seconds, a little longer than when we quantized it. But as I said before, we would have to do this test many times and take an average.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Loading-of-the-model-uploaded-to-the-hub">Loading of the model uploaded to the hub<a class="anchor-link" href="#Loading-of-the-model-uploaded-to-the-hub"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 43" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Now we see how to load the 4-bit model that we have uploaded to the hub</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>First we load the tokenizer that we have uploaded</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">import</span> <span class="nn">time</span>',
+          '',
+          '<span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">"Hello my name is Maximo and I am a Machine Learning Engineer"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">load_model_4bits</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>',
+          '',
+          '<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>',
+          '<span class="n">max_new_tokens</span> <span class="o">=</span> <span class="mi">50</span>',
+          '<span class="n">outputs</span> <span class="o">=</span> <span class="n">load_model_4bits</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>',
+          '    <span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>',
+          '    <span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>',
+          '    <span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>',
+          '<span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Inference time: </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">t0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>',
+          '</span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span>',
+          '',
+          '<span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"Maximofn/Llama-3-8B-Instruct-GPTQ-4bits"</span>',
+          '<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Setting `pad_token_id` to `eos_token_id`:128001 for open-end generation.',
+          'Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Now we load the model we have saved</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span>',
+      '      ',
+      '      <span class="n">load_model_4bits</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>We see the memory occupied by</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span>',
+          '',
+          '<span class="n">load_model_4bits</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">)</span>',
+          '</span><span class="n">load_model_4bits_memory</span> <span class="o">=</span> <span class="n">load_model_4bits</span><span class="o">.</span><span class="n">get_memory_footprint</span><span class="p">()</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Model memory: </span><span class="si">{</span><span class="n">load_model_4bits_memory</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> GB"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Model memory: 5.34 GB',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>It also occupies the same memory</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We make the inference and see how long it takes</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="kn">import</span> <span class="nn">time</span>
+      
+      <span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">"Hello my name is Maximo and I am a Machine Learning Engineer"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">load_model_4bits</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+      
+      <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+      <span class="n">max_new_tokens</span> <span class="o">=</span> <span class="mi">50</span>
+      <span class="n">outputs</span> <span class="o">=</span> <span class="n">load_model_4bits</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+          <span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>
+          <span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>
+          <span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>
+      <span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+      <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Inference time: </span><span class="si">{opening_brace}</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">t0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">{closing_brace}</span><span class="s2"> s"</span><span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Setting `pad_token_id` to `eos_token_id`:128001 for open-end generation.
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>Hello my name is Maximo and I am a Machine Learning Engineer with a passion for building innovative AI solutions. I have been working in the field of AI for over 5 years, and have gained extensive experience in developing and implementing machine learning models for various industries.
+      
+      In my free time, I enjoy reading books on
+      Inference time: 3.81 s
+      </pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We see that the inference is also good and took 3.81 seconds.</p>
+      </section>
+      
+
+
+
+
+
+
+    </div>
+
+  </section>
+
+</PostLayout>

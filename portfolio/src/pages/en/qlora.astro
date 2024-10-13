@@ -1,0 +1,1613 @@
+---
+import PostLayout from '@layouts/PostLayout.astro';
+import CodeBlockInputCell from '@components/CodeBlockInputCell.astro';
+import CodeBlockOutputCell from '@components/CodeBlockOutputCell.astro';
+
+const { metadata_page } = await import('@portfolio/consts.json');
+const { colors } = await import('@portfolio/consts.json');
+const { svg_paths } = await import('@portfolio/consts.json');
+
+const page_title = 'QLoRA: Efficient Finetuning of Quantized LLMs';
+const end_url = 'qlora';
+const description = 'Hello everyone! 🤗 Today we are going to talk about QLoRA, the technique that will allow you to make your language models more efficient and faster ⏱️. But how does it do it? 🤔 Well, first it uses quantization to reduce the size of the model weights, which saves memory and speed 📈. Then, it applies LoRA (Low-Rank Adaptation), which is like a superpower that allows the model to adapt to new data without retraining from scratch 💪. And, for you to see how it works in practice, I leave you with a code example that will make you say \'Eureka!\' 🎉 Let\'s dive into the world of QLoRA and discover how we can make our models smarter and more efficient! 🤓';
+const keywords = 'qlora, quantization, lora, low-rank adaptation, transformers, hugging face, nlp, natural language processing, machine learning, artificial intelligence';
+const languaje = 'EN';
+const image_path = 'https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/QLoRA_thumbnail_EN.webp';
+const opening_brace = '{';
+const closing_brace = '}';
+---
+
+<PostLayout 
+    title={page_title}
+    languaje={languaje}
+    description={description}
+    keywords={keywords}
+    author={metadata_page.author}
+    theme_color={colors.background_color}
+    end_url={end_url}
+    image_path={image_path}
+    image_width=1080
+    image_height=607
+    image_extension=webp
+    article_date=2024-07-29+T00:00:00Z
+>
+
+  <section class="post-body">
+
+
+    <aside class="post-index">
+      <a class="anchor-link" href="#LoRA"><h2>LoRA</h2></a>
+      <a class="anchor-link" href="#Updating-of-weights-in-a-neural-network"><h3>Updating of weights in a neural network</h3></a>
+      <a class="anchor-link" href="#LoRA"><h3>LoRA</h3></a>
+      <a class="anchor-link" href="#QLoRA"><h2>QLoRA</h2></a>
+      <a class="anchor-link" href="#QLoRA-Quantization"><h3>QLoRA Quantization</h3></a>
+      <a class="anchor-link" href="#Quantification-of-language-models-in-normal-float-4-(NF4)"><h4>Quantification of language models in normal float 4 (NF4)</h4></a>
+      <a class="anchor-link" href="#Double-quantization"><h4>Double quantization</h4></a>
+      <a class="anchor-link" href="#Paginated-optimizers"><h4>Paginated optimizers</h4></a>
+      <a class="anchor-link" href="#Fine-tuning-with-LoRA"><h3>Fine tuning with LoRA</h3></a>
+      <a class="anchor-link" href="#How-to-do-fine-tuning-of-a-quantized-model-with-QLoRA"><h2>How to do fine tuning of a quantized model with QLoRA</h2></a>
+      <a class="anchor-link" href="#Login-to-Hugging-Face-Hub"><h3>Login to Hugging Face Hub</h3></a>
+      <a class="anchor-link" href="#Dataset"><h3>Dataset</h3></a>
+      <a class="anchor-link" href="#Tokenizer"><h3>Tokenizer</h3></a>
+      <a class="anchor-link" href="#Model"><h3>Model</h3></a>
+      <a class="anchor-link" href="#Model-quantification"><h3>Model quantification</h3></a>
+      <a class="anchor-link" href="#LoRA"><h3>LoRA</h3></a>
+      <a class="anchor-link" href="#Training"><h3>Training</h3></a>
+      <a class="anchor-link" href="#Evaluation"><h3>Evaluation</h3></a>
+      <a class="anchor-link" href="#Publish-the-model"><h3>Publish the model</h3></a>
+      <a class="anchor-link" href="#Test-the-model"><h3>Test the model</h3></a>
+    </aside>
+
+
+    <div class="post-body-content">
+      
+      <section class="section-block-markdown-cell">
+      <h1 id="QLoRA:-Efficient-Finetuning-of-Quantized-LLMs">QLoRA: Efficient Finetuning of Quantized LLMs<a class="anchor-link" href="#QLoRA:-Efficient-Finetuning-of-Quantized-LLMs"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 21" src={svg_paths.link_svg_path}/></a></h1>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>This notebook has been automatically translated to make it accessible to more people, please let me know if you see any typos.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>While <a href="https://maximofn.com/lora/">LoRA</a> provides a way to do fine tuning of language models without the need for GPUs with large VRAMs, in the <a href="https://arxiv.org/abs/2305.14314">QLoRA</a> paper they go further and propose a way to do quantized model fine tuning, making even less memory needed to do fine tuning of language models.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="LoRA">LoRA<a class="anchor-link" href="#LoRA"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 22" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Updating-of-weights-in-a-neural-network">Updating of weights in a neural network<a class="anchor-link" href="#Updating-of-weights-in-a-neural-network"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 23" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>To understand how LoRA works, we first have to remember what happens when we train a model. Let's go back to the most basic part of deep learning, we have a dense layer of a neural network that is defined as:</p>
+      $$
+      y = Wx + b
+      $$<p>Where $W$ is the weights matrix and $b$ is the bias vector.</p>
+      <p>For the sake of simplicity we will assume that there is no bias, so it would look like this</p>
+      $$
+      y = Wx
+      $$<p>Suppose that for an input $x$ we want it to have an output $ŷ$.</p>
+      <ul>
+      <li>First what we do is to calculate the output we get with our current value of pesos $W$, i.e. we get the value $y$.</li>
+      <li>Next we calculate the error that exists between the value of $y$ that we have obtained and the value that we wanted to obtain $ŷ$. We call this error $loss$, and we calculate it with some mathematical function, now it does not matter which one.</li>
+      <li>We compute the gardient (the derivative) of the error $loss$ with respect to the weights matrix $W$, i.e. $$Delta W = \frac{opening_brace}dloss{closing_brace}{opening_brace}dW{closing_brace}$.</li>
+      <li>We update the weights $W$ by subtracting from each of their values the value of the gradient multiplied by a learning factor $alpha$, i.e. $W = W - \alpha \Delta W$.</li>
+      </ul>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="LoRA">LoRA<a class="anchor-link" href="#LoRA"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 24" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>The authors of LoRA propose that the weights matrix $W$ can be decomposed into</p>
+      $$
+      W \sim W + Delta W
+      $$<p>So, by freezing the $W$ matrix and training only the $"Delta W$ matrix, it is possible to obtain a model that fits new data without having to retrain the whole model.</p>
+      <p>But you may think that $$Delta W$ is a matrix of size equal to $W$ so nothing has been gained, but here the authors rely on <code>Aghajanyan et al. (2020)</code>, a paper in which they showed that although the language models are large and their parameters are matrices with very large dimensions, to adapt them to new tasks it is not necessary to change all the values of the matrices, but changing a few values is enough, which in technical terms, is called Low Rank Adaptation. Hence the name LoRA (Low Rank Adaptation).</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We have frozen the model and now we want to train the $$Delta W$ matrix, let's assume that both $W$ and $$Delta W$ are matrices of size $20$, so we have 200 trainable parameters</p>
+      <p>Now suppose that the matrix $$Delta W$ can be decomposed into the product of two matrices $A$ and $B$, i.e.</p>
+      $$
+      \Delta W = A \cdot B
+      $$<p>For this multiplication to occur the sizes of the matrices $A$ and $B$ have to be $20 times n$ and $n times 10$ respectively. Suppose $n = 5$, so $A$ would be of size $20 \times 5$, i.e. 100 parameters, and $B$ of size $5 \times 10$, i.e. 50 parameters, so we would have 100+50=150 trainable parameters. We already have less trainable parameters than before</p>
+      <p>Now let's suppose that $W$ is actually a matrix of size $10.000 \times 10.000$, so we would have 100.000.000 trainable parameters, but if we decompose $$Delta W$ in $A$ and $B$ with $n = 5$, we would have a matrix of size $10.000 \times 5$ and another one of size $5 \times 10.000$, so we would have 50.000 parameters of one and another 50.000 parameters of the other, in total 100.000 trainable parameters, that is to say we have reduced the number of parameters 1000 times.</p>
+      <p>You can already see the power of LoRA, when you have very large models, the number of trainable parameters can be greatly reduced.</p>
+      <p>If we look again at the image of the LoRA architecture, we will understand it better.</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="LoRA adapt" src="https://maximofn.com/wp-content/uploads/2024/07/LoRA_adapat.webp" width="340" height="299"/></p>
+      <p>But it looks even better, the savings in number of trainable parameters with this image</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="LoRA matmul" src="https://maximofn.com/wp-content/uploads/2024/07/Lora_matmul.webp" width="523" height="414"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="QLoRA">QLoRA<a class="anchor-link" href="#QLoRA"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 25" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>QLoRA is performed in two steps, the first consists of quantizing the model and the second of applying LoRA to the quantized model.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="QLoRA-Quantization">QLoRA Quantization<a class="anchor-link" href="#QLoRA-Quantization"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 26" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>QLoRA quantization is based on three concepts, 4-bit model quantization with the normal float 4 (NF4) format, double quantization and paged optimizers. All this together makes it possible to save a lot of memory when fine tuning the language models, so let's see what each one consists of</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Quantification-of-language-models-in-normal-float-4-(NF4)">Quantification of language models in normal float 4 (NF4)<a class="anchor-link" href="#Quantification-of-language-models-in-normal-float-4-(NF4)"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 27" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>In QLoRA, to quantize, what is done is to quantize in normal float 4 (NF4) format, which is a type of 4-bit quantization so that its data have a normal distribution, i.e. they follow a Gaussian bell. To get them to follow this distribution, what is done is to divide the values of the weights in FP16 into quantiles, so that in each quantile there is the same number of values. Once we have the quantiles, a value in 4 bits is assigned to each quantile.</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="QLoRA-normal-float-quantization" src="https://maximofn.com/wp-content/uploads/2024/07/QLoRA-normal-float-quantization.webp" width="700" height="365"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>To perform this quantization it uses the SRAM quantization algorithm, which is a very fast quantization algorithm by quantiles, but it has a lot of error with values that are very far away in the distribution of the Gaussian bell, outliers.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>As the parameters of the weights of a neural network usually follow a normal distribution (i.e. they follow a Gaussian bell), centered at zero and with a standard deviation σ. What is done is to normalize them to have a standard deviation between -1 and 1, and then quantize them in NF4 format.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Double-quantization">Double quantization<a class="anchor-link" href="#Double-quantization"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 28" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>As we have mentioned, when quantizing the network parameters, we have to normalize them to have a standard deviation between -1 and 1, and then quantize them in NF4 format. So we have to store some parameters as the values to normalize the parameters, that is, the value by which the data is divided to have a deviation between -1 and 1. These values are stored in FP32 format, so the authors of the paper propose to quantize these parameters to FP8 format.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Although this may not seem to save much memory, the authors estimate that this can save about 0.373 bits per parameter, but if for example we have a model of 8B parameters, which is not an excessively large model today, we would save about 3 GB of memory, which is not bad. In the case of a 70B parameter model, we would save about 26 GB of memory.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Paginated-optimizers">Paginated optimizers<a class="anchor-link" href="#Paginated-optimizers"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 29" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Nvidia GPUs have the option to share GPU and CPU RAM, so what they do is store optimizer states in CPU RAM and access them when needed. So they don't have to be stored in GPU RAM and we can save GPU memory.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Fine-tuning-with-LoRA">Fine tuning with LoRA<a class="anchor-link" href="#Fine-tuning-with-LoRA"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 30" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Once we have quantized the model we can do fine tuning of the quantized model as in <a href="https://maximofn.com/lora/">LoRA</a></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="How-to-do-fine-tuning-of-a-quantized-model-with-QLoRA">How to do fine tuning of a quantized model with QLoRA<a class="anchor-link" href="#How-to-do-fine-tuning-of-a-quantized-model-with-QLoRA"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 31" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Now that we have explained QLoRA, let's see an example of how to fine tune a model using QLoRA.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Login-to-Hugging-Face-Hub">Login to Hugging Face Hub<a class="anchor-link" href="#Login-to-Hugging-Face-Hub"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 32" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>First we log in to upload the trained model to the Hub.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">notebook_login</span>',
+      '      <span class="n">notebook_login</span><span class="p">()</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Dataset">Dataset<a class="anchor-link" href="#Dataset"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 33" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We download the dataset we are going to use, which is a dataset of reviews from <a href="https://huggingface.co/datasets/mteb/amazon_reviews_multi" target="_blank" rel="nofollow noreferrer">Amazon</a></p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">notebook_login</span>',
+          '<span class="n">notebook_login</span><span class="p">()</span>',
+          '</span><span class="kn">from</span> <span class="nn">datasets</span> <span class="kn">import</span> <span class="n">load_dataset</span>',
+          '',
+          '<span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"mteb/amazon_reviews_multi"</span><span class="p">,</span> <span class="s2">"en"</span><span class="p">)</span>',
+          '<span class="n">dataset</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'DatasetDict({',
+          '    train: Dataset({',
+          '        features: [\'id\', \'text\', \'label\', \'label_text\'],',
+          '        num_rows: 200000',
+          '    })',
+          '    validation: Dataset({',
+          '        features: [\'id\', \'text\', \'label\', \'label_text\'],',
+          '        num_rows: 5000',
+          '    })',
+          '    test: Dataset({',
+          '        features: [\'id\', \'text\', \'label\', \'label_text\'],',
+          '        num_rows: 5000',
+          '    })',
+          '})',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>We create a subset in case you want to test the code with a smaller dataset. In my case I will use 100% of the dataset</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">percentage</span> <span class="o">=</span> <span class="mi">1</span>',
+          '',
+          '<span class="n">subset_dataset_train</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s1">\'train\'</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s1">\'train\'</span><span class="p">])</span> <span class="o">*</span> <span class="n">percentage</span><span class="p">)))</span>',
+          '<span class="n">subset_dataset_validation</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s1">\'validation\'</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s1">\'validation\'</span><span class="p">])</span> <span class="o">*</span> <span class="n">percentage</span><span class="p">)))</span>',
+          '<span class="n">subset_dataset_test</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s1">\'test\'</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s1">\'test\'</span><span class="p">])</span> <span class="o">*</span> <span class="n">percentage</span><span class="p">)))</span>',
+          '',
+          '<span class="n">subset_dataset_train</span><span class="p">,</span> <span class="n">subset_dataset_validation</span><span class="p">,</span> <span class="n">subset_dataset_test</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '(Dataset({',
+          '     features: [\'id\', \'text\', \'label\', \'label_text\'],',
+          '     num_rows: 200000',
+          ' }),',
+          ' Dataset({',
+          '     features: [\'id\', \'text\', \'label\', \'label_text\'],',
+          '     num_rows: 5000',
+          ' }),',
+          ' Dataset({',
+          '     features: [\'id\', \'text\', \'label\', \'label_text\'],',
+          '     num_rows: 5000',
+          ' }))',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>We see a sample</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">random</span> <span class="kn">import</span> <span class="n">randint</span>',
+          '',
+          '<span class="n">idx</span> <span class="o">=</span> <span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">subset_dataset_train</span><span class="p">))</span>',
+          '<span class="n">subset_dataset_train</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '{\'id\': \'en_0297000\',',
+          ' \'text\': \'Not waterproof at all\n\nBought this after reading good reviews. But it’s not water proof at all. If my son has even a little accident in bed, it goes straight to mattress. I don’t see a point in having this. So I have to purchase another one.\',',
+          ' \'label\': 0,',
+          ' \'label_text\': \'0\'}',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>We obtain the number of classes, to obtain the number of classes we use <code>dataset['train']</code> and not <code>subset_dataset_train</code> because if the subset is too small it is possible that there are no examples with all the possible classes of the original dataset.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">num_classes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s1">\'train\'</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="s1">\'label\'</span><span class="p">))</span>',
+          '<span class="n">num_classes</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '5',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>We create a function to create the <code>label</code> field in the dataset. The downloaded dataset has the <code>labels</code> field but the <code>transformers</code> library needs the field to be called <code>label</code> and not <code>labels</code>.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="k">def</span> <span class="nf">set_labels</span><span class="p">(</span><span class="n">example</span><span class="p">):</span>',
+      '          <span class="n">example</span><span class="p">[</span><span class="s1">\'labels\'</span><span class="p">]</span> <span class="o">=</span> <span class="n">example</span><span class="p">[</span><span class="s1">\'label\'</span><span class="p">]</span>',
+      '          <span class="k">return</span> <span class="n">example</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>We apply the function to the dataset</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="k">def</span> <span class="nf">set_labels</span><span class="p">(</span><span class="n">example</span><span class="p">):</span>',
+          '    <span class="n">example</span><span class="p">[</span><span class="s1">\'labels\'</span><span class="p">]</span> <span class="o">=</span> <span class="n">example</span><span class="p">[</span><span class="s1">\'label\'</span><span class="p">]</span>',
+          '    <span class="k">return</span> <span class="n">example</span>',
+          '</span><span class="n">subset_dataset_train</span> <span class="o">=</span> <span class="n">subset_dataset_train</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">set_labels</span><span class="p">)</span>',
+          '<span class="n">subset_dataset_validation</span> <span class="o">=</span> <span class="n">subset_dataset_validation</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">set_labels</span><span class="p">)</span>',
+          '<span class="n">subset_dataset_test</span> <span class="o">=</span> <span class="n">subset_dataset_test</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">set_labels</span><span class="p">)</span>',
+          '',
+          '<span class="n">subset_dataset_train</span><span class="p">,</span> <span class="n">subset_dataset_validation</span><span class="p">,</span> <span class="n">subset_dataset_test</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '(Dataset({',
+          '     features: [\'id\', \'text\', \'label\', \'label_text\', \'labels\'],',
+          '     num_rows: 200000',
+          ' }),',
+          ' Dataset({',
+          '     features: [\'id\', \'text\', \'label\', \'label_text\', \'labels\'],',
+          '     num_rows: 5000',
+          ' }),',
+          ' Dataset({',
+          '     features: [\'id\', \'text\', \'label\', \'label_text\', \'labels\'],',
+          '     num_rows: 5000',
+          ' }))',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Here is a sample again</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">subset_dataset_train</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '{\'id\': \'en_0297000\',',
+          ' \'text\': \'Not waterproof at all\n\nBought this after reading good reviews. But it’s not water proof at all. If my son has even a little accident in bed, it goes straight to mattress. I don’t see a point in having this. So I have to purchase another one.\',',
+          ' \'label\': 0,',
+          ' \'label_text\': \'0\',',
+          ' \'labels\': 0}',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Tokenizer">Tokenizer<a class="anchor-link" href="#Tokenizer"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 34" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We implement the tokenizer. To avoid errors, we assign the end of string token to the padding token.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span>',
+      '      ',
+      '      <span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2"</span>',
+      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>',
+      '      <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>We create a function for tokenizing the dataset</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span>',
+      '      ',
+      '      <span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2"</span>',
+      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>',
+      '      <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>',
+      '<span></span><span class="k">def</span> <span class="nf">tokenize_function</span><span class="p">(</span><span class="n">examples</span><span class="p">):</span>',
+      '          <span class="k">return</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">examples</span><span class="p">[</span><span class="s2">"text"</span><span class="p">],</span> <span class="n">padding</span><span class="o">=</span><span class="s2">"max_length"</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">768</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>We apply the function to the dataset and remove the columns that we do not need</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span>',
+          '',
+          '<span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2"</span>',
+          '<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>',
+          '<span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>',
+          '</span><span class="k">def</span> <span class="nf">tokenize_function</span><span class="p">(</span><span class="n">examples</span><span class="p">):</span>',
+          '    <span class="k">return</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">examples</span><span class="p">[</span><span class="s2">"text"</span><span class="p">],</span> <span class="n">padding</span><span class="o">=</span><span class="s2">"max_length"</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">768</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>',
+          '</span><span class="n">subset_dataset_train</span> <span class="o">=</span> <span class="n">subset_dataset_train</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">tokenize_function</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">remove_columns</span><span class="o">=</span><span class="p">[</span><span class="s1">\'text\'</span><span class="p">,</span> <span class="s1">\'label\'</span><span class="p">,</span> <span class="s1">\'id\'</span><span class="p">,</span> <span class="s1">\'label_text\'</span><span class="p">])</span>',
+          '<span class="n">subset_dataset_validation</span> <span class="o">=</span> <span class="n">subset_dataset_validation</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">tokenize_function</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">remove_columns</span><span class="o">=</span><span class="p">[</span><span class="s1">\'text\'</span><span class="p">,</span> <span class="s1">\'label\'</span><span class="p">,</span> <span class="s1">\'id\'</span><span class="p">,</span> <span class="s1">\'label_text\'</span><span class="p">])</span>',
+          '<span class="n">subset_dataset_test</span> <span class="o">=</span> <span class="n">subset_dataset_test</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">tokenize_function</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">remove_columns</span><span class="o">=</span><span class="p">[</span><span class="s1">\'text\'</span><span class="p">,</span> <span class="s1">\'label\'</span><span class="p">,</span> <span class="s1">\'id\'</span><span class="p">,</span> <span class="s1">\'label_text\'</span><span class="p">])</span>',
+          '',
+          '<span class="n">subset_dataset_train</span><span class="p">,</span> <span class="n">subset_dataset_validation</span><span class="p">,</span> <span class="n">subset_dataset_test</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '(Dataset({',
+          '     features: [\'labels\', \'input_ids\', \'attention_mask\'],',
+          '     num_rows: 200000',
+          ' }),',
+          ' Dataset({',
+          '     features: [\'labels\', \'input_ids\', \'attention_mask\'],',
+          '     num_rows: 5000',
+          ' }),',
+          ' Dataset({',
+          '     features: [\'labels\', \'input_ids\', \'attention_mask\'],',
+          '     num_rows: 5000',
+          ' }))',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>We see again a sample, but in this case we only see the <code>keys</code>.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">subset_dataset_train</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'dict_keys([\'labels\', \'input_ids\', \'attention_mask\'])',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Model">Model<a class="anchor-link" href="#Model"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 35" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We first download the unquantized model</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForSequenceClassification</span>',
+          '',
+          '<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForSequenceClassification</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">num_labels</span><span class="o">=</span><span class="n">num_classes</span><span class="p">)</span>',
+          '<span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">eos_token_id</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Some weights of GPT2ForSequenceClassification were not initialized from the model checkpoint at openai-community/gpt2 and are newly initialized: [\'score.weight\']',
+          'You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>We see the memory occupied by</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">model_memory</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_memory_footprint</span><span class="p">()</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Model memory: </span><span class="si">{</span><span class="n">model_memory</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> GB"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Model memory: 0.48 GB',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>We pass the model to FP16 and look again at the memory occupied by the model.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">half</span><span class="p">()</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">half</span><span class="p">()</span>',
+          '</span><span class="n">model_memory</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_memory_footprint</span><span class="p">()</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Model memory: </span><span class="si">{</span><span class="n">model_memory</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> GB"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Model memory: 0.24 GB',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>We see the architecture of the model before quantization</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">model</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'GPT2ForSequenceClassification(',
+          '  (transformer): GPT2Model(',
+          '    (wte): Embedding(50257, 768)',
+          '    (wpe): Embedding(1024, 768)',
+          '    (drop): Dropout(p=0.1, inplace=False)',
+          '    (h): ModuleList(',
+          '      (0-11): 12 x GPT2Block(',
+          '        (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)',
+          '        (attn): GPT2Attention(',
+          '          (c_attn): Conv1D()',
+          '          (c_proj): Conv1D()',
+          '          (attn_dropout): Dropout(p=0.1, inplace=False)',
+          '          (resid_dropout): Dropout(p=0.1, inplace=False)',
+          '        )',
+          '        (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)',
+          '        (mlp): GPT2MLP(',
+          '          (c_fc): Conv1D()',
+          '          (c_proj): Conv1D()',
+          '          (act): NewGELUActivation()',
+          '          (dropout): Dropout(p=0.1, inplace=False)',
+          '        )',
+          '      )',
+          '    )',
+          '    (ln_f): LayerNorm((768,), eps=1e-05, elementwise_affine=True)',
+          '  )',
+          '  (score): Linear(in_features=768, out_features=5, bias=False)',
+          ')',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Model-quantification">Model quantification<a class="anchor-link" href="#Model-quantification"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 36" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>To quantize the model first we have to create the quantization configuration, for this we use the <code>bitsandbytes</code> library, if you don't have it installed you can install it with</p>
+      <div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>bitsandbytes
+      <span class="sb">```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>First we check if our GPU architecture allows the BF16 format, if not we will use FP16.</p>
+      <p>Then we create the quantization configuration, with <code>load_in_4bits=True</code> we indicate that it quantizes to 4 bits, with <code>bnb_4bit_quant_type="nf4"</code> we indicate that it does it in NF4 format, with <code>bnb_4bit_use_double_quant=True</code> we tell it to double quantize and with <code>bnb_4bit_compute_dtype=compute_dtype</code> we tell it which data format to use when quantizing, which can be FP16 or BF16.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">BitsAndBytesConfig</span>',
+      '      <span class="kn">import</span> <span class="nn">torch</span>',
+      '      ',
+      '      <span class="n">compute_dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_bf16_supported</span><span class="p">()</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>',
+      '      ',
+      '      <span class="n">bnb_config</span> <span class="o">=</span> <span class="n">BitsAndBytesConfig</span><span class="p">(</span>',
+      '          <span class="n">load_in_4bit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>',
+      '          <span class="n">bnb_4bit_quant_type</span><span class="o">=</span><span class="s2">"nf4"</span><span class="p">,</span>',
+      '          <span class="n">bnb_4bit_use_double_quant</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>',
+      '          <span class="n">bnb_4bit_compute_dtype</span><span class="o">=</span><span class="n">compute_dtype</span><span class="p">,</span>',
+      '      <span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>And now we quantize the model</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">BitsAndBytesConfig</span>',
+          '<span class="kn">import</span> <span class="nn">torch</span>',
+          '',
+          '<span class="n">compute_dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_bf16_supported</span><span class="p">()</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>',
+          '',
+          '<span class="n">bnb_config</span> <span class="o">=</span> <span class="n">BitsAndBytesConfig</span><span class="p">(</span>',
+          '    <span class="n">load_in_4bit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>',
+          '    <span class="n">bnb_4bit_quant_type</span><span class="o">=</span><span class="s2">"nf4"</span><span class="p">,</span>',
+          '    <span class="n">bnb_4bit_use_double_quant</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>',
+          '    <span class="n">bnb_4bit_compute_dtype</span><span class="o">=</span><span class="n">compute_dtype</span><span class="p">,</span>',
+          '<span class="p">)</span>',
+          '</span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForSequenceClassification</span>',
+          '',
+          '<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForSequenceClassification</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">num_labels</span><span class="o">=</span><span class="n">num_classes</span><span class="p">,</span> <span class="n">quantization_config</span><span class="o">=</span><span class="n">bnb_config</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '`low_cpu_mem_usage` was None, now set to True since model is quantized.',
+          'Some weights of GPT2ForSequenceClassification were not initialized from the model checkpoint at openai-community/gpt2 and are newly initialized: [\'score.weight\']',
+          'You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's look again at the memory it occupies now that we have quantized it</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">model_memory</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_memory_footprint</span><span class="p">()</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Model memory: </span><span class="si">{</span><span class="n">model_memory</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> GB"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Model memory: 0.12 GB',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>We see that the size of the model has been reduced.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We return to the architecture of the model once it has been quantized</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">model</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'GPT2ForSequenceClassification(',
+          '  (transformer): GPT2Model(',
+          '    (wte): Embedding(50257, 768)',
+          '    (wpe): Embedding(1024, 768)',
+          '    (drop): Dropout(p=0.1, inplace=False)',
+          '    (h): ModuleList(',
+          '      (0-11): 12 x GPT2Block(',
+          '        (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)',
+          '        (attn): GPT2Attention(',
+          '          (c_attn): Linear4bit(in_features=768, out_features=2304, bias=True)',
+          '          (c_proj): Linear4bit(in_features=768, out_features=768, bias=True)',
+          '          (attn_dropout): Dropout(p=0.1, inplace=False)',
+          '          (resid_dropout): Dropout(p=0.1, inplace=False)',
+          '        )',
+          '        (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)',
+          '        (mlp): GPT2MLP(',
+          '          (c_fc): Linear4bit(in_features=768, out_features=3072, bias=True)',
+          '          (c_proj): Linear4bit(in_features=3072, out_features=768, bias=True)',
+          '          (act): NewGELUActivation()',
+          '          (dropout): Dropout(p=0.1, inplace=False)',
+          '        )',
+          '      )',
+          '    )',
+          '    (ln_f): LayerNorm((768,), eps=1e-05, elementwise_affine=True)',
+          '  )',
+          '  (score): Linear(in_features=768, out_features=5, bias=False)',
+          ')',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>We see that the architecture has changed</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="QLoRA-model-vs-quantized-model" src="https://maximofn.com/wp-content/uploads/2024/07/QLoRA-model-vs-quantized-model_-scaled.webp" width="1200" height="427"/></p>
+      <p>Modified <code>Conv1D</code> layers to <code>Linear4bits</code> layers.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="LoRA">LoRA<a class="anchor-link" href="#LoRA"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 37" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Before implementing LoRA, we have to set up the model to train on 4 bits</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">peft</span> <span class="kn">import</span> <span class="n">prepare_model_for_kbit_training</span>',
+      '      ',
+      '      <span class="n">model</span> <span class="o">=</span> <span class="n">prepare_model_for_kbit_training</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's see if the size of the model has changed.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">peft</span> <span class="kn">import</span> <span class="n">prepare_model_for_kbit_training</span>',
+          '',
+          '<span class="n">model</span> <span class="o">=</span> <span class="n">prepare_model_for_kbit_training</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>',
+          '</span><span class="n">model_memory</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_memory_footprint</span><span class="p">()</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Model memory: </span><span class="si">{</span><span class="n">model_memory</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> GB"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Model memory: 0.20 GB',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Memory has been increased, so we look at the model architecture again.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">model</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'GPT2ForSequenceClassification(',
+          '  (transformer): GPT2Model(',
+          '    (wte): Embedding(50257, 768)',
+          '    (wpe): Embedding(1024, 768)',
+          '    (drop): Dropout(p=0.1, inplace=False)',
+          '    (h): ModuleList(',
+          '      (0-11): 12 x GPT2Block(',
+          '        (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)',
+          '        (attn): GPT2Attention(',
+          '          (c_attn): Linear4bit(in_features=768, out_features=2304, bias=True)',
+          '          (c_proj): Linear4bit(in_features=768, out_features=768, bias=True)',
+          '          (attn_dropout): Dropout(p=0.1, inplace=False)',
+          '          (resid_dropout): Dropout(p=0.1, inplace=False)',
+          '        )',
+          '        (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)',
+          '        (mlp): GPT2MLP(',
+          '          (c_fc): Linear4bit(in_features=768, out_features=3072, bias=True)',
+          '          (c_proj): Linear4bit(in_features=3072, out_features=768, bias=True)',
+          '          (act): NewGELUActivation()',
+          '          (dropout): Dropout(p=0.1, inplace=False)',
+          '        )',
+          '      )',
+          '    )',
+          '    (ln_f): LayerNorm((768,), eps=1e-05, elementwise_affine=True)',
+          '  )',
+          '  (score): Linear(in_features=768, out_features=5, bias=False)',
+          ')',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>The architecture remains the same, so we assume that the memory increase is due to some extra configuration to be able to apply LoRA in 4 bits.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We create a LoRA configuration, but unlike the <a href="https://maximofn.com/lora/">LoRA</a> post in which we only configured in <code>target_modeules</code> the <code>scores</code> layer, now we are going to add also the <code>c_attn</code>, <code>c_proj</code> and <code>c_fc</code> layers since they are now of type <code>Linear4bits</code> and not <code>Conv1D</code>.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">peft</span> <span class="kn">import</span> <span class="n">LoraConfig</span><span class="p">,</span> <span class="n">TaskType</span>',
+      '      ',
+      '      <span class="n">config</span> <span class="o">=</span> <span class="n">LoraConfig</span><span class="p">(</span>',
+      '          <span class="n">r</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>',
+      '          <span class="n">lora_alpha</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>',
+      '          <span class="n">lora_dropout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>',
+      '          <span class="n">task_type</span><span class="o">=</span><span class="n">TaskType</span><span class="o">.</span><span class="n">SEQ_CLS</span><span class="p">,</span>',
+      '          <span class="n">target_modules</span><span class="o">=</span><span class="p">[</span><span class="s1">\'c_attn\'</span><span class="p">,</span> <span class="s1">\'c_fc\'</span><span class="p">,</span> <span class="s1">\'c_proj\'</span><span class="p">,</span> <span class="s1">\'score\'</span><span class="p">],</span>',
+      '          <span class="n">bias</span><span class="o">=</span><span class="s2">"none"</span><span class="p">,</span>',
+      '      <span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">peft</span> <span class="kn">import</span> <span class="n">LoraConfig</span><span class="p">,</span> <span class="n">TaskType</span>',
+      '      ',
+      '      <span class="n">config</span> <span class="o">=</span> <span class="n">LoraConfig</span><span class="p">(</span>',
+      '          <span class="n">r</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>',
+      '          <span class="n">lora_alpha</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>',
+      '          <span class="n">lora_dropout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>',
+      '          <span class="n">task_type</span><span class="o">=</span><span class="n">TaskType</span><span class="o">.</span><span class="n">SEQ_CLS</span><span class="p">,</span>',
+      '          <span class="n">target_modules</span><span class="o">=</span><span class="p">[</span><span class="s1">\'c_attn\'</span><span class="p">,</span> <span class="s1">\'c_fc\'</span><span class="p">,</span> <span class="s1">\'c_proj\'</span><span class="p">,</span> <span class="s1">\'score\'</span><span class="p">],</span>',
+      '          <span class="n">bias</span><span class="o">=</span><span class="s2">"none"</span><span class="p">,</span>',
+      '      <span class="p">)</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">peft</span> <span class="kn">import</span> <span class="n">get_peft_model</span>',
+      '      ',
+      '      <span class="n">model</span> <span class="o">=</span> <span class="n">get_peft_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">peft</span> <span class="kn">import</span> <span class="n">LoraConfig</span><span class="p">,</span> <span class="n">TaskType</span>',
+          '',
+          '<span class="n">config</span> <span class="o">=</span> <span class="n">LoraConfig</span><span class="p">(</span>',
+          '    <span class="n">r</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>',
+          '    <span class="n">lora_alpha</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>',
+          '    <span class="n">lora_dropout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>',
+          '    <span class="n">task_type</span><span class="o">=</span><span class="n">TaskType</span><span class="o">.</span><span class="n">SEQ_CLS</span><span class="p">,</span>',
+          '    <span class="n">target_modules</span><span class="o">=</span><span class="p">[</span><span class="s1">\'c_attn\'</span><span class="p">,</span> <span class="s1">\'c_fc\'</span><span class="p">,</span> <span class="s1">\'c_proj\'</span><span class="p">,</span> <span class="s1">\'score\'</span><span class="p">],</span>',
+          '    <span class="n">bias</span><span class="o">=</span><span class="s2">"none"</span><span class="p">,</span>',
+          '<span class="p">)</span>',
+          '</span><span class="kn">from</span> <span class="nn">peft</span> <span class="kn">import</span> <span class="n">get_peft_model</span>',
+          '',
+          '<span class="n">model</span> <span class="o">=</span> <span class="n">get_peft_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>',
+          '</span><span class="n">model</span><span class="o">.</span><span class="n">print_trainable_parameters</span><span class="p">()</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'trainable params: 2,375,504 || all params: 126,831,520 || trainable%: 1.8730',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>While in the <a href="https://maximofn.com/lora/">LoRA</a> post we had about 12,000 trainable parameters, we now have about 2 million, as we have now added the <code>c_attn</code>, <code>c_proj</code> and <code>c_fc</code> layers.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Training">Training<a class="anchor-link" href="#Training"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 38" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Once the quantized model has been instantiated and LoRA has been applied, i.e., once we have done QLoRA, we are going to train it as usual</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">TrainingArguments</span>',
+      '      ',
+      '      <span class="n">metric_name</span> <span class="o">=</span> <span class="s2">"accuracy"</span>',
+      '      <span class="n">model_name</span> <span class="o">=</span> <span class="s2">"GPT2-small-QLoRA-finetuned-amazon-reviews-en-classification"</span>',
+      '      <span class="n">LR</span> <span class="o">=</span> <span class="mf">2e-5</span>',
+      '      <span class="n">BS_TRAIN</span> <span class="o">=</span> <span class="mi">224</span>',
+      '      <span class="n">BS_EVAL</span> <span class="o">=</span> <span class="mi">224</span>',
+      '      <span class="n">EPOCHS</span> <span class="o">=</span> <span class="mi">3</span>',
+      '      <span class="n">WEIGHT_DECAY</span> <span class="o">=</span> <span class="mf">0.01</span>',
+      '      ',
+      '      <span class="n">training_args</span> <span class="o">=</span> <span class="n">TrainingArguments</span><span class="p">(</span>',
+      '          <span class="n">model_name</span><span class="p">,</span>',
+      '          <span class="n">eval_strategy</span><span class="o">=</span><span class="s2">"epoch"</span><span class="p">,</span>',
+      '          <span class="n">save_strategy</span><span class="o">=</span><span class="s2">"epoch"</span><span class="p">,</span>',
+      '          <span class="n">learning_rate</span><span class="o">=</span><span class="n">LR</span><span class="p">,</span>',
+      '          <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="n">BS_TRAIN</span><span class="p">,</span>',
+      '          <span class="n">per_device_eval_batch_size</span><span class="o">=</span><span class="n">BS_EVAL</span><span class="p">,</span>',
+      '          <span class="n">num_train_epochs</span><span class="o">=</span><span class="n">EPOCHS</span><span class="p">,</span>',
+      '          <span class="n">weight_decay</span><span class="o">=</span><span class="n">WEIGHT_DECAY</span><span class="p">,</span>',
+      '          <span class="n">lr_scheduler_type</span><span class="o">=</span><span class="s2">"cosine"</span><span class="p">,</span>',
+      '          <span class="n">warmup_ratio</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>',
+      '          <span class="n">fp16</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>',
+      '          <span class="n">load_best_model_at_end</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>',
+      '          <span class="n">metric_for_best_model</span><span class="o">=</span><span class="n">metric_name</span><span class="p">,</span>',
+      '          <span class="n">push_to_hub</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>',
+      '          <span class="n">logging_dir</span><span class="o">=</span><span class="s2">"./runs"</span><span class="p">,</span>',
+      '      <span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>In the post <a href="https://maximofn.com/fine-tuning-sml/">Fine tuning SMLs</a> we had to set a BS train size of 28, in the post <a href="https://maximofn.com/lora/">LoRA</a> by setting the low rank matrices in the linear layers we were able to set a batch size of 400. Now, as when quantizing the model, the PEFT library has converted some more layers to <code>Linear</code> we cannot set such a big batch size and we have to set it to 224.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">TrainingArguments</span>',
+      '      ',
+      '      <span class="n">metric_name</span> <span class="o">=</span> <span class="s2">"accuracy"</span>',
+      '      <span class="n">model_name</span> <span class="o">=</span> <span class="s2">"GPT2-small-QLoRA-finetuned-amazon-reviews-en-classification"</span>',
+      '      <span class="n">LR</span> <span class="o">=</span> <span class="mf">2e-5</span>',
+      '      <span class="n">BS_TRAIN</span> <span class="o">=</span> <span class="mi">224</span>',
+      '      <span class="n">BS_EVAL</span> <span class="o">=</span> <span class="mi">224</span>',
+      '      <span class="n">EPOCHS</span> <span class="o">=</span> <span class="mi">3</span>',
+      '      <span class="n">WEIGHT_DECAY</span> <span class="o">=</span> <span class="mf">0.01</span>',
+      '      ',
+      '      <span class="n">training_args</span> <span class="o">=</span> <span class="n">TrainingArguments</span><span class="p">(</span>',
+      '          <span class="n">model_name</span><span class="p">,</span>',
+      '          <span class="n">eval_strategy</span><span class="o">=</span><span class="s2">"epoch"</span><span class="p">,</span>',
+      '          <span class="n">save_strategy</span><span class="o">=</span><span class="s2">"epoch"</span><span class="p">,</span>',
+      '          <span class="n">learning_rate</span><span class="o">=</span><span class="n">LR</span><span class="p">,</span>',
+      '          <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="n">BS_TRAIN</span><span class="p">,</span>',
+      '          <span class="n">per_device_eval_batch_size</span><span class="o">=</span><span class="n">BS_EVAL</span><span class="p">,</span>',
+      '          <span class="n">num_train_epochs</span><span class="o">=</span><span class="n">EPOCHS</span><span class="p">,</span>',
+      '          <span class="n">weight_decay</span><span class="o">=</span><span class="n">WEIGHT_DECAY</span><span class="p">,</span>',
+      '          <span class="n">lr_scheduler_type</span><span class="o">=</span><span class="s2">"cosine"</span><span class="p">,</span>',
+      '          <span class="n">warmup_ratio</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>',
+      '          <span class="n">fp16</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>',
+      '          <span class="n">load_best_model_at_end</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>',
+      '          <span class="n">metric_for_best_model</span><span class="o">=</span><span class="n">metric_name</span><span class="p">,</span>',
+      '          <span class="n">push_to_hub</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>',
+      '          <span class="n">logging_dir</span><span class="o">=</span><span class="s2">"./runs"</span><span class="p">,</span>',
+      '      <span class="p">)</span>',
+      '<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>',
+      '      <span class="kn">from</span> <span class="nn">evaluate</span> <span class="kn">import</span> <span class="n">load</span>',
+      '      ',
+      '      <span class="n">metric</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s2">"accuracy"</span><span class="p">)</span>',
+      '      ',
+      '      <span class="k">def</span> <span class="nf">compute_metrics</span><span class="p">(</span><span class="n">eval_pred</span><span class="p">):</span>',
+      '          <span class="nb">print</span><span class="p">(</span><span class="n">eval_pred</span><span class="p">)</span>',
+      '          <span class="n">predictions</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">eval_pred</span>',
+      '          <span class="n">predictions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>',
+      '          <span class="k">return</span> <span class="n">metric</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">TrainingArguments</span>',
+      '      ',
+      '      <span class="n">metric_name</span> <span class="o">=</span> <span class="s2">"accuracy"</span>',
+      '      <span class="n">model_name</span> <span class="o">=</span> <span class="s2">"GPT2-small-QLoRA-finetuned-amazon-reviews-en-classification"</span>',
+      '      <span class="n">LR</span> <span class="o">=</span> <span class="mf">2e-5</span>',
+      '      <span class="n">BS_TRAIN</span> <span class="o">=</span> <span class="mi">224</span>',
+      '      <span class="n">BS_EVAL</span> <span class="o">=</span> <span class="mi">224</span>',
+      '      <span class="n">EPOCHS</span> <span class="o">=</span> <span class="mi">3</span>',
+      '      <span class="n">WEIGHT_DECAY</span> <span class="o">=</span> <span class="mf">0.01</span>',
+      '      ',
+      '      <span class="n">training_args</span> <span class="o">=</span> <span class="n">TrainingArguments</span><span class="p">(</span>',
+      '          <span class="n">model_name</span><span class="p">,</span>',
+      '          <span class="n">eval_strategy</span><span class="o">=</span><span class="s2">"epoch"</span><span class="p">,</span>',
+      '          <span class="n">save_strategy</span><span class="o">=</span><span class="s2">"epoch"</span><span class="p">,</span>',
+      '          <span class="n">learning_rate</span><span class="o">=</span><span class="n">LR</span><span class="p">,</span>',
+      '          <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="n">BS_TRAIN</span><span class="p">,</span>',
+      '          <span class="n">per_device_eval_batch_size</span><span class="o">=</span><span class="n">BS_EVAL</span><span class="p">,</span>',
+      '          <span class="n">num_train_epochs</span><span class="o">=</span><span class="n">EPOCHS</span><span class="p">,</span>',
+      '          <span class="n">weight_decay</span><span class="o">=</span><span class="n">WEIGHT_DECAY</span><span class="p">,</span>',
+      '          <span class="n">lr_scheduler_type</span><span class="o">=</span><span class="s2">"cosine"</span><span class="p">,</span>',
+      '          <span class="n">warmup_ratio</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>',
+      '          <span class="n">fp16</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>',
+      '          <span class="n">load_best_model_at_end</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>',
+      '          <span class="n">metric_for_best_model</span><span class="o">=</span><span class="n">metric_name</span><span class="p">,</span>',
+      '          <span class="n">push_to_hub</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>',
+      '          <span class="n">logging_dir</span><span class="o">=</span><span class="s2">"./runs"</span><span class="p">,</span>',
+      '      <span class="p">)</span>',
+      '<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>',
+      '      <span class="kn">from</span> <span class="nn">evaluate</span> <span class="kn">import</span> <span class="n">load</span>',
+      '      ',
+      '      <span class="n">metric</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s2">"accuracy"</span><span class="p">)</span>',
+      '      ',
+      '      <span class="k">def</span> <span class="nf">compute_metrics</span><span class="p">(</span><span class="n">eval_pred</span><span class="p">):</span>',
+      '          <span class="nb">print</span><span class="p">(</span><span class="n">eval_pred</span><span class="p">)</span>',
+      '          <span class="n">predictions</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">eval_pred</span>',
+      '          <span class="n">predictions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>',
+      '          <span class="k">return</span> <span class="n">metric</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">Trainer</span>',
+      '      ',
+      '      <span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span>',
+      '          <span class="n">model</span><span class="p">,</span>',
+      '          <span class="n">training_args</span><span class="p">,</span>',
+      '          <span class="n">train_dataset</span><span class="o">=</span><span class="n">subset_dataset_train</span><span class="p">,</span>',
+      '          <span class="n">eval_dataset</span><span class="o">=</span><span class="n">subset_dataset_validation</span><span class="p">,</span>',
+      '          <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span>',
+      '          <span class="n">compute_metrics</span><span class="o">=</span><span class="n">compute_metrics</span><span class="p">,</span>',
+      '      <span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>`use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`...
+      /usr/local/lib/python3.10/dist-packages/torch/utils/checkpoint.py:464: UserWarning: torch.utils.checkpoint: the use_reentrant parameter should be passed explicitly. In version 2.4 we will raise an exception if use_reentrant is not passed. use_reentrant=False is recommended, but if you need to preserve the current default behavior, you can pass use_reentrant=True. Refer to docs for more details on the differences between the two variants.
+        warnings.warn(
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-html-rendered-html-output-subarea">
+      <div>
+      <progress max="2679" style="width:300px; height:20px; vertical-align: middle;" value="1859"></progress>
+            [1859/2679 2:10:29 &lt; 57:37, 0.24 it/s, Epoch 2.08/3]
+          </div>
+      <table border="1" class="dataframe">
+      <thead>
+      <tr style="text-align: left;">
+      <th>Epoch</th>
+      <th>Training Loss</th>
+      <th>Validation Loss</th>
+      <th>Accuracy</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+      <td>1</td>
+      <td>2.088000</td>
+      <td>0.978048</td>
+      <td>0.584800</td>
+      </tr>
+      <tr>
+      <td>2</td>
+      <td>0.958800</td>
+      <td>0.894022</td>
+      <td>0.615600</td>
+      </tr>
+      </tbody>
+      </table><p></p></div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>&lt;transformers.trainer_utils.EvalPrediction object at 0x7acac436c3d0&gt;
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>/usr/local/lib/python3.10/dist-packages/torch/utils/checkpoint.py:464: UserWarning: torch.utils.checkpoint: the use_reentrant parameter should be passed explicitly. In version 2.4 we will raise an exception if use_reentrant is not passed. use_reentrant=False is recommended, but if you need to preserve the current default behavior, you can pass use_reentrant=True. Refer to docs for more details on the differences between the two variants.
+        warnings.warn(
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>&lt;transformers.trainer_utils.EvalPrediction object at 0x7acac32580d0&gt;
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>/usr/local/lib/python3.10/dist-packages/torch/utils/checkpoint.py:464: UserWarning: torch.utils.checkpoint: the use_reentrant parameter should be passed explicitly. In version 2.4 we will raise an exception if use_reentrant is not passed. use_reentrant=False is recommended, but if you need to preserve the current default behavior, you can pass use_reentrant=True. Refer to docs for more details on the differences between the two variants.
+        warnings.warn(
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-html-rendered-html-output-subarea">
+      <div>
+      <progress max="2679" style="width:300px; height:20px; vertical-align: middle;" value="2679"></progress>
+            [2679/2679 3:08:13, Epoch 3/3]
+          </div>
+      <table border="1" class="dataframe">
+      <thead>
+      <tr style="text-align: left;">
+      <th>Epoch</th>
+      <th>Training Loss</th>
+      <th>Validation Loss</th>
+      <th>Accuracy</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+      <td>1</td>
+      <td>2.088000</td>
+      <td>0.978048</td>
+      <td>0.584800</td>
+      </tr>
+      <tr>
+      <td>2</td>
+      <td>0.958800</td>
+      <td>0.894022</td>
+      <td>0.615600</td>
+      </tr>
+      <tr>
+      <td>3</td>
+      <td>0.914700</td>
+      <td>0.891830</td>
+      <td>0.616800</td>
+      </tr>
+      </tbody>
+      </table><p></p></div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>&lt;transformers.trainer_utils.EvalPrediction object at 0x7acac2f43c10&gt;
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>TrainOutput(global_step=2679, training_loss=1.1650676093647934, metrics={opening_brace}'train_runtime': 11299.1288, 'train_samples_per_second': 53.101, 'train_steps_per_second': 0.237, 'total_flos': 2.417754341376e+17, 'train_loss': 1.1650676093647934, 'epoch': 3.0{closing_brace})</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Evaluation">Evaluation<a class="anchor-link" href="#Evaluation"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 39" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Once trained we evaluate on the test dataset</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">trainer</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">eval_dataset</span><span class="o">=</span><span class="n">subset_dataset_test</span><span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-html-rendered-html-output-subarea">
+      <div>
+      <progress max="23" style="width:300px; height:20px; vertical-align: middle;" value="23"></progress>
+            [23/23 00:27]
+          </div>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>&lt;transformers.trainer_utils.EvalPrediction object at 0x7acb316fe5c0&gt;
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>{opening_brace}'eval_loss': 0.8883273601531982,
+       'eval_accuracy': 0.615,
+       'eval_runtime': 28.5566,
+       'eval_samples_per_second': 175.091,
+       'eval_steps_per_second': 0.805,
+       'epoch': 3.0}</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Publish-the-model">Publish the model<a class="anchor-link" href="#Publish-the-model"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 40" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We create a model card</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">TrainingArguments</span>',
+      '      ',
+      '      <span class="n">metric_name</span> <span class="o">=</span> <span class="s2">"accuracy"</span>',
+      '      <span class="n">model_name</span> <span class="o">=</span> <span class="s2">"GPT2-small-QLoRA-finetuned-amazon-reviews-en-classification"</span>',
+      '      <span class="n">LR</span> <span class="o">=</span> <span class="mf">2e-5</span>',
+      '      <span class="n">BS_TRAIN</span> <span class="o">=</span> <span class="mi">224</span>',
+      '      <span class="n">BS_EVAL</span> <span class="o">=</span> <span class="mi">224</span>',
+      '      <span class="n">EPOCHS</span> <span class="o">=</span> <span class="mi">3</span>',
+      '      <span class="n">WEIGHT_DECAY</span> <span class="o">=</span> <span class="mf">0.01</span>',
+      '      ',
+      '      <span class="n">training_args</span> <span class="o">=</span> <span class="n">TrainingArguments</span><span class="p">(</span>',
+      '          <span class="n">model_name</span><span class="p">,</span>',
+      '          <span class="n">eval_strategy</span><span class="o">=</span><span class="s2">"epoch"</span><span class="p">,</span>',
+      '          <span class="n">save_strategy</span><span class="o">=</span><span class="s2">"epoch"</span><span class="p">,</span>',
+      '          <span class="n">learning_rate</span><span class="o">=</span><span class="n">LR</span><span class="p">,</span>',
+      '          <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="n">BS_TRAIN</span><span class="p">,</span>',
+      '          <span class="n">per_device_eval_batch_size</span><span class="o">=</span><span class="n">BS_EVAL</span><span class="p">,</span>',
+      '          <span class="n">num_train_epochs</span><span class="o">=</span><span class="n">EPOCHS</span><span class="p">,</span>',
+      '          <span class="n">weight_decay</span><span class="o">=</span><span class="n">WEIGHT_DECAY</span><span class="p">,</span>',
+      '          <span class="n">lr_scheduler_type</span><span class="o">=</span><span class="s2">"cosine"</span><span class="p">,</span>',
+      '          <span class="n">warmup_ratio</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>',
+      '          <span class="n">fp16</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>',
+      '          <span class="n">load_best_model_at_end</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>',
+      '          <span class="n">metric_for_best_model</span><span class="o">=</span><span class="n">metric_name</span><span class="p">,</span>',
+      '          <span class="n">push_to_hub</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>',
+      '          <span class="n">logging_dir</span><span class="o">=</span><span class="s2">"./runs"</span><span class="p">,</span>',
+      '      <span class="p">)</span>',
+      '<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>',
+      '      <span class="kn">from</span> <span class="nn">evaluate</span> <span class="kn">import</span> <span class="n">load</span>',
+      '      ',
+      '      <span class="n">metric</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s2">"accuracy"</span><span class="p">)</span>',
+      '      ',
+      '      <span class="k">def</span> <span class="nf">compute_metrics</span><span class="p">(</span><span class="n">eval_pred</span><span class="p">):</span>',
+      '          <span class="nb">print</span><span class="p">(</span><span class="n">eval_pred</span><span class="p">)</span>',
+      '          <span class="n">predictions</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">eval_pred</span>',
+      '          <span class="n">predictions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>',
+      '          <span class="k">return</span> <span class="n">metric</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">Trainer</span>',
+      '      ',
+      '      <span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span>',
+      '          <span class="n">model</span><span class="p">,</span>',
+      '          <span class="n">training_args</span><span class="p">,</span>',
+      '          <span class="n">train_dataset</span><span class="o">=</span><span class="n">subset_dataset_train</span><span class="p">,</span>',
+      '          <span class="n">eval_dataset</span><span class="o">=</span><span class="n">subset_dataset_validation</span><span class="p">,</span>',
+      '          <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span>',
+      '          <span class="n">compute_metrics</span><span class="o">=</span><span class="n">compute_metrics</span><span class="p">,</span>',
+      '      <span class="p">)</span>',
+      '<span></span><span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>',
+      '<span></span><span class="n">trainer</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">eval_dataset</span><span class="o">=</span><span class="n">subset_dataset_test</span><span class="p">)</span>',
+      '<span></span><span class="n">trainer</span><span class="o">.</span><span class="n">create_model_card</span><span class="p">()</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>We publish it</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">TrainingArguments</span>',
+      '      ',
+      '      <span class="n">metric_name</span> <span class="o">=</span> <span class="s2">"accuracy"</span>',
+      '      <span class="n">model_name</span> <span class="o">=</span> <span class="s2">"GPT2-small-QLoRA-finetuned-amazon-reviews-en-classification"</span>',
+      '      <span class="n">LR</span> <span class="o">=</span> <span class="mf">2e-5</span>',
+      '      <span class="n">BS_TRAIN</span> <span class="o">=</span> <span class="mi">224</span>',
+      '      <span class="n">BS_EVAL</span> <span class="o">=</span> <span class="mi">224</span>',
+      '      <span class="n">EPOCHS</span> <span class="o">=</span> <span class="mi">3</span>',
+      '      <span class="n">WEIGHT_DECAY</span> <span class="o">=</span> <span class="mf">0.01</span>',
+      '      ',
+      '      <span class="n">training_args</span> <span class="o">=</span> <span class="n">TrainingArguments</span><span class="p">(</span>',
+      '          <span class="n">model_name</span><span class="p">,</span>',
+      '          <span class="n">eval_strategy</span><span class="o">=</span><span class="s2">"epoch"</span><span class="p">,</span>',
+      '          <span class="n">save_strategy</span><span class="o">=</span><span class="s2">"epoch"</span><span class="p">,</span>',
+      '          <span class="n">learning_rate</span><span class="o">=</span><span class="n">LR</span><span class="p">,</span>',
+      '          <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="n">BS_TRAIN</span><span class="p">,</span>',
+      '          <span class="n">per_device_eval_batch_size</span><span class="o">=</span><span class="n">BS_EVAL</span><span class="p">,</span>',
+      '          <span class="n">num_train_epochs</span><span class="o">=</span><span class="n">EPOCHS</span><span class="p">,</span>',
+      '          <span class="n">weight_decay</span><span class="o">=</span><span class="n">WEIGHT_DECAY</span><span class="p">,</span>',
+      '          <span class="n">lr_scheduler_type</span><span class="o">=</span><span class="s2">"cosine"</span><span class="p">,</span>',
+      '          <span class="n">warmup_ratio</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>',
+      '          <span class="n">fp16</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>',
+      '          <span class="n">load_best_model_at_end</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>',
+      '          <span class="n">metric_for_best_model</span><span class="o">=</span><span class="n">metric_name</span><span class="p">,</span>',
+      '          <span class="n">push_to_hub</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>',
+      '          <span class="n">logging_dir</span><span class="o">=</span><span class="s2">"./runs"</span><span class="p">,</span>',
+      '      <span class="p">)</span>',
+      '<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>',
+      '      <span class="kn">from</span> <span class="nn">evaluate</span> <span class="kn">import</span> <span class="n">load</span>',
+      '      ',
+      '      <span class="n">metric</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s2">"accuracy"</span><span class="p">)</span>',
+      '      ',
+      '      <span class="k">def</span> <span class="nf">compute_metrics</span><span class="p">(</span><span class="n">eval_pred</span><span class="p">):</span>',
+      '          <span class="nb">print</span><span class="p">(</span><span class="n">eval_pred</span><span class="p">)</span>',
+      '          <span class="n">predictions</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">eval_pred</span>',
+      '          <span class="n">predictions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>',
+      '          <span class="k">return</span> <span class="n">metric</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">Trainer</span>',
+      '      ',
+      '      <span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span>',
+      '          <span class="n">model</span><span class="p">,</span>',
+      '          <span class="n">training_args</span><span class="p">,</span>',
+      '          <span class="n">train_dataset</span><span class="o">=</span><span class="n">subset_dataset_train</span><span class="p">,</span>',
+      '          <span class="n">eval_dataset</span><span class="o">=</span><span class="n">subset_dataset_validation</span><span class="p">,</span>',
+      '          <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span>',
+      '          <span class="n">compute_metrics</span><span class="o">=</span><span class="n">compute_metrics</span><span class="p">,</span>',
+      '      <span class="p">)</span>',
+      '<span></span><span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>',
+      '<span></span><span class="n">trainer</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">eval_dataset</span><span class="o">=</span><span class="n">subset_dataset_test</span><span class="p">)</span>',
+      '<span></span><span class="n">trainer</span><span class="o">.</span><span class="n">create_model_card</span><span class="p">()</span>',
+      '<span></span><span class="n">trainer</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">()</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Test-the-model">Test the model<a class="anchor-link" href="#Test-the-model"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 41" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's approve the model</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">TrainingArguments</span>',
+          '',
+          '<span class="n">metric_name</span> <span class="o">=</span> <span class="s2">"accuracy"</span>',
+          '<span class="n">model_name</span> <span class="o">=</span> <span class="s2">"GPT2-small-QLoRA-finetuned-amazon-reviews-en-classification"</span>',
+          '<span class="n">LR</span> <span class="o">=</span> <span class="mf">2e-5</span>',
+          '<span class="n">BS_TRAIN</span> <span class="o">=</span> <span class="mi">224</span>',
+          '<span class="n">BS_EVAL</span> <span class="o">=</span> <span class="mi">224</span>',
+          '<span class="n">EPOCHS</span> <span class="o">=</span> <span class="mi">3</span>',
+          '<span class="n">WEIGHT_DECAY</span> <span class="o">=</span> <span class="mf">0.01</span>',
+          '',
+          '<span class="n">training_args</span> <span class="o">=</span> <span class="n">TrainingArguments</span><span class="p">(</span>',
+          '    <span class="n">model_name</span><span class="p">,</span>',
+          '    <span class="n">eval_strategy</span><span class="o">=</span><span class="s2">"epoch"</span><span class="p">,</span>',
+          '    <span class="n">save_strategy</span><span class="o">=</span><span class="s2">"epoch"</span><span class="p">,</span>',
+          '    <span class="n">learning_rate</span><span class="o">=</span><span class="n">LR</span><span class="p">,</span>',
+          '    <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="n">BS_TRAIN</span><span class="p">,</span>',
+          '    <span class="n">per_device_eval_batch_size</span><span class="o">=</span><span class="n">BS_EVAL</span><span class="p">,</span>',
+          '    <span class="n">num_train_epochs</span><span class="o">=</span><span class="n">EPOCHS</span><span class="p">,</span>',
+          '    <span class="n">weight_decay</span><span class="o">=</span><span class="n">WEIGHT_DECAY</span><span class="p">,</span>',
+          '    <span class="n">lr_scheduler_type</span><span class="o">=</span><span class="s2">"cosine"</span><span class="p">,</span>',
+          '    <span class="n">warmup_ratio</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>',
+          '    <span class="n">fp16</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>',
+          '    <span class="n">load_best_model_at_end</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>',
+          '    <span class="n">metric_for_best_model</span><span class="o">=</span><span class="n">metric_name</span><span class="p">,</span>',
+          '    <span class="n">push_to_hub</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>',
+          '    <span class="n">logging_dir</span><span class="o">=</span><span class="s2">"./runs"</span><span class="p">,</span>',
+          '<span class="p">)</span>',
+          '</span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>',
+          '<span class="kn">from</span> <span class="nn">evaluate</span> <span class="kn">import</span> <span class="n">load</span>',
+          '',
+          '<span class="n">metric</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s2">"accuracy"</span><span class="p">)</span>',
+          '',
+          '<span class="k">def</span> <span class="nf">compute_metrics</span><span class="p">(</span><span class="n">eval_pred</span><span class="p">):</span>',
+          '    <span class="nb">print</span><span class="p">(</span><span class="n">eval_pred</span><span class="p">)</span>',
+          '    <span class="n">predictions</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">eval_pred</span>',
+          '    <span class="n">predictions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>',
+          '    <span class="k">return</span> <span class="n">metric</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>',
+          '</span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">Trainer</span>',
+          '',
+          '<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span>',
+          '    <span class="n">model</span><span class="p">,</span>',
+          '    <span class="n">training_args</span><span class="p">,</span>',
+          '    <span class="n">train_dataset</span><span class="o">=</span><span class="n">subset_dataset_train</span><span class="p">,</span>',
+          '    <span class="n">eval_dataset</span><span class="o">=</span><span class="n">subset_dataset_validation</span><span class="p">,</span>',
+          '    <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span>',
+          '    <span class="n">compute_metrics</span><span class="o">=</span><span class="n">compute_metrics</span><span class="p">,</span>',
+          '<span class="p">)</span>',
+          '</span><span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>',
+          '</span><span class="n">trainer</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">eval_dataset</span><span class="o">=</span><span class="n">subset_dataset_test</span><span class="p">)</span>',
+          '</span><span class="n">trainer</span><span class="o">.</span><span class="n">create_model_card</span><span class="p">()</span>',
+          '</span><span class="n">trainer</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">()</span>',
+          '</span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForSequenceClassification</span>',
+          '<span class="kn">import</span> <span class="nn">torch</span>',
+          '',
+          '<span class="n">model_name</span> <span class="o">=</span> <span class="s2">"GPT2-small-QLoRA-finetuned-amazon-reviews-en-classification"</span>',
+          '<span class="n">user</span> <span class="o">=</span> <span class="s2">"maximofn"</span>',
+          '<span class="n">checkpoint</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">user</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">"</span>',
+          '<span class="n">num_classes</span> <span class="o">=</span> <span class="mi">5</span>',
+          '',
+          '<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>',
+          '<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForSequenceClassification</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">num_labels</span><span class="o">=</span><span class="n">num_classes</span><span class="p">)</span><span class="o">.</span><span class="n">half</span><span class="p">()</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">"cuda"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '`use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`...',
+          '/usr/local/lib/python3.10/dist-packages/torch/utils/checkpoint.py:464: UserWarning: torch.utils.checkpoint: the use_reentrant parameter should be passed explicitly. In version 2.4 we will raise an exception if use_reentrant is not passed. use_reentrant=False is recommended, but if you need to preserve the current default behavior, you can pass use_reentrant=True. Refer to docs for more details on the differences between the two variants.',
+          '  warnings.warn(',
+          '/home/sae00531/miniconda3/envs/nlp_/lib/python3.11/site-packages/huggingface_hub/file_download.py:1132: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.',
+          '  warnings.warn(',
+          'Some weights of GPT2ForSequenceClassification were not initialized from the model checkpoint at openai-community/gpt2 and are newly initialized: [\'score.weight\']',
+          'You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.',
+          '/home/sae00531/miniconda3/envs/nlp_/lib/python3.11/site-packages/peft/tuners/lora/layer.py:1119: UserWarning: fan_in_fan_out is set to False but the target module is `Conv1D`. Setting fan_in_fan_out to True.',
+          '  warnings.warn(',
+          'Loading adapter weights from maximofn/GPT2-small-QLoRA-finetuned-amazon-reviews-en-classification led to unexpected keys not found in the model:  [\'score.modules_to_save.default.base_layer.weight\', \'score.modules_to_save.default.lora_A.default.weight\', \'score.modules_to_save.default.lora_B.default.weight\', \'score.modules_to_save.default.modules_to_save.lora_A.default.weight\', \'score.modules_to_save.default.modules_to_save.lora_B.default.weight\', \'score.modules_to_save.default.original_module.lora_A.default.weight\', \'score.modules_to_save.default.original_module.lora_B.default.weight\']. ',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"I love this product"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>',
+          '<span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>',
+          '    <span class="n">output</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>',
+          '<span class="n">logits</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">logits</span>',
+          '<span class="n">lables</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>',
+          '<span class="n">lables</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '[0.0186614990234375,',
+          ' 0.483642578125,',
+          ' 0.048187255859375,',
+          ' 0.415283203125,',
+          ' 0.03399658203125]',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+
+
+
+
+
+
+    </div>
+
+  </section>
+
+</PostLayout>

@@ -1,0 +1,182 @@
+---
+import PostLayout from '@layouts/PostLayout.astro';
+import CodeBlockInputCell from '@components/CodeBlockInputCell.astro';
+import CodeBlockOutputCell from '@components/CodeBlockOutputCell.astro';
+
+const { metadata_page } = await import('@portfolio/consts.json');
+const { colors } = await import('@portfolio/consts.json');
+const { svg_paths } = await import('@portfolio/consts.json');
+
+const page_title = 'LLMs quantization';
+const end_url = 'llms-quantization';
+const description = '¡Imagina que tienes un modelo de lenguaje gigante que puede responder a cualquier pregunta, desde la capital de Francia hasta la receta perfecta para hacer brownies! 🍞️🇫🇷 Pero, ¿qué pasa cuando ese modelo tiene que caber en un dispositivo móvil? 📱 ¡Eso es donde entra en juego la cuantización! 🎉 Esta técnica nos permite reducir el tamaño de los modelos sin sacrificar su precisión, lo que significa que podemos disfrutar de inteligencia artificial en nuestros dispositivos móviles sin necesidad de un supercomputador. 💻 ¡Es como comprimir un elefante en una caja de zapatos, pero sin aplastar al elefante! 🐘😂';
+const keywords = 'cuantización, LLMs, GPT, IA, aprendizaje automático, aprendizaje profundo, FP16, FP32, TF32, BF16, INT8, UINT8, FP8, FP4, post-entrenamiento, durante-entrenamiento, punto-cero, afin, QLoRA, AWQ, QuIP, GGUF, HQQ, AQLM, FBGEMM FP8';
+const languaje = 'ES';
+const image_path = 'https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/quantization-thumbnail.webp';
+const opening_brace = '{';
+const closing_brace = '}';
+---
+
+<PostLayout 
+    title={page_title}
+    languaje={languaje}
+    description={description}
+    keywords={keywords}
+    author={metadata_page.author}
+    theme_color={colors.background_color}
+    end_url={end_url}
+    image_path={image_path}
+    image_width=1080
+    image_height=794
+    image_extension=webp
+    article_date=2024-07-21+T00:00:00Z
+>
+
+  <section class="post-body">
+
+
+    <aside class="post-index">
+      <a class="anchor-link" href="#Formato-de-los-par%C3%A1metros"><h2>Formato de los parámetros</h2></a>
+      <a class="anchor-link" href="#Tipos-de-cuantizaci%C3%B3n"><h2>Tipos de cuantización</h2></a>
+      <a class="anchor-link" href="#Cuantizaci%C3%B3n-de-punto-cero"><h3>Cuantización de punto cero</h3></a>
+      <a class="anchor-link" href="#Cuantizazi%C3%B3n-afin"><h3>Cuantizazión afin</h3></a>
+      <a class="anchor-link" href="#Momentos-de-cuantizaci%C3%B3n"><h2>Momentos de cuantización</h2></a>
+      <a class="anchor-link" href="#Cuantizaci%C3%B3n-post-entrenamiento"><h3>Cuantización post entrenamiento</h3></a>
+      <a class="anchor-link" href="#Cuantizaci%C3%B3n-durante-el-entrenamiento"><h3>Cuantización durante el entrenamiento</h3></a>
+      <a class="anchor-link" href="#M%C3%A9todos-de-cuantizaci%C3%B3n"><h2>Métodos de cuantización</h2></a>
+    </aside>
+
+
+    <div class="post-body-content">
+      
+      <section class="section-block-markdown-cell">
+      <h1 id="LLMs-quantization">LLMs quantization<a class="anchor-link" href="#LLMs-quantization"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 0" src={svg_paths.link_svg_path}/></a></h1>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Los modelos de lenguaje son cada vez más grandes, lo que hace que cada vez sean más costosos y caros de ejecutar.</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="LLMs-size-evolution" src="https://maximofn.com/wp-content/uploads/2024/07/LLMs-size-evolution-scaled.webp" width="1108" height="1200"/></p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="Llama-size-evolution" src="https://maximofn.com/wp-content/uploads/2024/07/Llama-size-evolution.webp" width="1080" height="1143"/></p>
+      <p>Por ejemplo, el modelo llama 3 400B, si sus parámetros están almacenados es formato FP32, cada parámetros ocupa por tanto 4 bytes, lo que supone que solo para almacenar el modelo hace falta 400<em>(10e9)</em>4 bytes = 1.6 TB de memoria VRAM. Esto supone 20 GPUs de 80GB de memoria VRAM cada una, las cuales además no son baratas.</p>
+      <p>Pero si dejamos a un lado modelos gigantes y nos vamos a modelos con tamaños más comunes, por ejemplo, 70B de parámetros, solo almacenar el modelo supone 70<em>(10e9)</em>4 bytes = 280 GB de memoria VRAM, lo que supone 4 GPUs de 80GB de memoria VRAM cada una.</p>
+      <p>Esto es porque almacenamos los pesos en formato FP32, es decir, que cada parámetro ocupa 4 bytes. Pero qué pasa si conseguimos que cada parámetro ocupe menos bytes? A esto se le llama cuantización.</p>
+      <p>Por ejemplo, si conseguimos que un modelo de 70B de parámetros, sus parámetros ocupen medio byte, entonces solo necesitaríamos 70<em>(10e9)</em>0.5 bytes = 35 GB de memoria VRAM, lo que supone 2 GPUs de 24GB de memoria VRAM cada una, las cuales ya se pueden considerar GPUs de usuarios normales.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Necesitamos por tanto maneras de poder resudir el tamaño de estos modelos. Existen tres formas de hacer eso, la destilación, la poda y la cuantización.</p>
+      <p>La destilación consiste en entrenar un modelo más pequeño a partir de las salidas del grande. Es decir, una entrada se le mete al modelo pequeño y al grande, se considera que la salida correcta es la del modelo grande, por lo que se realiza el entrenamiento del modelo pequeño de acuerdo con la salida del modelo grande. Pero esto requiere tener almacenado el modelo grande, que no es lo que queremos o podemos hacer.</p>
+      <p>La poda consiste en eliminar parámetros del modelo haciéndolo cada vez más pequeño. Este método se basa en la idea de que los modelos de lenguaje actuales están sobredimensionados y solo unos pocos parámetros son los que realmente aportan información. Por ello, si conseguimos eliminar los parámetros que no aportan información, conseguiremos un modelo más pequeño. Pero esto no es sencillo a día de hoy, porque no tenemos manera de saber bien qué parámetros son los importantes y cuales no.</p>
+      <p>Por otro lado, la cuantización consiste en reducir el tamaño de cada uno de los parámetros del modelo. Y es lo que vamos a explicar en este post.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Formato-de-los-par%C3%A1metros">Formato de los parámetros<a class="anchor-link" href="#Formato-de-los-par%C3%A1metros"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 1" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Los parámetros de los pesos se pueden almacenar en varios tipos de formatos</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="numbers-representation" src="https://maximofn.com/wp-content/uploads/2024/07/numbers-representation-scaled.webp" width="1200" height="379"/></p>
+      <p>Originalmente se usaba FP32 para almacenar los parámetros, pero debido a que empezamos a quedarnos sin memoria para almacenar los modelos, se empezaron a pasar a FP16, lo cual no daba malos resultados.</p>
+      <p>Sin embargo el problema de FP16 es que no alcanza valores tan altos como FP32, por lo que puede darse el caso de desbordamiento de valores, es decir, al realizarse cálculos internos en la red, el resultado sea tan alto que no se pueda representar en FP16, lo que produce errores. Esto ocurre porque el modelo fue entrenado en FP32, lo que hace que todos los posibles cálculos internos sean posibles, pero al pasarse después a FP16 para poder hacer inferencias, algunos cálculos internos pueden producir desbordamientos.</p>
+      <p>Debido a estos errores de desbordamiento se crearon TF32 y BF16, los cuales tienen la misma cantidad de bits de exponente, lo que hace que puedan llegar a valores tan altos como FP32, pero con la ventaja de ocupar menos memoria por tener menos bits. Sin embargo, ambos al tener menos bits de mantisa, no pueden representar números con tanta precisión como FP32, lo cual puede dar errores de redondeo, pero al menos no obtendremos un error al ejecutar la red. TF32 tiene en total 19 bits, mientras que BF16 tiene 16 bits. Se suele usar más BF16 porque se ahorra más memoria.</p>
+      <p>Históricamente han existido los formatos INT8 y UINT8, que pueden representar números desde -128 a 127 y de 0 a 255 respectivamente. Aunque son formatos buenos porque permiten ahorrar menos memoria, ya que cada parámetro ocupa 1 byte en comparación de los 4 bytes de FP32, el problema que tienen es que solo pueden representar un rango pequeño de números y además solo enteros, por lo que pueden darse los dos problemas vistos antes, desbordamiento y falta de precisión.</p>
+      <p>Para solucionar el problema de que los formatos INT8 y UINT8 solo representan número enteros se han creado los formatos FP8 y FP4, pero aún no están muy consolidados, ni tienen un formato muy extandardizado.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Aunque tengamos manera de poder almacenar los parámetros de los modelos en formatos más pequeños, y aunque consigamos resolver los problemas de desbordamiento y redondeo, tenemos otro problema, y es que no todas las GPUs son capaces de representar todos los formatos. Esto es porque estos problemas de memoria son relativamente nuevos, por lo que las GPUs más antiguas no se diseñaron para poder resolver estos problemas y por tanto no son capaces de representar todos los formatos.</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="GPUs-data-formating" src="https://maximofn.com/wp-content/uploads/2024/07/GPUs-data-formating-scaled.webp" width="1200" height="308"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Como último detalle, como curiosidad, durante el entrenamiento de los modelos se utiliza lo que se llama precisión mixta. Los pesos del modelo se alamcenan en formato FP32, sin embargo el <code>forward pass</code> y el <code>backward pass</code> se realizan en FP16 para que sea más rápido. Los gradientes resultantes del <code>backward pass</code> se almacenan en FP16 y se usan para modificar los valores FP32 de los pesos.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Tipos-de-cuantizaci%C3%B3n">Tipos de cuantización<a class="anchor-link" href="#Tipos-de-cuantizaci%C3%B3n"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 2" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Cuantizaci%C3%B3n-de-punto-cero">Cuantización de punto cero<a class="anchor-link" href="#Cuantizaci%C3%B3n-de-punto-cero"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 3" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Este es el tipo de cuantización más sencilla. Consiste en reducir el rango de valores de manera lineal, el mínimo valor de FP32 corresponde al mínimo valor del nuevo formato, el cero de FP32 corresponde al cero del nuevo formato y el máximo valor de FP32 corresponde al máximo valor del nuevo formato.</p>
+      <p>Por ejemplo, si queremos pasar el números representados desde -1 hasta 1 en formato UINT8, como los límites de UINT8 son -127 y 127, si queremos representar el valor 0.3 lo que hacemos es multiplicar 0.3 por 127, que da 38.1 y redondearlo a 38, que es el valor que se almacenaría en UINT8.</p>
+      <p>Si queremos hacer el paso contrario, para pasar 38 a formato de entre -1 y 1, lo que hacemos es dividir 38 entre 127, que da 0.2992, que es aproximadamente 0.3, y podemos ver que tenemos un error de 0.008</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="quantization-zero-point" src="https://maximofn.com/wp-content/uploads/2024/07/quantization-zero-point.webp" width="836" height="286"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Cuantizazi%C3%B3n-afin">Cuantizazión afin<a class="anchor-link" href="#Cuantizazi%C3%B3n-afin"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 4" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>En este tipo de cuantización, si se tiene un array de valores en un formato y se quiere pasar a otro, primero se divide el array entero por el máximo valor del array y luego se multiplica el array entero por el máximo valor del nuevo formato.</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="quantization-affine" src="https://maximofn.com/wp-content/uploads/2024/07/quantization-affine-scaled.webp" width="1200" height="669"/></p>
+      <p>Por ejemplo, en la imagen anterior tenemos el array</p>
+      <pre><code>[1.2, -0.5, -4.3, 1.2, -3.1, 0.8, 2.4, 5.4]</code></pre>
+      <p>Como su valor máximo es <code>5.4</code> dividimos el array por ese valor y obtenemos</p>
+      <pre><code>[0.2222222222, -0.09259259259, -0.7962962963, 0.2222222222, -0.5740740741, 0.1481481481, 0.4444444444, 1]</code></pre>
+      <p>Si ahora multiplicamos todos los valores por <code>127</code>, que es el máximo valor de UINT8, obtenemos</p>
+      <pre><code>[28,22222222, -11.75925926, -101.1296296, 28.22222222, -72.90740741, 18.81481481, 56.44444444, 127]</code></pre>
+      <p>Que redondeando sería</p>
+      <pre><code>[28, -12, -101, 28, -73, 19, 56, 127]</code></pre>
+      <p>Si ahora quisiésemos realizar el paso inverso tendríamos que dividir el array resultante por <code>127</code>, que daría</p>
+      <pre><code>[0,2204724409, -0.09448818898, -0.7952755906, 0.2204724409, -0.5748031496, 0.1496062992, 0.4409448819, 1]</code></pre>
+      <p>Y volver a multiplicar por <code>5.4</code>, con lo que obtendríamos</p>
+      <pre><code>[1,190551181, -0.5102362205, -4.294488189, 1.190551181, -3.103937008, 0.8078740157, 2.381102362, 5.4]</code></pre>
+      <p>Si lo comparamos con el array original, vemos que tenemos error</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Momentos-de-cuantizaci%C3%B3n">Momentos de cuantización<a class="anchor-link" href="#Momentos-de-cuantizaci%C3%B3n"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 5" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Cuantizaci%C3%B3n-post-entrenamiento">Cuantización post entrenamiento<a class="anchor-link" href="#Cuantizaci%C3%B3n-post-entrenamiento"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 6" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Como su nombre indica, la cuantización se produce después del entrenamiento. Se entrena el modelo en FP32 y después se cuantiza a otro formato. Este método es el más sencillo, pero puede dar lugar a errores de precisión en la cuantización</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Cuantizaci%C3%B3n-durante-el-entrenamiento">Cuantización durante el entrenamiento<a class="anchor-link" href="#Cuantizaci%C3%B3n-durante-el-entrenamiento"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 7" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Durante el entrenamiento se realiza el <code>forward pass</code> en el modelo original y en un modelo cuantizado y se ven los posibles errores derivados de la cuantización para poder mitigarlos. Este proceso hace que el entrenamiento sea más costoso, porque tienes que tener almacenado en memoria el modelo original y el cuantizado, y más lento, porque tienes que realizar el <code>forward pass</code> en dos modelos.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="M%C3%A9todos-de-cuantizaci%C3%B3n">Métodos de cuantización<a class="anchor-link" href="#M%C3%A9todos-de-cuantizaci%C3%B3n"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 8" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>A continuación muestro los enlaces a los posts donde explico cada uno de los métodos para que este post no se haga muy largo</p>
+      <ul>
+      <li><a href="/llm-int8">LLM.int8()</a></li>
+      <li><a href="/gptq">GPTQ</a></li>
+      <li>QLoRA</li>
+      <li>AWQ</li>
+      <li>QuIP</li>
+      <li>GGUF</li>
+      <li>HQQ</li>
+      <li>AQLM</li>
+      <li>FBGEMM FP8</li>
+      </ul>
+      </section>
+      
+
+
+
+
+
+
+    </div>
+
+  </section>
+
+</PostLayout>

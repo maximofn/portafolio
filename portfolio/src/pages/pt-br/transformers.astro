@@ -1,0 +1,568 @@
+---
+import PostLayout from '@layouts/PostLayout.astro';
+import CodeBlockInputCell from '@components/CodeBlockInputCell.astro';
+import CodeBlockOutputCell from '@components/CodeBlockOutputCell.astro';
+
+const { metadata_page } = await import('@portfolio/consts.json');
+const { colors } = await import('@portfolio/consts.json');
+const { svg_paths } = await import('@portfolio/consts.json');
+
+const page_title = 'Transformers – from top to the bottom';
+const end_url = 'transformers';
+const description = 'Descubra os transformadores 🚀. Conheça a arquitetura por trás de todos os novos modelos de linguagem. Não pergunte a uma IA, entre e aprenda';
+const keywords = 'transformador, transformadores, nlp, de cima a baixo, atenção, atenção multi-cabeça, atenção escalada do produto ponto, adicionar e normalizar, codificação posicional';
+const languaje = 'PT';
+const image_path = 'https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/Transformer%20-%20leadspace.webp';
+const opening_brace = '{';
+const closing_brace = '}';
+---
+
+<PostLayout 
+    title={page_title}
+    languaje={languaje}
+    description={description}
+    keywords={keywords}
+    author={metadata_page.author}
+    theme_color={colors.background_color}
+    end_url={end_url}
+    image_path={image_path}
+    image_width=1584
+    image_height=633
+    image_extension=webp
+    article_date=2024-02-23+T00:00:00Z
+>
+
+  <section class="post-body">
+
+
+    <aside class="post-index">
+      <a class="anchor-link" href="#Transformador-como-uma-caixa-preta"><h2>Transformador como uma caixa preta</h2></a>
+      <a class="anchor-link" href="#Tokeniza%C3%A7%C3%A3o"><h2>Tokenização</h2></a>
+      <a class="anchor-link" href="#Embeddings-de-entrada"><h2>Embeddings de entrada</h2></a>
+      <a class="anchor-link" href="#Codificador---decodificador"><h2>Codificador - decodificador</h2></a>
+      <a class="anchor-link" href="#Proje%C3%A7%C3%A3o"><h2>Projeção</h2></a>
+      <a class="anchor-link" href="#Codificador-e-decodificador-x6"><h2>Codificador e decodificador x6</h2></a>
+      <a class="anchor-link" href="#Aten%C3%A7%C3%A3o---Alimenta%C3%A7%C3%A3o"><h2>Atenção - Alimentação</h2></a>
+      <a class="anchor-link" href="#Aten%C3%A7%C3%A3o"><h3>Atenção</h3></a>
+      <a class="anchor-link" href="#Alimenta%C3%A7%C3%A3o"><h3>Alimentação</h3></a>
+      <a class="anchor-link" href="#Codifica%C3%A7%C3%A3o-posicional"><h2>Codificação posicional</h2></a>
+      <a class="anchor-link" href="#Add-&amp;-Norm"><h2>Add &amp; Norm</h2></a>
+      <a class="anchor-link" href="#Mecanismos-de-atendimento"><h2>Mecanismos de atendimento</h2></a>
+      <a class="anchor-link" href="#Aten%C3%A7%C3%A3o-a-v%C3%A1rias-cabe%C3%A7as"><h3>Atenção a várias cabeças</h3></a>
+      <a class="anchor-link" href="#Aten%C3%A7%C3%A3o-ao-produto-de-ponto-de-escala"><h3>Atenção ao produto de ponto de escala</h3></a>
+      <a class="anchor-link" href="#Aten%C3%A7%C3%A3o-ao-produto-de-pontos-da-escala-Endocer"><h4>Atenção ao produto de pontos da escala Endocer</h4></a>
+      <a class="anchor-link" href="#Matmul"><h5>Matmul</h5></a>
+      <a class="anchor-link" href="#Scale"><h5>Scale</h5></a>
+      <a class="anchor-link" href="#Mask-(opcional)"><h5>Mask (opcional)</h5></a>
+      <a class="anchor-link" href="#Softmax"><h5>Softmax</h5></a>
+      <a class="anchor-link" href="#Matmul"><h5>Matmul</h5></a>
+      <a class="anchor-link" href="#Resumo"><h5>Resumo</h5></a>
+      <a class="anchor-link" href="#Decodificador-de-escala-mascarada-aten%C3%A7%C3%A3o-ao-produto-de-pontos"><h4>Decodificador de escala mascarada atenção ao produto de pontos</h4></a>
+      <a class="anchor-link" href="#Por-que-a-m%C3%A1scara"><h5>Por que a máscara</h5></a>
+      <a class="anchor-link" href="#Mask"><h5>Mask</h5></a>
+      <a class="anchor-link" href="#Aten%C3%A7%C3%A3o-ao-produto-de-ponto-da-escala-do-codificador-decodificador"><h4>Atenção ao produto de ponto da escala do codificador-decodificador</h4></a>
+      <a class="anchor-link" href="#Resumo"><h2>Resumo</h2></a>
+    </aside>
+
+
+    <div class="post-body-content">
+      
+      <section class="section-block-markdown-cell">
+      <h1 id="Transformers---de-cima-para-baixo">Transformers - de cima para baixo<a class="anchor-link" href="#Transformers---de-cima-para-baixo"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 54" src={svg_paths.link_svg_path}/></a></h1>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Nesta postagem, veremos como os Transformers funcionam de cima para baixo.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Este caderno foi traduzido automaticamente para torná-lo acessível a mais pessoas, por favor me avise se você vir algum erro de digitação..</p>
+      <h2 id="Transformador-como-uma-caixa-preta">Transformador como uma caixa preta<a class="anchor-link" href="#Transformador-como-uma-caixa-preta"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 55" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>A arquitetura do transformador foi criada para o problema de tradução, portanto, vamos explicá-la para esse problema.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Imagine o transformador como uma caixa preta, que recebe uma frase em um idioma e produz a mesma frase traduzida em outro idioma.</p>
+      <p>Transformador - caixa preta] (<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-black-box.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-black-box.png</a>)</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Tokeniza%C3%A7%C3%A3o">Tokenização<a class="anchor-link" href="#Tokeniza%C3%A7%C3%A3o"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 56" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Mas, como vimos na postagem <a href="https://maximofn.com/tokens/">tokens</a>, os modelos de linguagem não entendem as palavras como nós, eles precisam de números para poder realizar operações. Portanto, a sentença original do idioma precisa ser convertida em tokens por um tokenizador e, na saída, precisamos de um detokenizador para converter os tokens de saída em palavras.</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="Transformer - black box - tokenizers" src="http://maximofn.com/wp-content/uploads/2024/02/Transformer-black-box-tokenizers.png" width="1200" height="152"/></p>
+      <p>Assim, o tokenizador cria uma sequência de tokens $n_{opening_brace}input-tokens{closing_brace}$ e o destokenizador recebe uma sequência de tokens $n_{opening_brace}output-tokens{closing_brace}$.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Embeddings-de-entrada">Embeddings de entrada<a class="anchor-link" href="#Embeddings-de-entrada"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 57" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Na postagem <a href="https://maximofn.com/embeddings/">embeddings</a>, vimos que os embeddings são uma forma de representar palavras em um espaço vetorial. Portanto, os tokens de entrada são passados por uma camada de embeddings para convertê-los em vetores.</p>
+      <p>Em um resumo rápido, o processo de incorporação consiste em converter uma sequência de números (tokens) em uma sequência de vetores. Assim, é criado um novo espaço vetorial no qual as palavras que têm semelhança semântica estarão muito próximas.</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="word_embedding_3_dimmension" src="http://maximofn.com/wp-content/uploads/2023/12/word_embedding_3_dimmension.webp" width="995" height="825"/></p>
+      <p>Se tivéssemos $n_{opening_brace}input-tokens{closing_brace}$ tokens, agora teríamos $n_{opening_brace}input-tokens{closing_brace}$ vetores. Cada um desses vetores tem um comprimento de $d_{opening_brace}model{closing_brace}$. Ou seja, cada token é convertido em um vetor que representa esse token em um espaço vetorial de dimensões $d_{opening_brace}model{closing_brace}$$.
+      Portanto, depois de passar pela camada de incorporação, a sequência de tokens $n_{opening_brace}input-tokens{closing_brace}$ se torna uma matriz de ($n_{opening_brace}input-tokens{closing_brace}$$ x $d_{opening_brace}model{closing_brace}$).</p>
+      <p>Transformador - caixa preta - embeddings de entrada](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-black-box-input-embeddings.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-black-box-input-embeddings.png</a>)</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Codificador---decodificador">Codificador - decodificador<a class="anchor-link" href="#Codificador---decodificador"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 58" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vimos o transformador atuando como uma caixa preta, mas, na realidade, o transformador é uma arquitetura composta de duas partes, um codificador e um decodificador.</p>
+      <p>Transformador - codificador-decodificador] (<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-encoder-decoder.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-encoder-decoder.png</a>)</p>
+      <p>O codificador é responsável por comprimir as informações da frase de entrada, criando um espaço latente no qual as informações da frase de entrada são comprimidas. Em seguida, essas informações comprimidas entram no decodificador, que sabe como converter essas informações comprimidas em uma frase do idioma de saída.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>E como o decodificador converte essas informações compactadas em uma frase no idioma de saída? Bem, token por token. Para entender melhor, vamos esquecer os tokens de saída por um momento e imaginar que temos a seguinte arquitetura</p>
+      <p>Transformador - codificador-decodificador (sem destokenizador)](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-encoder-decoder-no-detokenizer.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-encoder-decoder-no-detokenizer.png</a>)</p>
+      <p>Ou seja, a frase do idioma original é convertida em tokens, esses tokens são convertidos em embeddings, que entram no codificador, o codificador comprime as informações, o decodificador as pega e as converte em palavras do idioma de saída.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Assim, o decodificador gera uma nova palavra na saída a cada etapa.</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="Transformer - codificador-decodificador (sem detokenizador)" src="https://raw.githubusercontent.com/maximofn/portafolio/main/images/Transformer%20-%20encoder-decoder%20(no%20detokenizer).gif" width="814" height="1200"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Mas como o decodificador sabe qual palavra deve ser gerada a cada vez? Porque lhe é passada a frase que já foi traduzida e, a cada etapa, ele gera a próxima palavra. Em outras palavras, a cada etapa, o decodificador recebe a frase que traduziu até o momento e gera a próxima palavra.</p>
+      <p>Mas, mesmo assim, como ele sabe que precisa gerar a primeira palavra? Porque lhe é passada uma palavra especial que significa "começar a traduzir" e, a partir daí, ele gera as palavras seguintes.</p>
+      <p>E, finalmente, como o transformador sabe que precisa parar de gerar palavras? Porque, quando termina de traduzir, ele gera uma palavra especial que significa "fim da tradução", que, quando volta para o transformador, significa que ele não gera mais palavras.</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="Transformer - encoder-decoder (no detokenizer) (input)" src="https://raw.githubusercontent.com/maximofn/portafolio/main/images/Transformer%20-%20encoder-decoder%20(no%20detokenizer)%20(input).gif" width="814" height="1200"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Agora que já entendemos isso em palavras, o que é mais simples, vamos colocar o detokenizador de volta na saída.</p>
+      <p>Transformador - codificador-decodificador] (<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-encoder-decoder.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-encoder-decoder.png</a>)</p>
+      <p>Portanto, o decodificador gerará tokens. Para saber que precisa iniciar uma frase, é inserido um token especial comumente chamado de <code>SOS</code> (Start Of Sentence) e, para saber que precisa terminar, ele gera outro token especial comumente chamado de <code>EOS</code> (End Of Sentence).</p>
+      <p>E, assim como o codificador, o token de entrada precisa passar por uma camada de incorporação para converter os tokens em representações vetoriais.</p>
+      <p>Supondo que cada token seja equivalente a uma palavra, o processo de tradução seria o seguinte</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="Transformer - encoder-decoder (detokenizer)" src="https://raw.githubusercontent.com/maximofn/portafolio/main/images/Transformer%20-%20encoder-decoder%20(detokenizer).gif" width="775" height="1200"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>No momento, temos esta arquitetura</p>
+      <p>Transformador - codificador-decodificador (detokenizador)](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-encoder-decoder-detokenizer-2.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-encoder-decoder-detokenizer-2.png</a>)</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Proje%C3%A7%C3%A3o">Projeção<a class="anchor-link" href="#Proje%C3%A7%C3%A3o"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 59" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Dissemos que o decodificador recebe um token que passa pela camada de incorporação <code>Output embedding</code>.</p>
+      <p>O decodificador <code>Output</code> cria um vetor para cada token, de modo que na saída do decodificador <code>Output</code> temos uma matriz de ($n_{opening_brace}output-tokens{closing_brace}$ x $d_{opening_brace}model{closing_brace}$).</p>
+      <p>O decodificador executa operações, mas gera uma matriz com a mesma dimensão. Portanto, ele precisa converter essa matriz em um token, e faz isso por meio de uma camada linear que gera uma matriz com a mesma dimensão dos possíveis tokens no idioma a ser traduzido (vocabulário de saída).</p>
+      <p>Essa matriz corresponde aos logits de cada token possível e, portanto, é passada por uma camada softmax que converte esses logits em probabilidades. Ou seja, teremos a probabilidade de que cada token seja o próximo token.</p>
+      <p>Transformer - projeção](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-projection.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-projection.png</a>)</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Codificador-e-decodificador-x6">Codificador e decodificador x6<a class="anchor-link" href="#Codificador-e-decodificador-x6"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 60" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>No documento original, eles usam 6 camadas para o codificador e outras 6 camadas para o decodificador. Não há motivo para que sejam 6. Acho que eles tentaram vários valores e esse foi o que funcionou melhor para eles.</p>
+      <p>A saída do último codificador é enviada para cada decodificador.</p>
+      <p>Transformador - codificador-decodificador (x6)](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-encoder-decoder-x6.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-encoder-decoder-x6.png</a>)</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Para simplificar o diagrama, vamos representá-lo da seguinte forma</p>
+      <p>Transformador - codificador-decodificador (Nx)](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-encoder-decoder-Nx.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-encoder-decoder-Nx.png</a>)</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Aten%C3%A7%C3%A3o---Alimenta%C3%A7%C3%A3o">Atenção - Alimentação<a class="anchor-link" href="#Aten%C3%A7%C3%A3o---Alimenta%C3%A7%C3%A3o"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 61" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos começar a examinar o que há dentro do codificador e do decodificador. Basicamente, o que você tem é um mecanismo de atenção e uma camada de avanço.</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="Transformador - codificador-decodificador - atenção-ff" src="http://maximofn.com/wp-content/uploads/2024/02/Transformer-encoder-decoder-attention-ff.png" width="689" height="1200"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Aten%C3%A7%C3%A3o">Atenção<a class="anchor-link" href="#Aten%C3%A7%C3%A3o"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 62" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Podemos ver que três setas entram nos mecanismos de atenção. Veremos isso mais tarde, quando analisarmos em profundidade como funcionam os mecanismos de atenção.</p>
+      <p>Mas, por enquanto, podemos dizer que são operações realizadas para obter a relação que existe entre os tokens (e, portanto, a relação que existe entre as palavras).</p>
+      <p>Antes dos transformadores, as redes neurais recorrentes eram usadas para o problema de tradução, que consistia em redes que recebiam um token de entrada, processavam-no e geravam outro token de saída. Em seguida, um segundo token era inserido, processado e outro token era gerado, e assim por diante com todos os tokens na sequência de entrada. O problema com essas redes é que, quando as frases eram muito longas, quando os últimos tokens eram inseridos, a rede "esquecia" os primeiros tokens. Por exemplo, em frases muito longas, poderia acontecer de o gênero do sujeito mudar ao longo da frase traduzida. E isso acontecia porque, depois de muitos tokens, a rede esquecia se o sujeito era masculino ou feminino.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Para resolver isso, a sequência inteira é inserida no mecanismo de atenção dos transformadores e as relações (atenção) entre todos os tokens são calculadas de uma só vez.</p>
+      <p>Isso é muito eficiente, pois em um único cálculo ele fornece a relação entre todos os tokens, independentemente do tamanho da sequência.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Embora essa seja uma grande vantagem e seja o que levou os transformadores a serem usados na maioria das melhores redes modernas, também é sua maior desvantagem, pois o cálculo da atenção é muito caro do ponto de vista computacional. Ele requer multiplicações de matrizes muito grandes.</p>
+      <p>Essas multiplicações são realizadas entre matrizes que correspondem às incorporações de cada um dos tokens por si só. Ou seja, a matriz que representa as incorporações dos tokens é multiplicada por ela mesma. Para realizar essa multiplicação, uma das matrizes deve ser girada (requisitos de álgebra para poder multiplicar matrizes). Assim, uma matriz é multiplicada por ela mesma; se a sequência de entrada tiver mais tokens, as matrizes que estão sendo multiplicadas serão maiores, uma em altura e outra em largura, de modo que a memória necessária para armazenar essas matrizes aumentará quadraticamente.</p>
+      <p>Portanto, à medida que o comprimento das sequências aumenta, a quantidade de memória necessária para armazenar essas matrizes cresce quadraticamente. E essa é uma grande limitação atual, a quantidade de memória que as GPUs têm, que é onde essas multiplicações geralmente são realizadas.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Uma única camada de atenção é usada no codificador para extrair as relações entre os tokens de entrada.</p>
+      <p>Duas camadas de atenção são usadas no decodificador, uma para extrair as relações entre os tokens de saída e outra para extrair as relações entre os tokens do codificador e os tokens do decodificador.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Alimenta%C3%A7%C3%A3o">Alimentação<a class="anchor-link" href="#Alimenta%C3%A7%C3%A3o"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 63" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Após a camada de atenção, a sequência entra em uma camada de <code>Feed forward</code> que tem duas finalidades</p>
+      <ul>
+      <li><p>Uma delas é adicionar não linearidades. Como explicamos, a atenção é obtida por meio de multiplicações de matrizes dos tokens das sequências de entrada. Mas se nenhuma camada não linear for aplicada a uma rede, no final, toda a arquitetura poderá ser resumida em alguns cálculos lineares. Portanto, as redes neurais não seriam capazes de resolver problemas não lineares. Portanto, essa camada é adicionada para acrescentar a não linearidade.</p>
+      </li>
+      <li><p>Outra é a extração de recursos. Embora a atenção já extraia recursos, esses são recursos das relações entre tokens. Mas essa camada <code>Feed forward</code> é responsável por extrair recursos dos próprios tokens. Ou seja, os recursos são extraídos de cada token que são considerados importantes para o problema que está sendo resolvido.</p>
+      </li>
+      </ul>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Codifica%C3%A7%C3%A3o-posicional">Codificação posicional<a class="anchor-link" href="#Codifica%C3%A7%C3%A3o-posicional"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 64" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Explicamos que na camada de atenção são obtidas as relações entre os tokens, que essa relação é calculada por multiplicações de matrizes e que essas multiplicações são realizadas entre a matriz de incorporação por si só. Portanto, nas sentenças <code>O gato come peixe</code> e <code>O peixe come gato</code>, a relação entre <code>o</code> e <code>gato</code> é a mesma em ambas as sentenças, uma vez que a relação é calculada por meio de multiplicações de matrizes dos embeddings de <code>o</code> e <code>gato</code>.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Entretanto, na primeira, <code>the</code> se refere ao <code>cat</code>, enquanto na segunda <code>the</code> se refere ao <code>fish</code>. Portanto, além das relações entre as palavras, precisamos ter algum mecanismo para indicar sua posição na frase.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>No documento, eles propõem a introdução de um mecanismo de atenção que é responsável por adicionar valores aos vetores de incorporação.</p>
+      <p>Transformador - codificação posicional](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-positional-encoding.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-positional-encoding.png</a>)</p>
+      <p>A fórmula para calcular esses valores é</p>
+      <p>Transformador - codificação posicional (fórmula)](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-positional-encoding-formula.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-positional-encoding-formula.png</a>)</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Como isso é um pouco difícil de entender, vamos ver como seria uma distribuição de valores da "codificação posicional".</p>
+      <p>Transformador - codificação posicional (diagrama)](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-positional-encoding-diagram.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-positional-encoding-diagram.png</a>)</p>
+      <p>O primeiro token terá os valores da primeira linha (a inferior) adicionados a ele, o segundo token terá os valores da segunda linha, e assim por diante, o que causa uma alteração nos embeddings, conforme mostrado na figura. Visto em duas dimensões, você pode ver as ondas que estão sendo adicionadas.</p>
+      <p>Essas ondas significam que, quando são feitos cálculos de atenção, as palavras mais próximas estão mais relacionadas do que as palavras mais distantes.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Mas podemos pensar em algo: se o processo de incorporação consiste em criar um espaço vetorial no qual palavras com o mesmo significado semântico estão próximas umas das outras, essa relação não seria quebrada se valores fossem adicionados às incorporações?</p>
+      <p>Se olharmos novamente para o exemplo do espaço vetorial anterior</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="word_embedding_3_dimmension" src="http://maximofn.com/wp-content/uploads/2023/12/word_embedding_3_dimmension.webp" width="995" height="825"/></p>
+      <p>Podemos ver que os valores variam mais ou menos de -1000 a 1000 em cada eixo, enquanto o gráfico de distribuições</p>
+      <p>Transformador - codificação posicional (diagrama)](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-positional-encoding-diagram.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-positional-encoding-diagram.png</a>)</p>
+      <p>variam de -1 a 1, pois esse é o intervalo das funções seno e cosseno.</p>
+      <p>Portanto, estamos variando em um intervalo entre -1 e 1 os valores dos embeddings, que são duas ou três ordens de magnitude a mais, de modo que a variação será muito pequena em comparação com o valor dos embeddings.</p>
+      <p>Portanto, já temos uma maneira de conhecer a relação da posição dos tokens na frase.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Add-&amp;-Norm">Add &amp; Norm<a class="anchor-link" href="#Add-&amp;-Norm"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 65" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Resta apenas um bloco de alto nível, que são as camadas <code>Add &amp; Norm</code>.</p>
+      <p>Transformer - Add &amp; norm](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-Add-norm.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-Add-norm.png</a>)</p>
+      <p>Essas camadas são adicionadas após cada camada de atenção e camada de avanço. Essa camada agrega a saída e a entrada de uma camada. Isso é chamado de conexões residuais e tem as seguintes vantagens</p>
+      <ul>
+      <li><p>Durante o treinamento:</p>
+      <ul>
+      <li><p>Reduzem o problema do desvanecimento do gradiente: Quando uma rede neural é muito grande, no processo de treinamento, os gradientes se tornam cada vez menores à medida que você se aprofunda nas camadas. Isso faz com que as camadas mais profundas não consigam atualizar bem seus pesos. As conexões residuais permitem que os gradientes passem diretamente pelas camadas, o que ajuda a mantê-los grandes o suficiente para que o modelo continue aprendendo, mesmo nas camadas mais profundas.</p>
+      </li>
+      <li><p>Permitir o treinamento de redes mais profundas: ao ajudar a atenuar o problema do desvanecimento do gradiente, as conexões residuais também facilitam o treinamento de redes mais profundas, o que pode levar a um melhor desempenho.</p>
+      </li>
+      </ul>
+      </li>
+      <li><p>Durante a inferência:</p>
+      <ul>
+      <li><p>Permitem a transmissão de informações entre diferentes camadas: como as conexões residuais permitem que a saída de cada camada se torne a soma da entrada e da saída da camada, as informações das camadas mais profundas são transmitidas para as camadas de nível mais alto. Isso pode ser benéfico em muitas tarefas, especialmente quando as informações de baixo nível e de alto nível podem ser úteis.</p>
+      </li>
+      <li><p>Melhorar a robustez do modelo: como as conexões residuais permitem que as camadas aprendam melhor em camadas mais profundas, os modelos com conexões residuais podem ser mais robustos a perturbações nos dados de entrada.</p>
+      </li>
+      <li><p>Permitem a recuperação de informações perdidas: se algumas informações forem perdidas durante a transformação em qualquer camada, as conexões residuais podem permitir que essas informações sejam recuperadas nas camadas subsequentes.</p>
+      </li>
+      </ul>
+      </li>
+      </ul>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Essa camada é chamada de <code>Add &amp; Norm</code>, já vimos a <code>Add</code>, vamos dar uma olhada na <code>Norm</code>. A normalização é adicionada para que a adição da entrada e da saída não acione os valores.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Já vimos todas as camadas de alto nível do transformador.</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="transformer" src="http://maximofn.com/wp-content/uploads/2023/12/transformer-scaled.webp" width="852" height="1200"/></p>
+      <p>para que possamos examinar a parte mais importante que dá nome ao documento, os mecanismos de atenção.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Mecanismos-de-atendimento">Mecanismos de atendimento<a class="anchor-link" href="#Mecanismos-de-atendimento"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 66" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Aten%C3%A7%C3%A3o-a-v%C3%A1rias-cabe%C3%A7as">Atenção a várias cabeças<a class="anchor-link" href="#Aten%C3%A7%C3%A3o-a-v%C3%A1rias-cabe%C3%A7as"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 67" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Antes de analisarmos o mecanismo real da atenção, temos que analisar a atenção de várias cabeças.</p>
+      <p>Transformador - atenção a vários cabeçotes] (<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-multi-head-attention.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-multi-head-attention.png</a>)</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Quando explicamos as camadas de alto nível, vimos que nas camadas de atenção havia 3 setas, que são <code>Q</code>, <code>K</code> e <code>V</code>. Essas são matrizes que correspondem às informações de tokens; no caso do mecanismo de atenção do codificador, elas correspondem aos tokens da sentença do idioma original e, no caso da camada de atenção do decodificador, elas correspondem aos tokens da sentença que foi traduzida até o momento e à saída do codificador.</p>
+      <p>Não nos importamos com a origem dos tokens agora, apenas lembre-se de que eles correspondem a tokens. Conforme explicado acima, os tokens são convertidos em embeddings, de modo que <code>Q</code>, <code>K</code> e <code>V</code> são matrizes de tamanho ($n_{opening_brace}tokens{closing_brace}$ x $d_{opening_brace}model{closing_brace}$). Normalmente, a dimensão de incorporação ($d_{opening_brace}model{closing_brace}$) é um número grande, como 512, 1024, 2048 etc. (não precisa ser uma potência de 2, esses são apenas exemplos).</p>
+      <p>Já explicamos que os embeddings são representações vetoriais de tokens. Ou seja, os tokens são convertidos em espaços vetoriais nos quais as palavras com significado semântico semelhante estão muito próximas.</p>
+      <p>Portanto, de todas essas dimensões, algumas podem estar relacionadas a características morfológicas, outras a características sintáticas, outras a características semânticas etc. Portanto, faz sentido calcular os mecanismos de atenção entre as dimensões de embeddings com características semelhantes.</p>
+      <p>Lembre-se de que os mecanismos de atenção buscam a similaridade entre as palavras, portanto, faz sentido buscar a similaridade entre recursos semelhantes.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Portanto, antes de calcular os mecanismos de atenção, as dimensões de incorporação são separadas em grupos de características semelhantes, e os mecanismos de atenção entre esses grupos são calculados.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>E como essa separação é feita? Você teria que procurar dimensões semelhantes, mas fazer isso em um espaço de 512, 1024, 2048 etc. dimensões é muito complicado. Além disso, não é possível saber quais características são semelhantes e, em cada caso, as características consideradas semelhantes mudarão.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>As projeções lineares são, portanto, usadas para separar as dimensões em grupos. Em outras palavras, os embeddings passam por camadas lineares que os separam em grupos de características semelhantes. Dessa forma, durante o treinamento do transformador, os pesos das camadas lineares serão alterados até chegar a um ponto em que o agrupamento seja feito de maneira ideal.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Agora podemos ter a questão de em quantos grupos devemos nos dividir. No documento original, ele é dividido em 8 grupos, mas não há motivo para que sejam 8. Acho que eles tentaram vários valores e esse foi o que funcionou melhor para eles.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Uma vez que as incorporações tenham sido divididas em grupos semelhantes e a atenção nos diferentes grupos tenha sido calculada, os resultados são concatenados. Isso é lógico, suponhamos que tenhamos um ebedding de 512 dimensões e o dividamos em 8 grupos de 64 dimensões. Se calcularmos a atenção em cada um dos grupos, teremos 8 matrizes de atenção de 64 dimensões; se as concatenarmos, teremos uma matriz de atenção de 512 dimensões, que é a mesma dimensão que tínhamos no início.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Mas a concatenação faz com que todos os recursos fiquem juntos. As primeiras 64 dimensões correspondem a um recurso, as 64 seguintes a outro, e assim por diante. Portanto, para misturá-los novamente, você passa por uma camada linear que mistura todos os recursos. E essa combinação é aprendida durante o treinamento.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Aten%C3%A7%C3%A3o-ao-produto-de-ponto-de-escala">Atenção ao produto de ponto de escala<a class="anchor-link" href="#Aten%C3%A7%C3%A3o-ao-produto-de-ponto-de-escala"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 68" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Chegamos à parte mais importante do transformador, o mecanismo de atenção, a "atenção do produto escalonado de pontos".</p>
+      <p>Transformador - atenção ao produto de pontos em escala](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention.png</a>)
+      Transformador - fórmula de atenção do produto escalonado](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention-formula.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention-formula.png</a>)</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Como vimos, na arquitetura do Transformer há três mecanismos de atendimento</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="transformer" src="http://maximofn.com/wp-content/uploads/2023/12/transformer-scaled.webp" width="852" height="1200"/></p>
+      <p>O codificador, o decodificador e o codificador-decodificador. Portanto, vamos explicá-los separadamente, pois, embora sejam praticamente os mesmos, eles têm algumas pequenas diferenças.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Aten%C3%A7%C3%A3o-ao-produto-de-pontos-da-escala-Endocer">Atenção ao produto de pontos da escala Endocer<a class="anchor-link" href="#Aten%C3%A7%C3%A3o-ao-produto-de-pontos-da-escala-Endocer"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 69" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos examinar novamente o diagrama de blocos e a fórmula.</p>
+      <p>Transformador - atenção ao produto de pontos em escala](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention.png</a>)
+      Transformador - fórmula de atenção do produto escalonado](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention-formula.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention-formula.png</a>)</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Primeiro, vamos entender por que havia três setas entrando nas camadas de atenção. Se observarmos a arquitetura do transformador, a entrada do codificador se divide em três e entra na camada de atenção.</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="transformer" src="http://maximofn.com/wp-content/uploads/2023/12/transformer-scaled.webp" width="852" height="1200"/></p>
+      <p>Portanto, <code>K</code>, <code>Q</code> e <code>V</code> são o resultado da incorporação e da codificação posicional. A mesma matriz é colocada na camada de atenção três vezes. Devemos lembrar que essa matriz consistia em uma lista de todos os tokens ($n_{opening_brace}tokens{closing_brace}$), e cada token foi convertido em um vetor de embeddings de dimensão $d_{opening_brace}model{closing_brace}$, de modo que a dimensão da matriz será ($n_{opening_brace}tokens{closing_brace}$ x $d_{opening_brace}model{closing_brace}$).</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>O significado de <code>K</code>, <code>Q</code> e <code>V</code> vem dos bancos de dados <code>key</code>, <code>query</code> e <code>value</code>. O mecanismo de atenção recebe as matrizes <code>Q</code> e <code>K</code>, ou seja, a pergunta e a chave, e a saída é a matriz <code>V</code>, ou seja, a resposta.</p>
+      <p>Vamos analisar cada bloco separadamente para entender melhor isso.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h5 id="Matmul">Matmul<a class="anchor-link" href="#Matmul"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 70" src={svg_paths.link_svg_path}/></a></h5>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Esse bloco corresponde à multiplicação matricial das matrizes <code>Q</code> e <code>K</code>. Mas, para realizar essa operação, temos de fazê-la com a matriz transposta de <code>K</code>. Como as duas matrizes têm dimensão ($n_{opening_brace}tokens{closing_brace}$ x $d_{opening_brace}model{closing_brace}$), para multiplicá-las, a matriz <code>K</code> precisa ser transposta.</p>
+      <p>Portanto, teremos uma multiplicação de uma matriz de dimensão ($n_{opening_brace}tokens{closing_brace}$$ x $d_{opening_brace}model{closing_brace}$$) por outra matriz de dimensão ($d_{opening_brace}model{closing_brace}$$ x $n_{opening_brace}tokens{closing_brace}$), de modo que o resultado será uma matriz de dimensão ($n_{opening_brace}tokens{closing_brace}$$ x $n_{opening_brace}tokens{closing_brace}$).</p>
+      <p>Transformer - matmul](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-matmul.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-matmul.png</a>)</p>
+      <p>Como podemos ver, o resultado é uma matriz em que a diagonal é a multiplicação da incorporação de cada token por ela mesma, e o restante das posições são as multiplicações entre as incorporações de cada token.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Agora vamos ver por que essa multiplicação é feita. Na postagem anterior [Measuring similarity between embeddings] (<a href="https://maximofn.com/embeddings-similarity/">https://maximofn.com/embeddings-similarity/</a>), vimos que uma maneira de obter a similaridade entre dois vetores de incorporação é calcular o cosseno</p>
+      <p>Na figura acima, é possível ver que a multiplicação entre as matrizes <code>Q</code> e <code>K</code> corresponde à multiplicação dos embeddings de cada token. A multiplicação entre dois vetores é realizada da seguinte forma</p>
+      $$ "\mathbf. \mathbf{opening_brace}V{closing_brace} = \mathbf{opening_brace}U{closing_brace}| \mathbf{opening_brace}V{closing_brace}| \cos(\theta)$$<p>$.</p>
+      <p>Ou seja, temos a multiplicação das normas por seu cosseno. Se os vetores fossem unitários, ou seja, suas normas fossem 1, a multiplicação de dois vetores seria igual ao cosseno entre os dois vetores, que é uma das medidas de similaridade entre vetores.</p>
+      <p>Assim, como em cada posição da matriz resultante temos a multiplicação entre os vetores de incorporação de cada token, na realidade, cada posição da matriz representará a similaridade entre cada token.</p>
+      <p>Relembrando o que eram embeddings, os embeddings eram representações vetoriais de tokens em um espaço vetorial, em que os tokens com similaridade semântica estão próximos uns dos outros.</p>
+      <p>Assim, com essa multiplicação, obtivemos uma matriz de similaridade entre os tokens da frase</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="Transformer - matmul - similarity matrix" src="http://maximofn.com/wp-content/uploads/2024/02/Transformer-matmul-similarity-matrix.png" width="1579" height="454"/></p>
+      <p>Os elementos diagonais têm similaridade máxima (verde), os elementos de canto têm similaridade mínima (vermelho) e o restante dos elementos tem similaridade intermediária.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h5 id="Scale">Scale<a class="anchor-link" href="#Scale"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 71" src={svg_paths.link_svg_path}/></a></h5>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vejamos novamente o diagrama de atenção do produto escalar de pontos e sua fórmula</p>
+      <p>Transformador - atenção ao produto de pontos em escala](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention.png</a>)
+      Transformador - fórmula de atenção do produto escalonado](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention-formula.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention-formula.png</a>)</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Dissemos que se, ao multiplicar <code>Q</code> por <code>K</code>, fizéssemos a multiplicação entre os vetores de incorporação e que, se esses vetores tivessem norma 1, o resultado seria a similaridade entre os vetores. Mas como os vetores não têm norma 1, o resultado pode ter valores muito altos, então normalizamos dividindo pela raiz quadrada da dimensão dos vetores de incorporação.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h5 id="Mask-(opcional)">Mask (opcional)<a class="anchor-link" href="#Mask-(opcional)"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 72" src={svg_paths.link_svg_path}/></a></h5>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>O mascaramento é opcional e não é usado no codificador, portanto, não o explicaremos no momento para não confundir o leitor.</p>
+      <p>Transformador - atenção ao produto de pontos em escala](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention.png</a>)
+      Transformador - fórmula de atenção do produto escalonado](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention-formula.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention-formula.png</a>)</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h5 id="Softmax">Softmax<a class="anchor-link" href="#Softmax"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 73" src={svg_paths.link_svg_path}/></a></h5>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Embora tenhamos dividido pela raiz quadrada da dimensão dos vetores de incorporação, poderíamos fazer com que a similaridade entre os vetores de incorporação ficasse entre os valores 0 e 1, portanto, para garantir isso, passamos por uma camada softmax.</p>
+      <p>Transformador - atenção ao produto de pontos em escala](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention.png</a>)
+      Transformador - fórmula de atenção do produto escalonado](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention-formula.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention-formula.png</a>)</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="Transformer - matmul - similarity matrix softmax" src="http://maximofn.com/wp-content/uploads/2024/02/Transformer-matmul-similarity-matrix-softmax.png" width="1579" height="454"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h5 id="Matmul">Matmul<a class="anchor-link" href="#Matmul"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 74" src={svg_paths.link_svg_path}/></a></h5>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Agora que temos uma matriz de similaridade entre os vetores de incorporação, vamos multiplicá-la pela matriz <code>V</code>, que representa as incorporações dos tokens.</p>
+      <p>Transformador - matmul2](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-matmul2.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-matmul2.png</a>)</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>A multiplicação nos dá</p>
+      <p>Transformer - matmul2 result](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-matmul2-result.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-matmul2-result.png</a>)</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Obtemos uma matriz com uma mistura de incorporações com sua similaridade. Em cada linha, obtemos uma mistura das incorporações, em que cada elemento da incorporação é ponderado de acordo com a similaridade do token nessa linha com o restante dos tokens.</p>
+      <p>Além disso, temos novamente uma matriz de tamanho ($n_{opening_brace}tokens{closing_brace}$ x $d_{opening_brace}model{closing_brace}$), que é a mesma dimensão que tínhamos no início.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h5 id="Resumo">Resumo<a class="anchor-link" href="#Resumo"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 75" src={svg_paths.link_svg_path}/></a></h5>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Em resumo, podemos dizer que a <code>atenção ao produto de ponto escalonado</code> é um mecanismo que calcula a similaridade entre os tokens de uma frase e, a partir dessa similaridade, calcula uma matriz de saída que corresponde a uma mistura de embeddings ponderados de acordo com a similaridade dos tokens.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Decodificador-de-escala-mascarada-aten%C3%A7%C3%A3o-ao-produto-de-pontos">Decodificador de escala mascarada atenção ao produto de pontos<a class="anchor-link" href="#Decodificador-de-escala-mascarada-aten%C3%A7%C3%A3o-ao-produto-de-pontos"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 76" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos examinar novamente a arquitetura do transformador.</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="transformer" src="http://maximofn.com/wp-content/uploads/2023/12/transformer-scaled.webp" width="852" height="1200"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Como podemos ver, nesse caso, a "atenção ao produto escalonado de pontos" tem a palavra "mascarado". Primeiro, explicaremos por que esse mascaramento é necessário e, em seguida, veremos como ele é feito.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h5 id="Por-que-a-m%C3%A1scara">Por que a máscara<a class="anchor-link" href="#Por-que-a-m%C3%A1scara"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 77" src={svg_paths.link_svg_path}/></a></h5>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Como dissemos, o transformador foi inicialmente concebido como um tradutor, mas, em geral, é uma arquitetura na qual você coloca uma sequência e ela produz outra sequência. No entanto, quando se trata de treinamento, é necessário fornecer a sequência de entrada e a sequência de saída e, a partir daí, o transformador aprende a traduzir.</p>
+      <p>Por outro lado, dissemos que o transformador gera um novo token a cada vez. Ou seja, ele recebe a sequência de entrada no codificador e um token de início de sequência especial no decodificador e, a partir daí, gera o primeiro token da sequência de saída.</p>
+      <p>Em seguida, a sequência de entrada é colocada de volta no codificador e o token gerado anteriormente no decodificador e, a partir daí, ele gera o segundo token da sequência de saída.</p>
+      <p>Em seguida, a sequência de entrada é colocada de volta no codificador e os dois tokens gerados anteriormente no decodificador e, a partir daí, ele gera o terceiro token da sequência de saída.</p>
+      <p>E assim por diante, até gerar um token especial de fim de sequência.</p>
+      <p>Mas no treinamento, como a sequência de entrada e saída é fornecida a ele de uma só vez, precisamos mascarar os tokens que ele ainda não gerou para que não possa vê-los.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h5 id="Mask">Mask<a class="anchor-link" href="#Mask"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 78" src={svg_paths.link_svg_path}/></a></h5>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos examinar novamente o diagrama de blocos e a fórmula.</p>
+      <p>Transformador - atenção ao produto de pontos em escala](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention.png</a>)
+      Transformador - fórmula de atenção do produto escalonado](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention-formula.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention-formula.png</a>)</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>O mascaramento é feito após o <code>Scale</code> e antes do <code>Softmax</code>. Como precisamos mascarar os tokens "futuros", o que pode ser feito é multiplicar a matriz <code>Scale</code> resultante por uma matriz que tenha 0 nas posições que queremos mascarar e 1 nas posições que não queremos mascarar.</p>
+      <p>Transformador - Máscara] (<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-Mask.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-Mask.png</a>)</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Ao fazer isso, obtemos a mesma matriz de antes, mas com posições mascaradas.</p>
+      <p>Transformer - Mask resutl](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-Mask-resutl.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-Mask-resutl.png</a>)</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Agora, o resultado do <code>Scaled dot product attention</code> é uma matriz com os embeddings dos tokens ponderados de acordo com a similaridade dos tokens, mas com os tokens que não devem ser mascarados.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Aten%C3%A7%C3%A3o-ao-produto-de-ponto-da-escala-do-codificador-decodificador">Atenção ao produto de ponto da escala do codificador-decodificador<a class="anchor-link" href="#Aten%C3%A7%C3%A3o-ao-produto-de-ponto-da-escala-do-codificador-decodificador"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 79" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos examinar novamente a arquitetura do transformador.</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="transformer" src="http://maximofn.com/wp-content/uploads/2023/12/transformer-scaled.webp" width="852" height="1200"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Agora vemos que o mecanismo de atenção recebe duas vezes a saída do codificador e uma vez a atenção mascarada do decodificador. Portanto, "K" e "V" são a saída do codificador e "Q" é a saída do decodificador.</p>
+      <p>Transformador - atenção ao produto de pontos em escala](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention.png</a>)
+      Transformador - fórmula de atenção do produto escalonado](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention-formula.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention-formula.png</a>)</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Portanto, nesse bloco de atenção, primeiro é calculada a similaridade entre a sentença do decodificador e a sentença do codificador, ou seja, é calculada a similaridade entre a sentença que foi traduzida até o momento e a sentença original.</p>
+      <p>Essa semelhança é então multiplicada pela sentença do codificador, ou seja, é obtida uma mistura de embeddings da sentença original, ponderada de acordo com a semelhança da sentença traduzida até o momento.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Resumo">Resumo<a class="anchor-link" href="#Resumo"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 80" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Percorremos o transformador do nível mais alto ao mais baixo, para que você já tenha uma noção de como ele funciona.</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="transformer" src="http://maximofn.com/wp-content/uploads/2023/12/transformer-scaled.webp" width="852" height="1200"/></p>
+      <p>Transformador - atenção a vários cabeçotes] (<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-multi-head-attention.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-multi-head-attention.png</a>)
+      Transformador - atenção ao produto de pontos em escala](<a href="http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention.png">http://maximofn.com/wp-content/uploads/2024/02/Transformer-scaled-dot-product-attention.png</a>)</p>
+      </section>
+      
+
+
+
+
+
+
+    </div>
+
+  </section>
+
+</PostLayout>

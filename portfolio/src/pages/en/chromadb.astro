@@ -1,0 +1,2697 @@
+---
+import PostLayout from '@layouts/PostLayout.astro';
+import CodeBlockInputCell from '@components/CodeBlockInputCell.astro';
+import CodeBlockOutputCell from '@components/CodeBlockOutputCell.astro';
+
+const { metadata_page } = await import('@portfolio/consts.json');
+const { colors } = await import('@portfolio/consts.json');
+const { svg_paths } = await import('@portfolio/consts.json');
+
+const page_title = 'ChromaDB';
+const end_url = 'chromadb';
+const description = 'Discover how ChromaDB redefines vector data search and management for AI applications, with ultra-fast and accurate similarity searches in high-dimensional spaces';
+const keywords = 'chromadb, vector search, vector database, vector similarity search, vector data, vector data management, vector data search, vector data search engine, vector data search tool, vector data search platform, vector data search software, vector data search service, vector data search library, vector data search system, vector data search solution, vector data search product, vector data search application, vector data search API, vector data search SDK, vector data search framework, vector data search technology, vector data search company, vector data search startup, vector data search tool, vector data search platform, vector data search software, vector data search service, vector data search library, vector data search system, vector data search solution, vector data search product, vector data search application, vector data search API, vector data search SDK, vector data search framework, vector data search technology, vector data search company, vector data search startup';
+const languaje = 'EN';
+const image_path = 'https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/chromadb_dalle3.webp';
+const opening_brace = '{';
+const closing_brace = '}';
+---
+
+<PostLayout 
+    title={page_title}
+    languaje={languaje}
+    description={description}
+    keywords={keywords}
+    author={metadata_page.author}
+    theme_color={colors.background_color}
+    end_url={end_url}
+    image_path={image_path}
+    image_width=1024
+    image_height=1024
+    image_extension=webp
+    article_date=2024-02-18+T00:00:00Z
+>
+
+  <section class="post-body">
+
+
+    <aside class="post-index">
+      <a class="anchor-link" href="#Chroma"><h2>Chroma</h2></a>
+      <a class="anchor-link" href="#Installation"><h2>Installation</h2></a>
+      <a class="anchor-link" href="#Quick-use"><h2>Quick use</h2></a>
+      <a class="anchor-link" href="#Persistent-databases"><h2>Persistent databases</h2></a>
+      <a class="anchor-link" href="#Collections"><h2>Collections</h2></a>
+      <a class="anchor-link" href="#Create-collections"><h3>Create collections</h3></a>
+      <a class="anchor-link" href="#Retrieve-collections"><h3>Retrieve collections</h3></a>
+      <a class="anchor-link" href="#Retrieve-or-create-collections"><h3>Retrieve or create collections</h3></a>
+      <a class="anchor-link" href="#Delete-collections"><h3>Delete collections</h3></a>
+      <a class="anchor-link" href="#Get-items-from-collections"><h3>Get items from collections</h3></a>
+      <a class="anchor-link" href="#Obtain-the-total-number-of-items-in-the-collections"><h3>Obtain the total number of items in the collections</h3></a>
+      <a class="anchor-link" href="#Change-similarity-function"><h3>Change similarity function</h3></a>
+      <a class="anchor-link" href="#Add-data-to-the-collection"><h3>Add data to the collection</h3></a>
+      <a class="anchor-link" href="#Add-documents"><h4>Add documents</h4></a>
+      <a class="anchor-link" href="#Add-embeddings"><h4>Add embeddings</h4></a>
+      <a class="anchor-link" href="#Add-documents-and-embeddings"><h4>Add documents and embeddings</h4></a>
+      <a class="anchor-link" href="#Inquiries"><h3>Inquiries</h3></a>
+      <a class="anchor-link" href="#Queries-by-documents"><h4>Queries by documents</h4></a>
+      <a class="anchor-link" href="#Several-queries-at-once"><h4>Several queries at once</h4></a>
+      <a class="anchor-link" href="#Queries-for-embeddings"><h4>Queries for embeddings</h4></a>
+      <a class="anchor-link" href="#Retrieve-documents-by-ID."><h3>Retrieve documents by <code>ID</code>.</h3></a>
+      <a class="anchor-link" href="#Filtering"><h3>Filtering</h3></a>
+      <a class="anchor-link" href="#Filtering-by-metadata"><h4>Filtering by metadata</h4></a>
+      <a class="anchor-link" href="#Filtering-by-document-content"><h4>Filtering by document content</h4></a>
+      <a class="anchor-link" href="#Update-data"><h3>Update data</h3></a>
+      <a class="anchor-link" href="#Update-or-add-data"><h3>Update or add data</h3></a>
+      <a class="anchor-link" href="#Delete-data"><h3>Delete data</h3></a>
+      <a class="anchor-link" href="#Embeddings"><h2>Embeddings</h2></a>
+      <a class="anchor-link" href="#Multimodality"><h2>Multimodality</h2></a>
+    </aside>
+
+
+    <div class="post-body-content">
+      
+      <section class="section-block-markdown-cell">
+      <h1 id="Vector-databases">Vector databases<a class="anchor-link" href="#Vector-databases"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 30" src={svg_paths.link_svg_path}/></a></h1>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We have seen in the <a href="https://www.maximofn.com/embeddings">embeddings</a> post that embeddings are a way of representing words in a vector space. In this post we are going to see how we can store those embeddings in vector databases and how we can make queries on them.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>This notebook has been automatically translated to make it accessible to more people, please let me know if you see any typos.</p>
+      <p>When we have a query, we can create the embedding of the query, search the vector database for the embeddings that most closely match the query and return the documents that correspond to those embeddings or an explanation of those documents.</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="vector database" src="http://maximofn.com/wp-content/uploads/2024/02/vector_database.svg"/></p>
+      <p>That is to say, we are going to generate a database of information, we are going to create embeddings of that information and we are going to store it in a vector database. Then when a user makes a query, we will convert the query to embeddings, search the database for the embeddings with the highest similarity and return the documents that correspond to those embeddings.</p>
+      <p>In addition to the documents, additional information can be stored in the database, which we will call metadata. For example, if we are working with a set of news, we can store the title, date, author, etc. of the news.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Chroma">Chroma<a class="anchor-link" href="#Chroma"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 31" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>In this post we are going to look at <a href="https://www.trychroma.com/" target="_blank" rel="nofollow noreferrer">crhoma</a>, as it is the most widely used <a href="https://blog.langchain.dev/langchain-state-of-ai-2023/#most-used-vectorstores">vector database</a>, as can be seen in this <a href="https://blog.langchain.dev/langchain-state-of-ai-2023">langchain state of ai 2023</a> report.</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="Most Used Vectorstores" src="https://blog.langchain.dev/content/images/size/w1000/2023/12/Top-vectorstores--1-.png" width="1000" height="482"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Installation">Installation<a class="anchor-link" href="#Installation"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 32" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>So to install chroma with conda you need to do the following</p>
+      <div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>conda-forge::chromadb
+      <span class="sb">```</span>
+      
+      Or<span class="w"> </span><span class="k">if</span><span class="w"> </span>you<span class="w"> </span>want<span class="w"> </span>to<span class="w"> </span>install<span class="w"> </span>with<span class="w"> </span>pip
+      
+      <span class="sb">````</span>bash
+      pip<span class="w"> </span>install<span class="w"> </span>chromadb
+      <span class="sb">```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Quick-use">Quick use<a class="anchor-link" href="#Quick-use"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 33" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>For a quick application, we first import chroma</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">import</span> <span class="nn">chromadb</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Next we create a chroma client</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">import</span> <span class="nn">chromadb</span>',
+      '<span></span><span class="n">chroma_client</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>We create a collection. A collection is the place where embeddings, embeddings and metadata will be stored.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">import</span> <span class="nn">chromadb</span>',
+      '<span></span><span class="n">chroma_client</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>',
+      '<span></span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">create_collection</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"my_collection"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>As we can see a message comes up indicating that no embeddings function has been entered and therefore it will default to <code>all-MiniLM-L6-v2</code>, which is similar to the <code>paraphrase-MiniLM-L6-v2</code> model we used in the <a href="https://maximofn.com/embeddings/">embeddings</a> post.</p>
+      <p>We will see this later, but we can choose how we are going to generate the embeddings.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Now we add documents, ids and metadata to the collection</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">import</span> <span class="nn">chromadb</span>',
+      '<span></span><span class="n">chroma_client</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>',
+      '<span></span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">create_collection</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"my_collection"</span><span class="p">)</span>',
+      '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>',
+      '          <span class="n">documents</span><span class="o">=</span><span class="p">[</span><span class="s2">"This is a python docs"</span><span class="p">,</span> <span class="s2">"This is JavaScript docs"</span><span class="p">],</span>',
+      '          <span class="n">metadatas</span><span class="o">=</span><span class="p">[{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Python source"</span><span class="p">},</span> <span class="p">{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"JavaScript source"</span><span class="p">}],</span>',
+      '          <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s2">"id1"</span><span class="p">,</span> <span class="s2">"id2"</span><span class="p">]</span>',
+      '      <span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Now we can make a query</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">import</span> <span class="nn">chromadb</span>',
+      '<span></span><span class="n">chroma_client</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>',
+      '<span></span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">create_collection</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"my_collection"</span><span class="p">)</span>',
+      '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>',
+      '          <span class="n">documents</span><span class="o">=</span><span class="p">[</span><span class="s2">"This is a python docs"</span><span class="p">,</span> <span class="s2">"This is JavaScript docs"</span><span class="p">],</span>',
+      '          <span class="n">metadatas</span><span class="o">=</span><span class="p">[{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Python source"</span><span class="p">},</span> <span class="p">{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"JavaScript source"</span><span class="p">}],</span>',
+      '          <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s2">"id1"</span><span class="p">,</span> <span class="s2">"id2"</span><span class="p">]</span>',
+      '      <span class="p">)</span>',
+      '<span></span><span class="n">results</span> <span class="o">=</span> <span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>',
+      '          <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"This is a query of Python"</span><span class="p">],</span>',
+      '          <span class="n">n_results</span><span class="o">=</span><span class="mi">2</span>',
+      '      <span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">import</span> <span class="nn">chromadb</span>',
+          '</span><span class="n">chroma_client</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>',
+          '</span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">create_collection</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"my_collection"</span><span class="p">)</span>',
+          '</span><span class="n">collection</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>',
+          '    <span class="n">documents</span><span class="o">=</span><span class="p">[</span><span class="s2">"This is a python docs"</span><span class="p">,</span> <span class="s2">"This is JavaScript docs"</span><span class="p">],</span>',
+          '    <span class="n">metadatas</span><span class="o">=</span><span class="p">[{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Python source"</span><span class="p">},</span> <span class="p">{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"JavaScript source"</span><span class="p">}],</span>',
+          '    <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s2">"id1"</span><span class="p">,</span> <span class="s2">"id2"</span><span class="p">]</span>',
+          '<span class="p">)</span>',
+          '</span><span class="n">results</span> <span class="o">=</span> <span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>',
+          '    <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"This is a query of Python"</span><span class="p">],</span>',
+          '    <span class="n">n_results</span><span class="o">=</span><span class="mi">2</span>',
+          '<span class="p">)</span>',
+          '</span><span class="n">results</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '{\'ids\': [[\'id1\', \'id2\']],',
+          ' \'distances\': [[0.6205940246582031, 1.4631636142730713]],',
+          ' \'metadatas\': [[{\'source\': \'Python source\'}, {\'source\': \'JavaScript source\'}]],',
+          ' \'embeddings\': None,',
+          ' \'documents\': [[\'This is a python docs\', \'This is JavaScript docs\']],',
+          ' \'uris\': None,',
+          ' \'data\': None}',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>As we can see the distance to id1 is less than the distance to id2, so it seems that document 1 is more appropriate for answering the query</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Persistent-databases">Persistent databases<a class="anchor-link" href="#Persistent-databases"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 34" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>The database that we have created before is temporary, as soon as we close the notebook it will disappear. So to create a persistent database we have to pass to chroma the path where to save it.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>First we are going to create the folder where to save the database</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>',
+      '      ',
+      '      <span class="n">chroma_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"chromadb"</span><span class="p">)</span>',
+      '      <span class="n">chroma_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Now we create a client in the folder we created</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>',
+      '      ',
+      '      <span class="n">chroma_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"chromadb"</span><span class="p">)</span>',
+      '      <span class="n">chroma_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>',
+      '<span></span><span class="n">chroma_client_persistent</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">PersistentClient</span><span class="p">(</span><span class="n">path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">chroma_path</span><span class="p">))</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Collections">Collections<a class="anchor-link" href="#Collections"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 35" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Create-collections">Create collections<a class="anchor-link" href="#Create-collections"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 36" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>When creating a collection, a name must be specified. The name must have the following considerations:</p>
+      <ul>
+      <li>The length of the name must be between 3 and 63 characters.</li>
+      <li>The name must begin and end with a lowercase letter or digit and may contain periods, hyphens and underscores in the middle.</li>
+      <li>The name must not contain two consecutive colons.</li>
+      <li>The name must not be a valid IP address.</li>
+      </ul>
+      <p>We can also give it an embedding function. In case we don't give it one, it will use by default the <code>all-MiniLM-L6-v2</code> function.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>',
+      '      ',
+      '      <span class="n">chroma_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"chromadb"</span><span class="p">)</span>',
+      '      <span class="n">chroma_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>',
+      '<span></span><span class="n">chroma_client_persistent</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">PersistentClient</span><span class="p">(</span><span class="n">path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">chroma_path</span><span class="p">))</span>',
+      '<span></span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">create_collection</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"my_other_collection"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>As you can see, a second collection has been created for the same customer <code>chroma_client</code>, so for a single customer we can have several collections.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Retrieve-collections">Retrieve collections<a class="anchor-link" href="#Retrieve-collections"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 37" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>If we want to retrieve a collection from a client we can do it with the <code>get_collection</code> method.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>',
+      '      ',
+      '      <span class="n">chroma_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"chromadb"</span><span class="p">)</span>',
+      '      <span class="n">chroma_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>',
+      '<span></span><span class="n">chroma_client_persistent</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">PersistentClient</span><span class="p">(</span><span class="n">path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">chroma_path</span><span class="p">))</span>',
+      '<span></span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">create_collection</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"my_other_collection"</span><span class="p">)</span>',
+      '<span></span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"my_collection"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Retrieve-or-create-collections">Retrieve or create collections<a class="anchor-link" href="#Retrieve-or-create-collections"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 38" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We can obtain collections and, in case they do not exist, create them with the <code>get_or_create_collection</code> method.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>',
+      '      ',
+      '      <span class="n">chroma_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"chromadb"</span><span class="p">)</span>',
+      '      <span class="n">chroma_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>',
+      '<span></span><span class="n">chroma_client_persistent</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">PersistentClient</span><span class="p">(</span><span class="n">path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">chroma_path</span><span class="p">))</span>',
+      '<span></span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">create_collection</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"my_other_collection"</span><span class="p">)</span>',
+      '<span></span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"my_collection"</span><span class="p">)</span>',
+      '<span></span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">get_or_create_collection</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"my_tird_collection"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Delete-collections">Delete collections<a class="anchor-link" href="#Delete-collections"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 39" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We can delete a collection with the <code>delete_collection</code> method.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>',
+      '      ',
+      '      <span class="n">chroma_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"chromadb"</span><span class="p">)</span>',
+      '      <span class="n">chroma_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>',
+      '<span></span><span class="n">chroma_client_persistent</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">PersistentClient</span><span class="p">(</span><span class="n">path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">chroma_path</span><span class="p">))</span>',
+      '<span></span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">create_collection</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"my_other_collection"</span><span class="p">)</span>',
+      '<span></span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"my_collection"</span><span class="p">)</span>',
+      '<span></span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">get_or_create_collection</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"my_tird_collection"</span><span class="p">)</span>',
+      '<span></span><span class="n">chroma_client</span><span class="o">.</span><span class="n">delete_collection</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"my_tird_collection"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Get-items-from-collections">Get items from collections<a class="anchor-link" href="#Get-items-from-collections"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 40" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We can obtain the first 10 items of the collection with the <code>peek</code> method.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>',
+          '',
+          '<span class="n">chroma_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"chromadb"</span><span class="p">)</span>',
+          '<span class="n">chroma_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>',
+          '</span><span class="n">chroma_client_persistent</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">PersistentClient</span><span class="p">(</span><span class="n">path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">chroma_path</span><span class="p">))</span>',
+          '</span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">create_collection</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"my_other_collection"</span><span class="p">)</span>',
+          '</span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"my_collection"</span><span class="p">)</span>',
+          '</span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">get_or_create_collection</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"my_tird_collection"</span><span class="p">)</span>',
+          '</span><span class="n">chroma_client</span><span class="o">.</span><span class="n">delete_collection</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"my_tird_collection"</span><span class="p">)</span>',
+          '</span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"my_collection"</span><span class="p">)</span>',
+          '<span class="n">collection</span><span class="o">.</span><span class="n">peek</span><span class="p">()</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '{\'ids\': [\'id1\', \'id2\'],',
+          ' \'embeddings\': [[-0.06924048811197281,',
+          '   0.061624377965927124,',
+          '   -0.090973399579525,',
+          '   0.013923337683081627,',
+          '   0.006247623357921839,',
+          '   -0.1078396588563919,',
+          '   -0.012472339905798435,',
+          '   0.03485661745071411,',
+          '   -0.06300634145736694,',
+          '   -0.00880391988903284,',
+          '   0.06879935413599014,',
+          '   0.0564003586769104,',
+          '   0.07040536403656006,',
+          '   -0.020754728466272354,',
+          '   -0.04048658534884453,',
+          '   -0.006666888482868671,',
+          '   -0.0953674241900444,',
+          '   0.049781784415245056,',
+          '   0.021780474111437798,',
+          '   -0.06344643980264664,',
+          '   0.06119797006249428,',
+          '   0.0834411084651947,',
+          '   -0.034758951514959335,',
+          '   0.0029120452236384153,',
+          '   ...',
+          '   -0.013378280214965343]],',
+          ' \'metadatas\': [{\'source\': \'Python source\'}, {\'source\': \'JavaScript source\'}],',
+          ' \'documents\': [\'This is a python docs\', \'This is JavaScript docs\'],',
+          ' \'uris\': None,',
+          ' \'data\': None}',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>In this case only two documents have been obtained, because our collection only has two documents</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>If you want to obtain another quantity of items you can specify it with the argument <code>limit</code>.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">peek</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '{\'ids\': [\'id1\'],',
+          ' \'embeddings\': [[-0.06924048811197281,',
+          '   0.061624377965927124,',
+          '   -0.090973399579525,',
+          '   0.013923337683081627,',
+          '   0.006247623357921839,',
+          '   -0.1078396588563919,',
+          '   -0.012472339905798435,',
+          '   0.03485661745071411,',
+          '   -0.06300634145736694,',
+          '   -0.00880391988903284,',
+          '   0.06879935413599014,',
+          '   0.0564003586769104,',
+          '   0.07040536403656006,',
+          '   -0.020754728466272354,',
+          '   -0.04048658534884453,',
+          '   -0.006666888482868671,',
+          '   -0.0953674241900444,',
+          '   0.049781784415245056,',
+          '   0.021780474111437798,',
+          '   -0.06344643980264664,',
+          '   0.06119797006249428,',
+          '   0.0834411084651947,',
+          '   -0.034758951514959335,',
+          '   0.0029120452236384153,',
+          '   ...',
+          '   0.012315398082137108]],',
+          ' \'metadatas\': [{\'source\': \'Python source\'}],',
+          ' \'documents\': [\'This is a python docs\'],',
+          ' \'uris\': None,',
+          ' \'data\': None}',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Obtain-the-total-number-of-items-in-the-collections">Obtain the total number of items in the collections<a class="anchor-link" href="#Obtain-the-total-number-of-items-in-the-collections"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 41" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We can obtain the total number of items in the collection with the <code>count</code> method.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '2',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Change-similarity-function">Change similarity function<a class="anchor-link" href="#Change-similarity-function"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 42" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Earlier, when we made a query we got the similarity of the embeddings with our query, since by default in a collection the distance function is used, but we can specify which similarity function we want to use. The possibilities are</p>
+      <ul>
+      <li>Squared L2 (<code>l2</code>)</li>
+      <li>Inner product (<code>ip</code>)</li>
+      <li>Cosine similarity (<code>cosine</code>)</li>
+      </ul>
+      <p>In the post <a href="http://maximofn.com/embeddings-similarity/">Measurement of similarity between embeddings</a> we saw L2 and cosine similarity, if you want to go deeper into them.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>So we can create collections with another similarity function with the argument <code>metadata={opening_brace}"hnsw:space": &lt;function&gt;{closing_brace}</code>.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">create_collection</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"colection_cosine"</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"hnsw:space"</span><span class="p">:</span> <span class="s2">"cosine"</span><span class="p">})</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Add-data-to-the-collection">Add data to the collection<a class="anchor-link" href="#Add-data-to-the-collection"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 43" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Add-documents">Add documents<a class="anchor-link" href="#Add-documents"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 44" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's look again at the data we have in the collection with the <code>peek</code> method</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">create_collection</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"colection_cosine"</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"hnsw:space"</span><span class="p">:</span> <span class="s2">"cosine"</span><span class="p">})</span>',
+          '</span><span class="n">collection</span><span class="o">.</span><span class="n">peek</span><span class="p">()</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '{\'ids\': [],',
+          ' \'embeddings\': [],',
+          ' \'metadatas\': [],',
+          ' \'documents\': [],',
+          ' \'uris\': None,',
+          ' \'data\': None}',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>As we can see it is empty, that is because the last collection that we have created has been the one of the similarity function <code>cosine</code>, but we have not added data to it. Let's see how it is like this obtaining the name of the collection</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">name</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '\'colection_cosine\'',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>So we bring back the first collection we have created, which we have entered data for.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"my_collection"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Now we can add data to the collection with the <code>add</code> method</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"my_collection"</span><span class="p">)</span>',
+      '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>',
+      '          <span class="n">documents</span><span class="o">=</span><span class="p">[</span><span class="s2">"This is a Mojo docs"</span><span class="p">,</span> <span class="s2">"This is Rust docs"</span><span class="p">],</span>',
+      '          <span class="n">metadatas</span><span class="o">=</span><span class="p">[{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Mojo source"</span><span class="p">},</span> <span class="p">{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Rust source"</span><span class="p">}],</span>',
+      '          <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s2">"id3"</span><span class="p">,</span> <span class="s2">"id4"</span><span class="p">]</span>',
+      '      <span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>As you can see the <code>ID</code>s are consecutive and do not have the same value as before, since the <code>ID</code>s have to be unique.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>If we try to add data by repeating <code>ID</code>s, it will indicate that data with those <code>ID</code>s already exists.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"my_collection"</span><span class="p">)</span>',
+          '</span><span class="n">collection</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>',
+          '    <span class="n">documents</span><span class="o">=</span><span class="p">[</span><span class="s2">"This is a Mojo docs"</span><span class="p">,</span> <span class="s2">"This is Rust docs"</span><span class="p">],</span>',
+          '    <span class="n">metadatas</span><span class="o">=</span><span class="p">[{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Mojo source"</span><span class="p">},</span> <span class="p">{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Rust source"</span><span class="p">}],</span>',
+          '    <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s2">"id3"</span><span class="p">,</span> <span class="s2">"id4"</span><span class="p">]</span>',
+          '<span class="p">)</span>',
+          '</span><span class="n">collection</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>',
+          '    <span class="n">documents</span><span class="o">=</span><span class="p">[</span><span class="s2">"This is a Pytorch docs"</span><span class="p">,</span> <span class="s2">"This is TensorRT docs"</span><span class="p">],</span>',
+          '    <span class="n">metadatas</span><span class="o">=</span><span class="p">[{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Pytorch source"</span><span class="p">},</span> <span class="p">{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"TensorRT source"</span><span class="p">}],</span>',
+          '    <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s2">"id3"</span><span class="p">,</span> <span class="s2">"id4"</span><span class="p">]</span>',
+          '<span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Add of existing embedding ID: id3',
+          'Add of existing embedding ID: id4',
+          'Insert of existing embedding ID: id3',
+          'Insert of existing embedding ID: id4',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>We have not been able to add the Pytorch and TensorRT documents.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's take a look at the collection data</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">peek</span><span class="p">()</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '{\'ids\': [\'id1\', \'id2\', \'id3\', \'id4\'],',
+          ' \'embeddings\': [[-0.06924048811197281,',
+          '   0.061624377965927124,',
+          '   -0.090973399579525,',
+          '   0.013923337683081627,',
+          '   0.006247623357921839,',
+          '   -0.1078396588563919,',
+          '   -0.012472339905798435,',
+          '   0.03485661745071411,',
+          '   -0.06300634145736694,',
+          '   -0.00880391988903284,',
+          '   0.06879935413599014,',
+          '   0.0564003586769104,',
+          '   0.07040536403656006,',
+          '   -0.020754728466272354,',
+          '   -0.04048658534884453,',
+          '   -0.006666888482868671,',
+          '   -0.0953674241900444,',
+          '   0.049781784415245056,',
+          '   0.021780474111437798,',
+          '   -0.06344643980264664,',
+          '   0.06119797006249428,',
+          '   0.0834411084651947,',
+          '   -0.034758951514959335,',
+          '   0.0029120452236384153,',
+          '   ...',
+          '  {\'source\': \'JavaScript source\'},',
+          '  {\'source\': \'Mojo source\'},',
+          '  {\'source\': \'Rust source\'}],',
+          ' \'documents\': [\'This is a python docs\',',
+          '  \'This is JavaScript docs\',',
+          '  \'This is a Mojo docs\',',
+          '  \'This is Rust docs\'],',
+          ' \'uris\': None,',
+          ' \'data\': None}',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>As we can see, the original contents of <code>ID3</code> and <code>ID4</code> have been maintained.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Add-embeddings">Add embeddings<a class="anchor-link" href="#Add-embeddings"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 45" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We can add embeddings directly without adding documents. Although this does not make much sense, because if we only add the embeddings, when we want to make a query there will be no documents to retrieve.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We obtain some embeddings to create others with the same dimensions.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">embedding1</span> <span class="o">=</span> <span class="n">collection</span><span class="o">.</span><span class="n">peek</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="s1">\'embeddings\'</span><span class="p">]</span>',
+          '<span class="nb">len</span><span class="p">(</span><span class="n">embedding1</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">embedding1</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '(1, 384)',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>We create new embeddings with all of them to know that they are the ones we have created.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">new_embedding</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">embedding1</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>',
+          '<span class="n">new_embedding</span> <span class="o">=</span> <span class="p">[</span><span class="n">new_embedding</span><span class="p">]</span>',
+          '<span class="nb">len</span><span class="p">(</span><span class="n">new_embedding</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_embedding</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '(1, 384)',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Now we add the new embeddings</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>',
+      '          <span class="n">embeddings</span><span class="o">=</span><span class="n">new_embedding</span><span class="p">,</span>',
+      '          <span class="n">metadatas</span><span class="o">=</span><span class="p">[{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Only embeddings"</span><span class="p">}],</span>',
+      '          <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s2">"id5"</span><span class="p">]</span>',
+      '      <span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's take a look at the collection data</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>',
+          '    <span class="n">embeddings</span><span class="o">=</span><span class="n">new_embedding</span><span class="p">,</span>',
+          '    <span class="n">metadatas</span><span class="o">=</span><span class="p">[{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Only embeddings"</span><span class="p">}],</span>',
+          '    <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s2">"id5"</span><span class="p">]</span>',
+          '<span class="p">)</span>',
+          '</span><span class="n">collection</span><span class="o">.</span><span class="n">peek</span><span class="p">()[</span><span class="s1">\'embeddings\'</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '[1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' ...,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0]',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>The last element of the condition has the embeddings that we have added</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <blockquote>
+      <p>Note: If we try to add embbedings with a different size than the ones already in the collection, we will get an error.</p>
+      </blockquote>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">new_embedding_differetn_size</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">embedding1</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>',
+          '<span class="n">new_embedding_differetn_size</span> <span class="o">=</span> <span class="p">[</span><span class="n">new_embedding_differetn_size</span><span class="p">]</span>',
+          '<span class="nb">len</span><span class="p">(</span><span class="n">new_embedding_differetn_size</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_embedding_differetn_size</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '(1, 383)',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>As you can see the embedding dimension is 383, instead of 384.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>',
+          '    <span class="n">embeddings</span><span class="o">=</span><span class="n">new_embedding_differetn_size</span><span class="p">,</span>',
+          '    <span class="n">metadatas</span><span class="o">=</span><span class="p">[{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"New embeddings different size"</span><span class="p">}],</span>',
+          '    <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s2">"id6"</span><span class="p">]</span>',
+          '<span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '<span class="ansi-red-fg">---------------------------------------------------------------------------</span>',
+          '<span class="ansi-red-fg">InvalidDimensionException</span>                 Traceback (most recent call last)',
+          'Cell <span class="ansi-green-fg">In[28], line 1</span>',
+          '<span class="ansi-green-fg">----&gt; 1</span> collection<span style="color: rgb(98,98,98)">.</span>add(',
+          '<span class="ansi-green-intense-fg ansi-bold">      2</span>     embeddings<span style="color: rgb(98,98,98)">=</span>new_embedding_differetn_size,',
+          '<span class="ansi-green-intense-fg ansi-bold">      3</span>     metadatas<span style="color: rgb(98,98,98)">=</span>[{<span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">source</span><span style="color: rgb(175,0,0)">"</span>: <span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">New embeddings different size</span><span style="color: rgb(175,0,0)">"</span>}],',
+          '<span class="ansi-green-intense-fg ansi-bold">      4</span>     ids<span style="color: rgb(98,98,98)">=</span>[<span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">id6</span><span style="color: rgb(175,0,0)">"</span>]',
+          '<span class="ansi-green-intense-fg ansi-bold">      5</span> )',
+          'File <span class="ansi-green-fg">~/miniforge3/envs/crhomadb/lib/python3.11/site-packages/chromadb/api/models/Collection.py:168</span>, in <span class="ansi-cyan-fg">Collection.add</span><span class="ansi-blue-fg">(self, ids, embeddings, metadatas, documents, images, uris)</span>',
+          '<span class="ansi-green-intense-fg ansi-bold">    163</span>             <span class="ansi-bold" style="color: rgb(0,135,0)">raise</span> <span class="ansi-bold" style="color: rgb(215,95,95)">ValueError</span>(',
+          '<span class="ansi-green-intense-fg ansi-bold">    164</span>                 <span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">You must set a data loader on the collection if loading from URIs.</span><span style="color: rgb(175,0,0)">"</span>',
+          '<span class="ansi-green-intense-fg ansi-bold">    165</span>             )',
+          '<span class="ansi-green-intense-fg ansi-bold">    166</span>         embeddings <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_embed(<span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_data_loader(uris))',
+          '<span class="ansi-green-fg">--&gt; 168</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_client<span style="color: rgb(98,98,98)">.</span>_add(ids, <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>id, embeddings, metadatas, documents, uris)',
+          'File <span class="ansi-green-fg">~/miniforge3/envs/crhomadb/lib/python3.11/site-packages/chromadb/telemetry/opentelemetry/__init__.py:127</span>, in <span class="ansi-cyan-fg">trace_method.&lt;locals&gt;.decorator.&lt;locals&gt;.wrapper</span><span class="ansi-blue-fg">(*args, **kwargs)</span>',
+          '<span class="ansi-green-intense-fg ansi-bold">    125</span> <span class="ansi-bold" style="color: rgb(0,135,0)">global</span> tracer, granularity',
+          '<span class="ansi-green-intense-fg ansi-bold">    126</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> trace_granularity <span style="color: rgb(98,98,98)">&lt;</span> granularity:',
+          '<span class="ansi-green-fg">--&gt; 127</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> f(<span style="color: rgb(98,98,98)">*</span>args, <span style="color: rgb(98,98,98)">*</span><span style="color: rgb(98,98,98)">*</span>kwargs)',
+          '<span class="ansi-green-intense-fg ansi-bold">    128</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> <span class="ansi-bold" style="color: rgb(175,0,255)">not</span> tracer:',
+          '<span class="ansi-green-intense-fg ansi-bold">    129</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> f(<span style="color: rgb(98,98,98)">*</span>args, <span style="color: rgb(98,98,98)">*</span><span style="color: rgb(98,98,98)">*</span>kwargs)',
+          'File <span class="ansi-green-fg">~/miniforge3/envs/crhomadb/lib/python3.11/site-packages/chromadb/api/segment.py:375</span>, in <span class="ansi-cyan-fg">SegmentAPI._add</span><span class="ansi-blue-fg">(self, ids, collection_id, embeddings, metadatas, documents, uris)</span>',
+          '<span class="ansi-green-intense-fg ansi-bold">    365</span> records_to_submit <span style="color: rgb(98,98,98)">=</span> []',
+          '<span class="ansi-green-intense-fg ansi-bold">    366</span> <span class="ansi-bold" style="color: rgb(0,135,0)">for</span> r <span class="ansi-bold" style="color: rgb(175,0,255)">in</span> _records(',
+          '<span class="ansi-green-intense-fg ansi-bold">    367</span>     t<span style="color: rgb(98,98,98)">.</span>Operation<span style="color: rgb(98,98,98)">.</span>ADD,',
+          '<span class="ansi-green-intense-fg ansi-bold">    368</span>     ids<span style="color: rgb(98,98,98)">=</span>ids,',
+          '<span class="ansi-green-fg">   (...)</span>',
+          '<span class="ansi-green-intense-fg ansi-bold">    373</span>     uris<span style="color: rgb(98,98,98)">=</span>uris,',
+          '<span class="ansi-green-intense-fg ansi-bold">    374</span> ):',
+          '<span class="ansi-green-fg">--&gt; 375</span>     <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_validate_embedding_record(coll, r)',
+          '<span class="ansi-green-intense-fg ansi-bold">    376</span>     records_to_submit<span style="color: rgb(98,98,98)">.</span>append(r)',
+          '<span class="ansi-green-intense-fg ansi-bold">    377</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_producer<span style="color: rgb(98,98,98)">.</span>submit_embeddings(coll[<span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">topic</span><span style="color: rgb(175,0,0)">"</span>], records_to_submit)',
+          'File <span class="ansi-green-fg">~/miniforge3/envs/crhomadb/lib/python3.11/site-packages/chromadb/telemetry/opentelemetry/__init__.py:127</span>, in <span class="ansi-cyan-fg">trace_method.&lt;locals&gt;.decorator.&lt;locals&gt;.wrapper</span><span class="ansi-blue-fg">(*args, **kwargs)</span>',
+          '<span class="ansi-green-intense-fg ansi-bold">    125</span> <span class="ansi-bold" style="color: rgb(0,135,0)">global</span> tracer, granularity',
+          '<span class="ansi-green-intense-fg ansi-bold">    126</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> trace_granularity <span style="color: rgb(98,98,98)">&lt;</span> granularity:',
+          '<span class="ansi-green-fg">--&gt; 127</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> f(<span style="color: rgb(98,98,98)">*</span>args, <span style="color: rgb(98,98,98)">*</span><span style="color: rgb(98,98,98)">*</span>kwargs)',
+          '<span class="ansi-green-intense-fg ansi-bold">    128</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> <span class="ansi-bold" style="color: rgb(175,0,255)">not</span> tracer:',
+          '<span class="ansi-green-intense-fg ansi-bold">    129</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> f(<span style="color: rgb(98,98,98)">*</span>args, <span style="color: rgb(98,98,98)">*</span><span style="color: rgb(98,98,98)">*</span>kwargs)',
+          'File <span class="ansi-green-fg">~/miniforge3/envs/crhomadb/lib/python3.11/site-packages/chromadb/api/segment.py:799</span>, in <span class="ansi-cyan-fg">SegmentAPI._validate_embedding_record</span><span class="ansi-blue-fg">(self, collection, record)</span>',
+          '<span class="ansi-green-intense-fg ansi-bold">    797</span> add_attributes_to_current_span({<span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">collection_id</span><span style="color: rgb(175,0,0)">"</span>: <span style="color: rgb(0,135,0)">str</span>(collection[<span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">id</span><span style="color: rgb(175,0,0)">"</span>])})',
+          '<span class="ansi-green-intense-fg ansi-bold">    798</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> record[<span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">embedding</span><span style="color: rgb(175,0,0)">"</span>]:',
+          '<span class="ansi-green-fg">--&gt; 799</span>     <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_validate_dimension(collection, <span style="color: rgb(0,135,0)">len</span>(record[<span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">embedding</span><span style="color: rgb(175,0,0)">"</span>]), update<span style="color: rgb(98,98,98)">=</span><span class="ansi-bold" style="color: rgb(0,135,0)">True</span>)',
+          'File <span class="ansi-green-fg">~/miniforge3/envs/crhomadb/lib/python3.11/site-packages/chromadb/telemetry/opentelemetry/__init__.py:127</span>, in <span class="ansi-cyan-fg">trace_method.&lt;locals&gt;.decorator.&lt;locals&gt;.wrapper</span><span class="ansi-blue-fg">(*args, **kwargs)</span>',
+          '<span class="ansi-green-intense-fg ansi-bold">    125</span> <span class="ansi-bold" style="color: rgb(0,135,0)">global</span> tracer, granularity',
+          '<span class="ansi-green-intense-fg ansi-bold">    126</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> trace_granularity <span style="color: rgb(98,98,98)">&lt;</span> granularity:',
+          '<span class="ansi-green-fg">--&gt; 127</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> f(<span style="color: rgb(98,98,98)">*</span>args, <span style="color: rgb(98,98,98)">*</span><span style="color: rgb(98,98,98)">*</span>kwargs)',
+          '<span class="ansi-green-intense-fg ansi-bold">    128</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> <span class="ansi-bold" style="color: rgb(175,0,255)">not</span> tracer:',
+          '<span class="ansi-green-intense-fg ansi-bold">    129</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> f(<span style="color: rgb(98,98,98)">*</span>args, <span style="color: rgb(98,98,98)">*</span><span style="color: rgb(98,98,98)">*</span>kwargs)',
+          'File <span class="ansi-green-fg">~/miniforge3/envs/crhomadb/lib/python3.11/site-packages/chromadb/api/segment.py:814</span>, in <span class="ansi-cyan-fg">SegmentAPI._validate_dimension</span><span class="ansi-blue-fg">(self, collection, dim, update)</span>',
+          '<span class="ansi-green-intense-fg ansi-bold">    812</span>         <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_collection_cache[<span style="color: rgb(0,135,0)">id</span>][<span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">dimension</span><span style="color: rgb(175,0,0)">"</span>] <span style="color: rgb(98,98,98)">=</span> dim',
+          '<span class="ansi-green-intense-fg ansi-bold">    813</span> <span class="ansi-bold" style="color: rgb(0,135,0)">elif</span> collection[<span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">dimension</span><span style="color: rgb(175,0,0)">"</span>] <span style="color: rgb(98,98,98)">!=</span> dim:',
+          '<span class="ansi-green-fg">--&gt; 814</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">raise</span> InvalidDimensionException(',
+          '<span class="ansi-green-intense-fg ansi-bold">    815</span>         <span style="color: rgb(175,0,0)">f</span><span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">Embedding dimension </span><span class="ansi-bold" style="color: rgb(175,95,135)">{</span>dim<span class="ansi-bold" style="color: rgb(175,95,135)">}</span><span style="color: rgb(175,0,0)"> does not match collection dimensionality </span><span class="ansi-bold" style="color: rgb(175,95,135)">{</span>collection[<span style="color: rgb(175,0,0)">\'</span><span style="color: rgb(175,0,0)">dimension</span><span style="color: rgb(175,0,0)">\'</span>]<span class="ansi-bold" style="color: rgb(175,95,135)">}</span><span style="color: rgb(175,0,0)">"</span>',
+          '<span class="ansi-green-intense-fg ansi-bold">    816</span>     )',
+          '<span class="ansi-green-intense-fg ansi-bold">    817</span> <span class="ansi-bold" style="color: rgb(0,135,0)">else</span>:',
+          '<span class="ansi-green-intense-fg ansi-bold">    818</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">return</span>',
+          '<span class="ansi-red-fg">InvalidDimensionException</span>: Embedding dimension 383 does not match collection dimensionality 384',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Add-documents-and-embeddings">Add documents and embeddings<a class="anchor-link" href="#Add-documents-and-embeddings"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 46" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Chroma also allows us to add documents and embeddings at the same time. So if this is done, it will not create the embeddings of the document.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>',
+      '          <span class="n">documents</span><span class="o">=</span><span class="p">[</span><span class="s2">"This is a Pytorch docs"</span><span class="p">],</span>',
+      '          <span class="n">embeddings</span><span class="o">=</span><span class="n">new_embedding</span><span class="p">,</span>',
+      '          <span class="n">metadatas</span><span class="o">=</span><span class="p">[{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Pytorch source"</span><span class="p">}],</span>',
+      '          <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s2">"id6"</span><span class="p">]</span>',
+      '      <span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>If we look at the embeddings of the last element of the collection, we will see that these are the ones we added</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>',
+          '    <span class="n">documents</span><span class="o">=</span><span class="p">[</span><span class="s2">"This is a Pytorch docs"</span><span class="p">],</span>',
+          '    <span class="n">embeddings</span><span class="o">=</span><span class="n">new_embedding</span><span class="p">,</span>',
+          '    <span class="n">metadatas</span><span class="o">=</span><span class="p">[{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Pytorch source"</span><span class="p">}],</span>',
+          '    <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s2">"id6"</span><span class="p">]</span>',
+          '<span class="p">)</span>',
+          '</span><span class="n">collection</span><span class="o">.</span><span class="n">peek</span><span class="p">()[</span><span class="s1">\'embeddings\'</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '[1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' ...,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0,',
+          ' 1.0]',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Inquiries">Inquiries<a class="anchor-link" href="#Inquiries"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 47" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Queries-by-documents">Queries by documents<a class="anchor-link" href="#Queries-by-documents"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 48" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>To make a query we use the <code>query</code> method. With the <code>n_results</code> parameter we can specify how many results we want to get</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>',
+          '    <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>',
+          '    <span class="n">n_results</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>',
+          '<span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '{\'ids\': [[\'id1\']],',
+          ' \'distances\': [[0.5389559268951416]],',
+          ' \'metadatas\': [[{\'source\': \'Python source\'}]],',
+          ' \'embeddings\': None,',
+          ' \'documents\': [[\'This is a python docs\']],',
+          ' \'uris\': None,',
+          ' \'data\': None}',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>If instead of <code>n_results = 1</code> we set a higher value, it will return more results.</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+          <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>
+          <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+      <span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Number of requested results 10 is greater than number of elements in index 6, updating n_results = 6
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt-output-prompt">Out[100]:</div>
+      <div class="output-text-output-subareaoutput_execute_result">
+      <pre>{opening_brace}'ids': [['id1', 'id2', 'id4', 'id3', 'id5', 'id6']],
+       'distances': [[0.5389559268951416,
+         1.5743632316589355,
+         1.578398585319519,
+         1.59961998462677,
+         384.56890869140625,
+         384.56890869140625]],
+       'metadatas': [[{opening_brace}'source': 'Python source'{closing_brace},
+         {opening_brace}'source': 'JavaScript source'{closing_brace},
+         {opening_brace}'source': 'Rust source'{closing_brace},
+         {opening_brace}'source': 'Mojo source'{closing_brace},
+         {opening_brace}'source': 'Only embeddings'{closing_brace},
+         {opening_brace}'source': 'Pytorch source'{closing_brace}]],
+       'embeddings': None,
+       'documents': [['This is a python docs',
+         'This is JavaScript docs',
+         'This is Rust docs',
+         'This is a Mojo docs',
+         None,
+         'This is a Pytorch docs']],
+       'uris': None,
+       'data': None{closing_brace}</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We can filter by a metadata value with the argument <code>where</code>.</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+          <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>
+          <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+          <span class="n">where</span><span class="o">=</span><span class="p">{opening_brace}</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Python source"</span><span class="p">{closing_brace}</span>
+      <span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Number of requested results 10 is greater than number of elements in index 6, updating n_results = 6
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt-output-prompt">Out[100]:</div>
+      <div class="output-text-output-subareaoutput_execute_result">
+      <pre>{opening_brace}'ids': [['id1']],
+       'distances': [[0.5389559268951416]],
+       'metadatas': [[{opening_brace}'source': 'Python source'{closing_brace}]],
+       'embeddings': None,
+       'documents': [['This is a python docs']],
+       'uris': None,
+       'data': None{closing_brace}</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We can see that only 1 result is already returned</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We can also filter by document content with the argument <code>where_document</code>.</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+          <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>
+          <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+          <span class="n">where_document</span><span class="o">=</span><span class="p">{opening_brace}</span><span class="s2">"$contains"</span><span class="p">:</span> <span class="s2">"python"</span><span class="p">{closing_brace}</span>
+      <span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Number of requested results 10 is greater than number of elements in index 6, updating n_results = 6
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt-output-prompt">Out[100]:</div>
+      <div class="output-text-output-subareaoutput_execute_result">
+      <pre>{opening_brace}'ids': [['id1']],
+       'distances': [[0.5389559268951416]],
+       'metadatas': [[{opening_brace}'source': 'Python source'{closing_brace}]],
+       'embeddings': None,
+       'documents': [['This is a python docs']],
+       'uris': None,
+       'data': None{closing_brace}</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We will see later on the possibilities we have here</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>When we make a query we can say what data we want to be returned, for example only the embeddings, only the metadata, or several data by specifying it in a list using the <code>include</code> argument.</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+          <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>
+          <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+          <span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="s2">"documents"</span><span class="p">,</span> <span class="s2">"distances"</span><span class="p">]</span>
+      <span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Number of requested results 10 is greater than number of elements in index 6, updating n_results = 6
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt-output-prompt">Out[100]:</div>
+      <div class="output-text-output-subareaoutput_execute_result">
+      <pre>{opening_brace}'ids': [['id1', 'id2', 'id4', 'id3', 'id5', 'id6']],
+       'distances': [[0.5389559268951416,
+         1.5743632316589355,
+         1.578398585319519,
+         1.59961998462677,
+         384.56890869140625,
+         384.56890869140625]],
+       'metadatas': None,
+       'embeddings': None,
+       'documents': [['This is a python docs',
+         'This is JavaScript docs',
+         'This is Rust docs',
+         'This is a Mojo docs',
+         None,
+         'This is a Pytorch docs']],
+       'uris': None,
+       'data': None{closing_brace}</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We see that now <code>metadatas</code> is <code>None</code>.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Several-queries-at-once">Several queries at once<a class="anchor-link" href="#Several-queries-at-once"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 49" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We can make several queries to the collection at the same time, for this, we pass a list to the <code>query_texts</code> parameter</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>',
+          '    <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>',
+          '    <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>',
+          '<span class="p">)</span>',
+          '</span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>',
+          '    <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>',
+          '    <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>',
+          '    <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Python source"</span><span class="p">}</span>',
+          '<span class="p">)</span>',
+          '</span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>',
+          '    <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>',
+          '    <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>',
+          '    <span class="n">where_document</span><span class="o">=</span><span class="p">{</span><span class="s2">"$contains"</span><span class="p">:</span> <span class="s2">"python"</span><span class="p">}</span>',
+          '<span class="p">)</span>',
+          '</span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>',
+          '    <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>',
+          '    <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>',
+          '    <span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="s2">"documents"</span><span class="p">,</span> <span class="s2">"distances"</span><span class="p">]</span>',
+          '<span class="p">)</span>',
+          '</span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>',
+          '    <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"programming language"</span><span class="p">,</span> <span class="s2">"high level"</span><span class="p">,</span> <span class="s2">"multi propuse"</span><span class="p">],</span>',
+          '    <span class="n">n_results</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>',
+          '<span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Number of requested results 10 is greater than number of elements in index 6, updating n_results = 6',
+          'Number of requested results 10 is greater than number of elements in index 6, updating n_results = 6',
+          'Number of requested results 10 is greater than number of elements in index 6, updating n_results = 6',
+          'Number of requested results 10 is greater than number of elements in index 6, updating n_results = 6',
+          '{\'ids\': [[\'id1\'], [\'id1\'], [\'id3\']],',
+          ' \'distances\': [[1.152251958847046], [1.654376745223999], [1.6786067485809326]],',
+          ' \'metadatas\': [[{\'source\': \'Python source\'}],',
+          '  [{\'source\': \'Python source\'}],',
+          '  [{\'source\': \'Mojo source\'}]],',
+          ' \'embeddings\': None,',
+          ' \'documents\': [[\'This is a python docs\'],',
+          '  [\'This is a python docs\'],',
+          '  [\'This is a Mojo docs\']],',
+          ' \'uris\': None,',
+          ' \'data\': None}',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>For each query it returned a result</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>This is very useful when the database is hosted on a server and we are charged for each query we make. So instead of making a query for each question we have, we make a query with all the questions we have.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Queries-for-embeddings">Queries for embeddings<a class="anchor-link" href="#Queries-for-embeddings"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 50" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>When we make a query for documents, what chroma does is to calculate the embedding of the <code>query_texts</code> and look for the documents that most resemble that embedding. But if we already have the embedding, we can make the query directly with the embedding.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's first get the embedding of a query with the same embedding function of the collections</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">query_texts</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"python language"</span><span class="p">]</span>',
+          '<span class="n">query_embeddings</span> <span class="o">=</span> <span class="n">collection</span><span class="o">.</span><span class="n">_embedding_function</span><span class="p">(</span><span class="n">query_texts</span><span class="p">)</span>',
+          '<span class="n">query_embeddings</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '[[-0.04816831275820732,',
+          '  0.014662696048617363,',
+          '  -0.031021444126963615,',
+          '  0.008308809250593185,',
+          '  -0.07176128774881363,',
+          '  -0.10355626791715622,',
+          '  0.06690476089715958,',
+          '  0.04229631647467613,',
+          '  -0.03681119903922081,',
+          '  -0.04993892088532448,',
+          '  0.03186540678143501,',
+          '  0.015252595767378807,',
+          '  0.0642094686627388,',
+          '  0.018130118027329445,',
+          '  0.016300885006785393,',
+          '  -0.028082313016057014,',
+          '  -0.03994889184832573,',
+          '  0.023195551708340645,',
+          '  0.004547565709799528,',
+          '  -0.11764183640480042,',
+          '  0.019792592152953148,',
+          '  0.0496944822371006,',
+          '  -0.013253907673060894,',
+          '  0.03610404208302498,',
+          '  0.030529780313372612,',
+          '  -0.01815914921462536,',
+          '  -0.009753326885402203,',
+          '  0.03412770479917526,',
+          '  0.03020440600812435,',
+          '  ...',
+          '  0.02079579420387745,',
+          '  -0.00972712505608797,',
+          '  0.13462257385253906,',
+          '  0.15277136862277985,',
+          '  -0.028574923053383827]]',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Now we can make the query with embedding</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>',
+          '    <span class="n">query_embeddings</span><span class="o">=</span><span class="n">query_embeddings</span><span class="p">,</span>',
+          '    <span class="n">n_results</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>',
+          '<span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '{\'ids\': [[\'id1\']],',
+          ' \'distances\': [[0.6297433376312256]],',
+          ' \'metadatas\': [[{\'source\': \'Python source\'}]],',
+          ' \'embeddings\': None,',
+          ' \'documents\': [[\'This is a python docs\']],',
+          ' \'uris\': None,',
+          ' \'data\': None}',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>As before we can get more results by increasing the value of the <code>n_results</code> parameter, and we can filter with the <code>where</code> and <code>where_document</code> parameters. We can also do several queries at once, and we can specify what data we want to return with the <code>include</code> parameter.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <blockquote>
+      <p>Note: If we try to make a query with an embedding of a different dimension than the ones already in the collection, we will get an error.</p>
+      </blockquote>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Retrieve-documents-by-ID.">Retrieve documents by <code>ID</code>.<a class="anchor-link" href="#Retrieve-documents-by-ID."><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 51" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>If we know the <code>ID</code> of a document, we can retrieve the document with the <code>get</code> method</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>',
+          '    <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s2">"id1"</span><span class="p">],</span>',
+          '<span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '{\'ids\': [\'id1\'],',
+          ' \'embeddings\': None,',
+          ' \'metadatas\': [{\'source\': \'Python source\'}],',
+          ' \'documents\': [\'This is a python docs\'],',
+          ' \'uris\': None,',
+          ' \'data\': None}',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Multiple documents can also be retrieved at once.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>',
+          '    <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s2">"id1"</span><span class="p">,</span> <span class="s2">"id2"</span><span class="p">,</span> <span class="s2">"id3"</span><span class="p">],</span>',
+          '<span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '{\'ids\': [\'id1\', \'id2\', \'id3\'],',
+          ' \'embeddings\': None,',
+          ' \'metadatas\': [{\'source\': \'Python source\'},',
+          '  {\'source\': \'JavaScript source\'},',
+          '  {\'source\': \'Mojo source\'}],',
+          ' \'documents\': [\'This is a python docs\',',
+          '  \'This is JavaScript docs\',',
+          '  \'This is a Mojo docs\'],',
+          ' \'uris\': None,',
+          ' \'data\': None}',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>As before we can filter with the <code>where</code> and <code>where_document</code> arguments. We can also make several queries at once, and we can specify what data we want to return with the <code>include</code> parameter.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Filtering">Filtering<a class="anchor-link" href="#Filtering"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 52" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>As we have seen, it is possible to filter by metadata with the parameter <code>where</code>, and by document content with the parameter <code>where_document</code>.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Filtering-by-metadata">Filtering by metadata<a class="anchor-link" href="#Filtering-by-metadata"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 53" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>How metadata will enter me as a dictionary</p>
+      <div class="highlight"><pre><span></span><span class="n">collection</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
+          <span class="n">documents</span><span class="o">=</span><span class="p">[</span><span class="s2">"This is a python docs"</span><span class="p">,</span> <span class="s2">"This is JavaScript docs"</span><span class="p">],</span>
+          <span class="n">metadatas</span><span class="o">=</span><span class="p">[{opening_brace}</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Python source"</span><span class="p">{closing_brace},</span> <span class="p">{opening_brace}</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"JavaScript source"</span><span class="p">{closing_brace}],</span>
+          <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s2">"id1"</span><span class="p">,</span> <span class="s2">"id2"</span><span class="p">]</span>
+      
+      <span class="err">```</span>
+      
+      <span class="n">The</span> <span class="n">first</span> <span class="n">thing</span> <span class="n">we</span> <span class="n">have</span> <span class="n">to</span> <span class="n">do</span> <span class="ow">is</span> <span class="n">to</span> <span class="n">indicate</span> <span class="n">the</span> <span class="n">key</span> <span class="n">of</span> <span class="n">the</span> <span class="n">metadata</span> <span class="n">by</span> <span class="n">which</span> <span class="n">we</span> <span class="n">want</span> <span class="n">to</span> <span class="nb">filter</span><span class="o">.</span> <span class="n">Next</span> <span class="n">we</span> <span class="n">have</span> <span class="n">to</span> <span class="n">put</span> <span class="n">an</span> <span class="n">operator</span> <span class="ow">and</span> <span class="n">the</span> <span class="n">value</span>
+      
+      <span class="err">````</span><span class="n">python</span>
+      <span class="p">{opening_brace}</span>
+          <span class="s2">"metadata_field"</span><span class="p">:</span> <span class="p">{opening_brace}</span>
+              <span class="o">&lt;</span><span class="n">Operator</span><span class="o">&gt;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">Value</span><span class="o">&gt;.</span>
+          <span class="p">{closing_brace}</span>
+      <span class="p">{closing_brace}</span>
+      <span class="err">```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>The possible values of the oerator are</p>
+      <ul>
+      <li><strong>$eq</strong> - equal to (string, int, float)</li>
+      <li><strong>$ne</strong> - not equal to (string, int, float)</li>
+      <li><strong>$gt</strong> - greater than (int, float)</li>
+      <li><strong>$gte</strong> - greater than or equal to (int, float)</li>
+      </ul>
+      <p><strong>$lt</strong> - less than (int, float)</p>
+      <ul>
+      <li><strong>$lte</strong> - less than or equal to (int, float)</li>
+      </ul>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's see now a query</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>',
+          '    <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>',
+          '    <span class="n">n_results</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>',
+          '    <span class="n">where</span><span class="o">=</span>',
+          '    <span class="p">{</span>',
+          '        <span class="s2">"source"</span><span class="p">:</span> ',
+          '        <span class="p">{</span>',
+          '            <span class="s2">"$eq"</span><span class="p">:</span> <span class="s2">"Python source"</span>',
+          '        <span class="p">}</span>',
+          '    <span class="p">}</span>',
+          '<span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '{\'ids\': [[\'id1\']],',
+          ' \'distances\': [[0.5389559268951416]],',
+          ' \'metadatas\': [[{\'source\': \'Python source\'}]],',
+          ' \'embeddings\': None,',
+          ' \'documents\': [[\'This is a python docs\']],',
+          ' \'uris\': None,',
+          ' \'data\': None}',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>If we do not set operator, the default will be <code>$eq</code>, i.e., that is, this</p>
+      <div class="highlight"><pre><span></span><span class="p">{opening_brace}</span>
+          <span class="s2">"metadata_field"</span><span class="p">:</span> <span class="p">{opening_brace}</span>
+              <span class="o">&lt;</span><span class="s2">"$eq"</span><span class="o">&gt;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">Value</span><span class="o">&gt;.</span>
+          <span class="p">{closing_brace}</span>
+      <span class="p">{closing_brace}</span>
+      <span class="err">```</span>
+      
+      <span class="n">It</span> <span class="ow">is</span> <span class="n">the</span> <span class="n">same</span> <span class="k">as</span> <span class="n">this</span>
+      
+      <span class="err">````</span><span class="n">python</span>
+      <span class="p">{opening_brace}</span>
+          <span class="s2">"metadata_field"</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">Value</span><span class="o">&gt;.</span>
+      <span class="p">{closing_brace}</span>
+      <span class="err">```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p><strong>Note</strong>: Chroma will only search data that has the <code>source</code> metadata, for example if you search <code>where={opening_brace}"version": {opening_brace}"$ne": 1{closing_brace}{closing_brace}</code> it will only return data that has a <code>version</code> key in its metadata and is not 1.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Filtering-by-document-content">Filtering by document content<a class="anchor-link" href="#Filtering-by-document-content"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 54" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>When filtering by document content we have two possible keys <code>$contains</code> and <code>$not_contains</code>.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>For example, we look for the data in the collection in which the word <code>python</code> appears in your document</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+          <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>
+          <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+          <span class="n">where_document</span><span class="o">=</span><span class="p">{opening_brace}</span><span class="s2">"$contains"</span><span class="p">:</span> <span class="s2">"python"</span><span class="p">{closing_brace}</span>
+      <span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Number of requested results 10 is greater than number of elements in index 6, updating n_results = 6
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt-output-prompt">Out[100]:</div>
+      <div class="output-text-output-subareaoutput_execute_result">
+      <pre>{opening_brace}'ids': [['id1']],
+       'distances': [[0.5389559268951416]],
+       'metadatas': [[{opening_brace}'source': 'Python source'{closing_brace}]],
+       'embeddings': None,
+       'documents': [['This is a python docs']],
+       'uris': None,
+       'data': None{closing_brace}</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>And all the data in the collection in which the word <code>python</code> does not appear in your document</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+          <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>
+          <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+          <span class="n">where_document</span><span class="o">=</span><span class="p">{opening_brace}</span><span class="s2">"$not_contains"</span><span class="p">:</span> <span class="s2">"python"</span><span class="p">{closing_brace}</span>
+      <span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Number of requested results 10 is greater than number of elements in index 6, updating n_results = 6
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt-output-prompt">Out[100]:</div>
+      <div class="output-text-output-subareaoutput_execute_result">
+      <pre>{opening_brace}'ids': [['id2', 'id4', 'id3', 'id6']],
+       'distances': [[1.5743632316589355,
+         1.578398585319519,
+         1.59961998462677,
+         384.56890869140625]],
+       'metadatas': [[{opening_brace}'source': 'JavaScript source'{closing_brace},
+         {opening_brace}'source': 'Rust source'{closing_brace},
+         {opening_brace}'source': 'Mojo source'{closing_brace},
+         {opening_brace}'source': 'Pytorch source'{closing_brace}]],
+       'embeddings': None,
+       'documents': [['This is JavaScript docs',
+         'This is Rust docs',
+         'This is a Mojo docs',
+         'This is a Pytorch docs']],
+       'uris': None,
+       'data': None{closing_brace}</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We can also use the logical operators <code>$and</code> and <code>$or</code> to make more complex queries.</p>
+      <div class="highlight"><pre><span></span><span class="p">{opening_brace}</span>
+          <span class="s2">"$and"</span><span class="p">:</span> <span class="p">[</span>
+              <span class="p">{opening_brace}</span>
+                  <span class="o">&lt;</span><span class="n">Operator</span><span class="o">&gt;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">Value</span><span class="o">&gt;.</span>
+              <span class="p">{closing_brace},</span>
+              <span class="p">{opening_brace}</span>
+                  <span class="o">&lt;</span><span class="n">Operator</span><span class="o">&gt;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">Value</span><span class="o">&gt;.</span>
+              <span class="p">{closing_brace}</span>
+      
+      <span class="p">{closing_brace}</span>
+      <span class="err">```</span>
+      
+      <span class="err">````</span><span class="n">python</span>
+      <span class="p">{opening_brace}</span>
+          <span class="s2">"$or"</span><span class="p">:</span> <span class="p">[</span>
+              <span class="p">{opening_brace}</span>
+                  <span class="o">&lt;</span><span class="n">Operator</span><span class="o">&gt;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">Value</span><span class="o">&gt;.</span>
+              <span class="p">{closing_brace},</span>
+              <span class="p">{opening_brace}</span>
+                  <span class="o">&lt;</span><span class="n">Operator</span><span class="o">&gt;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">Value</span><span class="o">&gt;.</span>
+              <span class="p">{closing_brace}</span>
+      
+      <span class="p">{closing_brace}</span>
+      <span class="err">```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>For example, we search for all documents containing the words <code>python</code> and <code>docs</code>.</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+          <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>
+          <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+          <span class="n">where_document</span><span class="o">=</span>
+          <span class="p">{opening_brace}</span>
+              <span class="s2">"$and"</span><span class="p">:</span> <span class="p">[</span>
+                  <span class="p">{opening_brace}</span><span class="s2">"$contains"</span><span class="p">:</span> <span class="s2">"python"</span><span class="p">{closing_brace},</span>
+                  <span class="p">{opening_brace}</span><span class="s2">"$contains"</span><span class="p">:</span> <span class="s2">"docs"</span><span class="p">{closing_brace},</span>
+              <span class="p">],</span>
+          <span class="p">{closing_brace},</span>
+      <span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Number of requested results 10 is greater than number of elements in index 6, updating n_results = 6
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt-output-prompt">Out[100]:</div>
+      <div class="output-text-output-subareaoutput_execute_result">
+      <pre>{opening_brace}'ids': [['id1']],
+       'distances': [[0.5389559268951416]],
+       'metadatas': [[{opening_brace}'source': 'Python source'{closing_brace}]],
+       'embeddings': None,
+       'documents': [['This is a python docs']],
+       'uris': None,
+       'data': None{closing_brace}</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Update-data">Update data<a class="anchor-link" href="#Update-data"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 55" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Any item of data can be updated with the update method</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>',
+      '          <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>',
+      '          <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>',
+      '          <span class="n">where_document</span><span class="o">=</span><span class="p">{</span><span class="s2">"$contains"</span><span class="p">:</span> <span class="s2">"python"</span><span class="p">}</span>',
+      '      <span class="p">)</span>',
+      '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>',
+      '          <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>',
+      '          <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>',
+      '          <span class="n">where_document</span><span class="o">=</span><span class="p">{</span><span class="s2">"$not_contains"</span><span class="p">:</span> <span class="s2">"python"</span><span class="p">}</span>',
+      '      <span class="p">)</span>',
+      '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>',
+      '          <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>',
+      '          <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>',
+      '          <span class="n">where_document</span><span class="o">=</span>',
+      '          <span class="p">{</span>',
+      '              <span class="s2">"$and"</span><span class="p">:</span> <span class="p">[</span>',
+      '                  <span class="p">{</span><span class="s2">"$contains"</span><span class="p">:</span> <span class="s2">"python"</span><span class="p">},</span>',
+      '                  <span class="p">{</span><span class="s2">"$contains"</span><span class="p">:</span> <span class="s2">"docs"</span><span class="p">},</span>',
+      '              <span class="p">],</span>',
+      '          <span class="p">},</span>',
+      '      <span class="p">)</span>',
+      '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>',
+      '          <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s2">"id1"</span><span class="p">],</span>',
+      '          <span class="n">documents</span><span class="o">=</span><span class="p">[</span><span class="s2">"This is a updated Python docs"</span><span class="p">]</span>',
+      '      <span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's see if it has been updated</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+          <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>
+          <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+          <span class="n">where_document</span><span class="o">=</span><span class="p">{opening_brace}</span><span class="s2">"$contains"</span><span class="p">:</span> <span class="s2">"Python"</span><span class="p">{closing_brace}</span>
+      <span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Number of requested results 10 is greater than number of elements in index 6, updating n_results = 6
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt-output-prompt">Out[100]:</div>
+      <div class="output-text-output-subareaoutput_execute_result">
+      <pre>{opening_brace}'ids': [['id1']],
+       'distances': [[0.8247963190078735]],
+       'metadatas': [[{opening_brace}'source': 'Python source'{closing_brace}]],
+       'embeddings': None,
+       'documents': [['This is a updated Python docs']],
+       'uris': None,
+       'data': None{closing_brace}</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <blockquote>
+      <p>Note: If you try to update an <code>ID</code> that does not exist, you will get an error.</p>
+      </blockquote>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <blockquote>
+      <p>Note: If we try to update an embeddings with another embeddings of a different size, we will get an error.</p>
+      </blockquote>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Update-or-add-data">Update or add data<a class="anchor-link" href="#Update-or-add-data"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 56" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>With the <code>upsert</code> method we can update a data if it already exists, or add it if it does not exist.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>',
+      '          <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>',
+      '          <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>',
+      '          <span class="n">where_document</span><span class="o">=</span><span class="p">{</span><span class="s2">"$contains"</span><span class="p">:</span> <span class="s2">"python"</span><span class="p">}</span>',
+      '      <span class="p">)</span>',
+      '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>',
+      '          <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>',
+      '          <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>',
+      '          <span class="n">where_document</span><span class="o">=</span><span class="p">{</span><span class="s2">"$not_contains"</span><span class="p">:</span> <span class="s2">"python"</span><span class="p">}</span>',
+      '      <span class="p">)</span>',
+      '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>',
+      '          <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>',
+      '          <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>',
+      '          <span class="n">where_document</span><span class="o">=</span>',
+      '          <span class="p">{</span>',
+      '              <span class="s2">"$and"</span><span class="p">:</span> <span class="p">[</span>',
+      '                  <span class="p">{</span><span class="s2">"$contains"</span><span class="p">:</span> <span class="s2">"python"</span><span class="p">},</span>',
+      '                  <span class="p">{</span><span class="s2">"$contains"</span><span class="p">:</span> <span class="s2">"docs"</span><span class="p">},</span>',
+      '              <span class="p">],</span>',
+      '          <span class="p">},</span>',
+      '      <span class="p">)</span>',
+      '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>',
+      '          <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s2">"id1"</span><span class="p">],</span>',
+      '          <span class="n">documents</span><span class="o">=</span><span class="p">[</span><span class="s2">"This is a updated Python docs"</span><span class="p">]</span>',
+      '      <span class="p">)</span>',
+      '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>',
+      '          <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>',
+      '          <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>',
+      '          <span class="n">where_document</span><span class="o">=</span><span class="p">{</span><span class="s2">"$contains"</span><span class="p">:</span> <span class="s2">"Python"</span><span class="p">}</span>',
+      '      <span class="p">)</span>',
+      '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span>',
+      '          <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s2">"id6"</span><span class="p">],</span>',
+      '          <span class="n">documents</span><span class="o">=</span><span class="p">[</span><span class="s2">"This is a Pytorch docs"</span><span class="p">],</span>',
+      '          <span class="n">metadatas</span><span class="o">=</span><span class="p">[{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Pytorch source"</span><span class="p">}],</span>   ',
+      '      <span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's see if it has been added to the collection</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>',
+          '    <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>',
+          '    <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>',
+          '    <span class="n">where_document</span><span class="o">=</span><span class="p">{</span><span class="s2">"$contains"</span><span class="p">:</span> <span class="s2">"python"</span><span class="p">}</span>',
+          '<span class="p">)</span>',
+          '</span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>',
+          '    <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>',
+          '    <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>',
+          '    <span class="n">where_document</span><span class="o">=</span><span class="p">{</span><span class="s2">"$not_contains"</span><span class="p">:</span> <span class="s2">"python"</span><span class="p">}</span>',
+          '<span class="p">)</span>',
+          '</span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>',
+          '    <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>',
+          '    <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>',
+          '    <span class="n">where_document</span><span class="o">=</span>',
+          '    <span class="p">{</span>',
+          '        <span class="s2">"$and"</span><span class="p">:</span> <span class="p">[</span>',
+          '            <span class="p">{</span><span class="s2">"$contains"</span><span class="p">:</span> <span class="s2">"python"</span><span class="p">},</span>',
+          '            <span class="p">{</span><span class="s2">"$contains"</span><span class="p">:</span> <span class="s2">"docs"</span><span class="p">},</span>',
+          '        <span class="p">],</span>',
+          '    <span class="p">},</span>',
+          '<span class="p">)</span>',
+          '</span><span class="n">collection</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>',
+          '    <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s2">"id1"</span><span class="p">],</span>',
+          '    <span class="n">documents</span><span class="o">=</span><span class="p">[</span><span class="s2">"This is a updated Python docs"</span><span class="p">]</span>',
+          '<span class="p">)</span>',
+          '</span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>',
+          '    <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>',
+          '    <span class="n">n_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>',
+          '    <span class="n">where_document</span><span class="o">=</span><span class="p">{</span><span class="s2">"$contains"</span><span class="p">:</span> <span class="s2">"Python"</span><span class="p">}</span>',
+          '<span class="p">)</span>',
+          '</span><span class="n">collection</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span>',
+          '    <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s2">"id6"</span><span class="p">],</span>',
+          '    <span class="n">documents</span><span class="o">=</span><span class="p">[</span><span class="s2">"This is a Pytorch docs"</span><span class="p">],</span>',
+          '    <span class="n">metadatas</span><span class="o">=</span><span class="p">[{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Pytorch source"</span><span class="p">}],</span>   ',
+          '<span class="p">)</span>',
+          '</span><span class="n">collection</span><span class="o">.</span><span class="n">peek</span><span class="p">()</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Number of requested results 10 is greater than number of elements in index 6, updating n_results = 6',
+          'Number of requested results 10 is greater than number of elements in index 6, updating n_results = 6',
+          'Number of requested results 10 is greater than number of elements in index 6, updating n_results = 6',
+          'Number of requested results 10 is greater than number of elements in index 6, updating n_results = 6',
+          '{\'ids\': [\'id1\', \'id2\', \'id3\', \'id4\', \'id5\', \'id6\'],',
+          ' \'embeddings\': [[-0.08374718576669693,',
+          '   0.01027572900056839,',
+          '   -0.04819200187921524,',
+          '   0.01758415624499321,',
+          '   0.013158757239580154,',
+          '   -0.11435151100158691,',
+          '   -0.024248722940683365,',
+          '   -0.01319972239434719,',
+          '   -0.09626100957393646,',
+          '   -0.010561048053205013,',
+          '   0.09369225800037384,',
+          '   0.06017905846238136,',
+          '   0.031283188611269,',
+          '   0.014855983667075634,',
+          '   -0.0015984248602762818,',
+          '   0.023238031193614006,',
+          '   -0.04709107056260109,',
+          '   -0.007838696241378784,',
+          '   0.012870412319898605,',
+          '   -0.028354981914162636,',
+          '   -0.007653804495930672,',
+          '   0.09018168598413467,',
+          '   0.060235824435949326,',
+          '   0.0005205210763961077,',
+          '   ...',
+          '   0.014388148672878742]],',
+          ' \'metadatas\': [{\'source\': \'Python source\'},',
+          '  {\'source\': \'JavaScript source\'},',
+          '  {\'source\': \'Mojo source\'},',
+          '  {\'source\': \'Rust source\'},',
+          '  {\'source\': \'Only embeddings\'},',
+          '  {\'source\': \'Pytorch source\'}],',
+          ' \'documents\': [\'This is a updated Python docs\',',
+          '  \'This is JavaScript docs\',',
+          '  \'This is a Mojo docs\',',
+          '  \'This is Rust docs\',',
+          '  None,',
+          '  \'This is a Pytorch docs\'],',
+          ' \'uris\': None,',
+          ' \'data\': None}',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>We see that yes</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Delete-data">Delete data<a class="anchor-link" href="#Delete-data"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 57" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We can delete data from a collection with the <code>delete</code> method</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We are going to delete the datum with <code>ID</code> <code>id5</code> which is the one we added with its embedding all to ones</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span>',
+      '          <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s2">"id5"</span><span class="p">]</span>',
+      '      <span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's see if it has been removed</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span>',
+          '    <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s2">"id5"</span><span class="p">]</span>',
+          '<span class="p">)</span>',
+          '</span><span class="n">collection</span><span class="o">.</span><span class="n">peek</span><span class="p">()</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '{\'ids\': [\'id1\', \'id2\', \'id3\', \'id4\', \'id6\'],',
+          ' \'embeddings\': [[-0.08374718576669693,',
+          '   0.01027572900056839,',
+          '   -0.04819200187921524,',
+          '   0.01758415624499321,',
+          '   0.013158757239580154,',
+          '   -0.11435151100158691,',
+          '   -0.024248722940683365,',
+          '   -0.01319972239434719,',
+          '   -0.09626100957393646,',
+          '   -0.010561048053205013,',
+          '   0.09369225800037384,',
+          '   0.06017905846238136,',
+          '   0.031283188611269,',
+          '   0.014855983667075634,',
+          '   -0.0015984248602762818,',
+          '   0.023238031193614006,',
+          '   -0.04709107056260109,',
+          '   -0.007838696241378784,',
+          '   0.012870412319898605,',
+          '   -0.028354981914162636,',
+          '   -0.007653804495930672,',
+          '   0.09018168598413467,',
+          '   0.060235824435949326,',
+          '   0.0005205210763961077,',
+          '   ...',
+          '   0.07033486664295197,',
+          '   0.014388148672878742]],',
+          ' \'metadatas\': [{\'source\': \'Python source\'},',
+          '  {\'source\': \'JavaScript source\'},',
+          '  {\'source\': \'Mojo source\'},',
+          '  {\'source\': \'Rust source\'},',
+          '  {\'source\': \'Pytorch source\'}],',
+          ' \'documents\': [\'This is a updated Python docs\',',
+          '  \'This is JavaScript docs\',',
+          '  \'This is a Mojo docs\',',
+          '  \'This is Rust docs\',',
+          '  \'This is a Pytorch docs\'],',
+          ' \'uris\': None,',
+          ' \'data\': None}',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>We see that it is no longer</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Embeddings">Embeddings<a class="anchor-link" href="#Embeddings"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 58" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>As we have said we can use different embeddings functions and if none is specified it will use <code>all-MiniLM-L6-v2</code>. In the chroma <a href="https://docs.trychroma.com/embeddings" target="_blank" rel="nofollow noreferrer">embeddings documentation</a> page we can see the different embeddings functions we can use. As this is something that can change, and also some of them are paid and require api key, we are going to explain only how to use the HuggingFace ones.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>First we set the embedding function</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">import</span> <span class="nn">chromadb.utils.embedding_functions</span> <span class="k">as</span> <span class="nn">embedding_functions</span>',
+      '      ',
+      '      <span class="n">huggingface_ef</span> <span class="o">=</span> <span class="n">embedding_functions</span><span class="o">.</span><span class="n">HuggingFaceEmbeddingFunction</span><span class="p">(</span>',
+      '          <span class="n">api_key</span><span class="o">=</span><span class="s2">"YOUR_API_KEY"</span><span class="p">,</span>',
+      '          <span class="n">model_name</span><span class="o">=</span><span class="s2">"sentence-transformers/all-mpnet-base-v2"</span>',
+      '      <span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>In my case I use <code>sentence-transformers/all-mpnet-base-v2</code> which is the most downloaded of <code>sentence-transformers</code> at the time of writing this post.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>To now add the embedding function to the collection, we have to add the argument <code>metadata={opening_brace}"embedding": &lt;function&gt;{closing_brace}</code>.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">import</span> <span class="nn">chromadb.utils.embedding_functions</span> <span class="k">as</span> <span class="nn">embedding_functions</span>',
+      '      ',
+      '      <span class="n">huggingface_ef</span> <span class="o">=</span> <span class="n">embedding_functions</span><span class="o">.</span><span class="n">HuggingFaceEmbeddingFunction</span><span class="p">(</span>',
+      '          <span class="n">api_key</span><span class="o">=</span><span class="s2">"YOUR_API_KEY"</span><span class="p">,</span>',
+      '          <span class="n">model_name</span><span class="o">=</span><span class="s2">"sentence-transformers/all-mpnet-base-v2"</span>',
+      '      <span class="p">)</span>',
+      '<span></span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">create_collection</span><span class="p">(</span>',
+      '          <span class="n">name</span><span class="o">=</span><span class="s2">"colection_huggingface"</span><span class="p">,</span>',
+      '          <span class="n">embedding_function</span><span class="o">=</span><span class="n">huggingface_ef</span>',
+      '      <span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>We can check that we have added the new embedding function by calculating the embeddings of a word</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">import</span> <span class="nn">chromadb.utils.embedding_functions</span> <span class="k">as</span> <span class="nn">embedding_functions</span>',
+          '',
+          '<span class="n">huggingface_ef</span> <span class="o">=</span> <span class="n">embedding_functions</span><span class="o">.</span><span class="n">HuggingFaceEmbeddingFunction</span><span class="p">(</span>',
+          '    <span class="n">api_key</span><span class="o">=</span><span class="s2">"YOUR_API_KEY"</span><span class="p">,</span>',
+          '    <span class="n">model_name</span><span class="o">=</span><span class="s2">"sentence-transformers/all-mpnet-base-v2"</span>',
+          '<span class="p">)</span>',
+          '</span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">create_collection</span><span class="p">(</span>',
+          '    <span class="n">name</span><span class="o">=</span><span class="s2">"colection_huggingface"</span><span class="p">,</span>',
+          '    <span class="n">embedding_function</span><span class="o">=</span><span class="n">huggingface_ef</span>',
+          '<span class="p">)</span>',
+          '</span><span class="n">embedding</span> <span class="o">=</span> <span class="n">collection</span><span class="o">.</span><span class="n">_embedding_function</span><span class="p">([</span><span class="s2">"python"</span><span class="p">])</span>',
+          '<span class="nb">len</span><span class="p">(</span><span class="n">embedding</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">embedding</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '(1, 768)',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>The embedding length is 768</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>If we now calculate the embedding with the embedding function of the previous collection</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"my_collection"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"my_collection"</span><span class="p">)</span>',
+          '</span><span class="n">embedding</span> <span class="o">=</span> <span class="n">collection</span><span class="o">.</span><span class="n">_embedding_function</span><span class="p">([</span><span class="s2">"python"</span><span class="p">])</span>',
+          '<span class="nb">len</span><span class="p">(</span><span class="n">embedding</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">embedding</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '(1, 384)',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>We see that now the length of the ambedding is 384, i.e., we had used a new embedding function before</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Multimodality">Multimodality<a class="anchor-link" href="#Multimodality"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 59" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We can add image embeddings since chroma has built-in <a href="https://github.com/mlfoundations/open_clip" target="_blank" rel="nofollow noreferrer">OpenCLIP</a>. <a href="https://github.com/mlfoundations/open_clip">OpenCLIP</a> is an open source implementation of <a href="https://github.com/openai/CLIP">CLIP</a> (Contrastive Language-Image Pre-Training), which is an OpenAI neural network that is able to give a description of an image.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>In order to use OpenCLIP, we have to install it with pip</p>
+      <div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>open-clip-torch
+      <span class="sb">```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Once installed we can use it to create embeddings of the following picture</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="chroma db - python mixture" src="http://maximofn.com/wp-content/uploads/2024/02/chromadb_dalle3.webp" width="1024" height="1024"/></p>
+      <p>I have it in my local path <code>../images/chromadb_dalle3.webp</code>.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">chromadb.utils.embedding_functions</span> <span class="kn">import</span>  <span class="n">OpenCLIPEmbeddingFunction</span>',
+          '',
+          '<span class="n">embedding_function</span> <span class="o">=</span> <span class="n">OpenCLIPEmbeddingFunction</span><span class="p">()</span>',
+          '<span class="n">image</span> <span class="o">=</span> <span class="s2">"../images/chromadb_dalle3.webp"</span>',
+          '<span class="n">embedding</span> <span class="o">=</span> <span class="n">embedding_function</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>',
+          '<span class="nb">len</span><span class="p">(</span><span class="n">embedding</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">embedding</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '(30, 512)',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>As we can see it creates an embeddings of size 30x512</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Chroma also comes with an image uploader</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">chromadb.utils.data_loaders</span> <span class="kn">import</span> <span class="n">ImageLoader</span>',
+          '<span class="n">data_loader</span> <span class="o">=</span> <span class="n">ImageLoader</span><span class="p">()</span>',
+          '<span class="n">data</span> <span class="o">=</span> <span class="n">data_loader</span><span class="o">.</span><span class="n">_load_image</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>',
+          '<span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '(numpy.ndarray, (1024, 1024, 3))',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>So we can create a multimodal collection with this embedding function and the image uploader</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">create_collection</span><span class="p">(</span>',
+      '          <span class="n">name</span><span class="o">=</span><span class="s2">"multimodal_collection"</span><span class="p">,</span>',
+      '          <span class="n">embedding_function</span><span class="o">=</span><span class="n">embedding_function</span><span class="p">,</span>',
+      '          <span class="n">data_loader</span><span class="o">=</span><span class="n">data_loader</span>',
+      '      <span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>And we can add the embeddings of the images</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">create_collection</span><span class="p">(</span>',
+      '          <span class="n">name</span><span class="o">=</span><span class="s2">"multimodal_collection"</span><span class="p">,</span>',
+      '          <span class="n">embedding_function</span><span class="o">=</span><span class="n">embedding_function</span><span class="p">,</span>',
+      '          <span class="n">data_loader</span><span class="o">=</span><span class="n">data_loader</span>',
+      '      <span class="p">)</span>',
+      '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>',
+      '          <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s1">\'id1\'</span><span class="p">],</span>',
+      '          <span class="n">images</span><span class="o">=</span><span class="p">[</span><span class="n">image</span><span class="p">]</span>',
+      '      <span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's see what you have saved</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">create_collection</span><span class="p">(</span>',
+          '    <span class="n">name</span><span class="o">=</span><span class="s2">"multimodal_collection"</span><span class="p">,</span>',
+          '    <span class="n">embedding_function</span><span class="o">=</span><span class="n">embedding_function</span><span class="p">,</span>',
+          '    <span class="n">data_loader</span><span class="o">=</span><span class="n">data_loader</span>',
+          '<span class="p">)</span>',
+          '</span><span class="n">collection</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>',
+          '    <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s1">\'id1\'</span><span class="p">],</span>',
+          '    <span class="n">images</span><span class="o">=</span><span class="p">[</span><span class="n">image</span><span class="p">]</span>',
+          '<span class="p">)</span>',
+          '</span><span class="n">collection</span><span class="o">.</span><span class="n">peek</span><span class="p">()</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '{\'ids\': [\'id1\'],',
+          ' \'embeddings\': [[-0.014372998848557472,',
+          '   0.0063015008345246315,',
+          '   -0.03794914484024048,',
+          '   -0.028725482523441315,',
+          '   -0.014304812066257,',
+          '   -0.04323698952794075,',
+          '   0.008670451119542122,',
+          '   -0.016066772863268852,',
+          '   -0.02365742437541485,',
+          '   0.07881983369588852,',
+          '   0.022775636985898018,',
+          '   0.004407387692481279,',
+          '   0.058205753564834595,',
+          '   -0.02389293536543846,',
+          '   -0.027586588636040688,',
+          '   0.05778728798031807,',
+          '   -0.2631031572818756,',
+          '   0.044124454259872437,',
+          '   0.010588622651994228,',
+          '   -0.035578884184360504,',
+          '   -0.041719693690538406,',
+          '   -0.0033654430881142616,',
+          '   -0.04731074720621109,',
+          '   -0.0019943572115153074,',
+          '   ...',
+          '   0.04397008568048477,',
+          '   0.04396628588438034]],',
+          ' \'metadatas\': [None],',
+          ' \'documents\': [None],',
+          ' \'uris\': None,',
+          ' \'data\': None}',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Chroma does not store the images, only the embeddings, so in order not to lose the relationship between the embeddings and the images, we can save the path to the images in the metadata. Let's use the <code>update</code> method to add the path to the image</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>',
+      '          <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s1">\'id1\'</span><span class="p">],</span>',
+      '          <span class="n">images</span><span class="o">=</span><span class="p">[</span><span class="n">image</span><span class="p">],</span>',
+      '          <span class="n">metadatas</span><span class="o">=</span><span class="p">[{</span><span class="s2">"source"</span><span class="p">:</span> <span class="n">image</span><span class="p">}]</span>',
+      '      <span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>If we go back to see what the collection has in store.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>',
+          '    <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s1">\'id1\'</span><span class="p">],</span>',
+          '    <span class="n">images</span><span class="o">=</span><span class="p">[</span><span class="n">image</span><span class="p">],</span>',
+          '    <span class="n">metadatas</span><span class="o">=</span><span class="p">[{</span><span class="s2">"source"</span><span class="p">:</span> <span class="n">image</span><span class="p">}]</span>',
+          '<span class="p">)</span>',
+          '</span><span class="n">collection</span><span class="o">.</span><span class="n">peek</span><span class="p">()</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '{\'ids\': [\'id1\'],',
+          ' \'embeddings\': [[-0.014372998848557472,',
+          '   0.0063015008345246315,',
+          '   -0.03794914484024048,',
+          '   -0.028725482523441315,',
+          '   -0.014304812066257,',
+          '   -0.04323698952794075,',
+          '   0.008670451119542122,',
+          '   -0.016066772863268852,',
+          '   -0.02365742437541485,',
+          '   0.07881983369588852,',
+          '   0.022775636985898018,',
+          '   0.004407387692481279,',
+          '   0.058205753564834595,',
+          '   -0.02389293536543846,',
+          '   -0.027586588636040688,',
+          '   0.05778728798031807,',
+          '   -0.2631031572818756,',
+          '   0.044124454259872437,',
+          '   0.010588622651994228,',
+          '   -0.035578884184360504,',
+          '   -0.041719693690538406,',
+          '   -0.0033654430881142616,',
+          '   -0.04731074720621109,',
+          '   -0.0019943572115153074,',
+          '   ...',
+          '   0.04397008568048477,',
+          '   0.04396628588438034]],',
+          ' \'metadatas\': [{\'source\': \'../images/chromadb_dalle3.webp\'}],',
+          ' \'documents\': [None],',
+          ' \'uris\': None,',
+          ' \'data\': None}',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>As the collection is multimodal, we can add documents to it as before.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">collection</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>',
+          '    <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="s1">\'id2\'</span><span class="p">,</span> <span class="s1">\'id3\'</span><span class="p">],</span>',
+          '    <span class="n">documents</span><span class="o">=</span><span class="p">[</span><span class="s2">"This is a python docs"</span><span class="p">,</span> <span class="s2">"This is JavaScript docs"</span><span class="p">],</span>',
+          '    <span class="n">metadatas</span><span class="o">=</span><span class="p">[{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"Python source"</span><span class="p">},</span> <span class="p">{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"JavaScript source"</span><span class="p">}]</span>',
+          '<span class="p">)</span>',
+          '<span class="n">collection</span><span class="o">.</span><span class="n">peek</span><span class="p">()</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '{\'ids\': [\'id1\', \'id2\', \'id3\'],',
+          ' \'embeddings\': [[-0.014372998848557472,',
+          '   0.0063015008345246315,',
+          '   -0.03794914484024048,',
+          '   -0.028725482523441315,',
+          '   -0.014304812066257,',
+          '   -0.04323698952794075,',
+          '   0.008670451119542122,',
+          '   -0.016066772863268852,',
+          '   -0.02365742437541485,',
+          '   0.07881983369588852,',
+          '   0.022775636985898018,',
+          '   0.004407387692481279,',
+          '   0.058205753564834595,',
+          '   -0.02389293536543846,',
+          '   -0.027586588636040688,',
+          '   0.05778728798031807,',
+          '   -0.2631031572818756,',
+          '   0.044124454259872437,',
+          '   0.010588622651994228,',
+          '   -0.035578884184360504,',
+          '   -0.041719693690538406,',
+          '   -0.0033654430881142616,',
+          '   -0.04731074720621109,',
+          '   -0.0019943572115153074,',
+          '   ...',
+          '   -0.061795610934495926,',
+          '   -0.02433035336434841]],',
+          ' \'metadatas\': [{\'source\': \'../images/chromadb_dalle3.webp\'},',
+          '  {\'source\': \'Python source\'},',
+          '  {\'source\': \'JavaScript source\'}],',
+          ' \'documents\': [None, \'This is a python docs\', \'This is JavaScript docs\'],',
+          ' \'uris\': None,',
+          ' \'data\': None}',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Finally, we can make queries with text</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+          <span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="s2">"persona trabajando en una mesa"</span><span class="p">],</span>
+      <span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>WARNING:chromadb.segment.impl.vector.local_hnsw:Number of requested results 10 is greater than number of elements in index 3, updating n_results = 3
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt-output-prompt">Out[59]:</div>
+      <div class="output-text-output-subareaoutput_execute_result">
+      <pre>{opening_brace}'ids': [['id2', 'id1', 'id3']],
+       'distances': [[1.1276676654815674, 1.1777206659317017, 1.2047353982925415]],
+       'metadatas': [[{opening_brace}'source': 'Python source'{closing_brace},
+         {opening_brace}'source': '../images/chromadb_dalle3.webp'},
+         {opening_brace}'source': 'JavaScript source'{closing_brace}]],
+       'embeddings': None,
+       'documents': [['This is a python docs', None, 'This is JavaScript docs']],
+       'uris': None,
+       'data': None{closing_brace}</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>With text we didn't get the image as the first result, if we follow the python documentation</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>But we can also make them with images, in this case I'm going to do it with this image</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="chroma logo" src="http://maximofn.com/wp-content/uploads/2024/02/chromadb_elegant.png" width="1024" height="1024"/></p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">query_image</span> <span class="o">=</span> <span class="s2">"http://maximofn.com/wp-content/uploads/2024/02/chromadb_elegant.png"</span>
+      <span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+          <span class="n">query_images</span><span class="o">=</span><span class="p">[</span><span class="n">query_image</span><span class="p">],</span>
+      <span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>WARNING:chromadb.segment.impl.vector.local_hnsw:Number of requested results 10 is greater than number of elements in index 3, updating n_results = 3
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt-output-prompt">Out[60]:</div>
+      <div class="output-text-output-subareaoutput_execute_result">
+      <pre>{opening_brace}'ids': [['id1', 'id2', 'id3']],
+       'distances': [[0.6684874296188354, 0.9450105428695679, 1.0639115571975708]],
+       'metadatas': [[{opening_brace}'source': '../images/chromadb_dalle3.webp'},
+         {opening_brace}'source': 'Python source'{closing_brace},
+         {opening_brace}'source': 'JavaScript source'{closing_brace}]],
+       'embeddings': None,
+       'documents': [[None, 'This is a python docs', 'This is JavaScript docs']],
+       'uris': None,
+       'data': None{closing_brace}</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Now it gives as first result the image that we had saved.</p>
+      </section>
+      
+
+
+
+
+
+
+    </div>
+
+  </section>
+
+</PostLayout>

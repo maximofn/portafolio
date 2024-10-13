@@ -1,0 +1,2421 @@
+---
+import PostLayout from '@layouts/PostLayout.astro';
+import CodeBlockInputCell from '@components/CodeBlockInputCell.astro';
+import CodeBlockOutputCell from '@components/CodeBlockOutputCell.astro';
+
+const { metadata_page } = await import('@portfolio/consts.json');
+const { colors } = await import('@portfolio/consts.json');
+const { svg_paths } = await import('@portfolio/consts.json');
+
+const page_title = 'GPT-2 – Language Models are Unsupervised Multitask Learners';
+const end_url = 'gpt2';
+const description = '¡Desbloquea el poder de la generación de texto con GPT-2, el último modelo open de OpenAI 💸! 🚀 En este post, te llevo de la mano a través de la arquitectura detrás de este modelo, y te muestro cómo fine-tunearlo 😜, con código incluido. ¡Lee más y descubre cómo GPT-2 puede hacer que tus palabras sean más interesantes que las de un humano 💬 (o al menos, que las de un humano aburrido) 😉';
+const keywords = 'gpt2, openai, generación de texto, fine-tuning, nlp, procesamiento de lenguaje natural';
+const languaje = 'ES';
+const image_path = 'https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/GPT2.webp';
+const opening_brace = '{';
+const closing_brace = '}';
+---
+
+<PostLayout 
+    title={page_title}
+    languaje={languaje}
+    description={description}
+    keywords={keywords}
+    author={metadata_page.author}
+    theme_color={colors.background_color}
+    end_url={end_url}
+    image_path={image_path}
+    image_width=800
+    image_height=436
+    image_extension=webp
+    article_date=2024-07-09+T00:00:00Z
+>
+
+  <section class="post-body">
+
+
+    <aside class="post-index">
+      <a class="anchor-link" href="#Paper"><h2>Paper</h2></a>
+      <a class="anchor-link" href="#Arquitectura"><h2>Arquitectura</h2></a>
+      <a class="anchor-link" href="#Resumen-del-paper"><h2>Resumen del paper</h2></a>
+      <a class="anchor-link" href="#Generaci%C3%B3n-de-texto"><h2>Generación de texto</h2></a>
+      <a class="anchor-link" href="#Generaci%C3%B3n-de-texto-con-pipeline"><h3>Generación de texto con pipeline</h3></a>
+      <a class="anchor-link" href="#Generaci%C3%B3n-de-texto-con-automodel"><h3>Generación de texto con automodel</h3></a>
+      <a class="anchor-link" href="#Generar-texto-token-a-token"><h3>Generar texto token a token</h3></a>
+      <a class="anchor-link" href="#Greedy-search"><h4>Greedy search</h4></a>
+      <a class="anchor-link" href="#Arquitectura-de-los-modelos-disponibles-en-Hugging-Face"><h2>Arquitectura de los modelos disponibles en Hugging Face</h2></a>
+      <a class="anchor-link" href="#GPT2Model"><h3>GPT2Model</h3></a>
+      <a class="anchor-link" href="#GPT2LMHeadModel"><h3>GPT2LMHeadModel</h3></a>
+      <a class="anchor-link" href="#GPT2ForSequenceClassification"><h3>GPT2ForSequenceClassification</h3></a>
+      <a class="anchor-link" href="#GPT2ForQuestionAnswering"><h3>GPT2ForQuestionAnswering</h3></a>
+      <a class="anchor-link" href="#GPT2ForTokenClassification"><h3>GPT2ForTokenClassification</h3></a>
+      <a class="anchor-link" href="#Fine-tuning-GPT-2"><h2>Fine tuning GPT-2</h2></a>
+      <a class="anchor-link" href="#Fine-tuning-for-text-generation"><h3>Fine tuning for text generation</h3></a>
+      <a class="anchor-link" href="#C%C3%A1lculo-de-la-loss"><h4>Cálculo de la loss</h4></a>
+      <a class="anchor-link" href="#Dataset"><h4>Dataset</h4></a>
+      <a class="anchor-link" href="#Instancia-del-modelo"><h4>Instancia del modelo</h4></a>
+      <a class="anchor-link" href="#Pytorch-dataset"><h4>Pytorch dataset</h4></a>
+      <a class="anchor-link" href="#Dataloader"><h4>Dataloader</h4></a>
+      <a class="anchor-link" href="#Training"><h4>Training</h4></a>
+      <a class="anchor-link" href="#Inference"><h4>Inference</h4></a>
+      <a class="anchor-link" href="#Fine-tuning-GPT-2-for-sentence-classification"><h3>Fine tuning GPT-2 for sentence classification</h3></a>
+      <a class="anchor-link" href="#Dataset"><h4>Dataset</h4></a>
+      <a class="anchor-link" href="#Tokenizador"><h4>Tokenizador</h4></a>
+      <a class="anchor-link" href="#Modelo"><h4>Modelo</h4></a>
+      <a class="anchor-link" href="#Evaluaci%C3%B3n"><h4>Evaluación</h4></a>
+      <a class="anchor-link" href="#Trainer"><h4>Trainer</h4></a>
+      <a class="anchor-link" href="#Entrenamiento"><h4>Entrenamiento</h4></a>
+      <a class="anchor-link" href="#Inferencia"><h4>Inferencia</h4></a>
+    </aside>
+
+
+    <div class="post-body-content">
+      
+      <section class="section-block-markdown-cell">
+      <h1 id="GPT-2---Language-Models-are-Unsupervised-Multitask-Learners">GPT-2 - Language Models are Unsupervised Multitask Learners<a class="anchor-link" href="#GPT-2---Language-Models-are-Unsupervised-Multitask-Learners"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 0" src={svg_paths.link_svg_path}/></a></h1>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Paper">Paper<a class="anchor-link" href="#Paper"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 1" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p><a href="https://d4mucfpksywv.cloudfront.net/better-language-models/language-models.pdf" target="_blank" rel="nofollow noreferrer">Language Models are Unsupervised Multitask Learners</a> es el paper de GPT-2. Esta es la segunda versión del modelo <a href="https://maximofn.com/gpt1/">GPT-1</a> que ya vimos</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Arquitectura">Arquitectura<a class="anchor-link" href="#Arquitectura"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 2" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Antes de hablar de la arquitectura de GPT-2 recordemos cómo era la arquitectura de GPT-1</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="gpt1 architecture" src="https://maximofn.com/wp-content/uploads/2024/06/GPT1_architecture.webp" width="310" height="604"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>En GPT-2 se utiliza una arquitectura basada en transformers, igual que <a href="https://maximofn.com/gpt1/">GPT-1</a>, con los siguientes tamaños</p>
+      <table>
+      <thead>
+      <tr>
+      <th>Parameters</th>
+      <th>Layers</th>
+      <th>d_model</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+      <td>117M</td>
+      <td>12</td>
+      <td>768</td>
+      </tr>
+      <tr>
+      <td>345M</td>
+      <td>24</td>
+      <td>1024</td>
+      </tr>
+      <tr>
+      <td>762M</td>
+      <td>36</td>
+      <td>1280</td>
+      </tr>
+      <tr>
+      <td>1542M</td>
+      <td>48</td>
+      <td>1600</td>
+      </tr>
+      </tbody>
+      </table>
+      <p>El modelo más pequeño es equivalente al GPT original, y el segundo más pequeño equivalente al modelo más grande de BERT. El modelo más grande tiene más de un orden de magnitud más parámetros que GPT</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Además se realizaron las siguientes modificaciones de la arquitectura</p>
+      <ul>
+      <li>Se añade una capa de normalización antes del bloque de atención. Esto puede ayudar a estabilizar el entrenamiento del modelo y a mejorar su capacidad para aprender representaciones más profundas. Al normalizar las entradas de cada bloque, se reduce la variabilidad en las salidas y se facilita el entrenamiento del modelo</li>
+      <li>Se ha agregado una normalización adicional después del bloque de auto-atención final. Esto puede ayudar a reducir la variabilidad en las salidas del modelo y a mejorar su estabilidad.</li>
+      <li>En la mayoría de los modelos, los pesos de las capas se inicializan de manera aleatoria, siguiendo una distribución normal o uniforme. Sin embargo, en el caso de GPT-2, los autores decidieron utilizar una inicialización modificada que tiene en cuenta la profundidad del modelo.La idea detrás de esta inicialización modificada es que, a medida que el modelo se hace más profundo, la señal que fluye a través de las capas residuales se va debilitando. Esto se debe a que cada capa residual se suma a la entrada original, lo que puede hacer que la señal se vaya atenuando con la profundidad del modelo. Para contrarrestar este efecto decidieron escalar los pesos de las capas residuales en la inicialización por un factor de 1/√N, donde N es el número de capas residuales. Esto significa que, a medida que el modelo se hace más profundo, los pesos de las capas residuales se vuelven más pequeños. Este truco de inicialización puede ayudar a estabilizar el entrenamiento del modelo y a mejorar su capacidad para aprender representaciones más profundas. Al escalar los pesos de las capas residuales, se reduce la variabilidad en las salidas de cada capa y se facilita el flujo de la señal a través del modelo. En resumen, la inicialización modificada en GPT-2 se utiliza para contrarrestar el efecto de atenuación de la señal en las capas residuales, lo que ayuda a estabilizar el entrenamiento del modelo y a mejorar su capacidad para aprender representaciones más profundas.</li>
+      <li>El tamaño del vocabulario se ha expandido a 50,257. Esto significa que el modelo puede aprender a representar un conjunto más amplio de palabras y tokens.</li>
+      <li>El tamaño del contexto se ha aumentado de 512 a 1024 tokens. Esto permite que el modelo tenga en cuenta un contexto más amplio al generar texto.</li>
+      </ul>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="GPT1 vs GPT-2 architecture" src="https://maximofn.com/wp-content/uploads/2024/06/GPT1_vs_GPT2_architecture.webp" width="838" height="609"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Resumen-del-paper">Resumen del paper<a class="anchor-link" href="#Resumen-del-paper"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 3" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Las ideas más interesantes del paper son:</p>
+      <ul>
+      <li>Para el preentrenamiento del modelo pensaron usar una fuente de texto diverso y casi ilimitado, web scraping como Common Crawl. Sin embargo encontraron que había texto casi de muy mala calidad. Así que usaron el dataset WebText, que provenía también de web scraping pero con un filtro de calidad, como la cantidad de enlaces de salida de redit, etc. Además quitaron el texto proveniente de la wikipedia, ya que podía estar repetido en otras páginas.</li>
+      <li>Utilizaron un tokenizador BPE que ya explicamos en un <a href="https://maximofn.com/bpe/">post</a> anterior</li>
+      </ul>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Generaci%C3%B3n-de-texto">Generación de texto<a class="anchor-link" href="#Generaci%C3%B3n-de-texto"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 4" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos a ver cómo generar texto con un GPT-2 preentrenado</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Para generar texto vamos a utilizar el modelo desde el repositorio de <a href="https://huggingface.co/openai-community/gpt2" target="_blank" rel="nofollow noreferrer">GPT-2</a> de Hugging Face.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Generaci%C3%B3n-de-texto-con-pipeline">Generación de texto con pipeline<a class="anchor-link" href="#Generaci%C3%B3n-de-texto-con-pipeline"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 5" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Con este modelo ya podemos usar el pipeline de transformers</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">pipeline</span>
+      
+      <span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2-xl"</span>
+      <span class="n">generator</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="s1">'text-generation'</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">checkpoints</span><span class="p">)</span>
+      <span class="n">output</span> <span class="o">=</span> <span class="n">generator</span><span class="p">(</span><span class="s2">"Hello, I'm a language model,"</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">num_return_sequences</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+      <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">o</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">output</span><span class="p">):</span>
+          <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Output </span><span class="si">{opening_brace}</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">{closing_brace}</span><span class="s2">: </span><span class="si">{opening_brace}</span><span class="n">o</span><span class="p">[</span><span class="s1">'generated_text'</span><span class="p">]</span><span class="si">{closing_brace}</span><span class="s2">"</span><span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Truncation was not explicitly activated but `max_length` is provided a specific value, please use `truncation=True` to explicitly truncate examples to max length. Defaulting to 'longest_first' truncation strategy. If you encode pairs of sequences (GLUE-style) with the tokenizer you can select this strategy more precisely by providing a specific strategy to `truncation`.
+      Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>Output 1: Hello, I'm a language model, and I want to change the way you read
+      
+      A little in today's post I want to talk about
+      Output 2: Hello, I'm a language model, with two roles: the language model and the lexicographer-semantics expert. The language models are going
+      Output 3: Hello, I'm a language model, and this is your brain. Here is your brain, and all this data that's stored in there, that
+      Output 4: Hello, I'm a language model, and I like to talk... I want to help you talk to your customers
+      
+      Are you using language model
+      Output 5: Hello, I'm a language model, I'm gonna tell you about what type of language you're using. We all know a language like this,
+      </pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Generaci%C3%B3n-de-texto-con-automodel">Generación de texto con automodel<a class="anchor-link" href="#Generaci%C3%B3n-de-texto-con-automodel"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 6" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Pero si queremos utilizar <code>Automodel</code>, podemos hacer lo siguiente</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">pipeline</span>',
+      '      ',
+      '      <span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2-xl"</span>',
+      '      <span class="n">generator</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="s1">\'text-generation\'</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">checkpoints</span><span class="p">)</span>',
+      '      <span class="n">output</span> <span class="o">=</span> <span class="n">generator</span><span class="p">(</span><span class="s2">"Hello, I\'m a language model,"</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">num_return_sequences</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>',
+      '      <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">o</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">output</span><span class="p">):</span>',
+      '          <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Output </span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">o</span><span class="p">[</span><span class="s1">\'generated_text\'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>',
+      '<span></span><span class="kn">import</span> <span class="nn">torch</span>',
+      '      <span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">GPT2Tokenizer</span><span class="p">,</span> <span class="n">AutoTokenizer</span>',
+      '      ',
+      '      <span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2-xl"</span>',
+      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">GPT2Tokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>',
+      '      <span class="n">auto_tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Al igual que con <a href="https://maximofn.com/gpt1/#Generaci%C3%B3n-de-texto">GPT-1</a> podemos importar <code>GPT2Tokenizer</code> y <code>AutoTokenizer</code>. Esto es porque en la <a href="https://huggingface.co/openai-community/gpt2">model card</a> de GPT-2 se indica que se use <code>GPT2Tokenizer</code>, pero en el post de la librería <a href="https://maximofn.com/hugging-face-transformers/">transformers</a> explicamos que se debe usar <code>AutoTokenizer</code> para cargar el tokenizador. Así que vamos a probar los dos</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">pipeline</span>',
+          '',
+          '<span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2-xl"</span>',
+          '<span class="n">generator</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="s1">\'text-generation\'</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">checkpoints</span><span class="p">)</span>',
+          '<span class="n">output</span> <span class="o">=</span> <span class="n">generator</span><span class="p">(</span><span class="s2">"Hello, I\'m a language model,"</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">num_return_sequences</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>',
+          '<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">o</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">output</span><span class="p">):</span>',
+          '    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Output </span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">o</span><span class="p">[</span><span class="s1">\'generated_text\'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>',
+          '</span><span class="kn">import</span> <span class="nn">torch</span>',
+          '<span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">GPT2Tokenizer</span><span class="p">,</span> <span class="n">AutoTokenizer</span>',
+          '',
+          '<span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2-xl"</span>',
+          '<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">GPT2Tokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>',
+          '<span class="n">auto_tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>',
+          '</span><span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2-xl"</span>',
+          '<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">GPT2Tokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>',
+          '<span class="n">auto_tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>',
+          '',
+          '<span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">"Hello, I\'m a language model,"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>',
+          '<span class="n">input_auto_tokens</span> <span class="o">=</span> <span class="n">auto_tokenizer</span><span class="p">(</span><span class="s2">"Hello, I\'m a language model,"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>',
+          '',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"input tokens: </span><span class="se">\n</span><span class="si">{</span><span class="n">input_tokens</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"input auto tokens: </span><span class="se">\n</span><span class="si">{</span><span class="n">input_auto_tokens</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Truncation was not explicitly activated but `max_length` is provided a specific value, please use `truncation=True` to explicitly truncate examples to max length. Defaulting to \'longest_first\' truncation strategy. If you encode pairs of sequences (GLUE-style) with the tokenizer you can select this strategy more precisely by providing a specific strategy to `truncation`.',
+          'Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.',
+          'input tokens: ',
+          '{\'input_ids\': tensor([[15496,    11,   314,  1101,   257,  3303,  2746,    11]]), \'attention_mask\': tensor([[1, 1, 1, 1, 1, 1, 1, 1]])}',
+          'input auto tokens: ',
+          '{\'input_ids\': tensor([[15496,    11,   314,  1101,   257,  3303,  2746,    11]]), \'attention_mask\': tensor([[1, 1, 1, 1, 1, 1, 1, 1]])}',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Como se puede ver con los dos tokenizadores se obtienen los mismos tokens. Así que para que el código sea más general, de manera que si se cambian los ckeckpoints, no haya que cambiar el código, vamos a utilizar <code>AutoTokenizer</code></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Creamos entonces el device, el tokenizador y el modelo</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">import</span> <span class="nn">torch</span>',
+      '      <span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">GPT2LMHeadModel</span>',
+      '      ',
+      '      <span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span><span class="p">)</span>',
+      '      ',
+      '      <span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2-xl"</span>',
+      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>',
+      '      <span class="n">model</span> <span class="o">=</span> <span class="n">GPT2LMHeadModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Como hemos instanciado el modelo vamos a ver cuántos parámetros tiene</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">import</span> <span class="nn">torch</span>',
+          '<span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">GPT2LMHeadModel</span>',
+          '',
+          '<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span><span class="p">)</span>',
+          '',
+          '<span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2-xl"</span>',
+          '<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>',
+          '<span class="n">model</span> <span class="o">=</span> <span class="n">GPT2LMHeadModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
+          '</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Number of parameters: </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">params</span><span class="o">/</span><span class="mf">1e6</span><span class="p">)</span><span class="si">}</span><span class="s2">M"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Number of parameters: 1558M',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Como vemos hemos cargado el modelo de 1.5B de parámetros, pero si quisiésemos cargar los otros modelos tendríamos que hacer</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">checkpoints_small</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2"</span>',
+          '<span class="n">model_small</span> <span class="o">=</span> <span class="n">GPT2LMHeadModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints_small</span><span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Number of parameters of small model: </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">model_small</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span><span class="o">/</span><span class="mf">1e6</span><span class="p">)</span><span class="si">}</span><span class="s2">M"</span><span class="p">)</span>',
+          '',
+          '<span class="n">checkpoints_medium</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2-medium"</span>',
+          '<span class="n">model_medium</span> <span class="o">=</span> <span class="n">GPT2LMHeadModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints_medium</span><span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Number of parameters of medium model: </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">model_medium</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span><span class="o">/</span><span class="mf">1e6</span><span class="p">)</span><span class="si">}</span><span class="s2">M"</span><span class="p">)</span>',
+          '',
+          '<span class="n">checkpoints_large</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2-large"</span>',
+          '<span class="n">model_large</span> <span class="o">=</span> <span class="n">GPT2LMHeadModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints_large</span><span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Number of parameters of large model: </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">model_large</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span><span class="o">/</span><span class="mf">1e6</span><span class="p">)</span><span class="si">}</span><span class="s2">M"</span><span class="p">)</span>',
+          '',
+          '<span class="n">checkpoints_xl</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2-xl"</span>',
+          '<span class="n">model_xl</span> <span class="o">=</span> <span class="n">GPT2LMHeadModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints_xl</span><span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Number of parameters of xl model: </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">model_xl</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span><span class="o">/</span><span class="mf">1e6</span><span class="p">)</span><span class="si">}</span><span class="s2">M"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Number of parameters of small model: 124M',
+          'Number of parameters of medium model: 355M',
+          'Number of parameters of large model: 774M',
+          'Number of parameters of xl model: 1558M',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Creamos los tokens de entrada al modelo</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">input_sentence</span> <span class="o">=</span> <span class="s2">"Hello, I\'m a language model,"</span>',
+          '<span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">input_sentence</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
+          '',
+          '<span class="n">input_tokens</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '{\'input_ids\': tensor([[15496,    11,   314,  1101,   257,  3303,  2746,    11]],',
+          '       device=\'cuda:0\'), \'attention_mask\': tensor([[1, 1, 1, 1, 1, 1, 1, 1]], device=\'cuda:0\')}',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Se los pasamos al modelo para generar los tokens de salida</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">output_tokens</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">input_tokens</span><span class="p">)</span>
+      
+      <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"output tokens: </span><span class="se">\n</span><span class="si">{opening_brace}</span><span class="n">output_tokens</span><span class="si">{closing_brace}</span><span class="s2">"</span><span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+      /home/wallabot/miniconda3/envs/nlp/lib/python3.11/site-packages/transformers/generation/utils.py:1178: UserWarning: Using the model-agnostic default `max_length` (=20) to control the generation length. We recommend setting `max_new_tokens` to control the maximum length of the generation.
+        warnings.warn(
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>output tokens: 
+      tensor([[15496,    11,   314,  1101,   257,  3303,  2746,    11,   290,   314,
+                1101,  1016,   284,  1037,   345,   351,   534,  1917,    13,   198]],
+             device='cuda:0')
+      </pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Decodificamos los tokens para obtener la sentencia de salida</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">output_tokens</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">input_tokens</span><span class="p">)</span>',
+          '',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"output tokens: </span><span class="se">\n</span><span class="si">{</span><span class="n">output_tokens</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>',
+          '</span><span class="n">decoded_output</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">output_tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>',
+          '',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"decoded output: </span><span class="se">\n</span><span class="si">{</span><span class="n">decoded_output</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.',
+          '/home/wallabot/miniconda3/envs/nlp/lib/python3.11/site-packages/transformers/generation/utils.py:1178: UserWarning: Using the model-agnostic default `max_length` (=20) to control the generation length. We recommend setting `max_new_tokens` to control the maximum length of the generation.',
+          '  warnings.warn(',
+          'decoded output: ',
+          'Hello, I\'m a language model, and I\'m going to help you with your problem.',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Ya hemos conseguido generar texto con GPT-2</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Generar-texto-token-a-token">Generar texto token a token<a class="anchor-link" href="#Generar-texto-token-a-token"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 7" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Greedy-search">Greedy search<a class="anchor-link" href="#Greedy-search"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 8" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Hemos usado <code>model.generate</code> para generar los tokens de salida de golpe, pero vamos a ver cómo generarlos uno a uno. Para ello, en vez de usar <code>model.generate</code> vamos a usar <code>model</code>, que en realidad lo que hace es llamar al método <code>model.forward</code></p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">input_tokens</span><span class="p">)</span>',
+          '',
+          '<span class="n">outputs</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'CausalLMOutputWithCrossAttentions(loss=None, logits=tensor([[[ 6.6288,  5.1421, -0.8002,  ..., -6.3998, -4.4113,  1.8240],',
+          '         [ 2.7250,  1.9371, -1.2293,  ..., -5.0979, -5.1617,  2.2694],',
+          '         [ 2.6891,  4.3089, -1.6074,  ..., -7.6321, -2.0448,  0.4042],',
+          '         ...,',
+          '         [ 6.0513,  3.8020, -2.8080,  ..., -6.7754, -8.3176,  1.1541],',
+          '         [ 6.8402,  5.6952,  0.2002,  ..., -9.1281, -6.7818,  2.7576],',
+          '         [ 1.0255, -0.2201, -2.5484,  ..., -6.2137, -7.2322,  0.1665]]],',
+          '       device=\'cuda:0\', grad_fn=&lt;UnsafeViewBackward0&gt;), past_key_values=((tensor([[[[ 0.4779,  0.7671, -0.7532,  ..., -0.3551,  0.4590,  0.3073],',
+          '          [ 0.2034, -0.6033,  0.2484,  ...,  0.7760, -0.3546,  0.0198],',
+          '          [-0.1968, -0.9029,  0.5570,  ...,  0.9985, -0.5028, -0.3508],',
+          '          ...,',
+          '          [-0.5007, -0.4009,  0.1604,  ..., -0.3693, -0.1158,  0.1320],',
+          '          [-0.4854, -0.1369,  0.7377,  ..., -0.8043, -0.1054,  0.0871],',
+          '          [ 0.1610, -0.8358, -0.5534,  ...,  0.9951, -0.3085,  0.4574]],',
+          '         [[ 0.6288, -0.1374, -0.3467,  ..., -1.0003, -1.1518,  0.3114],',
+          '          [-1.7269,  1.2920, -0.0734,  ...,  1.0572,  1.4698, -2.0412],',
+          '          [ 0.2714, -0.0670, -0.4769,  ...,  0.6305,  0.6890, -0.8158],',
+          '          ...,',
+          '          [-0.0499, -0.0721,  0.4580,  ...,  0.6797,  0.2331,  0.0210],',
+          '          [-0.1894,  0.2077,  0.6722,  ...,  0.6938,  0.2104, -0.0574],',
+          '          [ 0.3661, -0.0218,  0.2618,  ...,  0.8750,  1.2205, -0.6103]],',
+          '         [[ 0.5964,  1.1178,  0.3604,  ...,  0.8426,  0.4881, -0.4094],',
+          '          [ 0.3186, -0.3953,  0.2687,  ..., -0.1110, -0.5640,  0.5900],',
+          '          ...,',
+          '          [ 0.2092,  0.3898, -0.6061,  ..., -0.2859, -0.3136, -0.1002],',
+          '          [ 0.0539,  0.8941,  0.3423,  ..., -0.6326, -0.1053, -0.6679],',
+          '          [ 0.5628,  0.6687, -0.2720,  ..., -0.1073, -0.9792, -0.0302]]]],',
+          '       device=\'cuda:0\', grad_fn=&lt;PermuteBackward0&gt;))), hidden_states=None, attentions=None, cross_attentions=None)',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vemos que saca muchos datos, primero vamos a ver las keys de la salida</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">outputs</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'odict_keys([\'logits\', \'past_key_values\'])',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>En este caso solo tenemos los logits del modelo, vamos a ver su tamaño</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">logits</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">logits</span>',
+          '',
+          '<span class="n">logits</span><span class="o">.</span><span class="n">shape</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'torch.Size([1, 8, 50257])',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos a ver cuantos tokens teníamos a la entrada</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'torch.Size([1, 8])',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vaya, a la salida tenemos el mismo número de logits que a la entrada. Esto es normal</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Obtenemos los logits de la última posición de la salida</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">nex_token_logits</span> <span class="o">=</span> <span class="n">logits</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>',
+          '',
+          '<span class="n">nex_token_logits</span><span class="o">.</span><span class="n">shape</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'torch.Size([50257])',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Hay un total de 50257 logits, es decir, hay un vocabulario de 50257 tokens y tenemos que ver cuál es el token con mayor probabilidad, para ello primero calculamos las softmax</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">softmax_logits</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">nex_token_logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>',
+          '',
+          '<span class="n">softmax_logits</span><span class="o">.</span><span class="n">shape</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'torch.Size([50257])',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Una vez hemos calculado la softmax obtenemos el token más probable buscando el que tenga mayor probabilidad, es decir, el que tenga el mayor valor después de la softmax</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">next_token_prob</span><span class="p">,</span> <span class="n">next_token_id</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">softmax_logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>',
+          '',
+          '<span class="n">next_token_prob</span><span class="p">,</span> <span class="n">next_token_id</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '(tensor(0.1732, device=\'cuda:0\', grad_fn=&lt;MaxBackward0&gt;),',
+          ' tensor(290, device=\'cuda:0\'))',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Hemos obtenido el siguiente token, ahora lo decodificamos</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">next_token_id</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '\' and\'',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Hemos obtenido el siguiente token mediante el método greedy, es decir, el token con mayor probabilidad. Pero ya vimos en el post de la librería transformers, las <a href="https://maximofn.com/hugging-face-transformers/#Formas-de-generaci%C3%B3n-de-texto">formas de generar textos</a> que se puede hacer <code>sampling</code>, <code>top-k</code>, <code>top-p</code>, etc.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos a meter todo en una función y ver qué sale si generamos unos cuantos tokens</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="k">def</span> <span class="nf">generate_next_greedy_token</span><span class="p">(</span><span class="n">input_sentence</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">device</span><span class="p">):</span>',
+      '          <span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">input_sentence</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
+      '          <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">input_tokens</span><span class="p">)</span>',
+      '          <span class="n">logits</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">logits</span>',
+      '          <span class="n">nex_token_logits</span> <span class="o">=</span> <span class="n">logits</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>',
+      '          <span class="n">softmax_logits</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">nex_token_logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>',
+      '          <span class="n">next_token_prob</span><span class="p">,</span> <span class="n">next_token_id</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">softmax_logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>',
+      '          <span class="k">return</span> <span class="n">next_token_prob</span><span class="p">,</span> <span class="n">next_token_id</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="k">def</span> <span class="nf">generate_next_greedy_token</span><span class="p">(</span><span class="n">input_sentence</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">device</span><span class="p">):</span>',
+      '          <span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">input_sentence</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
+      '          <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">input_tokens</span><span class="p">)</span>',
+      '          <span class="n">logits</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">logits</span>',
+      '          <span class="n">nex_token_logits</span> <span class="o">=</span> <span class="n">logits</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>',
+      '          <span class="n">softmax_logits</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">nex_token_logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>',
+      '          <span class="n">next_token_prob</span><span class="p">,</span> <span class="n">next_token_id</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">softmax_logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>',
+      '          <span class="k">return</span> <span class="n">next_token_prob</span><span class="p">,</span> <span class="n">next_token_id</span>',
+      '<span></span><span class="k">def</span> <span class="nf">generate_greedy_text</span><span class="p">(</span><span class="n">input_sentence</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>',
+      '          <span class="n">generated_text</span> <span class="o">=</span> <span class="n">input_sentence</span>',
+      '          <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_length</span><span class="p">):</span>',
+      '              <span class="n">next_token_prob</span><span class="p">,</span> <span class="n">next_token_id</span> <span class="o">=</span> <span class="n">generate_next_greedy_token</span><span class="p">(</span><span class="n">generated_text</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">device</span><span class="p">)</span>',
+      '              <span class="n">generated_text</span> <span class="o">+=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">next_token_id</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>',
+      '          <span class="k">return</span> <span class="n">generated_text</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Ahora generamos texto</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="k">def</span> <span class="nf">generate_next_greedy_token</span><span class="p">(</span><span class="n">input_sentence</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">device</span><span class="p">):</span>',
+          '    <span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">input_sentence</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
+          '    <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">input_tokens</span><span class="p">)</span>',
+          '    <span class="n">logits</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">logits</span>',
+          '    <span class="n">nex_token_logits</span> <span class="o">=</span> <span class="n">logits</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>',
+          '    <span class="n">softmax_logits</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">nex_token_logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>',
+          '    <span class="n">next_token_prob</span><span class="p">,</span> <span class="n">next_token_id</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">softmax_logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>',
+          '    <span class="k">return</span> <span class="n">next_token_prob</span><span class="p">,</span> <span class="n">next_token_id</span>',
+          '</span><span class="k">def</span> <span class="nf">generate_greedy_text</span><span class="p">(</span><span class="n">input_sentence</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>',
+          '    <span class="n">generated_text</span> <span class="o">=</span> <span class="n">input_sentence</span>',
+          '    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_length</span><span class="p">):</span>',
+          '        <span class="n">next_token_prob</span><span class="p">,</span> <span class="n">next_token_id</span> <span class="o">=</span> <span class="n">generate_next_greedy_token</span><span class="p">(</span><span class="n">generated_text</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">device</span><span class="p">)</span>',
+          '        <span class="n">generated_text</span> <span class="o">+=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">next_token_id</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>',
+          '    <span class="k">return</span> <span class="n">generated_text</span>',
+          '</span><span class="n">generate_greedy_text</span><span class="p">(</span><span class="s2">"Hello, I\'m a language model,"</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">device</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '"Hello, I\'m a language model, and I\'m going to help you with your problem.\n\n\nI\'m going to help you"',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>La salida es bastante repetitiva como ya se vio en las <a href="https://maximofn.com/hugging-face-transformers/#Formas-de-generaci%C3%B3n-de-texto">formas de generar textos</a>. Pero aun así, es mejor salida que la que obteníamos con <a href="https://maximofn.com/gpt1/#Generaci%C3%B3n-de-texto">GPT-1</a></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Arquitectura-de-los-modelos-disponibles-en-Hugging-Face">Arquitectura de los modelos disponibles en Hugging Face<a class="anchor-link" href="#Arquitectura-de-los-modelos-disponibles-en-Hugging-Face"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 9" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Si nos vamos a la documentación de Hugging Face de <a href="https://huggingface.co/docs/transformers/en/model_doc/gpt2" target="_blank" rel="nofollow noreferrer">GPT2</a> podemos ver que tenemos las opciones <code>GPT2Model</code>, <code>GPT2LMHeadModel</code>, <code>GPT2ForSequenceClassification</code>, <code>GPT2ForQuestionAnswering</code>, <code>GPT2ForTokenClassification</code>. Vamos a verlos</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">import</span> <span class="nn">torch</span>',
+      '      ',
+      '      <span class="n">ckeckpoints</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2"</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="GPT2Model">GPT2Model<a class="anchor-link" href="#GPT2Model"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 10" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Este es el modelo base, es decir el decodificador del transformer</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">import</span> <span class="nn">torch</span>',
+          '',
+          '<span class="n">ckeckpoints</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2"</span>',
+          '</span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">GPT2Model</span>',
+          '<span class="n">model</span> <span class="o">=</span> <span class="n">GPT2Model</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">ckeckpoints</span><span class="p">)</span>',
+          '<span class="n">model</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'GPT2Model(',
+          '  (wte): Embedding(50257, 768)',
+          '  (wpe): Embedding(1024, 768)',
+          '  (drop): Dropout(p=0.1, inplace=False)',
+          '  (h): ModuleList(',
+          '    (0-11): 12 x GPT2Block(',
+          '      (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)',
+          '      (attn): GPT2Attention(',
+          '        (c_attn): Conv1D()',
+          '        (c_proj): Conv1D()',
+          '        (attn_dropout): Dropout(p=0.1, inplace=False)',
+          '        (resid_dropout): Dropout(p=0.1, inplace=False)',
+          '      )',
+          '      (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)',
+          '      (mlp): GPT2MLP(',
+          '        (c_fc): Conv1D()',
+          '        (c_proj): Conv1D()',
+          '        (act): NewGELUActivation()',
+          '        (dropout): Dropout(p=0.1, inplace=False)',
+          '      )',
+          '    )',
+          '  )',
+          '  (ln_f): LayerNorm((768,), eps=1e-05, elementwise_affine=True)',
+          ')',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Como se puede ver a la salida un tensor de dimensión 768, que es la dimensión de los embeddings del modelo pequeño. Si hubiésemos usado el modelo <code>openai-community/gpt2-xl</code>, hubiesemos obtenido una salida de 1600.</p>
+      <p>En función de la tarea que se quiera hacer ahora habría que añadirle más capas.</p>
+      <p>Podemos añadirlas nosotros a mano, pero los pesos de esas capas se inicializarían aleatoriamente. Mientras que si usamos los modelos de Hugging Face con estas capas, los pesos están preentrenados</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="GPT2LMHeadModel">GPT2LMHeadModel<a class="anchor-link" href="#GPT2LMHeadModel"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 11" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Es el que hemos usado antes para generar texto</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">GPT2LMHeadModel</span>',
+          '<span class="n">model</span> <span class="o">=</span> <span class="n">GPT2LMHeadModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">ckeckpoints</span><span class="p">)</span>',
+          '<span class="n">model</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'GPT2LMHeadModel(',
+          '  (transformer): GPT2Model(',
+          '    (wte): Embedding(50257, 768)',
+          '    (wpe): Embedding(1024, 768)',
+          '    (drop): Dropout(p=0.1, inplace=False)',
+          '    (h): ModuleList(',
+          '      (0-11): 12 x GPT2Block(',
+          '        (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)',
+          '        (attn): GPT2Attention(',
+          '          (c_attn): Conv1D()',
+          '          (c_proj): Conv1D()',
+          '          (attn_dropout): Dropout(p=0.1, inplace=False)',
+          '          (resid_dropout): Dropout(p=0.1, inplace=False)',
+          '        )',
+          '        (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)',
+          '        (mlp): GPT2MLP(',
+          '          (c_fc): Conv1D()',
+          '          (c_proj): Conv1D()',
+          '          (act): NewGELUActivation()',
+          '          (dropout): Dropout(p=0.1, inplace=False)',
+          '        )',
+          '      )',
+          '    )',
+          '    (ln_f): LayerNorm((768,), eps=1e-05, elementwise_affine=True)',
+          '  )',
+          '  (lm_head): Linear(in_features=768, out_features=50257, bias=False)',
+          ')',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Como se puede ver es el mismo modelo que antes, solo que al final se ha añadido una capa lineal con una entrada de 768 (los embeddings) y una salida de 50257, que corersponde al tamaño del vocabulario</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="GPT2ForSequenceClassification">GPT2ForSequenceClassification<a class="anchor-link" href="#GPT2ForSequenceClassification"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 12" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Esta opción es para clasificar secuencias de texto, en este caso tenemos que especificarle con <code>num_labels</code> el número de clases que queremos clasificar</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">GPT2ForSequenceClassification</span>
+      <span class="n">model</span> <span class="o">=</span> <span class="n">GPT2ForSequenceClassification</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">ckeckpoints</span><span class="p">,</span> <span class="n">num_labels</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+      <span class="n">model</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Some weights of GPT2ForSequenceClassification were not initialized from the model checkpoint at openai-community/gpt2 and are newly initialized: ['score.weight']
+      You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt-output-prompt">Out[10]:</div>
+      <div class="output-text-output-subareaoutput_execute_result">
+      <pre>GPT2ForSequenceClassification(
+        (transformer): GPT2Model(
+          (wte): Embedding(50257, 768)
+          (wpe): Embedding(1024, 768)
+          (drop): Dropout(p=0.1, inplace=False)
+          (h): ModuleList(
+            (0-11): 12 x GPT2Block(
+              (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+              (attn): GPT2Attention(
+                (c_attn): Conv1D()
+                (c_proj): Conv1D()
+                (attn_dropout): Dropout(p=0.1, inplace=False)
+                (resid_dropout): Dropout(p=0.1, inplace=False)
+              )
+              (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+              (mlp): GPT2MLP(
+                (c_fc): Conv1D()
+                (c_proj): Conv1D()
+                (act): NewGELUActivation()
+                (dropout): Dropout(p=0.1, inplace=False)
+              )
+            )
+          )
+          (ln_f): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+        )
+        (score): Linear(in_features=768, out_features=5, bias=False)
+      )</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Ahora, en vez de tener una salida de 50257, tenemos una salida de 5, que es el número que le hemos introducido en <code>num_labels</code> y es el número de clases que queremos clasificar</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="GPT2ForQuestionAnswering">GPT2ForQuestionAnswering<a class="anchor-link" href="#GPT2ForQuestionAnswering"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 13" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>En el post de <a href="https://maximofn.com/hugging-face-transformers/">transformers</a> explicamos que en este modo se le pasa un contexto al modelo y una pregunta sobre el contexto y te devuelve la respuesta</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">GPT2ForQuestionAnswering</span>
+      <span class="n">model</span> <span class="o">=</span> <span class="n">GPT2ForQuestionAnswering</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">ckeckpoints</span><span class="p">)</span>
+      <span class="n">model</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Some weights of GPT2ForQuestionAnswering were not initialized from the model checkpoint at openai-community/gpt2 and are newly initialized: ['qa_outputs.bias', 'qa_outputs.weight']
+      You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt-output-prompt">Out[13]:</div>
+      <div class="output-text-output-subareaoutput_execute_result">
+      <pre>GPT2ForQuestionAnswering(
+        (transformer): GPT2Model(
+          (wte): Embedding(50257, 768)
+          (wpe): Embedding(1024, 768)
+          (drop): Dropout(p=0.1, inplace=False)
+          (h): ModuleList(
+            (0-11): 12 x GPT2Block(
+              (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+              (attn): GPT2Attention(
+                (c_attn): Conv1D()
+                (c_proj): Conv1D()
+                (attn_dropout): Dropout(p=0.1, inplace=False)
+                (resid_dropout): Dropout(p=0.1, inplace=False)
+              )
+              (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+              (mlp): GPT2MLP(
+                (c_fc): Conv1D()
+                (c_proj): Conv1D()
+                (act): NewGELUActivation()
+                (dropout): Dropout(p=0.1, inplace=False)
+              )
+            )
+          )
+          (ln_f): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+        )
+        (qa_outputs): Linear(in_features=768, out_features=2, bias=True)
+      )</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vemos que a la salida nos da un tensor de dos dimensiones</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="GPT2ForTokenClassification">GPT2ForTokenClassification<a class="anchor-link" href="#GPT2ForTokenClassification"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 14" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>También en el post de <a href="https://maximofn.com/hugging-face-transformers/">transformers</a> contamos lo que era token calsification, explicamos que clasificaba a qué categoría correespondía cada token. Tenemos que pasarle el número de clases que queremos clasificar con <code>num_labels</code></p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">GPT2ForTokenClassification</span>
+      <span class="n">model</span> <span class="o">=</span> <span class="n">GPT2ForTokenClassification</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">ckeckpoints</span><span class="p">,</span> <span class="n">num_labels</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+      <span class="n">model</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Some weights of GPT2ForTokenClassification were not initialized from the model checkpoint at openai-community/gpt2 and are newly initialized: ['classifier.bias', 'classifier.weight']
+      You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt-output-prompt">Out[2]:</div>
+      <div class="output-text-output-subareaoutput_execute_result">
+      <pre>GPT2ForTokenClassification(
+        (transformer): GPT2Model(
+          (wte): Embedding(50257, 768)
+          (wpe): Embedding(1024, 768)
+          (drop): Dropout(p=0.1, inplace=False)
+          (h): ModuleList(
+            (0-11): 12 x GPT2Block(
+              (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+              (attn): GPT2Attention(
+                (c_attn): Conv1D()
+                (c_proj): Conv1D()
+                (attn_dropout): Dropout(p=0.1, inplace=False)
+                (resid_dropout): Dropout(p=0.1, inplace=False)
+              )
+              (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+              (mlp): GPT2MLP(
+                (c_fc): Conv1D()
+                (c_proj): Conv1D()
+                (act): NewGELUActivation()
+                (dropout): Dropout(p=0.1, inplace=False)
+              )
+            )
+          )
+          (ln_f): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+        )
+        (dropout): Dropout(p=0.1, inplace=False)
+        (classifier): Linear(in_features=768, out_features=5, bias=True)
+      )</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>A la salida obtenemos las 5 clases que le hemos especificado con <code>num_labels</code></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Fine-tuning-GPT-2">Fine tuning GPT-2<a class="anchor-link" href="#Fine-tuning-GPT-2"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 15" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Fine-tuning-for-text-generation">Fine tuning for text generation<a class="anchor-link" href="#Fine-tuning-for-text-generation"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 16" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Primero vamos a ver cómo se haría el entrenamiento con puro Pytorch</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="C%C3%A1lculo-de-la-loss">Cálculo de la loss<a class="anchor-link" href="#C%C3%A1lculo-de-la-loss"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 17" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Antes de empezar a hacer el fine tuning de GPT-2 vamos a ver una cosa. Antes cuando obteníamos la salida del modelo hacíamos esto</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">GPT2ForSequenceClassification</span>',
+          '<span class="n">model</span> <span class="o">=</span> <span class="n">GPT2ForSequenceClassification</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">ckeckpoints</span><span class="p">,</span> <span class="n">num_labels</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>',
+          '<span class="n">model</span>',
+          '</span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">GPT2ForQuestionAnswering</span>',
+          '<span class="n">model</span> <span class="o">=</span> <span class="n">GPT2ForQuestionAnswering</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">ckeckpoints</span><span class="p">)</span>',
+          '<span class="n">model</span>',
+          '</span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">GPT2ForTokenClassification</span>',
+          '<span class="n">model</span> <span class="o">=</span> <span class="n">GPT2ForTokenClassification</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">ckeckpoints</span><span class="p">,</span> <span class="n">num_labels</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>',
+          '<span class="n">model</span>',
+          '</span><span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">input_tokens</span><span class="p">)</span>',
+          '',
+          '<span class="n">outputs</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Some weights of GPT2ForSequenceClassification were not initialized from the model checkpoint at openai-community/gpt2 and are newly initialized: [\'score.weight\']',
+          'You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.',
+          'Some weights of GPT2ForQuestionAnswering were not initialized from the model checkpoint at openai-community/gpt2 and are newly initialized: [\'qa_outputs.bias\', \'qa_outputs.weight\']',
+          'You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.',
+          'Some weights of GPT2ForTokenClassification were not initialized from the model checkpoint at openai-community/gpt2 and are newly initialized: [\'classifier.bias\', \'classifier.weight\']',
+          'You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.',
+          'CausalLMOutputWithCrossAttentions(loss=None, logits=tensor([[[ 6.6288,  5.1421, -0.8002,  ..., -6.3998, -4.4113,  1.8240],',
+          '         [ 2.7250,  1.9371, -1.2293,  ..., -5.0979, -5.1617,  2.2694],',
+          '         [ 2.6891,  4.3089, -1.6074,  ..., -7.6321, -2.0448,  0.4042],',
+          '         ...,',
+          '         [ 6.0513,  3.8020, -2.8080,  ..., -6.7754, -8.3176,  1.1541],',
+          '         [ 6.8402,  5.6952,  0.2002,  ..., -9.1281, -6.7818,  2.7576],',
+          '         [ 1.0255, -0.2201, -2.5484,  ..., -6.2137, -7.2322,  0.1665]]],',
+          '       device=\'cuda:0\', grad_fn=&lt;UnsafeViewBackward0&gt;), past_key_values=((tensor([[[[ 0.4779,  0.7671, -0.7532,  ..., -0.3551,  0.4590,  0.3073],',
+          '          [ 0.2034, -0.6033,  0.2484,  ...,  0.7760, -0.3546,  0.0198],',
+          '          [-0.1968, -0.9029,  0.5570,  ...,  0.9985, -0.5028, -0.3508],',
+          '          ...,',
+          '          [-0.5007, -0.4009,  0.1604,  ..., -0.3693, -0.1158,  0.1320],',
+          '          [-0.4854, -0.1369,  0.7377,  ..., -0.8043, -0.1054,  0.0871],',
+          '          [ 0.1610, -0.8358, -0.5534,  ...,  0.9951, -0.3085,  0.4574]],',
+          '         [[ 0.6288, -0.1374, -0.3467,  ..., -1.0003, -1.1518,  0.3114],',
+          '          [-1.7269,  1.2920, -0.0734,  ...,  1.0572,  1.4698, -2.0412],',
+          '          [ 0.2714, -0.0670, -0.4769,  ...,  0.6305,  0.6890, -0.8158],',
+          '          ...,',
+          '          [-0.0499, -0.0721,  0.4580,  ...,  0.6797,  0.2331,  0.0210],',
+          '          [-0.1894,  0.2077,  0.6722,  ...,  0.6938,  0.2104, -0.0574],',
+          '          [ 0.3661, -0.0218,  0.2618,  ...,  0.8750,  1.2205, -0.6103]],',
+          '         [[ 0.5964,  1.1178,  0.3604,  ...,  0.8426,  0.4881, -0.4094],',
+          '          [ 0.3186, -0.3953,  0.2687,  ..., -0.1110, -0.5640,  0.5900],',
+          '          ...,',
+          '          [ 0.2092,  0.3898, -0.6061,  ..., -0.2859, -0.3136, -0.1002],',
+          '          [ 0.0539,  0.8941,  0.3423,  ..., -0.6326, -0.1053, -0.6679],',
+          '          [ 0.5628,  0.6687, -0.2720,  ..., -0.1073, -0.9792, -0.0302]]]],',
+          '       device=\'cuda:0\', grad_fn=&lt;PermuteBackward0&gt;))), hidden_states=None, attentions=None, cross_attentions=None)',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Se puede ver que obtenemos <code>loss=None</code></p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="nb">print</span><span class="p">(</span><span class="n">outputs</span><span class="o">.</span><span class="n">loss</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'None',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Como vamos a necesitar la loss para hacer el fine tuning, vamos a ver cómo obtenerla.</p>
+      <p>Si nos vamos a la documentación del método <a href="https://huggingface.co/docs/transformers/model_doc/gpt2#transformers.GPT2LMHeadModel.forward" target="_blank" rel="nofollow noreferrer">forward</a> de <code>GPT2LMHeadModel</code>, podemos ver que dice que a la salida devuelve un objeto de tipo <code>transformers.modeling_outputs.CausalLMOutputWithCrossAttentions</code>, así que si nos vamos a la documentación de <a href="https://huggingface.co/docs/transformers/v4.41.3/en/main_classes/output#transformers.modeling_outputs.CausalLMOutputWithCrossAttentions">transformers.modeling_outputs.CausalLMOutputWithCrossAttentions</a>, podemos ver que dice que devuelve <code>loss</code> si se le pasa <code>labels</code> al método <code>forward</code>.</p>
+      <p>Si nos vamos a la fuente del código del método <a href="https://github.com/huggingface/transformers/blob/main/src/transformers/models/gpt2/modeling_gpt2.py#L1277" target="_blank" rel="nofollow noreferrer">forward</a>, vemos este bloque de código</p>
+      <div class="highlight"><pre><span></span><span class="n">loss</span> <span class="o">=</span> <span class="kc">None</span>
+              <span class="k">if</span> <span class="n">labels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                  <span class="c1"># move labels to correct device to enable model parallelism</span>
+                  <span class="n">labels</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">lm_logits</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+                  <span class="c1"># Shift so that tokens &lt; n predict n</span>
+                  <span class="n">shift_logits</span> <span class="o">=</span> <span class="n">lm_logits</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
+                  <span class="n">shift_labels</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
+                  <span class="c1"># Flatten the tokens</span>
+                  <span class="n">loss_fct</span> <span class="o">=</span> <span class="n">CrossEntropyLoss</span><span class="p">()</span>
+                  <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fct</span><span class="p">(</span><span class="n">shift_logits</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">shift_logits</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)),</span> <span class="n">shift_labels</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+      </pre></div>
+      <p>Es decir, la <code>loss</code> se calcula de la siguiente manera</p>
+      <ul>
+      <li>Shift de logits y labels: La primera parte es desplazar los logits (<code>lm_logits</code>) y las etiquetas (<code>labels</code>) para que los <code>tokens &lt; n</code> predigan <code>n</code>, es decir, desde una posición <code>n</code> se predice el siguiente token a partir de los anteriores.</li>
+      <li>CrossEntropyLoss: Se crea una instancia de la función de pérdida <code>CrossEntropyLoss()</code>.</li>
+      <li>Flatten tokens: A continuación, se aplanan los logits y las etiquetas utilizando <code>view(-1, shift_logits.size(-1))</code> y <code>view(-1)</code>, respectivamente. Esto se hace para que los logits y las etiquetas tengan la misma forma para la función de pérdida.</li>
+      <li>Cálculo de la pérdida: Finalmente, se calcula la pérdida utilizando la función de pérdida <code>CrossEntropyLoss()</code> con los logits aplanados y las etiquetas aplanadas como entradas.</li>
+      </ul>
+      <p>En resumen, la <code>loss</code> se calcula como la pérdida de entropía cruzada entre los logits desplazados y aplanados y las etiquetas desplazadas y aplanadas.</p>
+      <p>Por tanto, si al método <code>forward</code> le pasamos los labels, nos devolverá la <code>loss</code></p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">input_tokens</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">)</span>',
+          '',
+          '<span class="n">outputs</span><span class="o">.</span><span class="n">loss</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'tensor(3.8028, device=\'cuda:0\', grad_fn=&lt;NllLossBackward0&gt;)',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Dataset">Dataset<a class="anchor-link" href="#Dataset"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 18" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Para el etrenamiento vamos a usar un dataset de chistes en inglés <a href="https://huggingface.co/datasets/Maximofn/short-jokes-dataset" target="_blank" rel="nofollow noreferrer">short-jokes-dataset</a>, que es un dataset con 231 mil chistes en inglés.</p>
+      <blockquote>
+      <p>Reiniciamos el notebook para que no haya problemas con la memoria de la GPU</p>
+      </blockquote>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Descargamos el dataset</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">datasets</span> <span class="kn">import</span> <span class="n">load_dataset</span>',
+          '',
+          '<span class="n">jokes</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"Maximofn/short-jokes-dataset"</span><span class="p">)</span>',
+          '<span class="n">jokes</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'DatasetDict({',
+          '    train: Dataset({',
+          '        features: [\'ID\', \'Joke\'],',
+          '        num_rows: 231657',
+          '    })',
+          '})',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos a verlo un poco</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">jokes</span><span class="p">[</span><span class="s2">"train"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '{\'ID\': 1,',
+          ' \'Joke\': \'[me narrating a documentary about narrators] "I can\'t hear what they\'re saying cuz I\'m talking"\'}',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Instancia-del-modelo">Instancia del modelo<a class="anchor-link" href="#Instancia-del-modelo"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 19" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Para poder usar el modelo <code>xl</code>, es decir, el de 1.5B de parámetros lo paso a FP16 para no quedarme sin memoria</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">import</span> <span class="nn">torch</span>',
+      '      <span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">GPT2LMHeadModel</span>',
+      '      ',
+      '      <span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span><span class="p">)</span>',
+      '      ',
+      '      <span class="n">ckeckpoints</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2-xl"</span>',
+      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">ckeckpoints</span><span class="p">)</span>',
+      '      <span class="n">model</span> <span class="o">=</span> <span class="n">GPT2LMHeadModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">ckeckpoints</span><span class="p">)</span>',
+      '      ',
+      '      <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">half</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Pytorch-dataset">Pytorch dataset<a class="anchor-link" href="#Pytorch-dataset"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 20" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Creamos una clase dataset de Pytorch</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">import</span> <span class="nn">torch</span>',
+      '      <span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">GPT2LMHeadModel</span>',
+      '      ',
+      '      <span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span><span class="p">)</span>',
+      '      ',
+      '      <span class="n">ckeckpoints</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2-xl"</span>',
+      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">ckeckpoints</span><span class="p">)</span>',
+      '      <span class="n">model</span> <span class="o">=</span> <span class="n">GPT2LMHeadModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">ckeckpoints</span><span class="p">)</span>',
+      '      ',
+      '      <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">half</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">Dataset</span>',
+      '      ',
+      '      <span class="k">class</span> <span class="nc">JokesDataset</span><span class="p">(</span><span class="n">Dataset</span><span class="p">):</span>',
+      '          <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">):</span>',
+      '              <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span>',
+      '              <span class="bp">self</span><span class="o">.</span><span class="n">joke</span> <span class="o">=</span> <span class="s2">"JOKE: "</span>',
+      '              <span class="bp">self</span><span class="o">.</span><span class="n">end_of_text_token</span> <span class="o">=</span> <span class="s2">"&lt;|endoftext|&gt;"</span>',
+      '              <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span> <span class="o">=</span> <span class="n">tokenizer</span>',
+      '              ',
+      '          <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>',
+      '              <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">])</span>',
+      '      ',
+      '          <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>',
+      '              <span class="n">sentence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">joke</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">][</span><span class="n">item</span><span class="p">][</span><span class="s2">"Joke"</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_of_text_token</span>',
+      '              <span class="n">tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">(</span><span class="n">sentence</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>',
+      '              <span class="k">return</span> <span class="n">sentence</span><span class="p">,</span> <span class="n">tokens</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>La instanciamos</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">import</span> <span class="nn">torch</span>',
+      '      <span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">GPT2LMHeadModel</span>',
+      '      ',
+      '      <span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span><span class="p">)</span>',
+      '      ',
+      '      <span class="n">ckeckpoints</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2-xl"</span>',
+      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">ckeckpoints</span><span class="p">)</span>',
+      '      <span class="n">model</span> <span class="o">=</span> <span class="n">GPT2LMHeadModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">ckeckpoints</span><span class="p">)</span>',
+      '      ',
+      '      <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">half</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">Dataset</span>',
+      '      ',
+      '      <span class="k">class</span> <span class="nc">JokesDataset</span><span class="p">(</span><span class="n">Dataset</span><span class="p">):</span>',
+      '          <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">):</span>',
+      '              <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span>',
+      '              <span class="bp">self</span><span class="o">.</span><span class="n">joke</span> <span class="o">=</span> <span class="s2">"JOKE: "</span>',
+      '              <span class="bp">self</span><span class="o">.</span><span class="n">end_of_text_token</span> <span class="o">=</span> <span class="s2">"&lt;|endoftext|&gt;"</span>',
+      '              <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span> <span class="o">=</span> <span class="n">tokenizer</span>',
+      '              ',
+      '          <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>',
+      '              <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">])</span>',
+      '      ',
+      '          <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>',
+      '              <span class="n">sentence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">joke</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">][</span><span class="n">item</span><span class="p">][</span><span class="s2">"Joke"</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_of_text_token</span>',
+      '              <span class="n">tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">(</span><span class="n">sentence</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>',
+      '              <span class="k">return</span> <span class="n">sentence</span><span class="p">,</span> <span class="n">tokens</span>',
+      '<span></span><span class="n">dataset</span> <span class="o">=</span> <span class="n">JokesDataset</span><span class="p">(</span><span class="n">jokes</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Vemos un ejemplo</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">sentence</span><span class="p">,</span> <span class="n">tokens</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+      <span class="nb">print</span><span class="p">(</span><span class="n">sentence</span><span class="p">)</span>
+      <span class="n">tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="o">.</span><span class="n">shape</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>JOKE: Why can't Barbie get pregnant? Because Ken comes in a different box. Heyooooooo&lt;|endoftext|&gt;
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt-output-prompt">Out[5]:</div>
+      <div class="output-text-output-subareaoutput_execute_result">
+      <pre>(torch.Size([1, 22]), torch.Size([1, 22]))</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Dataloader">Dataloader<a class="anchor-link" href="#Dataloader"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 21" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Creamos ahora un dataloader de Pytorch</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">import</span> <span class="nn">torch</span>',
+      '      <span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">GPT2LMHeadModel</span>',
+      '      ',
+      '      <span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span><span class="p">)</span>',
+      '      ',
+      '      <span class="n">ckeckpoints</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2-xl"</span>',
+      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">ckeckpoints</span><span class="p">)</span>',
+      '      <span class="n">model</span> <span class="o">=</span> <span class="n">GPT2LMHeadModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">ckeckpoints</span><span class="p">)</span>',
+      '      ',
+      '      <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">half</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">Dataset</span>',
+      '      ',
+      '      <span class="k">class</span> <span class="nc">JokesDataset</span><span class="p">(</span><span class="n">Dataset</span><span class="p">):</span>',
+      '          <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">):</span>',
+      '              <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span>',
+      '              <span class="bp">self</span><span class="o">.</span><span class="n">joke</span> <span class="o">=</span> <span class="s2">"JOKE: "</span>',
+      '              <span class="bp">self</span><span class="o">.</span><span class="n">end_of_text_token</span> <span class="o">=</span> <span class="s2">"&lt;|endoftext|&gt;"</span>',
+      '              <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span> <span class="o">=</span> <span class="n">tokenizer</span>',
+      '              ',
+      '          <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>',
+      '              <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">])</span>',
+      '      ',
+      '          <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>',
+      '              <span class="n">sentence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">joke</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">][</span><span class="n">item</span><span class="p">][</span><span class="s2">"Joke"</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_of_text_token</span>',
+      '              <span class="n">tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">(</span><span class="n">sentence</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>',
+      '              <span class="k">return</span> <span class="n">sentence</span><span class="p">,</span> <span class="n">tokens</span>',
+      '<span></span><span class="n">dataset</span> <span class="o">=</span> <span class="n">JokesDataset</span><span class="p">(</span><span class="n">jokes</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">)</span>',
+      '<span></span><span class="n">sentence</span><span class="p">,</span> <span class="n">tokens</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>',
+      '      <span class="nb">print</span><span class="p">(</span><span class="n">sentence</span><span class="p">)</span>',
+      '      <span class="n">tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="o">.</span><span class="n">shape</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">DataLoader</span>',
+      '      ',
+      '      <span class="n">BS</span> <span class="o">=</span> <span class="mi">1</span>',
+      '      <span class="n">joke_dataloader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">BS</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Vemos un batch</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">import</span> <span class="nn">torch</span>',
+          '<span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">GPT2LMHeadModel</span>',
+          '',
+          '<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span><span class="p">)</span>',
+          '',
+          '<span class="n">ckeckpoints</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2-xl"</span>',
+          '<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">ckeckpoints</span><span class="p">)</span>',
+          '<span class="n">model</span> <span class="o">=</span> <span class="n">GPT2LMHeadModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">ckeckpoints</span><span class="p">)</span>',
+          '',
+          '<span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">half</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
+          '</span><span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">Dataset</span>',
+          '',
+          '<span class="k">class</span> <span class="nc">JokesDataset</span><span class="p">(</span><span class="n">Dataset</span><span class="p">):</span>',
+          '    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">):</span>',
+          '        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span>',
+          '        <span class="bp">self</span><span class="o">.</span><span class="n">joke</span> <span class="o">=</span> <span class="s2">"JOKE: "</span>',
+          '        <span class="bp">self</span><span class="o">.</span><span class="n">end_of_text_token</span> <span class="o">=</span> <span class="s2">"&lt;|endoftext|&gt;"</span>',
+          '        <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span> <span class="o">=</span> <span class="n">tokenizer</span>',
+          '        ',
+          '    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>',
+          '        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">])</span>',
+          '',
+          '    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>',
+          '        <span class="n">sentence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">joke</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">][</span><span class="n">item</span><span class="p">][</span><span class="s2">"Joke"</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_of_text_token</span>',
+          '        <span class="n">tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">(</span><span class="n">sentence</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>',
+          '        <span class="k">return</span> <span class="n">sentence</span><span class="p">,</span> <span class="n">tokens</span>',
+          '</span><span class="n">dataset</span> <span class="o">=</span> <span class="n">JokesDataset</span><span class="p">(</span><span class="n">jokes</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">)</span>',
+          '</span><span class="n">sentence</span><span class="p">,</span> <span class="n">tokens</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">sentence</span><span class="p">)</span>',
+          '<span class="n">tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="o">.</span><span class="n">shape</span>',
+          '</span><span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">DataLoader</span>',
+          '',
+          '<span class="n">BS</span> <span class="o">=</span> <span class="mi">1</span>',
+          '<span class="n">joke_dataloader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">BS</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>',
+          '</span><span class="n">sentences</span><span class="p">,</span> <span class="n">tokens</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">joke_dataloader</span><span class="p">))</span>',
+          '<span class="nb">len</span><span class="p">(</span><span class="n">sentences</span><span class="p">),</span> <span class="n">tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="o">.</span><span class="n">shape</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'JOKE: Why can\'t Barbie get pregnant? Because Ken comes in a different box. Heyooooooo&lt;|endoftext|&gt;',
+          '(1, torch.Size([1, 1, 36]), torch.Size([1, 1, 36]))',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Training">Training<a class="anchor-link" href="#Training"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 22" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AdamW</span><span class="p">,</span> <span class="n">get_linear_schedule_with_warmup</span>
+      <span class="kn">import</span> <span class="nn">tqdm</span>
+      
+      <span class="n">BATCH_SIZE</span> <span class="o">=</span> <span class="mi">32</span>
+      <span class="n">EPOCHS</span> <span class="o">=</span> <span class="mi">5</span>
+      <span class="n">LEARNING_RATE</span> <span class="o">=</span> <span class="mf">3e-6</span>
+      <span class="n">WARMUP_STEPS</span> <span class="o">=</span> <span class="mi">5000</span>
+      <span class="n">MAX_SEQ_LEN</span> <span class="o">=</span> <span class="mi">500</span>
+      
+      <span class="n">optimizer</span> <span class="o">=</span> <span class="n">AdamW</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="n">LEARNING_RATE</span><span class="p">)</span>
+      <span class="n">scheduler</span> <span class="o">=</span> <span class="n">get_linear_schedule_with_warmup</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">num_warmup_steps</span><span class="o">=</span><span class="n">WARMUP_STEPS</span><span class="p">,</span> <span class="n">num_training_steps</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+      <span class="n">proc_seq_count</span> <span class="o">=</span> <span class="mi">0</span>
+      <span class="n">batch_count</span> <span class="o">=</span> <span class="mi">0</span>
+      
+      <span class="n">tmp_jokes_tens</span> <span class="o">=</span> <span class="kc">None</span>
+      
+      <span class="n">losses</span> <span class="o">=</span> <span class="p">[]</span>
+      <span class="n">lrs</span> <span class="o">=</span> <span class="p">[]</span>
+      
+      <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">EPOCHS</span><span class="p">):</span>
+          
+          <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"EPOCH </span><span class="si">{opening_brace}</span><span class="n">epoch</span><span class="si">{closing_brace}</span><span class="s2"> started"</span> <span class="o">+</span> <span class="s1">'='</span> <span class="o">*</span> <span class="mi">30</span><span class="p">)</span>
+          <span class="n">progress_bar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="o">.</span><span class="n">tqdm</span><span class="p">(</span><span class="n">joke_dataloader</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">"Training"</span><span class="p">)</span>
+          
+          <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">progress_bar</span><span class="p">:</span>
+      
+              <span class="n">sentence</span><span class="p">,</span> <span class="n">tokens</span> <span class="o">=</span> <span class="n">sample</span>
+              
+              <span class="c1">#################### "Fit as many joke sequences into MAX_SEQ_LEN sequence as possible" logic start ####</span>
+              <span class="n">joke_tens</span> <span class="o">=</span> <span class="n">tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+      
+              <span class="c1"># Skip sample from dataset if it is longer than MAX_SEQ_LEN</span>
+              <span class="k">if</span> <span class="n">joke_tens</span><span class="o">.</span><span class="n">size</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">MAX_SEQ_LEN</span><span class="p">:</span>
+                  <span class="k">continue</span>
+              
+              <span class="c1"># The first joke sequence in the sequence</span>
+              <span class="k">if</span> <span class="ow">not</span> <span class="n">torch</span><span class="o">.</span><span class="n">is_tensor</span><span class="p">(</span><span class="n">tmp_jokes_tens</span><span class="p">):</span>
+                  <span class="n">tmp_jokes_tens</span> <span class="o">=</span> <span class="n">joke_tens</span>
+                  <span class="k">continue</span>
+              <span class="k">else</span><span class="p">:</span>
+                  <span class="c1"># The next joke does not fit in so we process the sequence and leave the last joke </span>
+                  <span class="c1"># as the start for next sequence </span>
+                  <span class="k">if</span> <span class="n">tmp_jokes_tens</span><span class="o">.</span><span class="n">size</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">joke_tens</span><span class="o">.</span><span class="n">size</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">MAX_SEQ_LEN</span><span class="p">:</span>
+                      <span class="n">work_jokes_tens</span> <span class="o">=</span> <span class="n">tmp_jokes_tens</span>
+                      <span class="n">tmp_jokes_tens</span> <span class="o">=</span> <span class="n">joke_tens</span>
+                  <span class="k">else</span><span class="p">:</span>
+                      <span class="c1">#Add the joke to sequence, continue and try to add more</span>
+                      <span class="n">tmp_jokes_tens</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">tmp_jokes_tens</span><span class="p">,</span> <span class="n">joke_tens</span><span class="p">[:,</span><span class="mi">1</span><span class="p">:]],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                      <span class="k">continue</span>
+              <span class="c1">################## Sequence ready, process it trough the model ##################</span>
+                  
+              <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">work_jokes_tens</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">work_jokes_tens</span><span class="p">)</span>
+              <span class="n">loss</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">loss</span>
+              <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+                          
+              <span class="n">proc_seq_count</span> <span class="o">=</span> <span class="n">proc_seq_count</span> <span class="o">+</span> <span class="mi">1</span>
+              <span class="k">if</span> <span class="n">proc_seq_count</span> <span class="o">==</span> <span class="n">BATCH_SIZE</span><span class="p">:</span>
+                  <span class="n">proc_seq_count</span> <span class="o">=</span> <span class="mi">0</span>    
+                  <span class="n">batch_count</span> <span class="o">+=</span> <span class="mi">1</span>
+                  <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+                  <span class="n">scheduler</span><span class="o">.</span><span class="n">step</span><span class="p">()</span> 
+                  <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+                  <span class="n">model</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+      
+              <span class="n">progress_bar</span><span class="o">.</span><span class="n">set_postfix</span><span class="p">({opening_brace}</span><span class="s1">'loss'</span><span class="p">:</span> <span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span> <span class="s1">'lr'</span><span class="p">:</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">get_last_lr</span><span class="p">()[</span><span class="mi">0</span><span class="p">]{closing_brace})</span>
+              <span class="n">losses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+              <span class="n">lrs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">scheduler</span><span class="o">.</span><span class="n">get_last_lr</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+              <span class="k">if</span> <span class="n">batch_count</span> <span class="o">==</span> <span class="mi">10</span><span class="p">:</span>
+                  <span class="n">batch_count</span> <span class="o">=</span> <span class="mi">0</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>/home/wallabot/miniconda3/envs/nlp/lib/python3.11/site-packages/transformers/optimization.py:429: FutureWarning: This implementation of AdamW is deprecated and will be removed in a future version. Use the PyTorch implementation torch.optim.AdamW instead, or set `no_deprecation_warning=True` to disable this warning
+        warnings.warn(
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>EPOCH 0 started==============================
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Training:   0%|          | 0/231657 [00:00&lt;?, ?it/s]</pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Training: 100%|██████████| 231657/231657 [32:29&lt;00:00, 118.83it/s, loss=3.1, lr=2.31e-7] 
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>EPOCH 1 started==============================
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Training: 100%|██████████| 231657/231657 [32:34&lt;00:00, 118.55it/s, loss=2.19, lr=4.62e-7]
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>EPOCH 2 started==============================
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Training: 100%|██████████| 231657/231657 [32:36&lt;00:00, 118.42it/s, loss=2.42, lr=6.93e-7]
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>EPOCH 3 started==============================
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Training: 100%|██████████| 231657/231657 [32:23&lt;00:00, 119.18it/s, loss=2.16, lr=9.25e-7]
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>EPOCH 4 started==============================
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Training: 100%|██████████| 231657/231657 [32:22&lt;00:00, 119.25it/s, loss=2.1, lr=1.16e-6] 
+      </pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+      <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+      
+      <span class="n">losses_np</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">losses</span><span class="p">)</span>
+      <span class="n">lrs_np</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">lrs</span><span class="p">)</span>
+      
+      <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+      <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">losses_np</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'loss'</span><span class="p">)</span>
+      <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lrs_np</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'learning rate'</span><span class="p">)</span>
+      <span class="n">plt</span><span class="o">.</span><span class="n">yscale</span><span class="p">(</span><span class="s1">'log'</span><span class="p">)</span>
+      <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+      <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-png-output-subarea">
+      <img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/gpt20.webp" width="993" height="505" alt="image gpt2 1" loading="lazy">
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Inference">Inference<a class="anchor-link" href="#Inference"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 23" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos a ver qué tal hace chistes el modelo</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">sentence_joke</span> <span class="o">=</span> <span class="s2">"JOKE:"</span>
+      <span class="n">input_tokens_joke</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">sentence_joke</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+      <span class="n">output_tokens_joke</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">input_tokens_joke</span><span class="p">)</span>
+      <span class="n">decoded_output_joke</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">output_tokens_joke</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+      
+      <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"decoded joke: </span><span class="se">\n</span><span class="si">{opening_brace}</span><span class="n">decoded_output_joke</span><span class="si">{closing_brace}</span><span class="s2">"</span><span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+      /home/wallabot/miniconda3/envs/nlp/lib/python3.11/site-packages/transformers/generation/utils.py:1178: UserWarning: Using the model-agnostic default `max_length` (=20) to control the generation length. We recommend setting `max_new_tokens` to control the maximum length of the generation.
+        warnings.warn(
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>decoded joke: 
+      JOKE:!!!!!!!!!!!!!!!!!
+      </pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Se puede ver que le pasas una secuencia con la palabra <code>joke</code> y te devuelve un chiste. Pero si le devuelves otra secuencia no</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">sentence_joke</span> <span class="o">=</span> <span class="s2">"My dog is cute and"</span>
+      <span class="n">input_tokens_joke</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">sentence_joke</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+      <span class="n">output_tokens_joke</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">input_tokens_joke</span><span class="p">)</span>
+      <span class="n">decoded_output_joke</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">output_tokens_joke</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+      
+      <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"decoded joke: </span><span class="se">\n</span><span class="si">{opening_brace}</span><span class="n">decoded_output_joke</span><span class="si">{closing_brace}</span><span class="s2">"</span><span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>decoded joke: 
+      My dog is cute and!!!!!!!!!!!!!!!
+      </pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Fine-tuning-GPT-2-for-sentence-classification">Fine tuning GPT-2 for sentence classification<a class="anchor-link" href="#Fine-tuning-GPT-2-for-sentence-classification"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 24" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Ahora vamos a hacer un entrenamiento con las librerías de Hugging Face</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Dataset">Dataset<a class="anchor-link" href="#Dataset"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 25" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos a usar el dataset <code>imdb</code> de clasificación de sentencias en positivas y negativas</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AdamW</span><span class="p">,</span> <span class="n">get_linear_schedule_with_warmup</span>',
+          '<span class="kn">import</span> <span class="nn">tqdm</span>',
+          '',
+          '<span class="n">BATCH_SIZE</span> <span class="o">=</span> <span class="mi">32</span>',
+          '<span class="n">EPOCHS</span> <span class="o">=</span> <span class="mi">5</span>',
+          '<span class="n">LEARNING_RATE</span> <span class="o">=</span> <span class="mf">3e-6</span>',
+          '<span class="n">WARMUP_STEPS</span> <span class="o">=</span> <span class="mi">5000</span>',
+          '<span class="n">MAX_SEQ_LEN</span> <span class="o">=</span> <span class="mi">500</span>',
+          '',
+          '<span class="n">optimizer</span> <span class="o">=</span> <span class="n">AdamW</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="n">LEARNING_RATE</span><span class="p">)</span>',
+          '<span class="n">scheduler</span> <span class="o">=</span> <span class="n">get_linear_schedule_with_warmup</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">num_warmup_steps</span><span class="o">=</span><span class="n">WARMUP_STEPS</span><span class="p">,</span> <span class="n">num_training_steps</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>',
+          '<span class="n">proc_seq_count</span> <span class="o">=</span> <span class="mi">0</span>',
+          '<span class="n">batch_count</span> <span class="o">=</span> <span class="mi">0</span>',
+          '',
+          '<span class="n">tmp_jokes_tens</span> <span class="o">=</span> <span class="kc">None</span>',
+          '',
+          '<span class="n">losses</span> <span class="o">=</span> <span class="p">[]</span>',
+          '<span class="n">lrs</span> <span class="o">=</span> <span class="p">[]</span>',
+          '',
+          '<span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">EPOCHS</span><span class="p">):</span>',
+          '    ',
+          '    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"EPOCH </span><span class="si">{</span><span class="n">epoch</span><span class="si">}</span><span class="s2"> started"</span> <span class="o">+</span> <span class="s1">\'=\'</span> <span class="o">*</span> <span class="mi">30</span><span class="p">)</span>',
+          '    <span class="n">progress_bar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="o">.</span><span class="n">tqdm</span><span class="p">(</span><span class="n">joke_dataloader</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">"Training"</span><span class="p">)</span>',
+          '    ',
+          '    <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">progress_bar</span><span class="p">:</span>',
+          '',
+          '        <span class="n">sentence</span><span class="p">,</span> <span class="n">tokens</span> <span class="o">=</span> <span class="n">sample</span>',
+          '        ',
+          '        <span class="c1">#################### "Fit as many joke sequences into MAX_SEQ_LEN sequence as possible" logic start ####</span>',
+          '        <span class="n">joke_tens</span> <span class="o">=</span> <span class="n">tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
+          '',
+          '        <span class="c1"># Skip sample from dataset if it is longer than MAX_SEQ_LEN</span>',
+          '        <span class="k">if</span> <span class="n">joke_tens</span><span class="o">.</span><span class="n">size</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">MAX_SEQ_LEN</span><span class="p">:</span>',
+          '            <span class="k">continue</span>',
+          '        ',
+          '        <span class="c1"># The first joke sequence in the sequence</span>',
+          '        <span class="k">if</span> <span class="ow">not</span> <span class="n">torch</span><span class="o">.</span><span class="n">is_tensor</span><span class="p">(</span><span class="n">tmp_jokes_tens</span><span class="p">):</span>',
+          '            <span class="n">tmp_jokes_tens</span> <span class="o">=</span> <span class="n">joke_tens</span>',
+          '            <span class="k">continue</span>',
+          '        <span class="k">else</span><span class="p">:</span>',
+          '            <span class="c1"># The next joke does not fit in so we process the sequence and leave the last joke </span>',
+          '            <span class="c1"># as the start for next sequence </span>',
+          '            <span class="k">if</span> <span class="n">tmp_jokes_tens</span><span class="o">.</span><span class="n">size</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">joke_tens</span><span class="o">.</span><span class="n">size</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">MAX_SEQ_LEN</span><span class="p">:</span>',
+          '                <span class="n">work_jokes_tens</span> <span class="o">=</span> <span class="n">tmp_jokes_tens</span>',
+          '                <span class="n">tmp_jokes_tens</span> <span class="o">=</span> <span class="n">joke_tens</span>',
+          '            <span class="k">else</span><span class="p">:</span>',
+          '                <span class="c1">#Add the joke to sequence, continue and try to add more</span>',
+          '                <span class="n">tmp_jokes_tens</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">tmp_jokes_tens</span><span class="p">,</span> <span class="n">joke_tens</span><span class="p">[:,</span><span class="mi">1</span><span class="p">:]],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>',
+          '                <span class="k">continue</span>',
+          '        <span class="c1">################## Sequence ready, process it trough the model ##################</span>',
+          '            ',
+          '        <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">work_jokes_tens</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">work_jokes_tens</span><span class="p">)</span>',
+          '        <span class="n">loss</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">loss</span>',
+          '        <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>',
+          '                    ',
+          '        <span class="n">proc_seq_count</span> <span class="o">=</span> <span class="n">proc_seq_count</span> <span class="o">+</span> <span class="mi">1</span>',
+          '        <span class="k">if</span> <span class="n">proc_seq_count</span> <span class="o">==</span> <span class="n">BATCH_SIZE</span><span class="p">:</span>',
+          '            <span class="n">proc_seq_count</span> <span class="o">=</span> <span class="mi">0</span>    ',
+          '            <span class="n">batch_count</span> <span class="o">+=</span> <span class="mi">1</span>',
+          '            <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>',
+          '            <span class="n">scheduler</span><span class="o">.</span><span class="n">step</span><span class="p">()</span> ',
+          '            <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>',
+          '            <span class="n">model</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>',
+          '',
+          '        <span class="n">progress_bar</span><span class="o">.</span><span class="n">set_postfix</span><span class="p">({</span><span class="s1">\'loss\'</span><span class="p">:</span> <span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span> <span class="s1">\'lr\'</span><span class="p">:</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">get_last_lr</span><span class="p">()[</span><span class="mi">0</span><span class="p">]})</span>',
+          '        <span class="n">losses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>',
+          '        <span class="n">lrs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">scheduler</span><span class="o">.</span><span class="n">get_last_lr</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>',
+          '        <span class="k">if</span> <span class="n">batch_count</span> <span class="o">==</span> <span class="mi">10</span><span class="p">:</span>',
+          '            <span class="n">batch_count</span> <span class="o">=</span> <span class="mi">0</span>',
+          '</span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>',
+          '<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>',
+          '',
+          '<span class="n">losses_np</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">losses</span><span class="p">)</span>',
+          '<span class="n">lrs_np</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">lrs</span><span class="p">)</span>',
+          '',
+          '<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>',
+          '<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">losses_np</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">\'loss\'</span><span class="p">)</span>',
+          '<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lrs_np</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">\'learning rate\'</span><span class="p">)</span>',
+          '<span class="n">plt</span><span class="o">.</span><span class="n">yscale</span><span class="p">(</span><span class="s1">\'log\'</span><span class="p">)</span>',
+          '<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>',
+          '<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>',
+          '</span><span class="n">sentence_joke</span> <span class="o">=</span> <span class="s2">"JOKE:"</span>',
+          '<span class="n">input_tokens_joke</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">sentence_joke</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
+          '<span class="n">output_tokens_joke</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">input_tokens_joke</span><span class="p">)</span>',
+          '<span class="n">decoded_output_joke</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">output_tokens_joke</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>',
+          '',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"decoded joke: </span><span class="se">\n</span><span class="si">{</span><span class="n">decoded_output_joke</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>',
+          '</span><span class="n">sentence_joke</span> <span class="o">=</span> <span class="s2">"My dog is cute and"</span>',
+          '<span class="n">input_tokens_joke</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">sentence_joke</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
+          '<span class="n">output_tokens_joke</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">input_tokens_joke</span><span class="p">)</span>',
+          '<span class="n">decoded_output_joke</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">output_tokens_joke</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>',
+          '',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"decoded joke: </span><span class="se">\n</span><span class="si">{</span><span class="n">decoded_output_joke</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>',
+          '</span><span class="kn">from</span> <span class="nn">datasets</span> <span class="kn">import</span> <span class="n">load_dataset</span>',
+          '',
+          '<span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"imdb"</span><span class="p">)</span>',
+          '<span class="n">dataset</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '/home/wallabot/miniconda3/envs/nlp/lib/python3.11/site-packages/transformers/optimization.py:429: FutureWarning: This implementation of AdamW is deprecated and will be removed in a future version. Use the PyTorch implementation torch.optim.AdamW instead, or set `no_deprecation_warning=True` to disable this warning',
+          '  warnings.warn(',
+          'Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.',
+          '/home/wallabot/miniconda3/envs/nlp/lib/python3.11/site-packages/transformers/generation/utils.py:1178: UserWarning: Using the model-agnostic default `max_length` (=20) to control the generation length. We recommend setting `max_new_tokens` to control the maximum length of the generation.',
+          '  warnings.warn(',
+          'Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.',
+          'DatasetDict({',
+          '    train: Dataset({',
+          '        features: [\'text\', \'label\'],',
+          '        num_rows: 25000',
+          '    })',
+          '    test: Dataset({',
+          '        features: [\'text\', \'label\'],',
+          '        num_rows: 25000',
+          '    })',
+          '    unsupervised: Dataset({',
+          '        features: [\'text\', \'label\'],',
+          '        num_rows: 50000',
+          '    })',
+          '})',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos a verlo un poco</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">]</span><span class="o">.</span><span class="n">info</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'DatasetInfo(description=\'\', citation=\'\', homepage=\'\', license=\'\', features={\'text\': Value(dtype=\'string\', id=None), \'label\': ClassLabel(names=[\'neg\', \'pos\'], id=None)}, post_processed=None, supervised_keys=None, task_templates=None, builder_name=\'parquet\', dataset_name=\'imdb\', config_name=\'plain_text\', version=0.0.0, splits={\'train\': SplitInfo(name=\'train\', num_bytes=33435948, num_examples=25000, shard_lengths=None, dataset_name=\'imdb\'), \'test\': SplitInfo(name=\'test\', num_bytes=32653810, num_examples=25000, shard_lengths=None, dataset_name=\'imdb\'), \'unsupervised\': SplitInfo(name=\'unsupervised\', num_bytes=67113044, num_examples=50000, shard_lengths=None, dataset_name=\'imdb\')}, download_checksums={\'hf://datasets/imdb@e6281661ce1c48d982bc483cf8a173c1bbeb5d31/plain_text/train-00000-of-00001.parquet\': {\'num_bytes\': 20979968, \'checksum\': None}, \'hf://datasets/imdb@e6281661ce1c48d982bc483cf8a173c1bbeb5d31/plain_text/test-00000-of-00001.parquet\': {\'num_bytes\': 20470363, \'checksum\': None}, \'hf://datasets/imdb@e6281661ce1c48d982bc483cf8a173c1bbeb5d31/plain_text/unsupervised-00000-of-00001.parquet\': {\'num_bytes\': 41996509, \'checksum\': None}}, download_size=83446840, post_processing_size=None, dataset_size=133202802, size_in_bytes=216649642)',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos a ver las features que tiene este dataset</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">]</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">features</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '{\'text\': Value(dtype=\'string\', id=None),',
+          ' \'label\': ClassLabel(names=[\'neg\', \'pos\'], id=None)}',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>El dataset contiene strings y clases. Además hay dos tipo de clases, <code>pos</code> y <code>neg</code>. Vamos a crear una variable con el numero de clases</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">num_clases</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="s2">"label"</span><span class="p">))</span>',
+          '<span class="n">num_clases</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '2',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Tokenizador">Tokenizador<a class="anchor-link" href="#Tokenizador"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 26" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Creamos el tokenizador</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">GPT2Tokenizer</span>',
+      '      ',
+      '      <span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2"</span>',
+      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">GPT2Tokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">,</span> <span class="n">bos_token</span><span class="o">=</span><span class="s1">\'&lt;|startoftext|&gt;\'</span><span class="p">,</span> <span class="n">eos_token</span><span class="o">=</span><span class="s1">\'&lt;|endoftext|&gt;\'</span><span class="p">,</span> <span class="n">pad_token</span><span class="o">=</span><span class="s1">\'&lt;|pad|&gt;\'</span><span class="p">)</span>',
+      '      <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Ahora que tenemos un tokenizador podemos tokenizar el dataset, ya que el modelo solo entiende tokens</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">GPT2Tokenizer</span>',
+      '      ',
+      '      <span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2"</span>',
+      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">GPT2Tokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">,</span> <span class="n">bos_token</span><span class="o">=</span><span class="s1">\'&lt;|startoftext|&gt;\'</span><span class="p">,</span> <span class="n">eos_token</span><span class="o">=</span><span class="s1">\'&lt;|endoftext|&gt;\'</span><span class="p">,</span> <span class="n">pad_token</span><span class="o">=</span><span class="s1">\'&lt;|pad|&gt;\'</span><span class="p">)</span>',
+      '      <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>',
+      '<span></span><span class="k">def</span> <span class="nf">tokenize_function</span><span class="p">(</span><span class="n">examples</span><span class="p">):</span>',
+      '          <span class="k">return</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">examples</span><span class="p">[</span><span class="s2">"text"</span><span class="p">],</span> <span class="n">padding</span><span class="o">=</span><span class="s2">"max_length"</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>',
+      '      ',
+      '      <span class="n">tokenized_datasets</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">tokenize_function</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Modelo">Modelo<a class="anchor-link" href="#Modelo"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 27" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Instanciamos el modelo</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">GPT2Tokenizer</span>',
+          '',
+          '<span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2"</span>',
+          '<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">GPT2Tokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">,</span> <span class="n">bos_token</span><span class="o">=</span><span class="s1">\'&lt;|startoftext|&gt;\'</span><span class="p">,</span> <span class="n">eos_token</span><span class="o">=</span><span class="s1">\'&lt;|endoftext|&gt;\'</span><span class="p">,</span> <span class="n">pad_token</span><span class="o">=</span><span class="s1">\'&lt;|pad|&gt;\'</span><span class="p">)</span>',
+          '<span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>',
+          '</span><span class="k">def</span> <span class="nf">tokenize_function</span><span class="p">(</span><span class="n">examples</span><span class="p">):</span>',
+          '    <span class="k">return</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">examples</span><span class="p">[</span><span class="s2">"text"</span><span class="p">],</span> <span class="n">padding</span><span class="o">=</span><span class="s2">"max_length"</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>',
+          '',
+          '<span class="n">tokenized_datasets</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">tokenize_function</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>',
+          '</span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">GPT2ForSequenceClassification</span>',
+          '',
+          '<span class="n">model</span> <span class="o">=</span> <span class="n">GPT2ForSequenceClassification</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">,</span> <span class="n">num_labels</span><span class="o">=</span><span class="n">num_clases</span><span class="p">)</span><span class="o">.</span><span class="n">half</span><span class="p">()</span>',
+          '<span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">eos_token_id</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Some weights of GPT2ForSequenceClassification were not initialized from the model checkpoint at openai-community/gpt2 and are newly initialized: [\'score.weight\']',
+          'You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Evaluaci%C3%B3n">Evaluación<a class="anchor-link" href="#Evaluaci%C3%B3n"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 28" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Creamos una métrica de evaluación</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>',
+      '      <span class="kn">import</span> <span class="nn">evaluate</span>',
+      '      ',
+      '      <span class="n">metric</span> <span class="o">=</span> <span class="n">evaluate</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">"accuracy"</span><span class="p">)</span>',
+      '      ',
+      '      <span class="k">def</span> <span class="nf">compute_metrics</span><span class="p">(</span><span class="n">eval_pred</span><span class="p">):</span>',
+      '          <span class="n">logits</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">eval_pred</span>',
+      '          <span class="n">predictions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>',
+      '          <span class="k">return</span> <span class="n">metric</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Trainer">Trainer<a class="anchor-link" href="#Trainer"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 29" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Creamos el trainer</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>',
+      '      <span class="kn">import</span> <span class="nn">evaluate</span>',
+      '      ',
+      '      <span class="n">metric</span> <span class="o">=</span> <span class="n">evaluate</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">"accuracy"</span><span class="p">)</span>',
+      '      ',
+      '      <span class="k">def</span> <span class="nf">compute_metrics</span><span class="p">(</span><span class="n">eval_pred</span><span class="p">):</span>',
+      '          <span class="n">logits</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">eval_pred</span>',
+      '          <span class="n">predictions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>',
+      '          <span class="k">return</span> <span class="n">metric</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">Trainer</span><span class="p">,</span> <span class="n">TrainingArguments</span>',
+      '      ',
+      '      <span class="n">training_args</span> <span class="o">=</span> <span class="n">TrainingArguments</span><span class="p">(</span>',
+      '          <span class="n">output_dir</span><span class="o">=</span><span class="s2">"./results"</span><span class="p">,</span>',
+      '          <span class="n">learning_rate</span><span class="o">=</span><span class="mf">2e-5</span><span class="p">,</span>',
+      '          <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>',
+      '          <span class="n">per_device_eval_batch_size</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>',
+      '          <span class="n">num_train_epochs</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>',
+      '          <span class="n">weight_decay</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>',
+      '      <span class="p">)</span>',
+      '      ',
+      '      <span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span>',
+      '          <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>',
+      '          <span class="n">args</span><span class="o">=</span><span class="n">training_args</span><span class="p">,</span>',
+      '          <span class="n">train_dataset</span><span class="o">=</span><span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"train"</span><span class="p">],</span>',
+      '          <span class="n">eval_dataset</span><span class="o">=</span><span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"test"</span><span class="p">],</span>',
+      '          <span class="n">compute_metrics</span><span class="o">=</span><span class="n">compute_metrics</span><span class="p">,</span>',
+      '      <span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Entrenamiento">Entrenamiento<a class="anchor-link" href="#Entrenamiento"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 30" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Entrenamos</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-html-rendered-html-output-subarea">
+      <div>
+      <progress max="4689" style="width:300px; height:20px; vertical-align: middle;" value="4689"></progress>
+            [4689/4689 1:27:50, Epoch 3/3]
+          </div>
+      <table border="1" class="dataframe">
+      <thead>
+      <tr style="text-align: left;">
+      <th>Step</th>
+      <th>Training Loss</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+      <td>500</td>
+      <td>0.379400</td>
+      </tr>
+      <tr>
+      <td>1000</td>
+      <td>0.000000</td>
+      </tr>
+      <tr>
+      <td>1500</td>
+      <td>0.000000</td>
+      </tr>
+      <tr>
+      <td>2000</td>
+      <td>0.000000</td>
+      </tr>
+      <tr>
+      <td>2500</td>
+      <td>0.000000</td>
+      </tr>
+      <tr>
+      <td>3000</td>
+      <td>0.000000</td>
+      </tr>
+      <tr>
+      <td>3500</td>
+      <td>0.000000</td>
+      </tr>
+      <tr>
+      <td>4000</td>
+      <td>0.000000</td>
+      </tr>
+      <tr>
+      <td>4500</td>
+      <td>0.000000</td>
+      </tr>
+      </tbody>
+      </table><p></p></div>
+      </div>
+      <div class="output-area">
+      <div class="prompt-output-prompt">Out[25]:</div>
+      <div class="output-text-output-subareaoutput_execute_result">
+      <pre>TrainOutput(global_step=4689, training_loss=0.04045845954294626, metrics={opening_brace}'train_runtime': 5271.3532, 'train_samples_per_second': 14.228, 'train_steps_per_second': 0.89, 'total_flos': 3.91945125888e+16, 'train_loss': 0.04045845954294626, 'epoch': 3.0{closing_brace})</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Inferencia">Inferencia<a class="anchor-link" href="#Inferencia"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 31" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Probamos el modelo después de entrenarlo</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>',
+      '      <span class="kn">import</span> <span class="nn">evaluate</span>',
+      '      ',
+      '      <span class="n">metric</span> <span class="o">=</span> <span class="n">evaluate</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">"accuracy"</span><span class="p">)</span>',
+      '      ',
+      '      <span class="k">def</span> <span class="nf">compute_metrics</span><span class="p">(</span><span class="n">eval_pred</span><span class="p">):</span>',
+      '          <span class="n">logits</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">eval_pred</span>',
+      '          <span class="n">predictions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>',
+      '          <span class="k">return</span> <span class="n">metric</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">Trainer</span><span class="p">,</span> <span class="n">TrainingArguments</span>',
+      '      ',
+      '      <span class="n">training_args</span> <span class="o">=</span> <span class="n">TrainingArguments</span><span class="p">(</span>',
+      '          <span class="n">output_dir</span><span class="o">=</span><span class="s2">"./results"</span><span class="p">,</span>',
+      '          <span class="n">learning_rate</span><span class="o">=</span><span class="mf">2e-5</span><span class="p">,</span>',
+      '          <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>',
+      '          <span class="n">per_device_eval_batch_size</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>',
+      '          <span class="n">num_train_epochs</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>',
+      '          <span class="n">weight_decay</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>',
+      '      <span class="p">)</span>',
+      '      ',
+      '      <span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span>',
+      '          <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>',
+      '          <span class="n">args</span><span class="o">=</span><span class="n">training_args</span><span class="p">,</span>',
+      '          <span class="n">train_dataset</span><span class="o">=</span><span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"train"</span><span class="p">],</span>',
+      '          <span class="n">eval_dataset</span><span class="o">=</span><span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"test"</span><span class="p">],</span>',
+      '          <span class="n">compute_metrics</span><span class="o">=</span><span class="n">compute_metrics</span><span class="p">,</span>',
+      '      <span class="p">)</span>',
+      '<span></span><span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>',
+      '<span></span><span class="kn">import</span> <span class="nn">torch</span>',
+      '      ',
+      '      <span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span><span class="p">)</span>',
+      '      ',
+      '      <span class="k">def</span> <span class="nf">get_sentiment</span><span class="p">(</span><span class="n">sentence</span><span class="p">):</span>',
+      '          <span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">sentence</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
+      '          <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span>',
+      '          <span class="n">prediction</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">logits</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>',
+      '          <span class="k">return</span> <span class="s2">"positive"</span> <span class="k">if</span> <span class="n">prediction</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">"negative"</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>',
+          '<span class="kn">import</span> <span class="nn">evaluate</span>',
+          '',
+          '<span class="n">metric</span> <span class="o">=</span> <span class="n">evaluate</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">"accuracy"</span><span class="p">)</span>',
+          '',
+          '<span class="k">def</span> <span class="nf">compute_metrics</span><span class="p">(</span><span class="n">eval_pred</span><span class="p">):</span>',
+          '    <span class="n">logits</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">eval_pred</span>',
+          '    <span class="n">predictions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>',
+          '    <span class="k">return</span> <span class="n">metric</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>',
+          '</span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">Trainer</span><span class="p">,</span> <span class="n">TrainingArguments</span>',
+          '',
+          '<span class="n">training_args</span> <span class="o">=</span> <span class="n">TrainingArguments</span><span class="p">(</span>',
+          '    <span class="n">output_dir</span><span class="o">=</span><span class="s2">"./results"</span><span class="p">,</span>',
+          '    <span class="n">learning_rate</span><span class="o">=</span><span class="mf">2e-5</span><span class="p">,</span>',
+          '    <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>',
+          '    <span class="n">per_device_eval_batch_size</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>',
+          '    <span class="n">num_train_epochs</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>',
+          '    <span class="n">weight_decay</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>',
+          '<span class="p">)</span>',
+          '',
+          '<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span>',
+          '    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>',
+          '    <span class="n">args</span><span class="o">=</span><span class="n">training_args</span><span class="p">,</span>',
+          '    <span class="n">train_dataset</span><span class="o">=</span><span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"train"</span><span class="p">],</span>',
+          '    <span class="n">eval_dataset</span><span class="o">=</span><span class="n">tokenized_datasets</span><span class="p">[</span><span class="s2">"test"</span><span class="p">],</span>',
+          '    <span class="n">compute_metrics</span><span class="o">=</span><span class="n">compute_metrics</span><span class="p">,</span>',
+          '<span class="p">)</span>',
+          '</span><span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>',
+          '</span><span class="kn">import</span> <span class="nn">torch</span>',
+          '',
+          '<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span><span class="p">)</span>',
+          '',
+          '<span class="k">def</span> <span class="nf">get_sentiment</span><span class="p">(</span><span class="n">sentence</span><span class="p">):</span>',
+          '    <span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">sentence</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
+          '    <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span>',
+          '    <span class="n">prediction</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">logits</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>',
+          '    <span class="k">return</span> <span class="s2">"positive"</span> <span class="k">if</span> <span class="n">prediction</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">"negative"</span>',
+          '</span><span class="n">sentence</span> <span class="o">=</span> <span class="s2">"I hate this movie!"</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">get_sentiment</span><span class="p">(</span><span class="n">sentence</span><span class="p">))</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'negative',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+
+
+
+
+
+
+    </div>
+
+  </section>
+
+</PostLayout>

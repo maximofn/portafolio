@@ -1,0 +1,1496 @@
+---
+import PostLayout from '@layouts/PostLayout.astro';
+import CodeBlockInputCell from '@components/CodeBlockInputCell.astro';
+import CodeBlockOutputCell from '@components/CodeBlockOutputCell.astro';
+
+const { metadata_page } = await import('@portfolio/consts.json');
+const { colors } = await import('@portfolio/consts.json');
+const { svg_paths } = await import('@portfolio/consts.json');
+
+const page_title = 'Hugging Face Tokenizers';
+const end_url = 'hugging-face-tokenizers';
+const description = '📄 ➡️ 🔤 Explora el poder de la biblioteca Tokenizers de Hugging Face para el procesamiento del lenguaje natural en IA. Descubre cómo esta herramienta esencial transforma el texto en datos estructurados, optimizando el entrenamiento de modelos de inteligencia artificial con ejemplos prácticos y código en Python. Sumérgete en el futuro de la NLP con nuestra guía experta';
+const keywords = 'hugging face, tokenizers, procesamiento de lenguaje natural, pln, inteligencia artificial, ia, python';
+const languaje = 'ES';
+const image_path = "https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/Hugging%20Face's%20tokenizers%20library.webp";
+const opening_brace = '{';
+const closing_brace = '}';
+---
+
+<PostLayout 
+    title={page_title}
+    languaje={languaje}
+    description={description}
+    keywords={keywords}
+    author={metadata_page.author}
+    theme_color={colors.background_color}
+    end_url={end_url}
+    image_path={image_path}
+    image_width=1024
+    image_height=1024
+    image_extension=webp
+    article_date=2024-02-26+T00:00:00Z
+>
+
+  <section class="post-body">
+
+
+    <aside class="post-index">
+      <a class="anchor-link" href="#Instalaci%C3%B3n"><h2>Instalación</h2></a>
+      <a class="anchor-link" href="#El-pipeline-de-tokenizaci%C3%B3n"><h2>El pipeline de tokenización</h2></a>
+      <a class="anchor-link" href="#Normalizaci%C3%B3n"><h3>Normalización</h3></a>
+      <a class="anchor-link" href="#Pre-tokenizaci%C3%B3n"><h3>Pre-tokenización</h3></a>
+      <a class="anchor-link" href="#Tokenizaci%C3%B3n"><h3>Tokenización</h3></a>
+      <a class="anchor-link" href="#Entrenamiento-del-modelo"><h4>Entrenamiento del modelo</h4></a>
+      <a class="anchor-link" href="#Entrenamiento-del-modelo-con-el-m%C3%A9todo-train"><h5>Entrenamiento del modelo con el método <code>train</code></h5></a>
+      <a class="anchor-link" href="#Entrenamiento-del-modelo-con-el-m%C3%A9todo-train_from_iterator"><h5>Entrenamiento del modelo con el método <code>train_from_iterator</code></h5></a>
+      <a class="anchor-link" href="#Entrenamiento-del-modelo-con-el-m%C3%A9todo-train_from_iterator-desde-un-dataset-de-Hugging-Face"><h5>Entrenamiento del modelo con el método <code>train_from_iterator</code> desde un dataset de Hugging Face</h5></a>
+      <a class="anchor-link" href="#Guardando-el-modelo"><h4>Guardando el modelo</h4></a>
+      <a class="anchor-link" href="#Cargando-el-modelo-preentrenado"><h4>Cargando el modelo preentrenado</h4></a>
+      <a class="anchor-link" href="#Post-procesamiento"><h3>Post procesamiento</h3></a>
+      <a class="anchor-link" href="#Encoding"><h3>Encoding</h3></a>
+      <a class="anchor-link" href="#Decoding"><h3>Decoding</h3></a>
+      <a class="anchor-link" href="#BERT-tokenizer"><h2>BERT tokenizer</h2></a>
+    </aside>
+
+
+    <div class="post-body-content">
+      
+      <section class="section-block-markdown-cell">
+      <h1 id="Hugging-Face-tokenizers">Hugging Face tokenizers<a class="anchor-link" href="#Hugging-Face-tokenizers"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 0" src={svg_paths.link_svg_path}/></a></h1>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>La librería <code>tokenizers</code> de Hugging Face proporciona una implementación de los tokenizadores más utilizados en la actualidad, centrándose en el rendimiento y la versatilidad. En el post <a href="https://maximofn.com/tokens/">tokens</a> ya vimos la importancia de los tokens a la hora de procesar textos, ya que los ordenadores no entienden de palabras, sino de números. Por tanto, es necesario convertir las palabras a números para que los modelos de lenguaje puedan procesarlos.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Instalaci%C3%B3n">Instalación<a class="anchor-link" href="#Instalaci%C3%B3n"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 1" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Para instalar <code>tokenizers</code> con pip:</p>
+      <div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>tokenizers
+      </pre></div>
+      <p>para instalar <code>tokenizers</code> con conda:</p>
+      <div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>conda-forge::tokenizers
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="El-pipeline-de-tokenizaci%C3%B3n">El pipeline de tokenización<a class="anchor-link" href="#El-pipeline-de-tokenizaci%C3%B3n"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 2" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Para tokenizar una secuencia se usa <code>Tokenizer.encode</code>, el cual realiza los siguientes pasos:</p>
+      <ul>
+      <li>Normalización</li>
+      <li>pre-tokenización</li>
+      <li>Tokenización</li>
+      <li>Post-tokenización</li>
+      </ul>
+      <p>Vamos a ver cada una</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Para realizar el post vamos a usar el dataset <a href="https://blog.einstein.ai/the-wikitext-long-term-dependency-language-modeling-dataset/" target="_blank" rel="nofollow noreferrer">wikitext-103</a></p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="o">!</span>wget<span class="w"> </span>https://dax-cdn.cdn.appdomain.cloud/dax-wikitext-103/1.0.1/wikitext-103.tar.gz
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>--2024-02-26 08:14:11--  https://dax-cdn.cdn.appdomain.cloud/dax-wikitext-103/1.0.1/wikitext-103.tar.gz
+      Resolving dax-cdn.cdn.appdomain.cloud (dax-cdn.cdn.appdomain.cloud)... 23.200.169.125
+      Connecting to dax-cdn.cdn.appdomain.cloud (dax-cdn.cdn.appdomain.cloud)|23.200.169.125|:443... connected.
+      HTTP request sent, awaiting response... </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stdout-output-text">
+      <pre>200 OK
+      Length: 189603606 (181M) [application/x-gzip]
+      Saving to: ‘wikitext-103.tar.gz’
+      
+      wikitext-103.tar.gz 100%[===================&gt;] 180,82M  6,42MB/s    in 30s     
+      
+      2024-02-26 08:14:42 (5,95 MB/s) - ‘wikitext-103.tar.gz’ saved [189603606/189603606]
+      
+      </pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="o">!</span>wget<span class="w"> </span>https://dax-cdn.cdn.appdomain.cloud/dax-wikitext-103/1.0.1/wikitext-103.tar.gz',
+          '</span><span class="o">!</span>tar<span class="w"> </span>-xvzf<span class="w"> </span>wikitext-103.tar.gz',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '--2024-02-26 08:14:11--  https://dax-cdn.cdn.appdomain.cloud/dax-wikitext-103/1.0.1/wikitext-103.tar.gz',
+          'Resolving dax-cdn.cdn.appdomain.cloud (dax-cdn.cdn.appdomain.cloud)... 23.200.169.125',
+          'Connecting to dax-cdn.cdn.appdomain.cloud (dax-cdn.cdn.appdomain.cloud)|23.200.169.125|:443... connected.',
+          'HTTP request sent, awaiting response... ',
+          'wikitext-103/',
+          'wikitext-103/wiki.test.tokens',
+          'wikitext-103/wiki.valid.tokens',
+          'wikitext-103/README.txt',
+          'wikitext-103/LICENSE.txt',
+          'wikitext-103/wiki.train.tokens',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="o">!</span>rm<span class="w"> </span>wikitext-103.tar.gz',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Normalizaci%C3%B3n">Normalización<a class="anchor-link" href="#Normalizaci%C3%B3n"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 3" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>La normalización son operaciones que se aplican al texto antes de la tokenización, como la eliminación de espacios en blanco, la conversión a minúsculas, la eliminación de caracteres especiales, etc. En Hugging Face están implementadas las siguientes normalizaciones:</p>
+      <table>
+      <thead>
+      <tr>
+      <th>Normalización</th>
+      <th>Descripción</th>
+      <th>Ejemplo</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+      <td>NFD (Normalization for D)</td>
+      <td>Los caracteres se descomponen por equivalencia canónica</td>
+      <td><code>â</code> (U+00E2) se descompone en <code>a</code> (U+0061) + <code>^</code> (U+0302)</td>
+      </tr>
+      <tr>
+      <td>NFKD (Normalization Form KD)</td>
+      <td>Los caracteres se descomponen por compatibilidad</td>
+      <td><code>ﬁ</code> (U+FB01) se descompone en <code>f</code> (U+0066) + <code>i</code> (U+0069)</td>
+      </tr>
+      <tr>
+      <td>NFC (Normalization Form C)</td>
+      <td>Los caracteres se descomponen y luego se recomponen por equivalencia canónica</td>
+      <td><code>â</code> (U+00E2) se descompone en <code>a</code> (U+0061) + <code>^</code> (U+0302) y luego se recompone en <code>â</code> (U+00E2)</td>
+      </tr>
+      <tr>
+      <td>NFKC (Normalization Form KC)</td>
+      <td>Los caracteres se descomponen por compatibilidad y luego se recomponen por equivalencia canónica</td>
+      <td><code>ﬁ</code> (U+FB01) se descompone en <code>f</code> (U+0066) + <code>i</code> (U+0069) y luego se recompone en <code>f</code> (U+0066) + <code>i</code> (U+0069)</td>
+      </tr>
+      <tr>
+      <td>Lowercase</td>
+      <td>Convierte el texto a minúsculas</td>
+      <td><code>Hello World</code> se convierte en <code>hello world</code></td>
+      </tr>
+      <tr>
+      <td>Strip</td>
+      <td>Elimina todos los espacios en blanco de los lados especificados (izquierdo, derecho o ambos) del texto</td>
+      <td><code>Hello World</code> se convierte en <code>Hello World</code></td>
+      </tr>
+      <tr>
+      <td>StripAccents</td>
+      <td>Elimina todos los símbolos de acento en unicode (se utilizará con NFD por coherencia)</td>
+      <td><code>á</code> (U+00E1) se convierte en <code>a</code> (U+0061)</td>
+      </tr>
+      <tr>
+      <td>Replace</td>
+      <td>Sustituye una cadena personalizada o <a href="https://maximofn.com/regular-expressions/">regex</a> y la cambia por el contenido dado</td>
+      <td><code>Hello World</code> se convierte en <code>Hello Universe</code></td>
+      </tr>
+      <tr>
+      <td>BertNormalizer</td>
+      <td>Proporciona una implementación del Normalizador utilizado en el BERT original. Las opciones que se pueden configurar son <code>clean_text</code>, <code>handle_chinese_chars</code>, <code>strip_accents</code> y <code>lowercase</code></td>
+      <td><code>Hello World</code> se convierte en <code>hello world</code></td>
+      </tr>
+      </tbody>
+      </table>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos a crear un normalizador para ver cómo funciona</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="o">!</span>rm<span class="w"> </span>wikitext-103.tar.gz',
+          '</span><span class="kn">from</span> <span class="nn">tokenizers</span> <span class="kn">import</span> <span class="n">normalizers</span>',
+          '',
+          '<span class="n">bert_normalizer</span> <span class="o">=</span> <span class="n">normalizers</span><span class="o">.</span><span class="n">BertNormalizer</span><span class="p">()</span>',
+          '',
+          '<span class="n">input_text</span> <span class="o">=</span> <span class="s2">"Héllò hôw are ü?"</span>',
+          '<span class="n">normalized_text</span> <span class="o">=</span> <span class="n">bert_normalizer</span><span class="o">.</span><span class="n">normalize_str</span><span class="p">(</span><span class="n">input_text</span><span class="p">)</span>',
+          '<span class="n">normalized_text</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '\'hello how are u?\'',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Para usar varios normalizadores podemos usar el método <code>Sequence</code></p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">custom_normalizer</span> <span class="o">=</span> <span class="n">normalizers</span><span class="o">.</span><span class="n">Sequence</span><span class="p">([</span><span class="n">normalizers</span><span class="o">.</span><span class="n">NFKC</span><span class="p">(),</span> <span class="n">normalizers</span><span class="o">.</span><span class="n">BertNormalizer</span><span class="p">()])</span>',
+          '',
+          '<span class="n">normalized_text</span> <span class="o">=</span> <span class="n">custom_normalizer</span><span class="o">.</span><span class="n">normalize_str</span><span class="p">(</span><span class="n">input_text</span><span class="p">)</span>',
+          '<span class="n">normalized_text</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '\'hello how are u?\'',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Para modificar el normalizador de un tokenizador</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">import</span> <span class="nn">tokenizers</span>',
+      '      ',
+      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">tokenizers</span><span class="o">.</span><span class="n">BertWordPieceTokenizer</span><span class="p">()</span> <span class="c1"># or any other tokenizer</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">import</span> <span class="nn">tokenizers</span>',
+      '      ',
+      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">tokenizers</span><span class="o">.</span><span class="n">BertWordPieceTokenizer</span><span class="p">()</span> <span class="c1"># or any other tokenizer</span>',
+      '<span></span><span class="n">tokenizer</span><span class="o">.</span><span class="n">normalizer</span> <span class="o">=</span> <span class="n">custom_normalizer</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Pre-tokenizaci%C3%B3n">Pre-tokenización<a class="anchor-link" href="#Pre-tokenizaci%C3%B3n"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 4" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>La pretokenización es el acto de dividir un texto en objetos más pequeños. El pretokenizador dividirá el texto en "palabras" y los tokens finales serán partes de esas palabras.</p>
+      <p>El PreTokenizer se encarga de dividir la entrada según un conjunto de reglas. Este preprocesamiento le permite asegurarse de que el tokenizador no construye tokens a través de múltiples "divisiones". Por ejemplo, si no quieres tener espacios en blanco dentro de un token, entonces puedes tener un pre tokenizer que divide en las palabras a partir de espacios en blanco.</p>
+      <p>En Hugging Face están implementados los siguientes pre tokenizadores</p>
+      <table>
+      <thead>
+      <tr>
+      <th>PreTokenizer</th>
+      <th>Descripción</th>
+      <th>Ejemplo</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+      <td>ByteLevel</td>
+      <td>Divide en espacios en blanco mientras reasigna todos los bytes a un conjunto de caracteres visibles. Esta técnica fue introducida por OpenAI con GPT-2 y tiene algunas propiedades más o menos buenas: Como mapea sobre bytes, un tokenizador que utilice esto sólo requiere 256 caracteres como alfabeto inicial (el número de valores que puede tener un byte), frente a los más de 130.000 caracteres Unicode. Una consecuencia del punto anterior es que es absolutamente innecesario tener un token desconocido usando esto ya que podemos representar cualquier cosa con 256 tokens. Para caracteres no ascii, se vuelve completamente ilegible, ¡pero funciona!</td>
+      <td><code>Hello my friend, how are you?</code> se divide en <code>Hello</code>, <code>Ġmy</code>, <code>Ġfriend</code>, <code>,</code>, <code>Ġhow</code>, <code>Ġare</code>, <code>Ġyou</code>, <code>?</code></td>
+      </tr>
+      <tr>
+      <td>Whitespace</td>
+      <td>Divide en límites de palabra usando la siguiente expresión regular: <code>\w+[^\w\s]+</code>. En mi post sobre <a href="https://maximofn.com/regular-expressions/">expresiones regulares</a> puedes entender qué hace</td>
+      <td><code>Hello there!</code> se divide en <code>Hello</code>, <code>there</code>, <code>!</code></td>
+      </tr>
+      <tr>
+      <td>WhitespaceSplit</td>
+      <td>Se divide en cualquier carácter de espacio en blanco</td>
+      <td><code>Hello there!</code> se divide en <code>Hello</code>, <code>there!</code></td>
+      </tr>
+      <tr>
+      <td>Punctuation</td>
+      <td>Aislará todos los caracteres de puntuación</td>
+      <td><code>Hello?</code> se divide en <code>Hello</code>, <code>?</code></td>
+      </tr>
+      <tr>
+      <td>Metaspace</td>
+      <td>Separa los espacios en blanco y los sustituye por un carácter especial "▁" (U+2581)</td>
+      <td><code>Hello there</code> se divide en <code>Hello</code>, <code>▁there</code></td>
+      </tr>
+      <tr>
+      <td>CharDelimiterSplit</td>
+      <td>Divisiones en un carácter determinado</td>
+      <td>Ejemplo con el caracter <code>x</code>: <code>Helloxthere</code> se divide en <code>Hello</code>, <code>there</code></td>
+      </tr>
+      <tr>
+      <td>Digits</td>
+      <td>Divide los números de cualquier otro carácter</td>
+      <td><code>Hello123there</code> se divide en <code>Hello</code>, <code>123</code>, <code>there</code></td>
+      </tr>
+      <tr>
+      <td>Split</td>
+      <td>Pretokenizador versátil que divide según el patrón y el comportamiento proporcionados. El patrón se puede invertir si es necesario. El patrón debe ser una cadena personalizada o una <a href="https://maximofn.com/regular-expressions/">regex</a>. El comportamiento debe ser <code>removed</code>, <code>isolated</code>, <code>merged_with_previous</code>, <code>merged_with_next</code>, <code>contiguous</code>. Para invertir se indica con un booleano</td>
+      <td>Ejemplo con pattern=<code>" "</code>, behavior=<code>isolated</code>, invert=<code>False</code>: <code>Hello, how are you?</code> se divide en <code>Hello,</code>, <code></code>, <code>how</code>, <code></code>, <code>are</code>, <code></code>, <code>you?</code></td>
+      </tr>
+      </tbody>
+      </table>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos a crear un pre tokenizador para ver cómo funciona</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">import</span> <span class="nn">tokenizers</span>',
+          '',
+          '<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">tokenizers</span><span class="o">.</span><span class="n">BertWordPieceTokenizer</span><span class="p">()</span> <span class="c1"># or any other tokenizer</span>',
+          '</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">normalizer</span> <span class="o">=</span> <span class="n">custom_normalizer</span>',
+          '</span><span class="kn">from</span> <span class="nn">tokenizers</span> <span class="kn">import</span> <span class="n">pre_tokenizers</span>',
+          '',
+          '<span class="n">pre_tokenizer</span> <span class="o">=</span> <span class="n">pre_tokenizers</span><span class="o">.</span><span class="n">Digits</span><span class="p">(</span><span class="n">individual_digits</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>',
+          '',
+          '<span class="n">input_text</span> <span class="o">=</span> <span class="s2">"I paid $30 for the car"</span>',
+          '<span class="n">pre_tokenized_text</span> <span class="o">=</span> <span class="n">pre_tokenizer</span><span class="o">.</span><span class="n">pre_tokenize_str</span><span class="p">(</span><span class="n">input_text</span><span class="p">)</span>',
+          '<span class="n">pre_tokenized_text</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '[(\'I paid $\', (0, 8)),',
+          ' (\'3\', (8, 9)),',
+          ' (\'0\', (9, 10)),',
+          ' (\' for the car\', (10, 22))]',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Para usar varios pre tokenizadores podemos usar el método <code>Sequence</code></p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">custom_pre_tokenizer</span> <span class="o">=</span> <span class="n">pre_tokenizers</span><span class="o">.</span><span class="n">Sequence</span><span class="p">([</span><span class="n">pre_tokenizers</span><span class="o">.</span><span class="n">Whitespace</span><span class="p">(),</span> <span class="n">pre_tokenizers</span><span class="o">.</span><span class="n">Digits</span><span class="p">(</span><span class="n">individual_digits</span><span class="o">=</span><span class="kc">True</span><span class="p">)])</span>',
+          '',
+          '<span class="n">pre_tokenized_text</span> <span class="o">=</span> <span class="n">custom_pre_tokenizer</span><span class="o">.</span><span class="n">pre_tokenize_str</span><span class="p">(</span><span class="n">input_text</span><span class="p">)</span>',
+          '<span class="n">pre_tokenized_text</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '[(\'I\', (0, 1)),',
+          ' (\'paid\', (2, 6)),',
+          ' (\'$\', (7, 8)),',
+          ' (\'3\', (8, 9)),',
+          ' (\'0\', (9, 10)),',
+          ' (\'for\', (11, 14)),',
+          ' (\'the\', (15, 18)),',
+          ' (\'car\', (19, 22))]',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Para modificar el pre tokenizador de un tokenizador</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">tokenizer</span><span class="o">.</span><span class="n">pre_tokenizer</span> <span class="o">=</span> <span class="n">custom_pre_tokenizer</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Tokenizaci%C3%B3n">Tokenización<a class="anchor-link" href="#Tokenizaci%C3%B3n"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 5" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Una vez normalizados y pretokenizados los textos de entrada, el tokenizador aplica el modelo a los pretokens. Esta es la parte del proceso que debe entrenarse con el corpus (o que ya se ha entrenado si se utiliza un tokenizador preentrenado).</p>
+      <p>La función del modelo es dividir las "palabras" en tokens utilizando las reglas que ha aprendido. También es responsable de asignar esos tokens a sus ID correspondientes en el vocabulario del modelo.</p>
+      <p>El modelo tiene un tamaño de vocabulario, es decir, tiene una cantidad finita de tokens, por lo que tiene que descomponer las palabras y asignarlas a uno de esos tokens.</p>
+      <p>Este modelo se pasa al inicializar el Tokenizer. Actualmente, la librería 🤗 Tokenizers soporta:</p>
+      <table>
+      <thead>
+      <tr>
+      <th>Modelo</th>
+      <th>Descripción</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+      <td>WordLevel</td>
+      <td>Este es el algoritmo "clásico" de tokenización. Te permite simplemente asignar palabras a IDs sin nada sofisticado. Tiene la ventaja de ser muy fácil de usar y entender, pero requiere vocabularios extremadamente grandes para una buena cobertura. El uso de este modelo requiere el uso de un PreTokenizer. Este modelo no realiza ninguna elección directamente, simplemente asigna tokens de entrada a IDs.</td>
+      </tr>
+      <tr>
+      <td>BPE (Byte Pair Encoding)</td>
+      <td>Uno de los algoritmos de tokenización de subpalabras más populares. El Byte-Pair-Encoding funciona empezando con caracteres y fusionando los que se ven juntos con más frecuencia, creando así nuevos tokens. A continuación, trabaja de forma iterativa para construir nuevos tokens a partir de los pares más frecuentes que ve en un corpus. BPE es capaz de construir palabras que nunca ha visto utilizando múltiples subpalabras y, por tanto, requiere vocabularios más pequeños, con menos posibilidades de tener palabras <code>unk</code> (desconocidas).</td>
+      </tr>
+      <tr>
+      <td>WordPiece</td>
+      <td>Se trata de un algoritmo de tokenización de subpalabras bastante similar a BPE, utilizado principalmente por Google en modelos como BERT. Utiliza un algoritmo codicioso que intenta construir primero palabras largas, dividiéndolas en varios tokens cuando no existen palabras completas en el vocabulario. A diferencia de BPE, que parte de los caracteres y construye tokens lo más grandes posible. Utiliza el famoso prefijo ## para identificar los tokens que forman parte de una palabra (es decir, que no empiezan una palabra).</td>
+      </tr>
+      <tr>
+      <td>Unigram</td>
+      <td>Unigram es también un algoritmo de tokenización de subpalabras, y funciona tratando de identificar el mejor conjunto de tokens de subpalabras para maximizar la probabilidad de una frase dada. Se diferencia de BPE en que no es un algoritmo determinista basado en un conjunto de reglas aplicadas secuencialmente. En su lugar, Unigram podrá calcular múltiples formas de tokenizar, eligiendo la más probable.</td>
+      </tr>
+      </tbody>
+      </table>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Cuando se crea un tokenizador se le tiene que pasar el modelo</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">tokenizer</span><span class="o">.</span><span class="n">pre_tokenizer</span> <span class="o">=</span> <span class="n">custom_pre_tokenizer</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">tokenizers</span> <span class="kn">import</span> <span class="n">Tokenizer</span><span class="p">,</span> <span class="n">models</span>',
+      '      ',
+      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">Tokenizer</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Unigram</span><span class="p">())</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos a pasarle el normalizador y el pre tokenizador que hemos creado</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">tokenizer</span><span class="o">.</span><span class="n">pre_tokenizer</span> <span class="o">=</span> <span class="n">custom_pre_tokenizer</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">tokenizers</span> <span class="kn">import</span> <span class="n">Tokenizer</span><span class="p">,</span> <span class="n">models</span>',
+      '      ',
+      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">Tokenizer</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Unigram</span><span class="p">())</span>',
+      '<span></span><span class="n">tokenizer</span><span class="o">.</span><span class="n">normalizer</span> <span class="o">=</span> <span class="n">custom_normalizer</span>',
+      '      <span class="n">tokenizer</span><span class="o">.</span><span class="n">pre_tokenizer</span> <span class="o">=</span> <span class="n">custom_pre_tokenizer</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Ahora hay que entrenar el modelo o cargar uno preentrenado. En este caso vamos a entrenar uno con el corpus que nos hemos descargado</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Entrenamiento-del-modelo">Entrenamiento del modelo<a class="anchor-link" href="#Entrenamiento-del-modelo"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 6" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Para entrenar el modelo tenemos varios tipos de <code>Trainer</code>s</p>
+      <table>
+      <thead>
+      <tr>
+      <th>Trainer</th>
+      <th>Descripción</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+      <td>WordLevelTrainer</td>
+      <td>Entrena un tokenizador WordLevel</td>
+      </tr>
+      <tr>
+      <td>BpeTrainer</td>
+      <td>Entrena un tokenizador BPE</td>
+      </tr>
+      <tr>
+      <td>WordPieceTrainer</td>
+      <td>Entrena un tokenizador WordPiece</td>
+      </tr>
+      <tr>
+      <td>UnigramTrainer</td>
+      <td>Entrena un tokenizador Unigram</td>
+      </tr>
+      </tbody>
+      </table>
+      <p>Casi todos los trainers tienen los mismos parámetros, que son:</p>
+      <ul>
+      <li>vocab_size: El tamaño del vocabulario final, incluidos todos los tokens y el alfabeto.</li>
+      <li>show_progress: Mostrar o no barras de progreso durante el entrenamiento</li>
+      <li>special_tokens: Una lista de fichas especiales que el modelo debe conocer</li>
+      </ul>
+      <p>A parte de estos parámetros, cada trainer tiene sus propios parámetros, para verlos mirar la documentación de los <a href="https://huggingface.co/docs/tokenizers/api/trainers" target="_blank" rel="nofollow noreferrer">Trainers</a></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Para entrenar tenemos que crear un <code>Trainer</code>, como el modelo que hemos creado es un <code>Unigram</code> vamos a crear un <code>UnigramTrainer</code></p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">tokenizer</span><span class="o">.</span><span class="n">pre_tokenizer</span> <span class="o">=</span> <span class="n">custom_pre_tokenizer</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">tokenizers</span> <span class="kn">import</span> <span class="n">Tokenizer</span><span class="p">,</span> <span class="n">models</span>',
+      '      ',
+      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">Tokenizer</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Unigram</span><span class="p">())</span>',
+      '<span></span><span class="n">tokenizer</span><span class="o">.</span><span class="n">normalizer</span> <span class="o">=</span> <span class="n">custom_normalizer</span>',
+      '      <span class="n">tokenizer</span><span class="o">.</span><span class="n">pre_tokenizer</span> <span class="o">=</span> <span class="n">custom_pre_tokenizer</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">tokenizers.trainers</span> <span class="kn">import</span> <span class="n">trainers</span>',
+      '      ',
+      '      <span class="n">trainer</span> <span class="o">=</span> <span class="n">trainers</span><span class="o">.</span><span class="n">UnigramTrainer</span><span class="p">(</span>',
+      '          <span class="n">vocab_size</span><span class="o">=</span><span class="mi">20000</span><span class="p">,</span>',
+      '          <span class="n">initial_alphabet</span><span class="o">=</span><span class="n">pre_tokenizers</span><span class="o">.</span><span class="n">ByteLevel</span><span class="o">.</span><span class="n">alphabet</span><span class="p">(),</span>',
+      '          <span class="n">special_tokens</span><span class="o">=</span><span class="p">[</span><span class="s2">"&lt;PAD&gt;"</span><span class="p">,</span> <span class="s2">"&lt;BOS&gt;"</span><span class="p">,</span> <span class="s2">"&lt;EOS&gt;"</span><span class="p">],</span>',
+      '      <span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Una vez hemos creado el <code>Trainer</code> hay dos maneras de entrear, mediante el método <code>train</code>, al que se le pasa una lista de archivos, o mediante el método <code>train_from_iterator</code> al que se le pasa un iterador</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h5 id="Entrenamiento-del-modelo-con-el-m%C3%A9todo-train">Entrenamiento del modelo con el método <code>train</code><a class="anchor-link" href="#Entrenamiento-del-modelo-con-el-m%C3%A9todo-train"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 7" src={svg_paths.link_svg_path}/></a></h5>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Primero creamos una lista de archivos con el corpus</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">tokenizer</span><span class="o">.</span><span class="n">pre_tokenizer</span> <span class="o">=</span> <span class="n">custom_pre_tokenizer</span>',
+          '</span><span class="kn">from</span> <span class="nn">tokenizers</span> <span class="kn">import</span> <span class="n">Tokenizer</span><span class="p">,</span> <span class="n">models</span>',
+          '',
+          '<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">Tokenizer</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Unigram</span><span class="p">())</span>',
+          '</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">normalizer</span> <span class="o">=</span> <span class="n">custom_normalizer</span>',
+          '<span class="n">tokenizer</span><span class="o">.</span><span class="n">pre_tokenizer</span> <span class="o">=</span> <span class="n">custom_pre_tokenizer</span>',
+          '</span><span class="kn">from</span> <span class="nn">tokenizers.trainers</span> <span class="kn">import</span> <span class="n">trainers</span>',
+          '',
+          '<span class="n">trainer</span> <span class="o">=</span> <span class="n">trainers</span><span class="o">.</span><span class="n">UnigramTrainer</span><span class="p">(</span>',
+          '    <span class="n">vocab_size</span><span class="o">=</span><span class="mi">20000</span><span class="p">,</span>',
+          '    <span class="n">initial_alphabet</span><span class="o">=</span><span class="n">pre_tokenizers</span><span class="o">.</span><span class="n">ByteLevel</span><span class="o">.</span><span class="n">alphabet</span><span class="p">(),</span>',
+          '    <span class="n">special_tokens</span><span class="o">=</span><span class="p">[</span><span class="s2">"&lt;PAD&gt;"</span><span class="p">,</span> <span class="s2">"&lt;BOS&gt;"</span><span class="p">,</span> <span class="s2">"&lt;EOS&gt;"</span><span class="p">],</span>',
+          '<span class="p">)</span>',
+          '</span><span class="n">files</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"wikitext-103/wiki.</span><span class="si">{</span><span class="n">split</span><span class="si">}</span><span class="s2">.tokens"</span> <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"test"</span><span class="p">,</span> <span class="s2">"train"</span><span class="p">,</span> <span class="s2">"valid"</span><span class="p">]]</span>',
+          '<span class="n">files</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '[\'wikitext-103/wiki.test.tokens\',',
+          ' \'wikitext-103/wiki.train.tokens\',',
+          ' \'wikitext-103/wiki.valid.tokens\']',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Y ahora entrenamos el modelo</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">tokenizer</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">trainer</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <h5 id="Entrenamiento-del-modelo-con-el-m%C3%A9todo-train_from_iterator">Entrenamiento del modelo con el método <code>train_from_iterator</code><a class="anchor-link" href="#Entrenamiento-del-modelo-con-el-m%C3%A9todo-train_from_iterator"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 8" src={svg_paths.link_svg_path}/></a></h5>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Primero creamos una función que nos devuelva un iterador</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="k">def</span> <span class="nf">iterator</span><span class="p">():</span>',
+      '          <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>',
+      '              <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>',
+      '                  <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>',
+      '                      <span class="k">yield</span> <span class="n">line</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Ahora volvemos a entrenar el modelo</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="k">def</span> <span class="nf">iterator</span><span class="p">():</span>',
+          '    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>',
+          '        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>',
+          '            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>',
+          '                <span class="k">yield</span> <span class="n">line</span>',
+          '</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">train_from_iterator</span><span class="p">(</span><span class="n">iterator</span><span class="p">(),</span> <span class="n">trainer</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <h5 id="Entrenamiento-del-modelo-con-el-m%C3%A9todo-train_from_iterator-desde-un-dataset-de-Hugging-Face">Entrenamiento del modelo con el método <code>train_from_iterator</code> desde un dataset de Hugging Face<a class="anchor-link" href="#Entrenamiento-del-modelo-con-el-m%C3%A9todo-train_from_iterator-desde-un-dataset-de-Hugging-Face"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 9" src={svg_paths.link_svg_path}/></a></h5>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Si nos hubiésemos descargado el dataset de Hugging Face, podríamos haber entrenado el modelo directamente desde el dataset</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">import</span> <span class="nn">datasets</span>',
+      '      ',
+      '      <span class="n">dataset</span> <span class="o">=</span> <span class="n">datasets</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s2">"wikitext"</span><span class="p">,</span> <span class="s2">"wikitext-103-raw-v1"</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">"train+test+validation"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Ahora podemos crear un iterador</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">import</span> <span class="nn">datasets</span>',
+      '      ',
+      '      <span class="n">dataset</span> <span class="o">=</span> <span class="n">datasets</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s2">"wikitext"</span><span class="p">,</span> <span class="s2">"wikitext-103-raw-v1"</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">"train+test+validation"</span><span class="p">)</span>',
+      '<span></span><span class="k">def</span> <span class="nf">batch_iterator</span><span class="p">(</span><span class="n">batch_size</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>',
+      '          <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">),</span> <span class="n">batch_size</span><span class="p">):</span>',
+      '              <span class="k">yield</span> <span class="n">dataset</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">batch_size</span><span class="p">][</span><span class="s2">"text"</span><span class="p">]</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Volvemos a entrenar el modelo</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">import</span> <span class="nn">datasets</span>',
+          '',
+          '<span class="n">dataset</span> <span class="o">=</span> <span class="n">datasets</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s2">"wikitext"</span><span class="p">,</span> <span class="s2">"wikitext-103-raw-v1"</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">"train+test+validation"</span><span class="p">)</span>',
+          '</span><span class="k">def</span> <span class="nf">batch_iterator</span><span class="p">(</span><span class="n">batch_size</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>',
+          '    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">),</span> <span class="n">batch_size</span><span class="p">):</span>',
+          '        <span class="k">yield</span> <span class="n">dataset</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">batch_size</span><span class="p">][</span><span class="s2">"text"</span><span class="p">]</span>',
+          '</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">train_from_iterator</span><span class="p">(</span><span class="n">batch_iterator</span><span class="p">(),</span> <span class="n">trainer</span><span class="o">=</span><span class="n">trainer</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">))</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Guardando-el-modelo">Guardando el modelo<a class="anchor-link" href="#Guardando-el-modelo"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 10" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Una vez se ha entrenado el modelo, se puede guardar para usarlo en el futuro. Para guardar el modelo hay que hacerlo en un archivo <code>json</code></p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">tokenizer</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">"wikitext-103-tokenizer.json"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Cargando-el-modelo-preentrenado">Cargando el modelo preentrenado<a class="anchor-link" href="#Cargando-el-modelo-preentrenado"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 11" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Podemos cargar un modelo preentrenado a partir de un <code>json</code> en vez de tener que entrenarlo</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">tokenizer</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">"wikitext-103-tokenizer.json"</span><span class="p">)</span>',
+          '</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">"wikitext-103-tokenizer.json"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '&lt;tokenizers.Tokenizer at 0x7f1dd7784a30&gt;',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>También podemos cargar un modelo preentrenado disponible en el Hub de Hugging Face</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">tokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s1">\'bert-base-uncased\'</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '&lt;tokenizers.Tokenizer at 0x7f1d64a75e30&gt;',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Post-procesamiento">Post procesamiento<a class="anchor-link" href="#Post-procesamiento"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 12" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Es posible que queramos que nuestro tokenizador añada automáticamente tokens especiales, como <code>[CLS]</code> o <code>[SEP]</code>.</p>
+      <p>En Hugging Face están implementados los siguientes post procesadores</p>
+      <table>
+      <thead>
+      <tr>
+      <th>PostProcesador</th>
+      <th>Descripción</th>
+      <th>Ejemplo</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+      <td>BertProcessing</td>
+      <td>Este post-procesador se encarga de añadir los tokens especiales que necesita un modelo Bert (<code>SEP</code> y <code>CLS</code>)</td>
+      <td><code>Hello, how are you?</code> se convierte en <code>[CLS]</code>, <code>Hello</code>, <code>,</code>, <code>how</code>, <code>are</code>, <code>you</code>, <code>?</code>, <code>[SEP]</code></td>
+      </tr>
+      <tr>
+      <td>RobertaProcessing</td>
+      <td>Este post-procesador se encarga de añadir los tokens especiales que necesita un modelo Roberta (<code>SEP</code> y <code>CLS</code>). También se encarga de recortar los offsets. Por defecto, el ByteLevel BPE puede incluir espacios en blanco en los tokens producidos. Si no desea que las compensaciones incluyan estos espacios en blanco, hay que inicializar este PostProcessor con <code>trim_offsets=True</code>.</td>
+      <td><code>Hello, how are you?</code> se convierte en <code>&lt;s&gt;</code>, <code>Hello</code>, <code>,</code>, <code>how</code>, <code>are</code>, <code>you</code>, <code>?</code>, <code>&lt;/s&gt;</code></td>
+      </tr>
+      <tr>
+      <td>ElectraProcessing</td>
+      <td>Añade tokens especiales para ELECTRA</td>
+      <td><code>Hello, how are you?</code> se convierte en <code>[CLS]</code>, <code>Hello</code>, <code>,</code>, <code>how</code>, <code>are</code>, <code>you</code>, <code>?</code>, <code>[SEP]</code></td>
+      </tr>
+      <tr>
+      <td>TemplateProcessing</td>
+      <td>Permite crear fácilmente una plantilla para el postprocesamiento, añadiendo tokens especiales y especificando el type_id de cada secuencia/token especial. La plantilla recibe dos cadenas que representan la secuencia única y el par de secuencias, así como un conjunto de tokens especiales a utilizar</td>
+      <td>Example, when specifying a template with these values: single:<code>[CLS] $A [SEP]</code>, pair: <code>[CLS] $A [SEP] $B [SEP]</code>, special tokens: <code>[CLS]</code>, <code>[SEP]</code>. Input: (<code>I like this</code>, <code>but not this</code>), Output: <code>[CLS] I like this [SEP] but not this [SEP]</code></td>
+      </tr>
+      </tbody>
+      </table>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos a crear un post tokenizador para ver cómo funciona</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">tokenizers.processors</span> <span class="kn">import</span> <span class="n">TemplateProcessing</span>',
+      '      ',
+      '      <span class="n">post_processor</span> <span class="o">=</span> <span class="n">TemplateProcessing</span><span class="p">(</span>',
+      '          <span class="n">single</span><span class="o">=</span><span class="s2">"[CLS] $A [SEP]"</span><span class="p">,</span>',
+      '          <span class="n">pair</span><span class="o">=</span><span class="s2">"[CLS] $A [SEP] $B:1 [SEP]:1"</span><span class="p">,</span>',
+      '          <span class="n">special_tokens</span><span class="o">=</span><span class="p">[(</span><span class="s2">"[CLS]"</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="s2">"[SEP]"</span><span class="p">,</span> <span class="mi">2</span><span class="p">)],</span>',
+      '      <span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Para modificar el post tokenizador de un tokenizador</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">tokenizers.processors</span> <span class="kn">import</span> <span class="n">TemplateProcessing</span>',
+      '      ',
+      '      <span class="n">post_processor</span> <span class="o">=</span> <span class="n">TemplateProcessing</span><span class="p">(</span>',
+      '          <span class="n">single</span><span class="o">=</span><span class="s2">"[CLS] $A [SEP]"</span><span class="p">,</span>',
+      '          <span class="n">pair</span><span class="o">=</span><span class="s2">"[CLS] $A [SEP] $B:1 [SEP]:1"</span><span class="p">,</span>',
+      '          <span class="n">special_tokens</span><span class="o">=</span><span class="p">[(</span><span class="s2">"[CLS]"</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="s2">"[SEP]"</span><span class="p">,</span> <span class="mi">2</span><span class="p">)],</span>',
+      '      <span class="p">)</span>',
+      '<span></span><span class="n">tokenizer</span><span class="o">.</span><span class="n">post_processor</span> <span class="o">=</span> <span class="n">post_processor</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Veamos cómo funciona</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">tokenizers.processors</span> <span class="kn">import</span> <span class="n">TemplateProcessing</span>',
+          '',
+          '<span class="n">post_processor</span> <span class="o">=</span> <span class="n">TemplateProcessing</span><span class="p">(</span>',
+          '    <span class="n">single</span><span class="o">=</span><span class="s2">"[CLS] $A [SEP]"</span><span class="p">,</span>',
+          '    <span class="n">pair</span><span class="o">=</span><span class="s2">"[CLS] $A [SEP] $B:1 [SEP]:1"</span><span class="p">,</span>',
+          '    <span class="n">special_tokens</span><span class="o">=</span><span class="p">[(</span><span class="s2">"[CLS]"</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="s2">"[SEP]"</span><span class="p">,</span> <span class="mi">2</span><span class="p">)],</span>',
+          '<span class="p">)</span>',
+          '</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">post_processor</span> <span class="o">=</span> <span class="n">post_processor</span>',
+          '</span><span class="n">input_text</span> <span class="o">=</span> <span class="s2">"I paid $30 for the car"</span>',
+          '<span class="n">decoded_text</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">input_text</span><span class="p">)</span>',
+          '',
+          '<span class="n">decoded_text</span><span class="o">.</span><span class="n">tokens</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '[\'[CLS]\', \'i\', \'paid\', \'$\', \'3\', \'0\', \'for\', \'the\', \'car\', \'[SEP]\']',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">input_text1</span> <span class="o">=</span> <span class="s2">"Hello, y\'all!"</span>',
+          '<span class="n">input_text2</span> <span class="o">=</span> <span class="s2">"How are you?"</span>',
+          '<span class="n">decoded_text</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">input_text1</span><span class="p">,</span> <span class="n">input_text2</span><span class="p">)</span>',
+          '',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">decoded_text</span><span class="o">.</span><span class="n">tokens</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '[\'[CLS]\', \'hell\', \'o\', \',\', \'y\', "\'", \'all\', \'!\', \'[SEP]\', \'how\', \'are\', \'you\', \'?\', \'[SEP]\']',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Si ahora guardásemos el tokenizador, el post tokenizador se guardaría con él</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Encoding">Encoding<a class="anchor-link" href="#Encoding"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 13" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Una vez tenemos el tokenizador entrenado, podemos usarlo para tokenizar textos</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">input_text</span> <span class="o">=</span> <span class="s2">"I love tokenizers!"</span>',
+      '      <span class="n">encoded_text</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">input_text</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos a ver qué obtenemos al tokenizar un texto</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">input_text</span> <span class="o">=</span> <span class="s2">"I love tokenizers!"</span>',
+          '<span class="n">encoded_text</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">input_text</span><span class="p">)</span>',
+          '</span><span class="nb">type</span><span class="p">(</span><span class="n">encoded_text</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'tokenizers.Encoding',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Obtenemos un objeto de tipo <a href="https://huggingface.co/docs/tokenizers/api/encoding#tokenizers.Encoding" target="_blank" rel="nofollow noreferrer">Encoding</a>, que contiene los tokens y los ids de los tokens</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Los <code>ids</code> son los <code>id</code>s de los tokens en el vocabulario del tokenizador</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">encoded_text</span><span class="o">.</span><span class="n">ids</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '[1, 17, 383, 10694, 17, 3533, 3, 586, 2]',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Los <code>tokens</code> son los tokens a los que equivalen los <code>ids</code></p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">encoded_text</span><span class="o">.</span><span class="n">tokens</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '[\'[CLS]\', \'i\', \'love\', \'token\', \'i\', \'zer\', \'s\', \'!\', \'[SEP]\']',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Si tenemos varias secuencias podemos codificarlas todas a la vez</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">encoded_texts</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">input_text1</span><span class="p">,</span> <span class="n">input_text2</span><span class="p">)</span>',
+          '',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">encoded_texts</span><span class="o">.</span><span class="n">tokens</span><span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">encoded_texts</span><span class="o">.</span><span class="n">ids</span><span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">encoded_texts</span><span class="o">.</span><span class="n">type_ids</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '[\'[CLS]\', \'hell\', \'o\', \',\', \'y\', "\'", \'all\', \'!\', \'[SEP]\', \'how\', \'are\', \'you\', \'?\', \'[SEP]\']',
+          '[1, 2215, 7, 5, 22, 26, 81, 586, 2, 98, 59, 213, 902, 2]',
+          '[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Sin embargo, cuando se tienen varias secuencias es mejor usar el método <code>encode_batch</code></p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">encoded_texts</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">encode_batch</span><span class="p">([</span><span class="n">input_text1</span><span class="p">,</span> <span class="n">input_text2</span><span class="p">])</span>',
+          '',
+          '<span class="nb">type</span><span class="p">(</span><span class="n">encoded_texts</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'list',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vemos que obtenemos una lista</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="nb">print</span><span class="p">(</span><span class="n">encoded_texts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">tokens</span><span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">encoded_texts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">ids</span><span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">encoded_texts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">tokens</span><span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">encoded_texts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">ids</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '[\'[CLS]\', \'hell\', \'o\', \',\', \'y\', "\'", \'all\', \'!\', \'[SEP]\']',
+          '[1, 2215, 7, 5, 22, 26, 81, 586, 2]',
+          '[\'[CLS]\', \'how\', \'are\', \'you\', \'?\', \'[SEP]\']',
+          '[1, 98, 59, 213, 902, 2]',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Decoding">Decoding<a class="anchor-link" href="#Decoding"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 14" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Además de codificar los textos de entrada, un Tokenizer también tiene un método para decodificar, es decir, convertir los ID generados por su modelo de nuevo a un texto. Esto se hace mediante los métodos <code>Tokenizer.decode</code> (para un texto predicho) y <code>Tokenizer.decode_batch</code> (para un lote de predicciones).</p>
+      <p>Los tipos de decodificación que se pueden usar son:</p>
+      <table>
+      <thead>
+      <tr>
+      <th>Decodificación</th>
+      <th>Descripción</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+      <td>BPEDecoder</td>
+      <td>Revierte el modelo BPE</td>
+      </tr>
+      <tr>
+      <td>ByteLevel</td>
+      <td>Revierte el ByteLevel PreTokenizer. Este PreTokenizer codifica a nivel de byte, utilizando un conjunto de caracteres Unicode visibles para representar cada byte, por lo que necesitamos un Decoder para revertir este proceso y obtener algo legible de nuevo.</td>
+      </tr>
+      <tr>
+      <td>CTC</td>
+      <td>Revierte el modelo CTC</td>
+      </tr>
+      <tr>
+      <td>Metaspace</td>
+      <td>Revierte el PreTokenizer de Metaspace. Este PreTokenizer utiliza un identificador especial ▁ para identificar los espacios en blanco, por lo que este Decoder ayuda con la decodificación de estos.</td>
+      </tr>
+      <tr>
+      <td>WordPiece</td>
+      <td>Revierte el modelo WordPiece. Este modelo utiliza un identificador especial ## para las subpalabras continuas, por lo que este decodificador ayuda a decodificarlas.</td>
+      </tr>
+      </tbody>
+      </table>
+      <p>El decodificador convertirá primero los IDs en tokens (usando el vocabulario del tokenizador) y eliminará todos los tokens especiales, después unirá esos tokens con espacios en blanco.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos a crear un decoder</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">tokenizers</span> <span class="kn">import</span> <span class="n">decoders</span>',
+      '      ',
+      '      <span class="n">decoder</span> <span class="o">=</span> <span class="n">decoders</span><span class="o">.</span><span class="n">ByteLevel</span><span class="p">()</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Lo añadimos al tokenizador</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">tokenizers</span> <span class="kn">import</span> <span class="n">decoders</span>',
+      '      ',
+      '      <span class="n">decoder</span> <span class="o">=</span> <span class="n">decoders</span><span class="o">.</span><span class="n">ByteLevel</span><span class="p">()</span>',
+      '<span></span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="n">decoder</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Decodificamos</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">tokenizers</span> <span class="kn">import</span> <span class="n">decoders</span>',
+          '',
+          '<span class="n">decoder</span> <span class="o">=</span> <span class="n">decoders</span><span class="o">.</span><span class="n">ByteLevel</span><span class="p">()</span>',
+          '</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="n">decoder</span>',
+          '</span><span class="n">decoded_text</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">encoded_text</span><span class="o">.</span><span class="n">ids</span><span class="p">)</span>',
+          '',
+          '<span class="n">input_text</span><span class="p">,</span> <span class="n">decoded_text</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '(\'I love tokenizers!\', \'ilovetokenizers!\')',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">decoded_texts</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">decode_batch</span><span class="p">([</span><span class="n">encoded_texts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">ids</span><span class="p">,</span> <span class="n">encoded_texts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">ids</span><span class="p">])</span>',
+          '',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">input_text1</span><span class="p">,</span> <span class="n">decoded_texts</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">input_text2</span><span class="p">,</span> <span class="n">decoded_texts</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Hello, y\'all! hello,y\'all!',
+          'How are you? howareyou?',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="BERT-tokenizer">BERT tokenizer<a class="anchor-link" href="#BERT-tokenizer"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 15" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Con todo lo aprendido vamos a crear el tokenizador de BERT desde cero, primero creamos el tokenizador. Bert usa <code>WordPiece</code> como modelo, por lo que lo pasamos al inicializar del tokenizador</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">tokenizers</span> <span class="kn">import</span> <span class="n">Tokenizer</span>',
+      '      <span class="kn">from</span> <span class="nn">tokenizers.models</span> <span class="kn">import</span> <span class="n">WordPiece</span>',
+      '      ',
+      '      <span class="n">bert_tokenizer</span> <span class="o">=</span> <span class="n">Tokenizer</span><span class="p">(</span><span class="n">WordPiece</span><span class="p">(</span><span class="n">unk_token</span><span class="o">=</span><span class="s2">"[UNK]"</span><span class="p">))</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>BERT preprocesa los textos eliminando los acentos y las minúsculas. También utilizamos un normalizador unicode</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">tokenizers</span> <span class="kn">import</span> <span class="n">Tokenizer</span>',
+      '      <span class="kn">from</span> <span class="nn">tokenizers.models</span> <span class="kn">import</span> <span class="n">WordPiece</span>',
+      '      ',
+      '      <span class="n">bert_tokenizer</span> <span class="o">=</span> <span class="n">Tokenizer</span><span class="p">(</span><span class="n">WordPiece</span><span class="p">(</span><span class="n">unk_token</span><span class="o">=</span><span class="s2">"[UNK]"</span><span class="p">))</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">tokenizers</span> <span class="kn">import</span> <span class="n">normalizers</span>',
+      '      <span class="kn">from</span> <span class="nn">tokenizers.normalizers</span> <span class="kn">import</span> <span class="n">NFD</span><span class="p">,</span> <span class="n">Lowercase</span><span class="p">,</span> <span class="n">StripAccents</span>',
+      '      ',
+      '      <span class="n">bert_tokenizer</span><span class="o">.</span><span class="n">normalizer</span> <span class="o">=</span> <span class="n">normalizers</span><span class="o">.</span><span class="n">Sequence</span><span class="p">([</span><span class="n">NFD</span><span class="p">(),</span> <span class="n">Lowercase</span><span class="p">(),</span> <span class="n">StripAccents</span><span class="p">()])</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>El pretokenizador sólo divide los espacios en blanco y los signos de puntuación.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">tokenizers</span> <span class="kn">import</span> <span class="n">Tokenizer</span>',
+      '      <span class="kn">from</span> <span class="nn">tokenizers.models</span> <span class="kn">import</span> <span class="n">WordPiece</span>',
+      '      ',
+      '      <span class="n">bert_tokenizer</span> <span class="o">=</span> <span class="n">Tokenizer</span><span class="p">(</span><span class="n">WordPiece</span><span class="p">(</span><span class="n">unk_token</span><span class="o">=</span><span class="s2">"[UNK]"</span><span class="p">))</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">tokenizers</span> <span class="kn">import</span> <span class="n">normalizers</span>',
+      '      <span class="kn">from</span> <span class="nn">tokenizers.normalizers</span> <span class="kn">import</span> <span class="n">NFD</span><span class="p">,</span> <span class="n">Lowercase</span><span class="p">,</span> <span class="n">StripAccents</span>',
+      '      ',
+      '      <span class="n">bert_tokenizer</span><span class="o">.</span><span class="n">normalizer</span> <span class="o">=</span> <span class="n">normalizers</span><span class="o">.</span><span class="n">Sequence</span><span class="p">([</span><span class="n">NFD</span><span class="p">(),</span> <span class="n">Lowercase</span><span class="p">(),</span> <span class="n">StripAccents</span><span class="p">()])</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">tokenizers.pre_tokenizers</span> <span class="kn">import</span> <span class="n">Whitespace</span>',
+      '      ',
+      '      <span class="n">bert_tokenizer</span><span class="o">.</span><span class="n">pre_tokenizer</span> <span class="o">=</span> <span class="n">Whitespace</span><span class="p">()</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Y el post-procesamiento utiliza la plantilla que vimos en la sección anterior</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">tokenizers</span> <span class="kn">import</span> <span class="n">Tokenizer</span>',
+      '      <span class="kn">from</span> <span class="nn">tokenizers.models</span> <span class="kn">import</span> <span class="n">WordPiece</span>',
+      '      ',
+      '      <span class="n">bert_tokenizer</span> <span class="o">=</span> <span class="n">Tokenizer</span><span class="p">(</span><span class="n">WordPiece</span><span class="p">(</span><span class="n">unk_token</span><span class="o">=</span><span class="s2">"[UNK]"</span><span class="p">))</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">tokenizers</span> <span class="kn">import</span> <span class="n">normalizers</span>',
+      '      <span class="kn">from</span> <span class="nn">tokenizers.normalizers</span> <span class="kn">import</span> <span class="n">NFD</span><span class="p">,</span> <span class="n">Lowercase</span><span class="p">,</span> <span class="n">StripAccents</span>',
+      '      ',
+      '      <span class="n">bert_tokenizer</span><span class="o">.</span><span class="n">normalizer</span> <span class="o">=</span> <span class="n">normalizers</span><span class="o">.</span><span class="n">Sequence</span><span class="p">([</span><span class="n">NFD</span><span class="p">(),</span> <span class="n">Lowercase</span><span class="p">(),</span> <span class="n">StripAccents</span><span class="p">()])</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">tokenizers.pre_tokenizers</span> <span class="kn">import</span> <span class="n">Whitespace</span>',
+      '      ',
+      '      <span class="n">bert_tokenizer</span><span class="o">.</span><span class="n">pre_tokenizer</span> <span class="o">=</span> <span class="n">Whitespace</span><span class="p">()</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">tokenizers.processors</span> <span class="kn">import</span> <span class="n">TemplateProcessing</span>',
+      '      ',
+      '      <span class="n">bert_tokenizer</span><span class="o">.</span><span class="n">post_processor</span> <span class="o">=</span> <span class="n">TemplateProcessing</span><span class="p">(</span>',
+      '          <span class="n">single</span><span class="o">=</span><span class="s2">"[CLS] $A [SEP]"</span><span class="p">,</span>',
+      '          <span class="n">pair</span><span class="o">=</span><span class="s2">"[CLS] $A [SEP] $B:1 [SEP]:1"</span><span class="p">,</span>',
+      '          <span class="n">special_tokens</span><span class="o">=</span><span class="p">[</span>',
+      '              <span class="p">(</span><span class="s2">"[CLS]"</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>',
+      '              <span class="p">(</span><span class="s2">"[SEP]"</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>',
+      '          <span class="p">],</span>',
+      '      <span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Entrenamos el tokenizador con el dataset de wikitext-103</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">tokenizers</span> <span class="kn">import</span> <span class="n">Tokenizer</span>',
+      '      <span class="kn">from</span> <span class="nn">tokenizers.models</span> <span class="kn">import</span> <span class="n">WordPiece</span>',
+      '      ',
+      '      <span class="n">bert_tokenizer</span> <span class="o">=</span> <span class="n">Tokenizer</span><span class="p">(</span><span class="n">WordPiece</span><span class="p">(</span><span class="n">unk_token</span><span class="o">=</span><span class="s2">"[UNK]"</span><span class="p">))</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">tokenizers</span> <span class="kn">import</span> <span class="n">normalizers</span>',
+      '      <span class="kn">from</span> <span class="nn">tokenizers.normalizers</span> <span class="kn">import</span> <span class="n">NFD</span><span class="p">,</span> <span class="n">Lowercase</span><span class="p">,</span> <span class="n">StripAccents</span>',
+      '      ',
+      '      <span class="n">bert_tokenizer</span><span class="o">.</span><span class="n">normalizer</span> <span class="o">=</span> <span class="n">normalizers</span><span class="o">.</span><span class="n">Sequence</span><span class="p">([</span><span class="n">NFD</span><span class="p">(),</span> <span class="n">Lowercase</span><span class="p">(),</span> <span class="n">StripAccents</span><span class="p">()])</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">tokenizers.pre_tokenizers</span> <span class="kn">import</span> <span class="n">Whitespace</span>',
+      '      ',
+      '      <span class="n">bert_tokenizer</span><span class="o">.</span><span class="n">pre_tokenizer</span> <span class="o">=</span> <span class="n">Whitespace</span><span class="p">()</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">tokenizers.processors</span> <span class="kn">import</span> <span class="n">TemplateProcessing</span>',
+      '      ',
+      '      <span class="n">bert_tokenizer</span><span class="o">.</span><span class="n">post_processor</span> <span class="o">=</span> <span class="n">TemplateProcessing</span><span class="p">(</span>',
+      '          <span class="n">single</span><span class="o">=</span><span class="s2">"[CLS] $A [SEP]"</span><span class="p">,</span>',
+      '          <span class="n">pair</span><span class="o">=</span><span class="s2">"[CLS] $A [SEP] $B:1 [SEP]:1"</span><span class="p">,</span>',
+      '          <span class="n">special_tokens</span><span class="o">=</span><span class="p">[</span>',
+      '              <span class="p">(</span><span class="s2">"[CLS]"</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>',
+      '              <span class="p">(</span><span class="s2">"[SEP]"</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>',
+      '          <span class="p">],</span>',
+      '      <span class="p">)</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">tokenizers.trainers</span> <span class="kn">import</span> <span class="n">WordPieceTrainer</span>',
+      '      ',
+      '      <span class="n">trainer</span> <span class="o">=</span> <span class="n">WordPieceTrainer</span><span class="p">(</span><span class="n">vocab_size</span><span class="o">=</span><span class="mi">30522</span><span class="p">,</span> <span class="n">special_tokens</span><span class="o">=</span><span class="p">[</span><span class="s2">"[UNK]"</span><span class="p">,</span> <span class="s2">"[CLS]"</span><span class="p">,</span> <span class="s2">"[SEP]"</span><span class="p">,</span> <span class="s2">"[PAD]"</span><span class="p">,</span> <span class="s2">"[MASK]"</span><span class="p">])</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">tokenizers</span> <span class="kn">import</span> <span class="n">Tokenizer</span>',
+          '<span class="kn">from</span> <span class="nn">tokenizers.models</span> <span class="kn">import</span> <span class="n">WordPiece</span>',
+          '',
+          '<span class="n">bert_tokenizer</span> <span class="o">=</span> <span class="n">Tokenizer</span><span class="p">(</span><span class="n">WordPiece</span><span class="p">(</span><span class="n">unk_token</span><span class="o">=</span><span class="s2">"[UNK]"</span><span class="p">))</span>',
+          '</span><span class="kn">from</span> <span class="nn">tokenizers</span> <span class="kn">import</span> <span class="n">normalizers</span>',
+          '<span class="kn">from</span> <span class="nn">tokenizers.normalizers</span> <span class="kn">import</span> <span class="n">NFD</span><span class="p">,</span> <span class="n">Lowercase</span><span class="p">,</span> <span class="n">StripAccents</span>',
+          '',
+          '<span class="n">bert_tokenizer</span><span class="o">.</span><span class="n">normalizer</span> <span class="o">=</span> <span class="n">normalizers</span><span class="o">.</span><span class="n">Sequence</span><span class="p">([</span><span class="n">NFD</span><span class="p">(),</span> <span class="n">Lowercase</span><span class="p">(),</span> <span class="n">StripAccents</span><span class="p">()])</span>',
+          '</span><span class="kn">from</span> <span class="nn">tokenizers.pre_tokenizers</span> <span class="kn">import</span> <span class="n">Whitespace</span>',
+          '',
+          '<span class="n">bert_tokenizer</span><span class="o">.</span><span class="n">pre_tokenizer</span> <span class="o">=</span> <span class="n">Whitespace</span><span class="p">()</span>',
+          '</span><span class="kn">from</span> <span class="nn">tokenizers.processors</span> <span class="kn">import</span> <span class="n">TemplateProcessing</span>',
+          '',
+          '<span class="n">bert_tokenizer</span><span class="o">.</span><span class="n">post_processor</span> <span class="o">=</span> <span class="n">TemplateProcessing</span><span class="p">(</span>',
+          '    <span class="n">single</span><span class="o">=</span><span class="s2">"[CLS] $A [SEP]"</span><span class="p">,</span>',
+          '    <span class="n">pair</span><span class="o">=</span><span class="s2">"[CLS] $A [SEP] $B:1 [SEP]:1"</span><span class="p">,</span>',
+          '    <span class="n">special_tokens</span><span class="o">=</span><span class="p">[</span>',
+          '        <span class="p">(</span><span class="s2">"[CLS]"</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>',
+          '        <span class="p">(</span><span class="s2">"[SEP]"</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>',
+          '    <span class="p">],</span>',
+          '<span class="p">)</span>',
+          '</span><span class="kn">from</span> <span class="nn">tokenizers.trainers</span> <span class="kn">import</span> <span class="n">WordPieceTrainer</span>',
+          '',
+          '<span class="n">trainer</span> <span class="o">=</span> <span class="n">WordPieceTrainer</span><span class="p">(</span><span class="n">vocab_size</span><span class="o">=</span><span class="mi">30522</span><span class="p">,</span> <span class="n">special_tokens</span><span class="o">=</span><span class="p">[</span><span class="s2">"[UNK]"</span><span class="p">,</span> <span class="s2">"[CLS]"</span><span class="p">,</span> <span class="s2">"[SEP]"</span><span class="p">,</span> <span class="s2">"[PAD]"</span><span class="p">,</span> <span class="s2">"[MASK]"</span><span class="p">])</span>',
+          '</span><span class="n">files</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"wikitext-103/wiki.</span><span class="si">{</span><span class="n">split</span><span class="si">}</span><span class="s2">.tokens"</span> <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"test"</span><span class="p">,</span> <span class="s2">"train"</span><span class="p">,</span> <span class="s2">"valid"</span><span class="p">]]</span>',
+          '<span class="n">bert_tokenizer</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">trainer</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Ahora lo probamos</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">input_text</span> <span class="o">=</span> <span class="s2">"I love tokenizers!"</span>',
+          '',
+          '<span class="n">encoded_text</span> <span class="o">=</span> <span class="n">bert_tokenizer</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">input_text</span><span class="p">)</span>',
+          '<span class="n">decoded_text</span> <span class="o">=</span> <span class="n">bert_tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">encoded_text</span><span class="o">.</span><span class="n">ids</span><span class="p">)</span>',
+          '',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"El texto de entrada \'</span><span class="si">{</span><span class="n">input_text</span><span class="si">}</span><span class="s2">\' se convierte en los tokens </span><span class="si">{</span><span class="n">encoded_text</span><span class="o">.</span><span class="n">tokens</span><span class="si">}</span><span class="s2">, que tienen las ids </span><span class="si">{</span><span class="n">encoded_text</span><span class="o">.</span><span class="n">ids</span><span class="si">}</span><span class="s2"> y luego se decodifica como \'</span><span class="si">{</span><span class="n">decoded_text</span><span class="si">}</span><span class="s2">\'"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'El texto de entrada \'I love tokenizers!\' se convierte en los tokens [\'[CLS]\', \'i\', \'love\', \'token\', \'##izers\', \'!\', \'[SEP]\'], que tienen las ids [1, 51, 2867, 25791, 12213, 5, 2] y luego se decodifica como \'i love token ##izers !\'',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+
+
+
+
+
+
+    </div>
+
+  </section>
+
+</PostLayout>

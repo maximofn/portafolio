@@ -30,8 +30,12 @@ DATE_KEY = 'date'
 
 def get_image_width_height(image_path):
     # Open image and get width and height
-    with Image.open(BytesIO(requests.get(image_path).content)) as img:
-        width, height = img.size
+    try:
+        with Image.open(BytesIO(requests.get(image_path).content)) as img:
+            width, height = img.size
+    except:
+        print(f'Error opening image {image_path}')
+        exit(1)
     return width, height
 
 def get_image_extension(image_path):

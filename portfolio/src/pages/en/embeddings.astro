@@ -1,0 +1,1577 @@
+---
+import PostLayout from '@layouts/PostLayout.astro';
+import CodeBlockInputCell from '@components/CodeBlockInputCell.astro';
+import CodeBlockOutputCell from '@components/CodeBlockOutputCell.astro';
+
+const { metadata_page } = await import('@portfolio/consts.json');
+const { colors } = await import('@portfolio/consts.json');
+const { svg_paths } = await import('@portfolio/consts.json');
+
+const page_title = 'Embeddings';
+const end_url = 'embeddings';
+const description = 'Discover the power of embeddings';
+const keywords = 'embeddings, nlp, natural language processing, transformers, huggingface, bert, word2vec, glove';
+const languaje = 'EN';
+const image_path = 'https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/embeddings.webp';
+const opening_brace = '{';
+const closing_brace = '}';
+---
+
+<PostLayout 
+    title={page_title}
+    languaje={languaje}
+    description={description}
+    keywords={keywords}
+    author={metadata_page.author}
+    theme_color={colors.background_color}
+    end_url={end_url}
+    image_path={image_path}
+    image_width=1024
+    image_height=1024
+    image_extension=webp
+    article_date=2023-12-09+T00:00:00Z
+>
+
+  <section class="post-body">
+
+
+    <aside class="post-index">
+      <a class="anchor-link" href="#Ordinal-encoding"><h2>Ordinal encoding</h2></a>
+      <a class="anchor-link" href="#One-hot-encoding"><h2>One hot encoding</h2></a>
+      <a class="anchor-link" href="#Word-embeddings"><h2>Word embeddings</h2></a>
+      <a class="anchor-link" href="#Similarity-between-words"><h3>Similarity between words</h3></a>
+      <a class="anchor-link" href="#Example-with-OpenAI-embeddings"><h3>Example with OpenAI embeddings</h3></a>
+      <a class="anchor-link" href="#Operations-with-words"><h3>Operations with words</h3></a>
+      <a class="anchor-link" href="#Types-of-word-embeddings"><h3>Types of word embeddings</h3></a>
+      <a class="anchor-link" href="#Word2Vec"><h4>Word2Vec</h4></a>
+      <a class="anchor-link" href="#CBOW"><h5>CBOW</h5></a>
+      <a class="anchor-link" href="#Skip-gram"><h5>Skip-gram</h5></a>
+      <a class="anchor-link" href="#GloVe"><h4>GloVe</h4></a>
+      <a class="anchor-link" href="#FastText"><h4>FastText</h4></a>
+      <a class="anchor-link" href="#Limitations-of-word-embeddings"><h4>Limitations of word embeddings</h4></a>
+      <a class="anchor-link" href="#Sentence-embeddings"><h2>Sentence embeddings</h2></a>
+      <a class="anchor-link" href="#ELMo"><h3>ELMo</h3></a>
+      <a class="anchor-link" href="#InferSent"><h3>InferSent</h3></a>
+      <a class="anchor-link" href="#Sentence-BERT"><h3>Sentence-BERT</h3></a>
+      <a class="anchor-link" href="#Training-of-a-word2vec-model-with-gensim"><h2>Training of a word2vec model with gensim</h2></a>
+      <a class="anchor-link" href="#Download-dataset"><h3>Download dataset</h3></a>
+      <a class="anchor-link" href="#Dataset-cleaning"><h3>Dataset cleaning</h3></a>
+      <a class="anchor-link" href="#Training-of-the-word2vec-model"><h3>Training of the word2vec model</h3></a>
+      <a class="anchor-link" href="#Evaluation-of-the-word2vec-model"><h3>Evaluation of the word2vec model</h3></a>
+      <a class="anchor-link" href="#Display-of-embeddings"><h3>Display of embeddings</h3></a>
+      <a class="anchor-link" href="#Use-of-pre-trained-models-with-huggingface"><h2>Use of pre-trained models with huggingface</h2></a>
+    </aside>
+
+
+    <div class="post-body-content">
+      
+      <section class="section-block-markdown-cell">
+      <h1 id="Embeddings">Embeddings<a class="anchor-link" href="#Embeddings"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 26" src={svg_paths.link_svg_path}/></a></h1>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>In a previous post about <a href="https://maximofn.com/tokens/">tokens</a>, we already saw the minimum representation of each word. Which corresponds to giving a number to the minimum division of each word.</p>
+      <p>However, the transformers, and therefore the LLMs, do not represent the information of the words in this way, but do so by means of <code>embeddings</code>.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>This notebook has been automatically translated to make it accessible to more people, please let me know if you see any typos.</p>
+      <p>We are going to see first two ways of representing words, the <code>ordinal encoding</code> and the <code>one hot encoding</code>. And seeing the problems of these two types of representations we will be able to get to <code>word embeddings</code> and <code>sentence embeddings</code>.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We will also see an example of how to train a <code>word embeddings</code> model with the <code>gensim</code> library.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>And finally we will see how to use pre-trained models of <code>embeddings</code> with the <code>transformers</code> library of HuggingFace.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Ordinal-encoding">Ordinal encoding<a class="anchor-link" href="#Ordinal-encoding"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 27" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>This is the most basic way to represent the words inside the transformers. It consists of giving a number to each word, or keeping the numbers already assigned to the tokens.</p>
+      <p>However, this type of representation has two problems</p>
+      <ul>
+      <li><p>Let us imagine that table corresponds to token 3, cat to token 1 and dog to token 2. One could assume that <code>table = cat + dog</code>, but it is not so. There is no such relationship between these words. We might even think that by assigning the correct tokens, this type of relationship could occur. However, this thought falls apart with words that have more than one meaning, such as the word <code>bank</code>, for example.</p>
+      </li>
+      <li><p>The second problem is that neural networks internally do a lot of numerical calculations, so it could be the case that if mesa has token 3, it has internally more importance than the word cat which has token 1.</p>
+      </li>
+      </ul>
+      <p>So this type of word representation can be discarded very quickly.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="One-hot-encoding">One hot encoding<a class="anchor-link" href="#One-hot-encoding"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 28" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Here what is done is to use <code>N</code> dimensional vectors. For example we saw that OpenAI has a vocabulary of <code>100277</code> distinct tokens. So if we use <code>one hot encoding</code>, each word would be represented with a vector of <code>100277</code> dimensions.</p>
+      <p>However, the one hot encoding has two other major problems</p>
+      <ul>
+      <li>It does not take into account the relationship between words. So if we have two words that are synonyms, such as <code>cat</code> and <code>feline</code>, we would have two different vectors to represent them.</li>
+      </ul>
+      <p>In language the relationship between words is very important, and not taking this relationship into account is a big problem.</p>
+      <ul>
+      <li>The second problem is that vectors are very large. If we have a vocabulary of <code>100277</code> tokens, each word would be represented by a vector of <code>100277</code> dimensions. This makes the vectors very large and computationally very expensive. In addition these vectors are going to be all zeros, except in the position corresponding to the word token. So most of the calculations are going to be multiplications by zero, which are calculations that don't add anything. So we are going to have a lot of memory allocated to vectors where you only have a <code>1</code> at a given position.</li>
+      </ul>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Word-embeddings">Word embeddings<a class="anchor-link" href="#Word-embeddings"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 29" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>With word embeddings we try to solve the problems of the two previous types of representations. For this purpose vectors of <code>N</code> dimensions are used, but in this case vectors of 100277 dimensions are not used, but vectors of much less dimensions are used. For example we will see that OpenAI uses <code>1536</code> dimensions.</p>
+      <p>Each of the dimensions of these vectors represents a characteristic of the word. For example one of the dimensions could represent whether the word is a verb or a noun. Another dimension might represent whether the word is an animal or not. Another dimension might represent whether the word is a proper noun or not. And so on.</p>
+      <p>However, these features are not defined by hand, but are learned automatically. During the training of the transformers, the values of each of the dimensions of the vectors are adjusted, so that the characteristics of each of the words are learned.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>By making each of the word dimensions represent a characteristic of the word, words that have similar characteristics will have similar vectors. For example the words <code>cat</code> and <code>feline</code> will have very similar vectors, since they are both animals. And the words <code>table</code> and <code>chair</code> will have similar vectors, since both are furniture.</p>
+      <p>In the following image we can see a 3-dimensional representation of words, and we can see that all words related to <code>school</code> are close, all words related to <code>food</code> are close and all words related to <code>ball</code> are close.</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="word_embedding_3_dimmension" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/word_embedding_3_dimmension.webp" width="995" height="825"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Having each of the dimensions of the vectors represent a characteristic of the word allows us to perform operations with words. For example, if we subtract the word <code>king</code> from the word <code>man</code> and add the word <code>woman</code>, we get a word very similar to the word <code>queen</code>. We will check it later with an example</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Similarity-between-words">Similarity between words<a class="anchor-link" href="#Similarity-between-words"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 30" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>As each word is represented by a vector of <code>N</code> dimensions, we can calculate the similarity between two words. The cosine similarity function or <code>cosine similarity</code> is used for this purpose.</p>
+      <p>If two words are close in vector space, it means that the angle between their vectors is small, so their cosine is close to 1. If there is an angle of 90 degrees between the vectors, the cosine is 0, meaning that there is no similarity between the words. And if there is an angle of 180 degrees between the vectors, the cosine is -1, that is, the words are opposites.</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="cosine similarity" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/cosine_similarity.webp" width="1468" height="1468"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Example-with-OpenAI-embeddings">Example with OpenAI embeddings<a class="anchor-link" href="#Example-with-OpenAI-embeddings"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 31" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Now that we know what <code>embeddings</code> are, let's see some examples with the <code>embeddings</code> provided by the <code>API</code> of <code>OpenAI</code>.</p>
+      <p>To do this we first need to have the <code>OpenAI</code> package installed.</p>
+      <div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>openai
+      <span class="sb">```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We import the necessary libraries</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">openai</span> <span class="kn">import</span> <span class="n">OpenAI</span>',
+      '      <span class="kn">import</span> <span class="nn">torch</span>',
+      '      <span class="kn">from</span> <span class="nn">torch.nn.functional</span> <span class="kn">import</span> <span class="n">cosine_similarity</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>We use an OpenAI <code>API key</code>. To do this, go to the <a href="https://openai.com/" target="_blank" rel="nofollow noreferrer">OpenAI</a> page, and register. Once registered, go to the <a href="https://platform.openai.com/api-keys">API Keys</a> section, and create a new <code>API Key</code>.</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="open ai api key" src="https://raw.githubusercontent.com/maximofn/alfred/main/gifs/openaix2.gif" width="1920" height="1080"/></p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">openai</span> <span class="kn">import</span> <span class="n">OpenAI</span>',
+      '      <span class="kn">import</span> <span class="nn">torch</span>',
+      '      <span class="kn">from</span> <span class="nn">torch.nn.functional</span> <span class="kn">import</span> <span class="n">cosine_similarity</span>',
+      '<span></span><span class="n">api_key</span> <span class="o">=</span> <span class="s2">"Pon aquí tu API key"</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>We select which embeddings model we want to use. In this case we are going to use <code>text-embedding-ada-002</code> which is the one recommended by <code>OpenAI</code> in its <a href="https://platform.openai.com/docs/guides/embeddings/" target="_blank" rel="nofollow noreferrer">embeddings</a> documentation.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">openai</span> <span class="kn">import</span> <span class="n">OpenAI</span>',
+      '      <span class="kn">import</span> <span class="nn">torch</span>',
+      '      <span class="kn">from</span> <span class="nn">torch.nn.functional</span> <span class="kn">import</span> <span class="n">cosine_similarity</span>',
+      '<span></span><span class="n">api_key</span> <span class="o">=</span> <span class="s2">"Pon aquí tu API key"</span>',
+      '<span></span><span class="n">model_openai</span> <span class="o">=</span> <span class="s2">"text-embedding-ada-002"</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Create an <code>API</code> client</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">openai</span> <span class="kn">import</span> <span class="n">OpenAI</span>',
+      '      <span class="kn">import</span> <span class="nn">torch</span>',
+      '      <span class="kn">from</span> <span class="nn">torch.nn.functional</span> <span class="kn">import</span> <span class="n">cosine_similarity</span>',
+      '<span></span><span class="n">api_key</span> <span class="o">=</span> <span class="s2">"Pon aquí tu API key"</span>',
+      '<span></span><span class="n">model_openai</span> <span class="o">=</span> <span class="s2">"text-embedding-ada-002"</span>',
+      '<span></span><span class="n">client_openai</span> <span class="o">=</span> <span class="n">OpenAI</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">,</span> <span class="n">organization</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's see how are the <code>embeddings</code> of the word <code>King</code>.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">openai</span> <span class="kn">import</span> <span class="n">OpenAI</span>',
+          '<span class="kn">import</span> <span class="nn">torch</span>',
+          '<span class="kn">from</span> <span class="nn">torch.nn.functional</span> <span class="kn">import</span> <span class="n">cosine_similarity</span>',
+          '</span><span class="n">api_key</span> <span class="o">=</span> <span class="s2">"Pon aquí tu API key"</span>',
+          '</span><span class="n">model_openai</span> <span class="o">=</span> <span class="s2">"text-embedding-ada-002"</span>',
+          '</span><span class="n">client_openai</span> <span class="o">=</span> <span class="n">OpenAI</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">,</span> <span class="n">organization</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>',
+          '</span><span class="n">word</span> <span class="o">=</span> <span class="s2">"Rey"</span>',
+          '<span class="n">embedding_openai</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">client_openai</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="n">word</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model_openai</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding</span><span class="p">)</span>',
+          '',
+          '<span class="n">embedding_openai</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">embedding_openai</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '(torch.Size([1536]),',
+          ' tensor([-0.0103, -0.0005, -0.0189,  ..., -0.0009, -0.0226,  0.0045]))',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>As we can see we obtain a vector of <code>1536</code> dimensions</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Operations-with-words">Operations with words<a class="anchor-link" href="#Operations-with-words"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 32" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's get the embeddings of the words <code>king</code>, <code>man</code>, <code>woman</code> and <code>queen</code>.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">embedding_openai_rey</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">client_openai</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">"rey"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model_openai</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding</span><span class="p">)</span>',
+      '      <span class="n">embedding_openai_hombre</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">client_openai</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">"hombre"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model_openai</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding</span><span class="p">)</span>',
+      '      <span class="n">embedding_openai_mujer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">client_openai</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">"mujer"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model_openai</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding</span><span class="p">)</span>',
+      '      <span class="n">embedding_openai_reina</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">client_openai</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">"reina"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model_openai</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">embedding_openai_rey</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">client_openai</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">"rey"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model_openai</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding</span><span class="p">)</span>',
+          '<span class="n">embedding_openai_hombre</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">client_openai</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">"hombre"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model_openai</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding</span><span class="p">)</span>',
+          '<span class="n">embedding_openai_mujer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">client_openai</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">"mujer"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model_openai</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding</span><span class="p">)</span>',
+          '<span class="n">embedding_openai_reina</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">client_openai</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">"reina"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model_openai</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding</span><span class="p">)</span>',
+          '</span><span class="n">embedding_openai_reina</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">embedding_openai_reina</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '(torch.Size([1536]),',
+          ' tensor([-0.0110, -0.0084, -0.0115,  ...,  0.0082, -0.0096, -0.0024]))',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's obtain the embedding resulting from subtracting the embedding of <code>man</code> from <code>king</code> and adding the embedding of <code>woman</code> to <code>king</code>.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">embedding_openai</span> <span class="o">=</span> <span class="n">embedding_openai_rey</span> <span class="o">-</span> <span class="n">embedding_openai_hombre</span> <span class="o">+</span> <span class="n">embedding_openai_mujer</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">embedding_openai</span> <span class="o">=</span> <span class="n">embedding_openai_rey</span> <span class="o">-</span> <span class="n">embedding_openai_hombre</span> <span class="o">+</span> <span class="n">embedding_openai_mujer</span>',
+          '</span><span class="n">embedding_openai</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">embedding_openai</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '(torch.Size([1536]),',
+          ' tensor([-0.0226, -0.0323,  0.0017,  ...,  0.0014, -0.0290, -0.0188]))',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Finally we compare the result obtained with the embedding of <code>reina</code>. For this we use the <code>cosine_similarity</code> function provided by the <code>pytorch</code> library.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">similarity_openai</span> <span class="o">=</span> <span class="n">cosine_similarity</span><span class="p">(</span><span class="n">embedding_openai</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">embedding_openai_reina</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>',
+          '',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"similarity_openai: </span><span class="si">{</span><span class="n">similarity_openai</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'similarity_openai: 0.7564167976379395',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>As we can see it is a value very close to 1, so we can say that the result obtained is very similar to the embedding of <code>reina</code>.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>If we use English words, we get a result closer to 1.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">embedding_openai_rey</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">client_openai</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">"king"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model_openai</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding</span><span class="p">)</span>',
+      '      <span class="n">embedding_openai_hombre</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">client_openai</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">"man"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model_openai</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding</span><span class="p">)</span>',
+      '      <span class="n">embedding_openai_mujer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">client_openai</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">"woman"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model_openai</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding</span><span class="p">)</span>',
+      '      <span class="n">embedding_openai_reina</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">client_openai</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">"queen"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model_openai</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">embedding_openai_rey</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">client_openai</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">"king"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model_openai</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding</span><span class="p">)</span>',
+      '      <span class="n">embedding_openai_hombre</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">client_openai</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">"man"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model_openai</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding</span><span class="p">)</span>',
+      '      <span class="n">embedding_openai_mujer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">client_openai</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">"woman"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model_openai</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding</span><span class="p">)</span>',
+      '      <span class="n">embedding_openai_reina</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">client_openai</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">"queen"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model_openai</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding</span><span class="p">)</span>',
+      '<span></span><span class="n">embedding_openai</span> <span class="o">=</span> <span class="n">embedding_openai_rey</span> <span class="o">-</span> <span class="n">embedding_openai_hombre</span> <span class="o">+</span> <span class="n">embedding_openai_mujer</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">embedding_openai_rey</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">client_openai</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">"king"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model_openai</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding</span><span class="p">)</span>',
+          '<span class="n">embedding_openai_hombre</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">client_openai</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">"man"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model_openai</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding</span><span class="p">)</span>',
+          '<span class="n">embedding_openai_mujer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">client_openai</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">"woman"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model_openai</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding</span><span class="p">)</span>',
+          '<span class="n">embedding_openai_reina</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">client_openai</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">"queen"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model_openai</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding</span><span class="p">)</span>',
+          '</span><span class="n">embedding_openai</span> <span class="o">=</span> <span class="n">embedding_openai_rey</span> <span class="o">-</span> <span class="n">embedding_openai_hombre</span> <span class="o">+</span> <span class="n">embedding_openai_mujer</span>',
+          '</span><span class="n">similarity_openai</span> <span class="o">=</span> <span class="n">cosine_similarity</span><span class="p">(</span><span class="n">embedding_openai</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">embedding_openai_reina</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"similarity_openai: </span><span class="si">{</span><span class="n">similarity_openai</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'similarity_openai: tensor([0.8849])',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>This is normal, since the OpenAi model has been trained with more texts in English than in Spanish.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Types-of-word-embeddings">Types of word embeddings<a class="anchor-link" href="#Types-of-word-embeddings"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 33" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>There are several types of word embeddings, and each of them has its advantages and disadvantages. Let's take a look at the most important ones</p>
+      <ul>
+      <li>Word2Vec</li>
+      <li>GloVe</li>
+      <li>FastText</li>
+      <li>BERT</li>
+      <li>GPT-2</li>
+      </ul>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Word2Vec">Word2Vec<a class="anchor-link" href="#Word2Vec"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 34" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Word2Vec is an algorithm used to create word embeddings. This algorithm was created by Google in 2013, and it is one of the most used algorithms to create word embeddings.</p>
+      <p>It has two variants, <code>CBOW</code> and <code>Skip-gram</code>. <code>CBOW</code> is faster to train, while <code>Skip-gram</code> is more accurate. Let's see how each of them works</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h5 id="CBOW">CBOW<a class="anchor-link" href="#CBOW"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 35" src={svg_paths.link_svg_path}/></a></h5>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>CBOW<code>or</code>Continuous Bag of Words<code>is an algorithm used to predict a word from the surrounding words. For example if we have the sentence</code>The cat is an animal<code>, the algorithm will try to predict the word</code>cat<code>from the surrounding words, in this case</code>The<code>,</code>is<code>,</code>an<code>and</code>animal`.</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="CBOW" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/cbow.webp" width="976" height="1216"/></p>
+      <p>In this architecture, the model predicts which is the most likely word in the given context. Therefore, words that have the same probability of appearing are considered similar and are therefore closer in dimensional space.</p>
+      <p>Suppose that in a sentence we replace <code>boat</code> with <code>boat</code>, then the model predicts the probability for both and if it turns out to be similar then we can consider that the words are similar.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h5 id="Skip-gram">Skip-gram<a class="anchor-link" href="#Skip-gram"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 36" src={svg_paths.link_svg_path}/></a></h5>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p><code>Skip-gram</code> or <code>Skip-gram with Negative Sampling</code> is an algorithm used to predict the words surrounding a word. For example if we have the sentence <code>The cat is an animal</code>, the algorithm will try to predict the words <code>The</code>, <code>is</code>, <code>an</code> and <code>animal</code> from the word <code>cat</code>.</p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="Skip-gram" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/Skip-gram.webp" width="876" height="1234"/></p>
+      <p>This architecture is similar to that of CBOW, but instead the model works backwards. The model predicts the context using the given word. Therefore, words that have the same context are considered similar and are therefore closer in dimensional space.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="GloVe">GloVe<a class="anchor-link" href="#GloVe"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 37" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>GloVe<code>or</code>Global Vectors for Word Representation` is an algorithm used to create word embeddings. This algorithm was created by Stanford University in 2014.</p>
+      <p>Word2Vec ignores the fact that some context words occur more frequently than others and also only take into account the local context and therefore do not capture the global context.</p>
+      <p>This algorithm uses a co-occurrence matrix to create the word embeddings. This co-occurrence matrix is a matrix that contains the number of times each word appears next to each of the other words in the vocabulary.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="FastText">FastText<a class="anchor-link" href="#FastText"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 38" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p><code>FastText</code> is an algorithm that is used to create word embeddings. This algorithm was created by Facebook in 2016.</p>
+      <p>One of the main disadvantages of <code>Word2Vec</code> and <code>GloVe</code> is that they cannot encode unknown or out-of-vocabulary words.</p>
+      <p>So, to deal with this problem, Facebook proposed a <code>FastText</code> model. It is an extension of <code>Word2Vec</code> and follows the same <code>Skip-gram</code> and <code>CBOW</code> model. But unlike <code>Word2Vec</code> which feeds whole words into the neural network, <code>FastText</code> first splits words into several subwords (or <code>n-grams</code>) and then feeds them to the neural network.</p>
+      <p>For example, if the value of <code>n</code> is 3 and the word is <code>apple</code> then your tri-gram will be [<code>&lt;ma</code>, <code>man</code>, <code>anz</code>, <code>nza</code>, <code>zan</code>, <code>ana</code>, <code>na&gt;</code>] and your word embedding will be the sum of the vector representation of these tri-grams. Here, the hyperparameters <code>min_n</code> and <code>max_n</code> are considered as 3 and the characters <code>&lt;</code> and <code>&gt;</code> represent the beginning and end of the word.</p>
+      <p>Therefore, using this methodology, unknown words can be represented in vector form, since it has a high probability that their <code>n-grams</code> are also present in other words.</p>
+      <p>This algorithm is an improvement of <code>Word2Vec</code>, since in addition to taking into account the words surrounding a word, it also takes into account the <code>n-grams</code> of the word. For example if we have the word <code>cat</code>, it also takes into account the <code>n-grams</code> of the word, in this case <code>ga</code>, <code>at</code> and <code>to</code>, for <code>n = 2</code>.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Limitations-of-word-embeddings">Limitations of word embeddings<a class="anchor-link" href="#Limitations-of-word-embeddings"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 39" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Word embedding techniques have given a decent result, but the problem is that the approach is not precise enough. They do not take into account the order of the words in which they appear, which leads to loss of syntactic and semantic understanding of the sentence.</p>
+      <p>For example, <code>You go there to teach, not to play</code> AND <code>You go there to play, not to teach</code> Both sentences will have the same representation in vector space, but they do not mean the same thing.</p>
+      <p>In addition, the word embedding model cannot give satisfactory results on a large amount of text data, since the same word may have a different meaning in a different sentence depending on the context of the sentence.</p>
+      <p>For example, <code>I am going to sit in the bank</code> AND <code>I am going to do business in the bank</code> In both sentences, the word <code>bank</code> has different meanings.</p>
+      <p>Therefore, we require a type of representation that can retain the contextual meaning of the word present in a sentence.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Sentence-embeddings">Sentence embeddings<a class="anchor-link" href="#Sentence-embeddings"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 40" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Sentence embedding is similar to word embedding, but instead of words, they encode the whole sentence in the vector representation.</p>
+      <p>A simple way to obtain sentence embedding is to average the word embedding of all the words present in the sentence. But they are not accurate enough.</p>
+      <p>Some of the most advanced models for sentence embedding are <code>ELMo</code>, <code>InferSent</code> and <code>Sentence-BERT</code>.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="ELMo">ELMo<a class="anchor-link" href="#ELMo"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 41" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p><code>ELMo</code> or <code>Embeddings from Language Models</code> is a sentence embedding model that was created by Allen University in 2018. It uses a bidirectional deep LSTM network to produce vector representation. <code>ELMo</code> can represent unknown or out-of-vocabulary words in vector form since it is character-based.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="InferSent">InferSent<a class="anchor-link" href="#InferSent"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 42" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p><code>InferSent</code> is a sentence embedding model that was created by Facebook in 2017. It uses a bidirectional deep LSTM network to produce vector representation. <code>InferSent</code> can represent unknown or out-of-vocabulary words in vector form as it is character-based. Sentences are encoded in a 4096-dimensional vector representation.</p>
+      <p>The training of the model is performed on the Stanford Natural Language Inference (<code>SNLI</code>) dataset. This dataset is labeled and written by humans for about 500K sentence pairs.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Sentence-BERT">Sentence-BERT<a class="anchor-link" href="#Sentence-BERT"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 43" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Sentence-BERT is a sentence embedding model that was created by the University of London in 2019. It uses a bidirectional deep LSTM network to produce vector representation. <code>Sentence-BERT</code> can represent unknown or out-of-vocabulary words in vector form as it is character-based. Sentences are encoded in a 768-dimensional vector representation.</p>
+      <p>The state-of-the-art NLP model <code>BERT</code> is excellent in Semantic Textual Similarity tasks, but the problem is that it would take a long time for a huge corpus (65 hours for 10,000 sentences), as it requires both sentences to be entered into the network and this increases the computation by a huge factor.</p>
+      <p>Therefore, <code>Sentence-BERT</code> is a modification of the <code>BERT</code> model.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Training-of-a-word2vec-model-with-gensim">Training of a word2vec model with gensim<a class="anchor-link" href="#Training-of-a-word2vec-model-with-gensim"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 44" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>To download the dataset we are going to use, the <code>dataset</code> library of huggingface must be installed:</p>
+      <div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>datasets
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>To train the embeddings model we are going to use the <code>gensim</code> library. To install it with conda we use</p>
+      <div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>gensim
+      </pre></div>
+      <p>And to install it with pip we use</p>
+      <div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>gensim
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>To clean the dataset we have downloaded we are going to use regular expressions, which is usually already installed in python, and <code>nltk</code> which is a natural language processing library. To install it with conda we use</p>
+      <div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>anaconda<span class="w"> </span>nltk
+      </pre></div>
+      <p>And to install it with pip we use</p>
+      <div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>nltk
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Now that we have everything installed we can import the libraries we are going to use:</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">gensim.models</span> <span class="kn">import</span> <span class="n">Word2Vec</span>',
+      '      <span class="kn">from</span> <span class="nn">gensim.parsing.preprocessing</span> <span class="kn">import</span> <span class="n">strip_punctuation</span><span class="p">,</span> <span class="n">strip_numeric</span><span class="p">,</span> <span class="n">strip_short</span>',
+      '      <span class="kn">import</span> <span class="nn">re</span>',
+      '      <span class="kn">from</span> <span class="nn">nltk.corpus</span> <span class="kn">import</span> <span class="n">stopwords</span>',
+      '      <span class="kn">from</span> <span class="nn">nltk.tokenize</span> <span class="kn">import</span> <span class="n">word_tokenize</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Download-dataset">Download dataset<a class="anchor-link" href="#Download-dataset"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 45" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We are going to download a dataset of texts from wikipedia in Spanish, for this we execute the following:</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">gensim.models</span> <span class="kn">import</span> <span class="n">Word2Vec</span>',
+      '      <span class="kn">from</span> <span class="nn">gensim.parsing.preprocessing</span> <span class="kn">import</span> <span class="n">strip_punctuation</span><span class="p">,</span> <span class="n">strip_numeric</span><span class="p">,</span> <span class="n">strip_short</span>',
+      '      <span class="kn">import</span> <span class="nn">re</span>',
+      '      <span class="kn">from</span> <span class="nn">nltk.corpus</span> <span class="kn">import</span> <span class="n">stopwords</span>',
+      '      <span class="kn">from</span> <span class="nn">nltk.tokenize</span> <span class="kn">import</span> <span class="n">word_tokenize</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">datasets</span> <span class="kn">import</span> <span class="n">load_dataset</span>',
+      '      ',
+      '      <span class="n">dataset_corpus</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s1">\'large_spanish_corpus\'</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">\'all_wikis\'</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's see what it looks like</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">gensim.models</span> <span class="kn">import</span> <span class="n">Word2Vec</span>',
+          '<span class="kn">from</span> <span class="nn">gensim.parsing.preprocessing</span> <span class="kn">import</span> <span class="n">strip_punctuation</span><span class="p">,</span> <span class="n">strip_numeric</span><span class="p">,</span> <span class="n">strip_short</span>',
+          '<span class="kn">import</span> <span class="nn">re</span>',
+          '<span class="kn">from</span> <span class="nn">nltk.corpus</span> <span class="kn">import</span> <span class="n">stopwords</span>',
+          '<span class="kn">from</span> <span class="nn">nltk.tokenize</span> <span class="kn">import</span> <span class="n">word_tokenize</span>',
+          '</span><span class="kn">from</span> <span class="nn">datasets</span> <span class="kn">import</span> <span class="n">load_dataset</span>',
+          '',
+          '<span class="n">dataset_corpus</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s1">\'large_spanish_corpus\'</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">\'all_wikis\'</span><span class="p">)</span>',
+          '</span><span class="n">dataset_corpus</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'DatasetDict({',
+          '    train: Dataset({',
+          '        features: [\'text\'],',
+          '        num_rows: 28109484',
+          '    })',
+          '})',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>As we can see, the dataset has more than 28 million texts. Let's take a look at some of them:</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">dataset_corpus</span><span class="p">[</span><span class="s1">\'train\'</span><span class="p">][</span><span class="s1">\'text\'</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="mi">10</span><span class="p">]</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '[\'¡Bienvenidos!\',',
+          ' \'Ir a los contenidos»\',',
+          ' \'= Contenidos =\',',
+          ' \'\',',
+          ' \'Portada\',',
+          ' \'Tercera Lengua más hablada en el mundo.\',',
+          ' \'La segunda en número de habitantes en el mundo occidental.\',',
+          ' \'La de mayor proyección y crecimiento día a día.\',',
+          ' \'El español es, hoy en día, nombrado en cada vez más contextos, tomando realce internacional como lengua de cultura y civilización siempre de mayor envergadura.\',',
+          ' \'Ejemplo de ello es que la comunidad minoritaria más hablada en los Estados Unidos es precisamente la que habla idioma español.\']',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>As there are many examples we will create a subset of 10 million examples to work faster:</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">subset</span> <span class="o">=</span> <span class="n">dataset_corpus</span><span class="p">[</span><span class="s1">\'train\'</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">10000000</span><span class="p">))</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Dataset-cleaning">Dataset cleaning<a class="anchor-link" href="#Dataset-cleaning"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 46" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Now we download the <code>stopwords</code> from <code>nltk</code>, which are words that do not provide information and that we are going to eliminate from the texts.</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="kn">import</span> <span class="nn">nltk</span>
+      <span class="n">nltk</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="s1">'stopwords'</span><span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>[nltk_data] Downloading package stopwords to
+      [nltk_data]     /home/wallabot/nltk_data...
+      [nltk_data]   Package stopwords is already up-to-date!
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>True</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Now we are going to download the <code>punkt</code> of <code>nltk</code>, which is a <code>tokenizer</code> that will allow us to separate the texts into sentences</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">nltk</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="s1">'punkt'</span><span class="p">)</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>[nltk_data] Downloading package punkt to /home/wallabot/nltk_data...
+      [nltk_data]   Package punkt is already up-to-date!
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-text-output-subarea">
+      <pre>True</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We create a function to clean the data, this function is going to:</p>
+      <ul>
+      <li>Change the text to lower case</li>
+      <li>Remove urls</li>
+      <li>Remove mentions to social networks such as <code>@twitter</code> p <code>#hashtag</code>.</li>
+      <li>Eliminate punctuation marks</li>
+      <li>Eliminate numbers</li>
+      <li>Eliminate short words</li>
+      <li>Eliminate stopwords</li>
+      </ul>
+      <p>As we are using a huggeface dataset, the texts are in <code>dict</code> format, so we return a dictionary.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">subset</span> <span class="o">=</span> <span class="n">dataset_corpus</span><span class="p">[</span><span class="s1">\'train\'</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">10000000</span><span class="p">))</span>',
+      '<span></span><span class="kn">import</span> <span class="nn">nltk</span>',
+      '      <span class="n">nltk</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="s1">\'stopwords\'</span><span class="p">)</span>',
+      '<span></span><span class="n">nltk</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="s1">\'punkt\'</span><span class="p">)</span>',
+      '<span></span><span class="k">def</span> <span class="nf">clean_text</span><span class="p">(</span><span class="n">sentence_batch</span><span class="p">):</span>',
+      '          <span class="c1"># extrae el texto de la entrada</span>',
+      '          <span class="n">text_list</span> <span class="o">=</span> <span class="n">sentence_batch</span><span class="p">[</span><span class="s1">\'text\'</span><span class="p">]</span>',
+      '      ',
+      '          <span class="n">cleaned_text_list</span> <span class="o">=</span> <span class="p">[]</span>',
+      '          <span class="k">for</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">text_list</span><span class="p">:</span>',
+      '              <span class="c1"># Convierte el texto a minúsculas</span>',
+      '              <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>',
+      '      ',
+      '              <span class="c1"># Elimina URLs</span>',
+      '              <span class="n">text</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">\'http\S+|www\S+|https\S+\'</span><span class="p">,</span> <span class="s1">\'\'</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">MULTILINE</span><span class="p">)</span>',
+      '      ',
+      '              <span class="c1"># Elimina las menciones @ y \'#\' de las redes sociales</span>',
+      '              <span class="n">text</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">\'\@\w+|\#\w+\'</span><span class="p">,</span> <span class="s1">\'\'</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>',
+      '      ',
+      '              <span class="c1"># Elimina los caracteres de puntuación</span>',
+      '              <span class="n">text</span> <span class="o">=</span> <span class="n">strip_punctuation</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>',
+      '      ',
+      '              <span class="c1"># Elimina los números</span>',
+      '              <span class="n">text</span> <span class="o">=</span> <span class="n">strip_numeric</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>',
+      '      ',
+      '              <span class="c1"># Elimina las palabras cortas</span>',
+      '              <span class="n">text</span> <span class="o">=</span> <span class="n">strip_short</span><span class="p">(</span><span class="n">text</span><span class="p">,</span><span class="n">minsize</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>',
+      '      ',
+      '              <span class="c1"># Elimina las palabras comunes (stop words)</span>',
+      '              <span class="n">stop_words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">stopwords</span><span class="o">.</span><span class="n">words</span><span class="p">(</span><span class="s1">\'spanish\'</span><span class="p">))</span>',
+      '              <span class="n">word_tokens</span> <span class="o">=</span> <span class="n">word_tokenize</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>',
+      '              <span class="n">filtered_text</span> <span class="o">=</span> <span class="p">[</span><span class="n">word</span> <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">word_tokens</span> <span class="k">if</span> <span class="n">word</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">stop_words</span><span class="p">]</span>',
+      '      ',
+      '              <span class="n">cleaned_text_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">filtered_text</span><span class="p">)</span>',
+      '      ',
+      '          <span class="c1"># Devuelve el texto limpio</span>',
+      '          <span class="k">return</span> <span class="p">{</span><span class="s1">\'text\'</span><span class="p">:</span> <span class="n">cleaned_text_list</span><span class="p">}</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>We apply the function to the data</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">subset</span> <span class="o">=</span> <span class="n">dataset_corpus</span><span class="p">[</span><span class="s1">\'train\'</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">10000000</span><span class="p">))</span>',
+          '</span><span class="kn">import</span> <span class="nn">nltk</span>',
+          '<span class="n">nltk</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="s1">\'stopwords\'</span><span class="p">)</span>',
+          '</span><span class="n">nltk</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="s1">\'punkt\'</span><span class="p">)</span>',
+          '</span><span class="k">def</span> <span class="nf">clean_text</span><span class="p">(</span><span class="n">sentence_batch</span><span class="p">):</span>',
+          '    <span class="c1"># extrae el texto de la entrada</span>',
+          '    <span class="n">text_list</span> <span class="o">=</span> <span class="n">sentence_batch</span><span class="p">[</span><span class="s1">\'text\'</span><span class="p">]</span>',
+          '',
+          '    <span class="n">cleaned_text_list</span> <span class="o">=</span> <span class="p">[]</span>',
+          '    <span class="k">for</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">text_list</span><span class="p">:</span>',
+          '        <span class="c1"># Convierte el texto a minúsculas</span>',
+          '        <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>',
+          '',
+          '        <span class="c1"># Elimina URLs</span>',
+          '        <span class="n">text</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">\'http\S+|www\S+|https\S+\'</span><span class="p">,</span> <span class="s1">\'\'</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">MULTILINE</span><span class="p">)</span>',
+          '',
+          '        <span class="c1"># Elimina las menciones @ y \'#\' de las redes sociales</span>',
+          '        <span class="n">text</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">\'\@\w+|\#\w+\'</span><span class="p">,</span> <span class="s1">\'\'</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>',
+          '',
+          '        <span class="c1"># Elimina los caracteres de puntuación</span>',
+          '        <span class="n">text</span> <span class="o">=</span> <span class="n">strip_punctuation</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>',
+          '',
+          '        <span class="c1"># Elimina los números</span>',
+          '        <span class="n">text</span> <span class="o">=</span> <span class="n">strip_numeric</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>',
+          '',
+          '        <span class="c1"># Elimina las palabras cortas</span>',
+          '        <span class="n">text</span> <span class="o">=</span> <span class="n">strip_short</span><span class="p">(</span><span class="n">text</span><span class="p">,</span><span class="n">minsize</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>',
+          '',
+          '        <span class="c1"># Elimina las palabras comunes (stop words)</span>',
+          '        <span class="n">stop_words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">stopwords</span><span class="o">.</span><span class="n">words</span><span class="p">(</span><span class="s1">\'spanish\'</span><span class="p">))</span>',
+          '        <span class="n">word_tokens</span> <span class="o">=</span> <span class="n">word_tokenize</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>',
+          '        <span class="n">filtered_text</span> <span class="o">=</span> <span class="p">[</span><span class="n">word</span> <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">word_tokens</span> <span class="k">if</span> <span class="n">word</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">stop_words</span><span class="p">]</span>',
+          '',
+          '        <span class="n">cleaned_text_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">filtered_text</span><span class="p">)</span>',
+          '',
+          '    <span class="c1"># Devuelve el texto limpio</span>',
+          '    <span class="k">return</span> <span class="p">{</span><span class="s1">\'text\'</span><span class="p">:</span> <span class="n">cleaned_text_list</span><span class="p">}</span>',
+          '</span><span class="n">sentences_corpus</span> <span class="o">=</span> <span class="n">subset</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">clean_text</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '[nltk_data] Downloading package stopwords to',
+          '[nltk_data]     /home/wallabot/nltk_data...',
+          '[nltk_data]   Package stopwords is already up-to-date!',
+          '[nltk_data] Downloading package punkt to /home/wallabot/nltk_data...',
+          '[nltk_data]   Package punkt is already up-to-date!',
+          'Map:   0%|          | 0/10000000 [00:00&lt;?, ? examples/s]',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's save the filtered dataset in a file to avoid having to run the cleaning process again.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">sentences_corpus</span><span class="o">.</span><span class="n">save_to_disk</span><span class="p">(</span><span class="s2">"sentences_corpus"</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Saving the dataset (0/4 shards):   0%|          | 0/15000000 [00:00&lt;?, ? examples/s]',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>To load it we can do</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">from</span> <span class="nn">datasets</span> <span class="kn">import</span> <span class="n">load_from_disk</span>',
+      '      <span class="n">sentences_corpus</span> <span class="o">=</span> <span class="n">load_from_disk</span><span class="p">(</span><span class="s1">\'sentences_corpus\'</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Now what we are going to have is a list of lists, where each list is a tokenized phrase and without stopwords. That is, we have a list of phrases, and each phrase is a list of words. Let's see what it looks like:</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">datasets</span> <span class="kn">import</span> <span class="n">load_from_disk</span>',
+          '<span class="n">sentences_corpus</span> <span class="o">=</span> <span class="n">load_from_disk</span><span class="p">(</span><span class="s1">\'sentences_corpus\'</span><span class="p">)</span>',
+          '</span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>',
+          '    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">\'La frase "</span><span class="si">{</span><span class="n">subset</span><span class="p">[</span><span class="s2">"text"</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s1">" se convierte en la lista de palabras "</span><span class="si">{</span><span class="n">sentences_corpus</span><span class="p">[</span><span class="s2">"text"</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s1">"\'</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'La frase "¡Bienvenidos!" se convierte en la lista de palabras "[\'¡bienvenidos\']"',
+          'La frase "Ir a los contenidos»" se convierte en la lista de palabras "[\'ir\', \'contenidos\', \'»\']"',
+          'La frase "= Contenidos =" se convierte en la lista de palabras "[\'contenidos\']"',
+          'La frase "" se convierte en la lista de palabras "[]"',
+          'La frase "Portada" se convierte en la lista de palabras "[\'portada\']"',
+          'La frase "Tercera Lengua más hablada en el mundo." se convierte en la lista de palabras "[\'tercera\', \'lengua\', \'hablada\', \'mundo\']"',
+          'La frase "La segunda en número de habitantes en el mundo occidental." se convierte en la lista de palabras "[\'segunda\', \'número\', \'habitantes\', \'mundo\', \'occidental\']"',
+          'La frase "La de mayor proyección y crecimiento día a día." se convierte en la lista de palabras "[\'mayor\', \'proyección\', \'crecimiento\', \'día\', \'día\']"',
+          'La frase "El español es, hoy en día, nombrado en cada vez más contextos, tomando realce internacional como lengua de cultura y civilización siempre de mayor envergadura." se convierte en la lista de palabras "[\'español\', \'hoy\', \'día\', \'nombrado\', \'cada\', \'vez\', \'contextos\', \'tomando\', \'realce\', \'internacional\', \'lengua\', \'cultura\', \'civilización\', \'siempre\', \'mayor\', \'envergadura\']"',
+          'La frase "Ejemplo de ello es que la comunidad minoritaria más hablada en los Estados Unidos es precisamente la que habla idioma español." se convierte en la lista de palabras "[\'ejemplo\', \'ello\', \'comunidad\', \'minoritaria\', \'hablada\', \'unidos\', \'precisamente\', \'habla\', \'idioma\', \'español\']"',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Training-of-the-word2vec-model">Training of the word2vec model<a class="anchor-link" href="#Training-of-the-word2vec-model"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 47" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We are going to train an embeddings model that will convert words into vectors. For this we are going to use the <code>gensim</code> library and its <code>Word2Vec</code> model.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">dataset</span> <span class="o">=</span> <span class="n">sentences_corpus</span><span class="p">[</span><span class="s1">\'text\'</span><span class="p">]</span>',
+      '      <span class="n">dim_embedding</span> <span class="o">=</span> <span class="mi">100</span>',
+      '      <span class="n">window_size</span> <span class="o">=</span> <span class="mi">5</span> <span class="c1"># 5 palabras a la izquierda y 5 palabras a la derecha</span>',
+      '      <span class="n">min_count</span> <span class="o">=</span> <span class="mi">5</span>   <span class="c1"># Ignora las palabras con frecuencia menor a 5</span>',
+      '      <span class="n">workers</span> <span class="o">=</span> <span class="mi">4</span>    <span class="c1"># Número de hilos de ejecución</span>',
+      '      <span class="n">sg</span> <span class="o">=</span> <span class="mi">1</span>        <span class="c1"># 0 para CBOW, 1 para Skip-gram</span>',
+      '      ',
+      '      <span class="n">model</span> <span class="o">=</span> <span class="n">Word2Vec</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">vector_size</span><span class="o">=</span><span class="n">dim_embedding</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">window_size</span><span class="p">,</span> <span class="n">min_count</span><span class="o">=</span><span class="n">min_count</span><span class="p">,</span> <span class="n">workers</span><span class="o">=</span><span class="n">workers</span><span class="p">,</span> <span class="n">sg</span><span class="o">=</span><span class="n">sg</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>This model has been trained on the CPU, since <code>gensim</code> does not have the option to perform the training on the GPU and even so on my computer it has taken X minutes to train the model. Although the size of the embedding we have chosen is only 100 (as opposed to the size of the openai embeddings which is 1536), it is not a very long time, since the dataset has 10 million sentences.</p>
+      <p>Large language models are trained with datasets of billions of sentences, so it is normal that training an embeddings model with a dataset of 10 million sentences takes a few minutes.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Once the model is trained we save it in a file for future use.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">dataset</span> <span class="o">=</span> <span class="n">sentences_corpus</span><span class="p">[</span><span class="s1">\'text\'</span><span class="p">]</span>',
+      '      <span class="n">dim_embedding</span> <span class="o">=</span> <span class="mi">100</span>',
+      '      <span class="n">window_size</span> <span class="o">=</span> <span class="mi">5</span> <span class="c1"># 5 palabras a la izquierda y 5 palabras a la derecha</span>',
+      '      <span class="n">min_count</span> <span class="o">=</span> <span class="mi">5</span>   <span class="c1"># Ignora las palabras con frecuencia menor a 5</span>',
+      '      <span class="n">workers</span> <span class="o">=</span> <span class="mi">4</span>    <span class="c1"># Número de hilos de ejecución</span>',
+      '      <span class="n">sg</span> <span class="o">=</span> <span class="mi">1</span>        <span class="c1"># 0 para CBOW, 1 para Skip-gram</span>',
+      '      ',
+      '      <span class="n">model</span> <span class="o">=</span> <span class="n">Word2Vec</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">vector_size</span><span class="o">=</span><span class="n">dim_embedding</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">window_size</span><span class="p">,</span> <span class="n">min_count</span><span class="o">=</span><span class="n">min_count</span><span class="p">,</span> <span class="n">workers</span><span class="o">=</span><span class="n">workers</span><span class="p">,</span> <span class="n">sg</span><span class="o">=</span><span class="n">sg</span><span class="p">)</span>',
+      '<span></span><span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">\'word2vec.model\'</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>If we would like to load it in the future, we can do so with</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">dataset</span> <span class="o">=</span> <span class="n">sentences_corpus</span><span class="p">[</span><span class="s1">\'text\'</span><span class="p">]</span>',
+      '      <span class="n">dim_embedding</span> <span class="o">=</span> <span class="mi">100</span>',
+      '      <span class="n">window_size</span> <span class="o">=</span> <span class="mi">5</span> <span class="c1"># 5 palabras a la izquierda y 5 palabras a la derecha</span>',
+      '      <span class="n">min_count</span> <span class="o">=</span> <span class="mi">5</span>   <span class="c1"># Ignora las palabras con frecuencia menor a 5</span>',
+      '      <span class="n">workers</span> <span class="o">=</span> <span class="mi">4</span>    <span class="c1"># Número de hilos de ejecución</span>',
+      '      <span class="n">sg</span> <span class="o">=</span> <span class="mi">1</span>        <span class="c1"># 0 para CBOW, 1 para Skip-gram</span>',
+      '      ',
+      '      <span class="n">model</span> <span class="o">=</span> <span class="n">Word2Vec</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">vector_size</span><span class="o">=</span><span class="n">dim_embedding</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">window_size</span><span class="p">,</span> <span class="n">min_count</span><span class="o">=</span><span class="n">min_count</span><span class="p">,</span> <span class="n">workers</span><span class="o">=</span><span class="n">workers</span><span class="p">,</span> <span class="n">sg</span><span class="o">=</span><span class="n">sg</span><span class="p">)</span>',
+      '<span></span><span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">\'word2vec.model\'</span><span class="p">)</span>',
+      '<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">Word2Vec</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">\'word2vec.model\'</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Evaluation-of-the-word2vec-model">Evaluation of the word2vec model<a class="anchor-link" href="#Evaluation-of-the-word2vec-model"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 48" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's see the most similar words of some words</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">dataset</span> <span class="o">=</span> <span class="n">sentences_corpus</span><span class="p">[</span><span class="s1">\'text\'</span><span class="p">]</span>',
+          '<span class="n">dim_embedding</span> <span class="o">=</span> <span class="mi">100</span>',
+          '<span class="n">window_size</span> <span class="o">=</span> <span class="mi">5</span> <span class="c1"># 5 palabras a la izquierda y 5 palabras a la derecha</span>',
+          '<span class="n">min_count</span> <span class="o">=</span> <span class="mi">5</span>   <span class="c1"># Ignora las palabras con frecuencia menor a 5</span>',
+          '<span class="n">workers</span> <span class="o">=</span> <span class="mi">4</span>    <span class="c1"># Número de hilos de ejecución</span>',
+          '<span class="n">sg</span> <span class="o">=</span> <span class="mi">1</span>        <span class="c1"># 0 para CBOW, 1 para Skip-gram</span>',
+          '',
+          '<span class="n">model</span> <span class="o">=</span> <span class="n">Word2Vec</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">vector_size</span><span class="o">=</span><span class="n">dim_embedding</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">window_size</span><span class="p">,</span> <span class="n">min_count</span><span class="o">=</span><span class="n">min_count</span><span class="p">,</span> <span class="n">workers</span><span class="o">=</span><span class="n">workers</span><span class="p">,</span> <span class="n">sg</span><span class="o">=</span><span class="n">sg</span><span class="p">)</span>',
+          '</span><span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">\'word2vec.model\'</span><span class="p">)</span>',
+          '</span><span class="n">model</span> <span class="o">=</span> <span class="n">Word2Vec</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">\'word2vec.model\'</span><span class="p">)</span>',
+          '</span><span class="n">model</span><span class="o">.</span><span class="n">wv</span><span class="o">.</span><span class="n">most_similar</span><span class="p">(</span><span class="s1">\'perro\'</span><span class="p">,</span> <span class="n">topn</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '[(\'gato\', 0.7948548197746277),',
+          ' (\'perros\', 0.77247554063797),',
+          ' (\'cachorro\', 0.7638891339302063),',
+          ' (\'hámster\', 0.7540281414985657),',
+          ' (\'caniche\', 0.7514827251434326),',
+          ' (\'bobtail\', 0.7492328882217407),',
+          ' (\'mastín\', 0.7491254210472107),',
+          ' (\'lobo\', 0.7312178611755371),',
+          ' (\'semental\', 0.7292628288269043),',
+          ' (\'sabueso\', 0.7290207147598267)]',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">model</span><span class="o">.</span><span class="n">wv</span><span class="o">.</span><span class="n">most_similar</span><span class="p">(</span><span class="s1">\'gato\'</span><span class="p">,</span> <span class="n">topn</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '[(\'conejo\', 0.8148329854011536),',
+          ' (\'zorro\', 0.8109457492828369),',
+          ' (\'perro\', 0.7948548793792725),',
+          ' (\'lobo\', 0.7878773808479309),',
+          ' (\'ardilla\', 0.7860757112503052),',
+          ' (\'mapache\', 0.7817519307136536),',
+          ' (\'huiña\', 0.766639232635498),',
+          ' (\'oso\', 0.7656188011169434),',
+          ' (\'mono\', 0.7633568644523621),',
+          ' (\'camaleón\', 0.7623056769371033)]',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Now let's see the example in which we check the similarity of the word <code>queen</code> with the result of subtracting the word <code>man</code> from the word <code>king</code> and adding the word <code>woman</code> to the word <code>king</code>.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">embedding_hombre</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">wv</span><span class="p">[</span><span class="s1">\'hombre\'</span><span class="p">]</span>',
+      '      <span class="n">embedding_mujer</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">wv</span><span class="p">[</span><span class="s1">\'mujer\'</span><span class="p">]</span>',
+      '      <span class="n">embedding_rey</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">wv</span><span class="p">[</span><span class="s1">\'rey\'</span><span class="p">]</span>',
+      '      <span class="n">embedding_reina</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">wv</span><span class="p">[</span><span class="s1">\'reina\'</span><span class="p">]</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">embedding_hombre</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">wv</span><span class="p">[</span><span class="s1">\'hombre\'</span><span class="p">]</span>',
+      '      <span class="n">embedding_mujer</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">wv</span><span class="p">[</span><span class="s1">\'mujer\'</span><span class="p">]</span>',
+      '      <span class="n">embedding_rey</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">wv</span><span class="p">[</span><span class="s1">\'rey\'</span><span class="p">]</span>',
+      '      <span class="n">embedding_reina</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">wv</span><span class="p">[</span><span class="s1">\'reina\'</span><span class="p">]</span>',
+      '<span></span><span class="n">embedding</span> <span class="o">=</span> <span class="n">embedding_rey</span> <span class="o">-</span> <span class="n">embedding_hombre</span> <span class="o">+</span> <span class="n">embedding_mujer</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">embedding_hombre</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">wv</span><span class="p">[</span><span class="s1">\'hombre\'</span><span class="p">]</span>',
+          '<span class="n">embedding_mujer</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">wv</span><span class="p">[</span><span class="s1">\'mujer\'</span><span class="p">]</span>',
+          '<span class="n">embedding_rey</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">wv</span><span class="p">[</span><span class="s1">\'rey\'</span><span class="p">]</span>',
+          '<span class="n">embedding_reina</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">wv</span><span class="p">[</span><span class="s1">\'reina\'</span><span class="p">]</span>',
+          '</span><span class="n">embedding</span> <span class="o">=</span> <span class="n">embedding_rey</span> <span class="o">-</span> <span class="n">embedding_hombre</span> <span class="o">+</span> <span class="n">embedding_mujer</span>',
+          '</span><span class="kn">from</span> <span class="nn">torch.nn.functional</span> <span class="kn">import</span> <span class="n">cosine_similarity</span>',
+          '',
+          '<span class="n">embedding</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">embedding</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>',
+          '<span class="n">embedding_reina</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">embedding_reina</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>',
+          '',
+          '<span class="n">similarity</span> <span class="o">=</span> <span class="n">cosine_similarity</span><span class="p">(</span><span class="n">embedding</span><span class="p">,</span> <span class="n">embedding_reina</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>',
+          '<span class="n">similarity</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'tensor([0.8156])',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>As we can see, there is a lot of similarity</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Display-of-embeddings">Display of embeddings<a class="anchor-link" href="#Display-of-embeddings"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 49" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>We are going to visualize the embeddings, for this we first obtain the vectors and the words of the model</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">embeddings</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">wv</span><span class="o">.</span><span class="n">vectors</span>',
+      '      <span class="n">words</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">wv</span><span class="o">.</span><span class="n">index_to_key</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>As the dimension of the embeddings is 100, to be able to visualize them in 2 or 3 dimensions we have to reduce the dimension. For this we will use <code>PCA</code> (faster) or <code>TSNE</code> (more precise) of <code>sklearn</code>.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">embeddings</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">wv</span><span class="o">.</span><span class="n">vectors</span>',
+      '      <span class="n">words</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">wv</span><span class="o">.</span><span class="n">index_to_key</span><span class="p">)</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">sklearn.decomposition</span> <span class="kn">import</span> <span class="n">PCA</span>',
+      '      ',
+      '      <span class="n">dimmesions</span> <span class="o">=</span> <span class="mi">2</span>',
+      '      <span class="n">pca</span> <span class="o">=</span> <span class="n">PCA</span><span class="p">(</span><span class="n">n_components</span><span class="o">=</span><span class="n">dimmesions</span><span class="p">)</span>',
+      '      <span class="n">reduced_embeddings_PCA</span> <span class="o">=</span> <span class="n">pca</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">embeddings</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">embeddings</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">wv</span><span class="o">.</span><span class="n">vectors</span>',
+          '<span class="n">words</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">wv</span><span class="o">.</span><span class="n">index_to_key</span><span class="p">)</span>',
+          '</span><span class="kn">from</span> <span class="nn">sklearn.decomposition</span> <span class="kn">import</span> <span class="n">PCA</span>',
+          '',
+          '<span class="n">dimmesions</span> <span class="o">=</span> <span class="mi">2</span>',
+          '<span class="n">pca</span> <span class="o">=</span> <span class="n">PCA</span><span class="p">(</span><span class="n">n_components</span><span class="o">=</span><span class="n">dimmesions</span><span class="p">)</span>',
+          '<span class="n">reduced_embeddings_PCA</span> <span class="o">=</span> <span class="n">pca</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">embeddings</span><span class="p">)</span>',
+          '</span><span class="kn">from</span> <span class="nn">sklearn.manifold</span> <span class="kn">import</span> <span class="n">TSNE</span>',
+          '',
+          '<span class="n">dimmesions</span> <span class="o">=</span> <span class="mi">2</span>',
+          '<span class="n">tsne</span> <span class="o">=</span> <span class="n">TSNE</span><span class="p">(</span><span class="n">n_components</span><span class="o">=</span><span class="n">dimmesions</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">perplexity</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">n_iter</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>',
+          '<span class="n">reduced_embeddings_tsne</span> <span class="o">=</span> <span class="n">tsne</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">embeddings</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          '[t-SNE] Computing 121 nearest neighbors...',
+          '[t-SNE] Indexed 493923 samples in 0.013s...',
+          '[t-SNE] Computed neighbors for 493923 samples in 377.143s...',
+          '[t-SNE] Computed conditional probabilities for sample 1000 / 493923',
+          '[t-SNE] Computed conditional probabilities for sample 2000 / 493923',
+          '[t-SNE] Computed conditional probabilities for sample 3000 / 493923',
+          '[t-SNE] Computed conditional probabilities for sample 4000 / 493923',
+          '[t-SNE] Computed conditional probabilities for sample 5000 / 493923',
+          '[t-SNE] Computed conditional probabilities for sample 6000 / 493923',
+          '[t-SNE] Computed conditional probabilities for sample 7000 / 493923',
+          '[t-SNE] Computed conditional probabilities for sample 8000 / 493923',
+          '[t-SNE] Computed conditional probabilities for sample 9000 / 493923',
+          '[t-SNE] Computed conditional probabilities for sample 10000 / 493923',
+          '[t-SNE] Computed conditional probabilities for sample 11000 / 493923',
+          '[t-SNE] Computed conditional probabilities for sample 12000 / 493923',
+          '[t-SNE] Computed conditional probabilities for sample 13000 / 493923',
+          '[t-SNE] Computed conditional probabilities for sample 14000 / 493923',
+          '[t-SNE] Computed conditional probabilities for sample 15000 / 493923',
+          '[t-SNE] Computed conditional probabilities for sample 16000 / 493923',
+          '[t-SNE] Computed conditional probabilities for sample 17000 / 493923',
+          '[t-SNE] Computed conditional probabilities for sample 18000 / 493923',
+          '[t-SNE] Computed conditional probabilities for sample 19000 / 493923',
+          '[t-SNE] Computed conditional probabilities for sample 20000 / 493923',
+          '[t-SNE] Computed conditional probabilities for sample 21000 / 493923',
+          '[t-SNE] Computed conditional probabilities for sample 22000 / 493923',
+          '...',
+          '[t-SNE] Computed conditional probabilities for sample 493923 / 493923',
+          '[t-SNE] Mean sigma: 0.275311',
+          '[t-SNE] KL divergence after 250 iterations with early exaggeration: 117.413788',
+          '[t-SNE] KL divergence after 300 iterations: 5.774648',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Now we visualize them in 2 dimensions with <code>matplotlib</code>. Let's visualize the dimensionality reduction we have done with <code>PCA</code> and with <code>TSNE</code>.</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+      
+      <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+      <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">word</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">words</span><span class="p">[:</span><span class="mi">200</span><span class="p">]):</span> <span class="c1"># Limitar a las primeras 200 palabras</span>
+          <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">reduced_embeddings_PCA</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">reduced_embeddings_PCA</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+          <span class="n">plt</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">xy</span><span class="o">=</span><span class="p">(</span><span class="n">reduced_embeddings_PCA</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">reduced_embeddings_PCA</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]),</span> <span class="n">xytext</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">textcoords</span><span class="o">=</span><span class="s1">'offset points'</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">'right'</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">'bottom'</span><span class="p">)</span>
+      <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">'Embeddings (PCA)'</span><span class="p">)</span>
+      <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-png-output-subarea">
+      <img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/embeddings0.webp" width="838" height="834" alt="image embeddings 1" loading="lazy">
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+      <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">word</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">words</span><span class="p">[:</span><span class="mi">200</span><span class="p">]):</span> <span class="c1"># Limitar a las primeras 200 palabras</span>
+          <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">reduced_embeddings_tsne</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">reduced_embeddings_tsne</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+          <span class="n">plt</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">xy</span><span class="o">=</span><span class="p">(</span><span class="n">reduced_embeddings_tsne</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">reduced_embeddings_tsne</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]),</span> <span class="n">xytext</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                       <span class="n">textcoords</span><span class="o">=</span><span class="s1">'offset points'</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">'right'</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">'bottom'</span><span class="p">)</span>
+      <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-png-output-subarea">
+      <img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/embeddings1.webp" width="834" height="813" alt="image embeddings 2" loading="lazy">
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Use-of-pre-trained-models-with-huggingface">Use of pre-trained models with huggingface<a class="anchor-link" href="#Use-of-pre-trained-models-with-huggingface"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 50" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>To use pre-trained <code>embeddings</code> models we will use the <code>transformers</code> library from <code>huggingface</code>. To install it with conda we use</p>
+      <div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>transformers
+      </pre></div>
+      <p>And to install it with pip we use</p>
+      <div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>transformers
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>With the <code>feature-extraction</code> task of <code>huggingface</code> we can use pre-trained models to obtain the embeddings of the words. To do this we first import the necessary library</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>',
+      '      ',
+      '      <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>',
+      '      <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">word</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">words</span><span class="p">[:</span><span class="mi">200</span><span class="p">]):</span> <span class="c1"># Limitar a las primeras 200 palabras</span>',
+      '          <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">reduced_embeddings_PCA</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">reduced_embeddings_PCA</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>',
+      '          <span class="n">plt</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">xy</span><span class="o">=</span><span class="p">(</span><span class="n">reduced_embeddings_PCA</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">reduced_embeddings_PCA</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]),</span> <span class="n">xytext</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">textcoords</span><span class="o">=</span><span class="s1">\'offset points\'</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">\'right\'</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">\'bottom\'</span><span class="p">)</span>',
+      '      <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">\'Embeddings (PCA)\'</span><span class="p">)</span>',
+      '      <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>',
+      '<span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>',
+      '      <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">word</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">words</span><span class="p">[:</span><span class="mi">200</span><span class="p">]):</span> <span class="c1"># Limitar a las primeras 200 palabras</span>',
+      '          <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">reduced_embeddings_tsne</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">reduced_embeddings_tsne</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>',
+      '          <span class="n">plt</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">xy</span><span class="o">=</span><span class="p">(</span><span class="n">reduced_embeddings_tsne</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">reduced_embeddings_tsne</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]),</span> <span class="n">xytext</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>',
+      '                       <span class="n">textcoords</span><span class="o">=</span><span class="s1">\'offset points\'</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">\'right\'</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">\'bottom\'</span><span class="p">)</span>',
+      '      <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">pipeline</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's get the <code>embeddings</code> from <code>BERT</code>.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>',
+      '      ',
+      '      <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>',
+      '      <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">word</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">words</span><span class="p">[:</span><span class="mi">200</span><span class="p">]):</span> <span class="c1"># Limitar a las primeras 200 palabras</span>',
+      '          <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">reduced_embeddings_PCA</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">reduced_embeddings_PCA</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>',
+      '          <span class="n">plt</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">xy</span><span class="o">=</span><span class="p">(</span><span class="n">reduced_embeddings_PCA</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">reduced_embeddings_PCA</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]),</span> <span class="n">xytext</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">textcoords</span><span class="o">=</span><span class="s1">\'offset points\'</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">\'right\'</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">\'bottom\'</span><span class="p">)</span>',
+      '      <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">\'Embeddings (PCA)\'</span><span class="p">)</span>',
+      '      <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>',
+      '<span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>',
+      '      <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">word</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">words</span><span class="p">[:</span><span class="mi">200</span><span class="p">]):</span> <span class="c1"># Limitar a las primeras 200 palabras</span>',
+      '          <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">reduced_embeddings_tsne</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">reduced_embeddings_tsne</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>',
+      '          <span class="n">plt</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">xy</span><span class="o">=</span><span class="p">(</span><span class="n">reduced_embeddings_tsne</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">reduced_embeddings_tsne</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]),</span> <span class="n">xytext</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>',
+      '                       <span class="n">textcoords</span><span class="o">=</span><span class="s1">\'offset points\'</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">\'right\'</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">\'bottom\'</span><span class="p">)</span>',
+      '      <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>',
+      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">pipeline</span>',
+      '<span></span><span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"bert-base-uncased"</span>',
+      '      <span class="n">feature_extractor</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="s2">"feature-extraction"</span><span class="p">,</span><span class="n">framework</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">,</span><span class="n">model</span><span class="o">=</span><span class="n">checkpoint</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's see the <code>embeddings</code> of the word <code>king</code>.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>',
+          '',
+          '<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>',
+          '<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">word</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">words</span><span class="p">[:</span><span class="mi">200</span><span class="p">]):</span> <span class="c1"># Limitar a las primeras 200 palabras</span>',
+          '    <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">reduced_embeddings_PCA</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">reduced_embeddings_PCA</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>',
+          '    <span class="n">plt</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">xy</span><span class="o">=</span><span class="p">(</span><span class="n">reduced_embeddings_PCA</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">reduced_embeddings_PCA</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]),</span> <span class="n">xytext</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">textcoords</span><span class="o">=</span><span class="s1">\'offset points\'</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">\'right\'</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">\'bottom\'</span><span class="p">)</span>',
+          '<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">\'Embeddings (PCA)\'</span><span class="p">)</span>',
+          '<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>',
+          '</span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>',
+          '<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">word</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">words</span><span class="p">[:</span><span class="mi">200</span><span class="p">]):</span> <span class="c1"># Limitar a las primeras 200 palabras</span>',
+          '    <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">reduced_embeddings_tsne</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">reduced_embeddings_tsne</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>',
+          '    <span class="n">plt</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">xy</span><span class="o">=</span><span class="p">(</span><span class="n">reduced_embeddings_tsne</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">reduced_embeddings_tsne</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]),</span> <span class="n">xytext</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>',
+          '                 <span class="n">textcoords</span><span class="o">=</span><span class="s1">\'offset points\'</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">\'right\'</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">\'bottom\'</span><span class="p">)</span>',
+          '<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>',
+          '</span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">pipeline</span>',
+          '</span><span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"bert-base-uncased"</span>',
+          '<span class="n">feature_extractor</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="s2">"feature-extraction"</span><span class="p">,</span><span class="n">framework</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">,</span><span class="n">model</span><span class="o">=</span><span class="n">checkpoint</span><span class="p">)</span>',
+          '</span><span class="n">embedding</span> <span class="o">=</span> <span class="n">feature_extractor</span><span class="p">(</span><span class="s2">"rey"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>',
+          '<span class="n">embedding</span><span class="o">.</span><span class="n">shape</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'torch.Size([3, 768])',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>As we see we obtain a vector of <code>768</code> dimensions, that is to say, the <code>embeddings</code> of <code>BERT</code> have <code>768</code> dimensions. On the other hand we see that it has 3 vectors of <code>embeddings</code>, this is because <code>BERT</code> adds a token at the beginning and another at the end of the sentence, so we are only interested in the middle vector.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Let us redo the example in which we check the similarity of the word <code>queen</code> with the result of subtracting the word <code>man</code> from the word <code>king</code> and adding the word <code>woman</code> to the word <code>king</code>.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">embedding_hombre</span> <span class="o">=</span> <span class="n">feature_extractor</span><span class="p">(</span><span class="s2">"man"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>',
+      '      <span class="n">embedding_mujer</span> <span class="o">=</span> <span class="n">feature_extractor</span><span class="p">(</span><span class="s2">"woman"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>',
+      '      <span class="n">embedding_rey</span> <span class="o">=</span> <span class="n">feature_extractor</span><span class="p">(</span><span class="s2">"king"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>',
+      '      <span class="n">embedding_reina</span> <span class="o">=</span> <span class="n">feature_extractor</span><span class="p">(</span><span class="s2">"queen"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+
+
+
+      
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">embedding_hombre</span> <span class="o">=</span> <span class="n">feature_extractor</span><span class="p">(</span><span class="s2">"man"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>',
+      '      <span class="n">embedding_mujer</span> <span class="o">=</span> <span class="n">feature_extractor</span><span class="p">(</span><span class="s2">"woman"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>',
+      '      <span class="n">embedding_rey</span> <span class="o">=</span> <span class="n">feature_extractor</span><span class="p">(</span><span class="s2">"king"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>',
+      '      <span class="n">embedding_reina</span> <span class="o">=</span> <span class="n">feature_extractor</span><span class="p">(</span><span class="s2">"queen"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>',
+      '<span></span><span class="n">embedding</span> <span class="o">=</span> <span class="n">embedding_rey</span> <span class="o">-</span> <span class="n">embedding_hombre</span> <span class="o">+</span> <span class="n">embedding_mujer</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+
+
+
+
+
+
+      
+      <section class="section-block-markdown-cell">
+      <p>Let's see the similarity</p>
+      </section>
+      
+      <section class="section-block-code-cell-">
+      <div class="input-code">
+      <div class="highlight hl-ipython3">
+<pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
+      <span class="kn">from</span> <span class="nn">torch.nn.functional</span> <span class="kn">import</span> <span class="n">cosine_similarity</span>
+      
+      <span class="n">embedding</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">embedding</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+      <span class="n">embedding_reina</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">embedding_reina</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+      
+      <span class="n">similarity</span> <span class="o">=</span> <span class="n">cosine_similarity</span><span class="p">(</span><span class="n">embedding</span><span class="p">,</span> <span class="n">embedding_reina</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+      <span class="n">similarity</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+      </pre></div>
+      </div>
+      <div class="output-wrapper">
+      <div class="output-area">
+      <div class="prompt"></div>
+      <div class="output-subarea-output-stream-output-stderr-output-text">
+      <pre>/tmp/ipykernel_33343/4248442045.py:4: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+        embedding = torch.tensor(embedding).unsqueeze(0)
+      /tmp/ipykernel_33343/4248442045.py:5: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+        embedding_reina = torch.tensor(embedding_reina).unsqueeze(0)
+      </pre>
+      </div>
+      </div>
+      <div class="output-area">
+      <div class="prompt-output-prompt">Out[60]:</div>
+      <div class="output-text-output-subareaoutput_execute_result">
+      <pre>0.742547333240509</pre>
+      </div>
+      </div>
+      </div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Using the <code>embeddings</code> of <code>BERT</code> we also get a result very close to 1</p>
+      </section>
+      
+
+
+
+
+
+
+    </div>
+
+  </section>
+
+</PostLayout>

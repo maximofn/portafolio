@@ -3,6 +3,8 @@ import os
 from huggingface_hub import InferenceClient
 import time
 
+DEBUG = False
+
 class Qwen2_5_72B:
     def __init__(self, system_instruction, temperature=0.7, top_p=0.7, max_tokens=1024):
         self.model = "Qwen/Qwen2.5-72B-Instruct"
@@ -23,6 +25,7 @@ class Qwen2_5_72B:
             raise ValueError("HUGGING_FACE_TOKEN is not set")
 
     def chat(self, input_text, response_raw=False):
+        if DEBUG: print(f"\tInput text: {input_text}")
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -43,6 +46,9 @@ class Qwen2_5_72B:
             )
             # for chunk in response:
             #     print(chunk.choices[0].delta.content)
+            if DEBUG: print(f"\tResponse: {response.choices}")
+            if DEBUG: print(f"\tResponse: {response.choices[0].message.content}")
+            return response.choices[0].message.content
         except Exception as e:
             print(f'Error ({self.translation_counter}): {e}')
             if self.translation_counter < self.translation_limit:
@@ -52,6 +58,7 @@ class Qwen2_5_72B:
             else:
                 print(f"Translation limit reached")
                 self.translation_counter = 0
+                exit(1)
         
         if response_raw:
             return response

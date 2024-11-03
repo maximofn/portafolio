@@ -26,45 +26,48 @@ SYSTEM_INSTRUCTION = """
     }
     ```
 
-    Recuerda, rellena el json solo con los textos markdown que tienen errores, no pongas en el json los que no tienen errores y no quiero que añadir un punto al final de la oración sea una corrección
+    Recuerda, rellena el json solo con los textos markdown que tienen errores, no pongas en el json los que no tienen errores y no quiero que añadir un punto al final de la oración sea una corrección.
+    Y muy importante, lo que respondas se va a pasar por una herramienta de conversión de strings a diccionarios, así que responde solo con el json, no pongas nada más en la respuesta.
 """
 GEMINI_LLM = "Gemini"
 GPT4O_LLM = "GPT4o"
 GROQ_LLM = "Groq_llama3_1_70B"
 QWEN_2_5_72B = "Qwen2.5-72B"
-MODEL = GPT4O_LLM
+MODEL = QWEN_2_5_72B
+
+DEBUG = False
 
 def apply_corrections(model, line):
+    if DEBUG: print(f"\nline: {line}")
     try:
         correction_string = model.chat(line)
-        # correction_string = "```json\n{"
-        # corr = "corr "
-        # correction_string = correction_string + f"\n    \"{KEY_ORIGINAL}\": \"{line}\",\n    \"{KEY_CORRECTION}\": \"{corr+line}\",\n    \"{KEY_EXPLANATION}\": \"test\"\n"
-        # correction_string = correction_string + "}\n```"
+        if DEBUG: print(f"correction_string: {correction_string}")
+    except Exception as e:
+        print(f"Error LLM model chat: {e}")
+    # correction_string = "```json\n{"
+    # corr = "corr "
+    # correction_string = correction_string + f"\n    \"{KEY_ORIGINAL}\": \"{line}\",\n    \"{KEY_CORRECTION}\": \"{corr+line}\",\n    \"{KEY_EXPLANATION}\": \"test\"\n"
+    # correction_string = correction_string + "}\n```"
 
-        # if correction_string is not string, it's an error
-        if type(correction_string) != str:
-            print(f"LLM Error: {correction_string}")
-            return line
+    # if correction_string is not string, it's an error
+    if type(correction_string) != str:
+        print(f"LLM Error is not a string: {correction_string}")
+        return line
 
-        correction_dict = string_to_dict(correction_string)
-        if f"{KEY_EXPLANATION}" in correction_dict.keys() and f"{KEY_CORRECTION}" in correction_dict.keys() and f"{KEY_ORIGINAL}" in correction_dict.keys():
-            if len(correction_dict[f'{KEY_EXPLANATION}']) > 0:
-                original_value = correction_dict[f'{KEY_ORIGINAL}']
-                correction_vaue = correction_dict[f'{KEY_CORRECTION}']
-                explanation_value = correction_dict[f'{KEY_EXPLANATION}']
-                print(f"\n{KEY_ORIGINAL}  : {original_value}\n{KEY_CORRECTION}: {correction_vaue}\n{KEY_EXPLANATION}: {explanation_value}")
-                if ask_for_something("Do you want to apply this correction? (y/n)", ['y', 'yes'], ['n', 'no']):
-                    return correction_vaue
-                else:
-                    return original_value
+    correction_dict = string_to_dict(correction_string)
+    if f"{KEY_EXPLANATION}" in correction_dict.keys() and f"{KEY_CORRECTION}" in correction_dict.keys() and f"{KEY_ORIGINAL}" in correction_dict.keys():
+        if len(correction_dict[f'{KEY_EXPLANATION}']) > 0:
+            original_value = correction_dict[f'{KEY_ORIGINAL}']
+            correction_vaue = correction_dict[f'{KEY_CORRECTION}']
+            explanation_value = correction_dict[f'{KEY_EXPLANATION}']
+            print(f"\n{KEY_ORIGINAL}  : {original_value}\n{KEY_CORRECTION}: {correction_vaue}\n{KEY_EXPLANATION}: {explanation_value}")
+            if ask_for_something("Do you want to apply this correction? (y/n)", ['y', 'yes'], ['n', 'no']):
+                return correction_vaue
             else:
-                return line
+                return original_value
         else:
             return line
-    
-    except Exception as e:
-        print(f"Error: {e}")
+    else:
         return line
 
 def ortografic_corrections_jupyter_notebook(notebook_path):

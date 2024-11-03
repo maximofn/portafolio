@@ -19,10 +19,14 @@ def ask_for_something(string, optionsTrue, optionsFalse):
         return False
 
 def string_to_dict(notebook_content):
-    filter_text = notebook_content.replace('```json', '').replace('\n', '').replace('```', '')
-    json_content = json.loads(filter_text)
-    dict_content = dict(json_content)
-    return dict_content
+    try:
+        filter_text = notebook_content.replace('```json', '').replace('\n', '').replace('```', '')
+        json_content = json.loads(filter_text)
+        dict_content = dict(json_content)
+        return dict_content
+    except Exception as e:
+        print(f"Error converting string to dictionary: {e}")
+        return {}
 
 def get_portafolio_path(path):
     global COUNTER

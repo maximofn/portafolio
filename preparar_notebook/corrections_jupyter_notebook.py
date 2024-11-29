@@ -29,19 +29,31 @@ SYSTEM_INSTRUCTION = """
     Recuerda, rellena el json solo con los textos markdown que tienen errores, no pongas en el json los que no tienen errores y no quiero que añadir un punto al final de la oración sea una corrección.
     Y muy importante, lo que respondas se va a pasar por una herramienta de conversión de strings a diccionarios, así que responde solo con el json, no pongas nada más en la respuesta.
 """
+SYSTEM_CHECK = """
+    Estás seguro que has corregido todos los errores ortográficos? ¿Y estás seguro que has respondido con el formato que te he pedido?
+    Te recuerdo el formato de salida:
+    El formato de salida tiene que ser un json con llaves llamadas `original`, otra `correccion` y la última será `explicación` con la explicación de qué cambia y por qué. Si no hay errores ortográficos responde ese json con las llaves vacías. Es decir será un json así:
+    ```
+    {
+        "original": "",
+        "correccion": "",
+        "explicación": ""
+    }
+    ```
+
+    Recuerda, rellena el json solo con los textos markdown que tienen errores, no pongas en el json los que no tienen errores y no quiero que añadir un punto al final de la oración sea una corrección.
+    Y muy importante, lo que respondas se va a pasar por una herramienta de conversión de strings a diccionarios, así que responde solo con el json, no pongas nada más en la respuesta.
+"""
+NUMBER_OF_CHECKS = 3
 GEMINI_LLM = "Gemini"
 GPT4O_LLM = "GPT4o"
 GROQ_LLM = "Groq_llama3_1_70B"
 QWEN_2_5_72B = "Qwen2.5-72B"
 MODEL = QWEN_2_5_72B
 
-DEBUG = False
-
 def apply_corrections(model, line):
-    if DEBUG: print(f"\nline: {line}")
     try:
         correction_string = model.chat(line)
-        if DEBUG: print(f"correction_string: {correction_string}")
     except Exception as e:
         print(f"Error LLM model chat: {e}")
     # correction_string = "```json\n{"
@@ -79,7 +91,7 @@ def ortografic_corrections_jupyter_notebook(notebook_path):
     elif MODEL == GROQ_LLM:
         model = Groq_llama3_1_70B(system_instruction=SYSTEM_INSTRUCTION)
     elif MODEL == QWEN_2_5_72B:
-        model = Qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION)
+        model = Qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION, system_check=SYSTEM_CHECK, num_checks=NUMBER_OF_CHECKS)
 
     # Get notebook content as a dictionary
     notebook = Notebook(notebook_path)

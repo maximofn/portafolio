@@ -4,7 +4,7 @@ from gemini import Gemini
 from gpt4o import GPT4o
 from groq_llm import Groq_llama3_1_70B
 from qwen2_5_72B import Qwen2_5_72B
-from notebook import Notebook
+from notebook_utils import Notebook
 
 KEY_ORIGINAL = "original"
 KEY_CORRECTION = "correccion"

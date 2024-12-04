@@ -74,12 +74,12 @@ def format_anchor_links(html_content):
                 if line[i:].startswith("<a"):
                     start_open_anchor_position = i     # start anchor position if the string starts with `<a` in the line
                     break
-            if start_open_anchor_position:
+            if start_open_anchor_position is not None:
                 for i in range(start_open_anchor_position, len(line)):
                     if line[i:].startswith("\">"):
                         end_open_anchor_position = i+1     # end anchor position if the string ends with `">` in the line
                         break
-            if start_open_anchor_position and end_open_anchor_position:
+            if start_open_anchor_position is not None and end_open_anchor_position is not None:
                 # Get href
                 for i in range(start_open_anchor_position, end_open_anchor_position):
                     href = None

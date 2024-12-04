@@ -39,7 +39,11 @@ def get_image_width_height(image_path):
     return width, height
 
 def get_image_extension(image_path):
-    return image_path.split('.')[-1]
+    if '.' in image_path:
+        return image_path.split('.')[-1]
+    else:
+        print(f'No extension found in {image_path}')
+        exit(1)
 
 def get_notebook_metadata(notebook_path):
     with open(notebook_path, 'r') as f:

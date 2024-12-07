@@ -113,12 +113,12 @@ def format_images(html_content):
                 if line[i:].startswith("<img"):
                     start_img_position = i     # start img position if the string starts with `<img` in the line
                     break
-            if start_img_position:
+            if start_img_position is not None:
                 for i in range(start_img_position, len(line)):
                     if line[i:].startswith(">"):
                         end_img_position = i+1     # end img position if the string ends with `">` in the line
                         break
-            if start_img_position and end_img_position:
+            if start_img_position is not None and end_img_position is not None:
                 img_html_item = line[start_img_position:end_img_position]
                 if "decoding" not in img_html_item:
                     line = line[:start_img_position+4] + ' decoding="async"' + line[start_img_position+4:]
@@ -128,9 +128,10 @@ def format_images(html_content):
 def replace_braces(html_content):
     content_html = ""
     html_content_lines = html_content.split("\n")
+    start_section_line = None
+    end_section_line = None
     for number_line, line in enumerate(html_content_lines):
         if "<section" in line: # Start section
-            # print(line)
             start_section_line = number_line
             # Find the end of the section
             for i in range(number_line, len(html_content_lines)):
@@ -138,10 +139,21 @@ def replace_braces(html_content):
                     end_section_line = i
                     break
             # Replace the braces in the section
-            for i in range(start_section_line, end_section_line):
-                if '<p' in html_content_lines[i] or '<span' in html_content_lines[i]:
-                    html_content_lines[i] = html_content_lines[i].replace("{", "{opening_brace").replace("}", "closing_brace}").replace("{opening_brace", "{opening_brace}").replace("closing_brace}", "{closing_brace}")
-                # print(html_content_lines[i])
+            if start_section_line is not None and end_section_line is not None:
+                if start_section_line < end_section_line:
+                    for i in range(start_section_line, end_section_line):
+                        if '<p' in html_content_lines[i] or '<span' in html_content_lines[i]:
+                            # First replace {opening_brace} by &$&%&$&%$$&%
+                            html_content_lines[i] = html_content_lines[i].replace("{opening_brace}", "&$&%&$&%$$&%")
+                            # Second replace {colsing_brace} by &$&%&$&%$$&#
+                            html_content_lines[i] = html_content_lines[i].replace("{closing_brace}", "&$&%&$&%$$&#")
+                            # Thirth replace { by &$&%&$&%$$&=
+                            html_content_lines[i] = html_content_lines[i].replace("{", "&$&%&$&%$$&=")
+                            # Fourth replace } by &$&%&$&%$$=&
+                            html_content_lines[i] = html_content_lines[i].replace("}", "&$&%&$&%$$=&")
+
+                            # Now replace &$&%&$&%$$&% by {opening_brace}, &$&%&$&%$$&# by {closing_brace}, &$&%&$&%$$&= by {opening_brace} and &$&%&$&%$$=& by {closing_brace}
+                            html_content_lines[i] = html_content_lines[i].replace("&$&%&$&%$$&%", "{opening_brace}").replace("&$&%&$&%$$&#", "{closing_brace}").replace("&$&%&$&%$$&=", "{opening_brace}").replace("&$&%&$&%$$=&", "{closing_brace}")
         content_html += f"{html_content_lines[number_line]}\n"
     return content_html
 
@@ -160,12 +172,12 @@ def img_base64_to_webp(html_content, notebook_title):
                     start_src_position = i + 5
                     if line[start_src_position-1] != '"':
                             start_src_position = None
-                    if start_src_position:
+                    if start_src_position is not None:
                         end_src_position = line.find('"', start_src_position)
                         src = line[start_src_position:end_src_position]
                         break
             # Open image and get width and height
-            if src:
+            if src is not None:
                 if src.startswith("data:image"):
                     notebook_title_without_extension = notebook_title.split(".")[0]
                     image_name = notebook_title_without_extension + str(webp_img_counter) + ".webp"

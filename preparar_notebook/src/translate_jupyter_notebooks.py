@@ -132,6 +132,9 @@ def translate_jupyter_notebook(notebook_path):
     elif TRANSLATOR_MODEL == GROQ_LLM:
         translator_model_en = Groq_llama3_1_70B(system_instruction=SYSTEM_INSTRUCTION_EN)
         translator_model_pt = Groq_llama3_1_70B(system_instruction=SYSTEM_INSTRUCTION_PT)
+    elif TRANSLATOR_MODEL == QWEN_2_5_72B:
+        translator_model_en = Qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION_EN, system_check=SYSTEM_INSTRUCTION_CHECKER, num_checks=NUMBER_OF_CHECKS)
+        translator_model_pt = Qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION_PT, system_check=SYSTEM_INSTRUCTION_CHECKER, num_checks=NUMBER_OF_CHECKS)
     translations_models = [translator_model_en, translator_model_pt]
 
     # load checker LLM
@@ -142,6 +145,8 @@ def translate_jupyter_notebook(notebook_path):
         checker_model = GPT4o(system_instruction=SYSTEM_INSTRUCTION_CHECKER)
     elif CHECKER_MODEL == GROQ_LLM:
         checker_model = Groq_llama3_1_70B(system_instruction=SYSTEM_INSTRUCTION_CHECKER)
+    elif CHECKER_MODEL == QWEN_2_5_72B:
+        checker_model = Qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION_CHECKER, system_check=SYSTEM_INSTRUCTION_CHECKER, num_checks=NUMBER_OF_CHECKS)
 
     # Get notebook content as a dictionary
     print(f"\tLoading notebook {notebook_path}")

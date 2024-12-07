@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 import os
 import google.generativeai as genai
-from error_codes import QUOTA_EXCEEDED_ERROR, INTERNAL_ERROR
+from error_codes import QUOTA_EXCEEDED_ERROR, INTERNAL_ERROR, API_KEY_ERROR
 
 class Gemini:
     def __init__(self, system_instruction):
@@ -34,6 +34,9 @@ class Gemini:
             elif str(INTERNAL_ERROR) in str(e):
                 print('Internal error')
                 response = INTERNAL_ERROR
+            elif str(API_KEY_ERROR) in str(e):
+                print('API key error')
+                response = API_KEY_ERROR
             else:
                 print('Unknown error')
                 response = None

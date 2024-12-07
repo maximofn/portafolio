@@ -2,7 +2,8 @@ from tqdm import tqdm
 from gemini import Gemini
 from gpt4o import GPT4o
 from groq_llm import Groq_llama3_1_70B
-from notebook import Notebook
+from qwen2_5_72B import Qwen2_5_72B
+from notebook_utils import Notebook
 import re
 from utils import ask_for_something
 
@@ -38,12 +39,14 @@ SYSTEM_INSTRUCTION_CHECKER = """
     Si el tipo de celda es de tipo `code`, es decir si tiene `'cell_type': 'code'`, no hace falta que lo revises.
     Recuerda, responde solo lo que te pido, tu respuesta forma parte de un script de automatización que va a comprobar si tu salida es una de las esperadas.
 """
+NUMBER_OF_CHECKS = 3
 DISCLAIMER_EN = " > Disclaimer: This post has been translated to English using a machine translation model. Please, let me know if you find any mistakes."
 DISCLAIMER_PT = " > Aviso: Este post foi traduzido para o português usando um modelo de tradução automática. Por favor, me avise se encontrar algum erro."
 GEMINI_LLM = "Gemini"
 GPT4o_LLM = "GPT4o"
 GROQ_LLM = "Groq_llama3_1_70B"
-TRANSLATOR_MODEL = GPT4o_LLM
+QWEN_2_5_72B = "Qwen2.5-72B"
+TRANSLATOR_MODEL = GEMINI_LLM
 CHECKER_MODEL = GEMINI_LLM
 
 def translate_text(model, line):

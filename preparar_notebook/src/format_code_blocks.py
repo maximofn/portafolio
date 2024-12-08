@@ -36,6 +36,22 @@ def remove_empty_lines(lines):
                 # print(f"end_line: {end_line}")
     return lines, lines_removed
 
+def remove_blank_spaces_at_the_beginning_of_code_lines(content):
+    six_spaces = 6 * " "
+    init_code_line = "'"
+    wrong_code_line = six_spaces + init_code_line + six_spaces
+    wrong_code_line = "      '      "
+    for i, line in enumerate(content):
+        if "<CodeBlockInputCell" in line:
+            code_lines = line.split('\n')
+            for j, code_line in enumerate(code_lines):
+                if code_line.startswith(wrong_code_line):
+                    code_lines[j] = code_line[0:7] + code_line[13:]
+                    if code_lines[j] == "      '',":
+                        code_lines[j] = "      ' ',"
+            content[i] = '\n'.join(code_lines)
+    return content
+
 def format_code_blocks(content):
     # Get all lines
     lines = content.split('\n')
@@ -51,11 +67,15 @@ def format_code_blocks(content):
             if '<div class="input-code">' in lines[i+1]:
                 # Check if the next line contains '<div class="highlight hl-ipython3">'
                 if '<div class="highlight hl-ipython3">' in lines[i+2]:
+                    # Clear the code list
+                    input_cell_code = []
+                    output_cell_code = []
                     # Check if the next line starts with '<pre>'
                     if lines[i+3].startswith('<pre>'):
                         # Add the rest of the line to the code list
                         code_to_append = lines[i+3][5:]
                         code_to_append = code_to_append.replace("'", "\\'")
+                        code_to_append = code_to_append.replace("\\n", "\\\\n")
                         code_to_append = "    '" + code_to_append + "',"
                         input_cell_code.append(code_to_append)
                         #  While next lines don't start '</pre>', add them to the code list
@@ -63,6 +83,7 @@ def format_code_blocks(content):
                         while not '</pre>' in lines[j]:
                             code_to_append = lines[j]
                             code_to_append = code_to_append.replace("'", "\\'")
+                            code_to_append = code_to_append.replace("\\n", "\\\\n")
                             code_to_append = "    '" + code_to_append + "',"
                             input_cell_code.append(code_to_append)
                             j += 1
@@ -73,9 +94,11 @@ def format_code_blocks(content):
                                 # Check if the next line contains '<div class="output-area">'
                                 if '<div class="output-area">' in lines[j+3]:
                                     # Check if the next line contains '<div class="prompt'
-                                    if '<div class="prompt' in lines[j+4]:
+                                    # if '<div class="prompt' in lines[j+4]:
+                                    if 'prompt' in lines[j+4]:
                                         # Check if the next line contains '<div class="output'
-                                        if '<div class="output' in lines[j+5]:
+                                        # if '<div class="output' in lines[j+5]:
+                                        if 'output' in lines[j+5]:
                                             # Check if the next line starts with '<pre>'
                                             if '<pre>' in lines[j+6]:
                                                 # Add the rest of the line to the code list
@@ -110,6 +133,8 @@ def format_code_blocks(content):
                                                     # Insert the formatted code blockbefore the line 0
                                                     line_i = lines[i]
                                                     lines[i] = start_input_code_block
+                                                    start_position_character = None
+                                                    end_position_character = None
                                                     for pos in range(len(input_cell_code)):
                                                         # Get position of first ' character
                                                         for char_pos, char in enumerate(input_cell_code[pos]):
@@ -121,10 +146,18 @@ def format_code_blocks(content):
                                                             if char == ",":
                                                                 end_position_character = len(input_cell_code[pos]) - char_pos
                                                                 break
-                                                        input_cell_code[pos] = input_cell_code[pos][start_position_character:end_position_character]
+                                                        if start_position_character is not None and end_position_character is not None:
+                                                            input_cell_code[pos] = input_cell_code[pos][start_position_character:end_position_character]
+                                                        else:
+                                                            print(f"start_position_character: {start_position_character}, end_position_character: {end_position_character}")
                                                         # Remove the first 6 spaces from pos+1 to the end
                                                         if pos > 0:
-                                                            input_cell_code[pos] = input_cell_code[pos][0] + input_cell_code[pos][7:]
+                                                            if len(input_cell_code[pos]) > 6:
+                                                                input_cell_code[pos] = input_cell_code[pos][0] + input_cell_code[pos][7:]
+                                                            else:
+                                                                print(f"input_cell_code[pos] has less than 6 characters: {input_cell_code[pos]}")
+                                                                print(f"pos: {pos}")
+                                                                exit(1)
                                                         # TODO revisar si usar esto solo para el post de python o para todos
                                                         input_cell_code[pos] = input_cell_code[pos].replace(">\\\"<", ">\\\\\"<")
                                                         input_cell_code[pos] = input_cell_code[pos].replace(">\\\\\'<", ">\\\\\\\'<")
@@ -135,7 +168,6 @@ def format_code_blocks(content):
                                                         input_cell_code[pos] = input_cell_code[pos].replace(">\\b<", ">\\\\b<")
                                                         input_cell_code[pos] = input_cell_code[pos].replace(">\\115\\141\\170\\151\\155\\157\\106\\116<", ">\\\\115\\\\141\\\\170\\\\151\\\\155\\\\157\\\\106\\\\116<")
                                                         input_cell_code[pos] = input_cell_code[pos].replace(">\\x4d\\x61\\x78\\x69\\x6d\\x6f\\x46\\x4e<", ">\\\\x4d\\\\x61\\\\x78\\\\x69\\\\x6d\\\\x6f\\\\x46\\\\x4e<")
-                                                        # input_cell_code[pos] = input_cell_code[pos].replace("", "")
                                                         lines[i] = lines[i] + '\n          ' + input_cell_code[pos]
                                                     lines[i] = lines[i] + '\n' + end_input_code_block
                                                     lines[i] = lines[i] + '\n' + start_output_code_block
@@ -191,17 +223,14 @@ def format_code_blocks(content):
     
     # Remove empty lines
     need_remove_empty_lines = True
-    # counter = 0
-    # limit_counter = 3
     while need_remove_empty_lines:
-        # print(f"\nIteration: {counter}")
         lines, lines_removed = remove_empty_lines(lines)
-        # counter += 1
         if not lines_removed:
             need_remove_empty_lines = False
-        # if counter == limit_counter:
-        #     break
     
+    # Remove blank spaces at the beginning of the lines
+    lines = remove_blank_spaces_at_the_beginning_of_code_lines(lines)
+
     html_content = '\n'.join(lines)
     return html_content
 

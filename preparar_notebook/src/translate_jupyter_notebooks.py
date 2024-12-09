@@ -3,6 +3,7 @@ from gemini import Gemini
 from gpt4o import GPT4o
 from groq_llm import Groq_llama3_1_70B
 from qwen2_5_72B import Qwen2_5_72B
+from llama_3_3_70B import Llama_3_3_70B
 from notebook_utils import Notebook
 import re
 from utils import ask_for_something
@@ -30,7 +31,14 @@ SYSTEM_INSTRUCTION_PT = """
 
     Te van a pasar textos markdown y tienes que traducirlos al español. Responde solo con la traducción, no respondas nada más, solamente la traducción.
 """
-SYSTEM_INSTRUCTION_CHECKER = """
+SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER = """
+    Eres un experto en revisión de traducciones. Tu misión es revisar las traducciones de texto en formato markdown.
+    Te pasarán dos frases, una en español y otra traducido a otro idioma que se te especificará en el prompt, y tienes que revisar si las traducciones son correctas.
+    Si crees que la traducción es correcta, responde con "Todo correcto".
+    Si crees que hay algún error, responde con la traducción correcta.
+    Recuerda, responde solo lo que te pido, tu respuesta forma parte de un script de automatización que va a comprobar si tu salida es una de las esperadas.
+"""
+SYSTEM_INSTRUCTION_NOTEBOOK_TRANSLATION_CHECKER = """
     Eres un experto en revisión de traducciones. Tu misión es revisar las traducciones de texto en jupyter notebooks.
     Te pasarán dos jupyter notebooks, uno en español y otro traducido a otro idioma que se te especificará en el prompt, y tienes que revisar si las traducciones son correctas.
     Solo estarán traducidas las celdas de tipo markdown, las celdas de tipo código no van a estar traducidas.
@@ -39,14 +47,16 @@ SYSTEM_INSTRUCTION_CHECKER = """
     Si el tipo de celda es de tipo `code`, es decir si tiene `'cell_type': 'code'`, no hace falta que lo revises.
     Recuerda, responde solo lo que te pido, tu respuesta forma parte de un script de automatización que va a comprobar si tu salida es una de las esperadas.
 """
-NUMBER_OF_CHECKS = 3
+NUMBER_OF_PHRASE_CHECKS = 0
+NUMBER_OF_NOTEBOOK_CHECKS = 3
 DISCLAIMER_EN = " > Disclaimer: This post has been translated to English using a machine translation model. Please, let me know if you find any mistakes."
 DISCLAIMER_PT = " > Aviso: Este post foi traduzido para o português usando um modelo de tradução automática. Por favor, me avise se encontrar algum erro."
 GEMINI_LLM = "Gemini"
 GPT4o_LLM = "GPT4o"
 GROQ_LLM = "Groq_llama3_1_70B"
 QWEN_2_5_72B = "Qwen2.5-72B"
-TRANSLATOR_MODEL = GEMINI_LLM
+LLAMA_3_3_70B = "Llama3.3-70B"
+TRANSLATOR_MODEL = LLAMA_3_3_70B
 CHECKER_MODEL = GEMINI_LLM
 
 def translate_text(model, line):
@@ -133,20 +143,20 @@ def translate_jupyter_notebook(notebook_path):
         translator_model_en = Groq_llama3_1_70B(system_instruction=SYSTEM_INSTRUCTION_EN)
         translator_model_pt = Groq_llama3_1_70B(system_instruction=SYSTEM_INSTRUCTION_PT)
     elif TRANSLATOR_MODEL == QWEN_2_5_72B:
-        translator_model_en = Qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION_EN, system_check=SYSTEM_INSTRUCTION_CHECKER, num_checks=NUMBER_OF_CHECKS)
-        translator_model_pt = Qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION_PT, system_check=SYSTEM_INSTRUCTION_CHECKER, num_checks=NUMBER_OF_CHECKS)
+        translator_model_en = Qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION_EN, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
+        translator_model_pt = Qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION_PT, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
     translations_models = [translator_model_en, translator_model_pt]
 
     # load checker LLM
     print(f"\tLoading checker model {CHECKER_MODEL}")
     if CHECKER_MODEL == GEMINI_LLM:
-        checker_model = Gemini(system_instruction=SYSTEM_INSTRUCTION_CHECKER)
+        checker_model = Gemini(system_instruction=SYSTEM_INSTRUCTION_NOTEBOOK_TRANSLATION_CHECKER)
     elif CHECKER_MODEL == GPT4o_LLM:
-        checker_model = GPT4o(system_instruction=SYSTEM_INSTRUCTION_CHECKER)
+        checker_model = GPT4o(system_instruction=SYSTEM_INSTRUCTION_NOTEBOOK_TRANSLATION_CHECKER)
     elif CHECKER_MODEL == GROQ_LLM:
-        checker_model = Groq_llama3_1_70B(system_instruction=SYSTEM_INSTRUCTION_CHECKER)
+        checker_model = Groq_llama3_1_70B(system_instruction=SYSTEM_INSTRUCTION_NOTEBOOK_TRANSLATION_CHECKER)
     elif CHECKER_MODEL == QWEN_2_5_72B:
-        checker_model = Qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION_CHECKER, system_check=SYSTEM_INSTRUCTION_CHECKER, num_checks=NUMBER_OF_CHECKS)
+        checker_model = Qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION_NOTEBOOK_TRANSLATION_CHECKER, system_check=SYSTEM_INSTRUCTION_NOTEBOOK_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
 
     # Get notebook content as a dictionary
     print(f"\tLoading notebook {notebook_path}")

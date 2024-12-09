@@ -52,6 +52,26 @@ QWEN_2_5_72B = "Qwen2.5-72B"
 MODEL = QWEN_2_5_72B
 
 def apply_corrections(model, line):
+    # If line is empty, return it
+    if all(char.isspace() for char in line):
+        return line
+    if line == "\n":
+        return line
+    if line == "":
+        return line
+    if line == "\t":
+        return line
+    if line == "\r":
+        return line
+    
+    # If line is start or end of highlight markdown
+    if line.startswith("```"):
+        return line
+
+    # If line is only 'o'
+    if line.lower() == "o":
+        return line
+
     try:
         correction_string = model.chat(line)
     except Exception as e:
@@ -114,7 +134,7 @@ def ortografic_corrections_jupyter_notebook(notebook_path):
                     cell['source'][number_line] = apply_corrections(model, line)
             markdown_cell_counter += 1
         bar.set_description(f"\t\tCell {markdown_cell_counter}/{total_markdown_cells}")
-    print(f"\tEnd of translation")
+    print(f"\tEnd of corrections")
 
     # Save the notebook with the corrections
     notebook.save_cells(cells)

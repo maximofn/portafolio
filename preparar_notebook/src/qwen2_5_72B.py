@@ -24,60 +24,73 @@ class Qwen2_5_72B:
         if self.HUGGING_FACE_TOKEN is None:
             raise ValueError("HUGGING_FACE_TOKEN is not set")
     
-    def check(self, input_text, response):
+    def check(self, messages, response, debug=False):
         try:
+            messages.append({"role": "assistant", "content": response}) # add response to messages
+            messages.append({"role": "system", "content": self.system_check}) # add self.system_check to messages
+            if debug: 
+                print(f"\n(check) Type Messages: {type(messages)}, len Messages: {len(messages)}")
+                if type(messages) == list:
+                    for i, message in enumerate(messages):
+                        print(f"\tindex: {i}, Type Message: {type(message)}")
+                        if type(message) == dict:
+                            for j, (key, value) in enumerate(message.items()):
+                                print(f"\t\tindex list: {i}, index dict: {j}, {key}: {value}")
             response = self.client.chat.completions.create(
                 model=self.model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": self.system_instruction
-                    },
-                    {
-                        "role": "user",
-                        "content": self.system_check + "\nlo que te he dado: \n```" + input_text + "\n```\nlo que has respondido: \n```" + response + "\n```"
-                    }
-                ], 
-                stream=False, 
-                temperature=self.temperature,
-                max_tokens=self.max_tokens,
-                top_p=self.top_p,
-            )
-            return response.choices[0].message.content
-        except Exception as e:
-            print(f'Error ({self.translation_counter}): {e}')
-            print(f"response: {response}")
-            if self.translation_counter < self.translation_limit:
-                self.translation_counter += 1
-                time.sleep(1)
-                return self.check(input_text)
-            else:
-                print(f"Translation limit reached")
-                self.translation_counter = 0
-                exit(1)
-
-    def chat(self, input_text, response_raw=False):
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": self.system_instruction
-                    },
-                    {
-                        "role": "user",
-                        "content": input_text
-                    }
-                ], 
+                messages=messages, 
                 stream=False, 
                 temperature=self.temperature,
                 max_tokens=self.max_tokens,
                 top_p=self.top_p,
             )
             response = response.choices[0].message.content
+            if debug: print(f"(check) Response: {response}")
+            return messages, response
+        except Exception as e:
+            print(f'Error ({self.translation_counter}): {e}')
+            print(f"response: {response}")
+            if self.translation_counter < self.translation_limit:
+                self.translation_counter += 1
+                time.sleep(1)
+                return self.check(messages, response, debug=debug)
+            else:
+                print(f"Translation limit reached")
+                self.translation_counter = 0
+                exit(1)
+
+    def chat(self, input_text, response_raw=False, debug=False):
+        try:
+            messages = [
+                {
+                    "role": "system",
+                    "content": self.system_instruction
+                },
+                {
+                    "role": "user",
+                    "content": input_text
+                }
+            ]
+            if debug:
+                print(f"Type Messages: {type(messages)}, len Messages: {len(messages)}")
+                if type(messages) == list:
+                    for i, message in enumerate(messages):
+                        print(f"\tindex: {i}, Type Message: {type(message)}")
+                        if type(message) == dict:
+                            for j, (key, value) in enumerate(message.items()):
+                                print(f"\t\tindex list: {i}, index dict: {j}, {key}: {value}")
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages, 
+                stream=False, 
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+                top_p=self.top_p,
+            )
+            response = response.choices[0].message.content
+            if debug: print(f"Response: {response}")
             for i in range(self.num_checks):
-                response = self.check(input_text, response)
+                messages, response = self.check(messages, response, debug=debug)
             return response
         except Exception as e:
             print(f'Error ({self.translation_counter}): {e}')

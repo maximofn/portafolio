@@ -7,28 +7,28 @@
 </blockquote>
 </section>
 <section class="section-block-markdown-cell">
-<p>Neste post, vamos ver em que consiste a técnica de <code>RAG</code> (<code>Retrieval Augmented Generation</code>) e como pode ser implementada em um modelo de linguagem.</p>
+<p>Neste post vamos a ver em que consiste a técnica de <code>RAG</code> (<code>Retrieval Augmented Generation</code>) e como se pode implementar em um modelo de linguagem.</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Para que seja gratuito, em vez de usar uma conta da OpenAI (como você verá na maioria dos tutoriais), vamos usar a <code>API inference</code> da Hugging Face, que tem um free tier de 1000 requisições por dia, que para fazer este post é mais do que suficiente.</p>
+<p>Para que saia de graça, em vez de usar uma conta do OpenAI (como você verá na maioria dos tutoriais) vamos usar o <code>API inference</code> do Hugging Face, que tem um plano gratuito de 1000 requisições por dia, que para fazer este post é mais do que suficiente.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Configura%C3%A7%C3%A3o-da-API-Inference-de-Hugging-Face">Configuração da <code>API Inference</code> de Hugging Face<a class="anchor-link" href="#Configura%C3%A7%C3%A3o-da-API-Inference-de-Hugging-Face">¶</a></h2>
+<h2 id="Configura%C3%A7%C3%A3o-da-API-Inference-da-Hugging-Face">Configuração da <code>API Inference</code> da Hugging Face<a class="anchor-link" href="#Configura%C3%A7%C3%A3o-da-API-Inference-da-Hugging-Face">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<p>Para poder usar a <code>API Inference</code> de HuggingFace, a primeira coisa que você precisa é ter uma conta no HuggingFace. Uma vez que você a tenha, precisa ir a <a href="https://huggingface.co/settings/keys">Access tokens</a> na configuração do seu perfil e gerar um novo token.
-Temos que dar um nome, no meu caso vou chamar <code>rag-fundamentals</code> e habilitar a permissão <code>Make calls to serverless Inference API</code>. Um token será criado para nós, que precisamos copiar.</p>
+<p>Para poder usar a <code>API Inference</code> da HuggingFace, o primeiro que você precisa é ter uma conta na HuggingFace, uma vez que a tenha, é necessário ir para <a href="https://huggingface.co/settings/keys">Access tokens</a> nas configurações do seu perfil e gerar um novo token.</p>
+<p>Temos que colocar um nome, no meu caso vou colocá-lo como <code>rag-fundamentals</code> e habilitar a permissão <code>Make calls to serverless Inference API</code>. Será criado um token que temos que copiar</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Para gerenciar o token vamos criar um arquivo na mesma rota em que estamos trabalhando chamado <code>.env</code> e vamos colocar o token que copiamos no arquivo da seguinte maneira:
-RAG_FUNDAMENTALS_ADVANCE_TECHNIQUES_TOKEN="hf_...."```</p>
-</section>
-<section class="section-block-markdown-cell">
-<p>Agora, para obter o token, precisamos ter o <code>dotenv</code> instalado, o que fazemos através</p>
-<div class="highlight"><pre><span></span><span class="sb">``````</span>bash
-pip<span class="w"> </span>install<span class="w"> </span>python-dotenv
+<p>Para gerenciar o token vamos a criar um arquivo na mesma rota em que estivermos trabalhando chamado <code>.env</code> e vamos a colocar o token que copiamos no arquivo da seguinte maneira:</p>
+<div class="highlight"><pre><span></span><span class="nv">RAG_FUNDAMENTALS_ADVANCE_TECHNIQUES_TOKEN</span><span class="o">=</span><span class="s2">"hf_...."</span>
 </pre></div>
-<p>e executamos o seguinte</p>
+</section>
+<section class="section-block-markdown-cell">
+<p>Agora para poder obter o token precisamos ter instalado <code>dotenv</code>, que o instalamos mediante</p>
+<div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>python-dotenv
+</pre></div>
+<p>E executamos o seguinte</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -42,17 +42,16 @@ pip<span class="w"> </span>install<span class="w"> </span>python-dotenv
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Agora que temos um token, criamos um cliente, para isso precisamos ter instalada a biblioteca <code>huggingface_hub</code>, que fazemos usando conda ou pip</p>
-<div class="highlight"><pre><span></span><span class="sb">```</span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>huggingface_hub<span class="sb">```</span>
-o
-<span class="sb">```</span>bash
-<span class="sb">``````</span>markdown
-pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>huggingface_hub
+<p>Agora que temos um token, criamos um cliente, para isso precisamos ter instalada a biblioteca <code>huggingface_hub</code>, que fazemos mediante conda ou pip</p>
+<div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>huggingface_hub
+</pre></div>
+<p>o</p>
+<div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>huggingface_hub
 </pre></div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Agora temos que escolher qual modelo vamos usar. Você pode ver os modelos disponíveis na página de <a href="https://huggingface.co/docs/api-inference/supported-models">Supported models</a> da documentação da <code>API Inference</code> da Hugging Face.
-Como no momento de escrever a postagem, o melhor disponível é <code>Qwen2.5-72B-Instruct</code>, vamos usar esse modelo.</p>
+<p>Agora temos que escolher qual modelo vamos usar. Você pode ver os modelos disponíveis na página de <a href="https://huggingface.co/docs/api-inference/supported-models">Supported models</a> da documentação da <code>API Inference</code> da Hugging Face.</p>
+<p>Como na hora de escrever o post, o melhor disponível é <code>Qwen2.5-72B-Instruct</code>, vamos usar esse modelo.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -81,7 +80,7 @@ Como no momento de escrever a postagem, o melhor disponível é <code>Qwen2.5-72
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Estamos fazendo um teste para ver se funciona</p>
+<p>Fazemos uma prova para ver se funciona</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -115,53 +114,54 @@ Como no momento de escrever a postagem, o melhor disponível é <code>Qwen2.5-72
 <h2 id="O-que-%C3%A9-RAG?">O que é <code>RAG</code>?<a class="anchor-link" href="#O-que-%C3%A9-RAG?">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<p><code>RAG</code> são as siglas de <code>Retrieval Augmented Generation</code>, é uma técnica criada para obter informações de documentos. Embora os LLMs possam ser muito poderosos e ter muito conhecimento, nunca serão capazes de responder sobre documentos privados, como relatórios da sua empresa, documentação interna, etc. Por isso foi criado o <code>RAG</code>, para poder usar esses LLMs nessa documentação privada.
-<img alt="O que é RAG?" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/RAG.webp"/></p>
+<p><code>RAG</code> são as siglas de <code>Retrieval Augmented Generation</code>, é uma técnica criada para obter informações de documentos. Embora os LLMs possam chegar a ser muito poderosos e ter muito conhecimento, nunca vão ser capazes de responder sobre alguns documentos privados, como relatórios da sua empresa, documentação interna, etc. Por isso foi criado o <code>RAG</code>, para poder usar esses LLMs nessa documentação privada.</p>
+<p><img alt="O que é RAG?" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/RAG.webp"/></p>
 </section>
 <section class="section-block-markdown-cell">
-<p>A ideia consiste em que um usuário faz uma pergunta sobre essa documentação privada, o sistema é capaz de obter a parte da documentação na qual está a resposta a essa pergunta, passa-se a pergunta e a parte da documentação para um LLM e o LLM gera a resposta para o usuário.</p>
+<p>A ideia consiste em que um usuário faz uma pergunta sobre essa documentação privada, o sistema é capaz de obter a parte da documentação na qual está a resposta para essa pergunta, passa-se a pergunta e a parte da documentação para um LLM e o LLM gera a resposta para o usuário</p>
 </section>
 <section class="section-block-markdown-cell">
 <h3 id="Como-a-informa%C3%A7%C3%A3o-%C3%A9-armazenada?">Como a informação é armazenada?<a class="anchor-link" href="#Como-a-informa%C3%A7%C3%A3o-%C3%A9-armazenada?">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>É sabido, e se você não sabia eu te conto agora, que os LLMs têm um limite de informações que podem ser passadas a eles, isso é chamado de janela de contexto. Isso se deve às arquiteturas internas dos LLMs que agora não vêm ao caso. Mas o importante é que não se pode passar um documento e uma pergunta sem mais, porque é provável que o LLM não seja capaz de processar todas essas informações.
-Nos casos em que geralmente se passa mais informações do que a janela de contexto permite, o que geralmente acontece é que o LLM não presta atenção ao final da entrada. Imagine que você pergunte ao LLM sobre algo do seu documento, que essa informação esteja no final do documento e o LLM não a leia.
-Por isso, o que se faz é dividir a documentação em blocos chamados de <code>chunk</code>s. Dessa forma, a documentação é armazenada em um monte de <code>chunk</code>s, que são pedaços dessa documentação. Assim, quando o usuário faz uma pergunta, é passado para o LLM o <code>chunk</code> em que está a resposta para essa pergunta.
-Além de dividir a documentação em <code>chunk</code>s, estes são convertidos em embeddings, que são representações numéricas dos <code>chunk</code>s. Isso é feito porque os LLMs na verdade não entendem texto, mas sim números, e os <code>chunk</code>s são convertidos em números para que o LLM possa entendê-los. Se quiser entender mais sobre os embeddings, pode ler meu post sobre <a href="https://www.maximofn.com/transformers">transformers</a> no qual explico como funcionam os transformers, que é a arquitetura por trás dos LLMs. Você também pode ler meu post sobre <a href="https://www.maximofn.com/chromadb">ChromaDB</a> onde explico como os embeddings são armazenados em um banco de dados vetorial. E além disso, seria interessante que lesse meu post sobre a biblioteca <a href="https://www.maximofn.com/hugging-face-tokenizers">HuggingFace Tokenizers</a> no qual se explica como o texto é tokenizado, que é a etapa anterior à geração dos embeddings.
-<img alt="RAG - embeddings" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/RAG-embeddings.webp"/></p>
+<p>É sabido, e se não sabia, agora estou te contando, que os LLMs têm um limite de informação que pode ser passada para eles, isso é chamado de janela de contexto. Isso ocorre devido às arquiteturas internas dos LLMs, que agora não vêm ao caso. Mas o importante é que não se pode passar um documento e uma pergunta sem mais, porque é provável que o LLM não seja capaz de processar toda essa informação.</p>
+<p>Nos casos em que se costuma passar mais informações do que a janela de contexto permite, o que geralmente acontece é que o LLM não presta atenção ao final da entrada. Imagine que você pergunte ao LLM algo sobre o seu documento, que essa informação esteja no final do documento e o LLM não a leia.</p>
+<p>Por isso, o que se faz é dividir a documentação em blocos chamados <code>chunk</code>s. De modo que a documentação é armazenada em um monte de <code>chunk</code>s, que são pedaços daquela documentação. Assim, quando o usuário faz uma pergunta, passa-se ao LLM o <code>chunk</code> em que está a resposta para aquela pergunta.</p>
+<p>Além de dividir a documentação em <code>chunk</code>s, esses são convertidos em embeddings, que são representações numéricas dos <code>chunk</code>s. Isso é feito porque os LLMs na verdade não entendem texto, mas números, e os <code>chunk</code>s são convertidos em números para que o LLM possa entendê-los. Se você quiser entender mais sobre os embeddings, pode ler meu post sobre <a href="https://www.maximofn.com/transformers">transformers</a> no qual explico como funcionam os transformers, que é a arquitetura por trás dos LLMs. Você também pode ler meu post sobre <a href="https://www.maximofn.com/chromadb">ChromaDB</a> onde explico como os embeddings são armazenados em um banco de dados vetorial. E além disso, seria interessante que lesse meu post sobre a biblioteca <a href="https://www.maximofn.com/hugging-face-tokenizers">HuggingFace Tokenizers</a> na qual se explica como o texto é tokenizado, que é o passo anterior à geração dos embeddings</p>
+<p><img alt="RAG - embeddings" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/RAG-embeddings.webp"/></p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Como-obter-o-chunk-correto?">Como obter o <code>chunk</code> correto?<a class="anchor-link" href="#Como-obter-o-chunk-correto?">¶</a></h3>
+<h3 id="Como-se-obt%C3%A9m-o-chunk-correto?">Como se obtém o <code>chunk</code> correto?<a class="anchor-link" href="#Como-se-obt%C3%A9m-o-chunk-correto?">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>Dissemos que a documentação é dividida em <code>chunks</code> e o <code>chunk</code> em que está a resposta à pergunta do usuário é passado ao LLM. Mas, como se sabe em qual <code>chunk</code> está a resposta? Para isso, o que se faz é converter a pergunta do usuário em um embedding, e calcula-se a similaridade entre o embedding da pergunta e os embeddings dos <code>chunks</code>. Dessa forma, o <code>chunk</code> com maior similaridade é o que é passado ao LLM.
-<img alt="RAG - similaridade de embeddings" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/rag-chunk_retreival.webp"/></p>
+<p>Dissemos que a documentação se divide em <code>chunk</code>s e se passa ao LLM o <code>chunk</code> no qual está a resposta à pergunta do usuário. Mas, como se sabe em qual <code>chunk</code> está a resposta? Para isso, o que se faz é converter a pergunta do usuário em um embedding, e se calcula a similaridade entre o embedding da pergunta e os embeddings dos <code>chunk</code>s. De modo que o <code>chunk</code> com maior similaridade é o que se passa ao LLM.</p>
+<p><img alt="RAG - semelhança de embeddings" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/rag-chunk_retreival.webp"/></p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Vamos-ver-o-que-%C3%A9-RAG">Vamos ver o que é <code>RAG</code><a class="anchor-link" href="#Vamos-ver-o-que-%C3%A9-RAG">¶</a></h3>
+<h3 id="Vamos-rever-o-que-%C3%A9-RAG">Vamos rever o que é <code>RAG</code><a class="anchor-link" href="#Vamos-rever-o-que-%C3%A9-RAG">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>Por um lado temos o <code>retrieval</code>, que é obter o <code>chunk</code> correto da documentação, por outro lado temos o <code>augmented</code>, que é passar para o LLM a pergunta do usuário e o <code>chunk</code>, e por último temos o <code>generation</code>, que é obter a resposta gerada pelo LLM.</p>
+<p>Por um lado, temos o <code>retrieval</code>, que é obter o <code>chunk</code> correto da documentação, por outro lado, temos o <code>augmented</code>, que é passar ao LLM a pergunta do usuário e o <code>chunk</code> e, por último, temos o <code>generation</code>, que é obter a resposta gerada pelo LLM.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Banco-de-dados-vetorial">Banco de dados vetorial<a class="anchor-link" href="#Banco-de-dados-vetorial">¶</a></h2>
+<h2 id="Base-de-dados-vetorial">Base de dados vetorial<a class="anchor-link" href="#Base-de-dados-vetorial">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<p>Vimos que a documentação é dividida em <code>chunk</code>s e armazenada em um banco de dados vetorial, portanto, precisamos usar um. Para este post, vou usar o <a href="https://www.trychroma.com/">ChromaDB</a>, que é um banco de dados vetorial bastante utilizado e, além disso, tenho um <a href="https://www.maximofn.com/chromadb">post</a> no qual explico como funciona.</p>
+<p>Vimos que a documentação se divide em <code>chunk</code>s e é salva em um banco de dados vetorial, por isso precisamos usar um. Para este post vou usar <a href="https://www.trychroma.com/">ChromaDB</a>, que é um banco de dados vetorial bastante usado e sobre o qual também tenho um <a href="https://www.maximofn.com/chromadb">post</a> em que explico como funciona.</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Portanto, primeiro precisamos instalar a biblioteca do ChromaDB, para isso a instalamos com Conda ou com Pip
-conda install conda-forge::chromadb
-Então, me envie o texto markdown que você gostaria que eu traduza para o português.</p>
-<div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>chromadb<span class="sb">```</span>
+<p>Para isso, primeiro precisamos instalar a biblioteca do ChromaDB, para isso a instalamos com Conda ou com pip</p>
+<div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>conda-forge::chromadb
+</pre></div>
+<p>o</p>
+<div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>chromadb
 </pre></div>
 </section>
 <section class="section-block-markdown-cell">
 <h3 id="Fun%C3%A7%C3%A3o-de-embedding">Função de embedding<a class="anchor-link" href="#Fun%C3%A7%C3%A3o-de-embedding">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>Como dissemos, tudo se baseará em embeddings, por isso a primeira coisa que fazemos é criar uma função para obter embeddings de um texto. Vamos usar o modelo <code>sentence-transformers/all-MiniLM-L6-v2</code></p>
+<p>Como dissemos, tudo se baseará em embeddings, por isso o primeiro que fazemos é criar uma função para obter embeddings de um texto. Vamos usar o modelo <code>sentence-transformers/all-MiniLM-L6-v2</code></p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -201,7 +201,7 @@ Então, me envie o texto markdown que você gostaria que eu traduza para o portu
 <h3 id="Cliente-ChromaDB">Cliente ChromaDB<a class="anchor-link" href="#Cliente-ChromaDB">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>Agora que temos nossa função de embedding, podemos criar um cliente do ChromaDB.</p>
+<p>Agora que temos nossa função de embedding podemos criar um cliente de ChromaDB</p>
 </section>
 <section class="section-block-markdown-cell">
 <p>Primeiro criamos uma pasta onde será guardado o banco de dados vetorial</p>
@@ -230,10 +230,10 @@ Então, me envie o texto markdown que você gostaria que eu traduza para o portu
 <h3 id="Cole%C3%A7%C3%A3o">Coleção<a class="anchor-link" href="#Cole%C3%A7%C3%A3o">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>Quando temos o cliente do ChromaDB, o próximo passo é criar uma coleção. Uma coleção é um conjunto de vetores, no nosso caso os <code>chunks</code> da documentação.</p>
+<p>Quando temos o cliente do ChromaDB, o seguinte que precisamos é criar uma coleção. Uma coleção é um conjunto de vetores, no nosso caso os <code>chunks</code> da documentação.</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Criamos isso indicando a função de embedding que vamos usar</p>
+<p>Criamos indicando-lhe a função de embedding que vamos a usar</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -243,10 +243,10 @@ Então, me envie o texto markdown que você gostaria que eu traduza para o portu
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Carregamento-de-documentos">Carregamento de documentos<a class="anchor-link" href="#Carregamento-de-documentos">¶</a></h2>
+<h2 id="Carga-de-documentos">Carga de documentos<a class="anchor-link" href="#Carga-de-documentos">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<p>Agora que criamos o banco de dados vetorial, precisamos dividir a documentação em <code>chunk</code>s e guardá-los no banco de dados vetorial.</p>
+<p>Agora que criamos a base de dados vetorial, temos que dividir a documentação em <code>chunk</code>s e salvá-los na base de dados vetorial.</p>
 </section>
 <section class="section-block-markdown-cell">
 <h3 id="Fun%C3%A7%C3%A3o-de-carregamento-de-documentos">Função de carregamento de documentos<a class="anchor-link" href="#Fun%C3%A7%C3%A3o-de-carregamento-de-documentos">¶</a></h3>
@@ -273,7 +273,7 @@ Então, me envie o texto markdown que você gostaria que eu traduza para o portu
 <h3 id="Fun%C3%A7%C3%A3o-para-dividir-a-documenta%C3%A7%C3%A3o-em-chunks">Função para dividir a documentação em <code>chunk</code>s<a class="anchor-link" href="#Fun%C3%A7%C3%A3o-para-dividir-a-documenta%C3%A7%C3%A3o-em-chunks">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>Uma vez que temos os documentos, nós os dividimos em <code>chunks</code></p>
+<p>Uma vez que temos os documentos, os dividimos em <code>chunk</code>s</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -292,12 +292,11 @@ Então, me envie o texto markdown que você gostaria que eu traduza para o portu
 <h3 id="Fun%C3%A7%C3%A3o-para-gerar-embeddings-de-um-chunk">Função para gerar embeddings de um <code>chunk</code><a class="anchor-link" href="#Fun%C3%A7%C3%A3o-para-gerar-embeddings-de-um-chunk">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>Agora que temos os <code>chunks</code>, geramos os embeddings de cada um deles</p>
+<p>Agora que temos os <code>chunk</code>s, geramos os <code>embedding</code>s de cada um deles</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Depois veremos por quê, mas para gerar os embeddings vamos fazê-lo de maneira local e não através da API do Hugging Face. Para isso, precisamos ter instalado o <a href="https://pytorch.org">PyTorch</a> e <code>sentence-transformers</code>, para isso fazemos</p>
-<div class="highlight"><pre><span></span><span class="sb">```</span>markdown
-pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </span>sentence-transformers
+<p>Depois veremos por quê, mas para gerar os embeddings vamos a fazê-lo de maneira local e não por meio da API da Hugging Face. Para isso, precisamos ter instalado o <a href="https://pytorch.org">PyTorch</a> e <code>sentence-transformers</code>, para isso fazemos</p>
+<div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </span>sentence-transformers
 </pre></div>
 </section>
 <section class="section-block-code-cell-">
@@ -320,7 +319,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </s
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Vamos testar agora esta função de embeddings localmente</p>
+<p>Vamos a testar agora esta função de embeddings localmente</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -339,19 +338,19 @@ pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </s
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Vemos que obtemos um embedding da mesma dimensão que quando o fazíamos com a API de Hugging Face</p>
+<p>Vemos que obtemos um embedding da mesma dimensão que quando o fazíamos com a API da Hugging Face</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>O modelo <code>sentence-transformers/all-MiniLM-L6-v2</code> tem apenas 22M de parâmetros, então você vai poder executá-lo em qualquer GPU. Mesmo se você não tiver GPU, será capaz de executá-lo em uma CPU.</p>
+<p>O modelo <code>sentence-transformers/all-MiniLM-L6-v2</code> tem apenas 22M de parâmetros, por isso você poderá executá-lo em qualquer GPU. Mesmo que você não tenha uma GPU, poderá executá-lo em uma CPU.</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>O LLM que vamos usar para gerar as respostas, que é o <code>Qwen2.5-72B-Instruct</code>, como o próprio nome indica, é um modelo de 72B de parâmetros, portanto, esse modelo não pode ser executado em qualquer GPU e em uma CPU é impensável de tão lerdo que seria. Por isso, esse LLM será usado através da API, mas no momento de gerar os embeddings, podemos fazê-lo localmente sem problemas.</p>
+<p>O LLM que vamos a usar para gerar as respostas, que é o <code>Qwen2.5-72B-Instruct</code>, como o seu nome indica, é um modelo de 72B de parâmetros, por isso este modelo não pode ser executado em qualquer GPU e em uma CPU é impensável devido à lentidão. Por isso, este LLM sim o usaremos por meio da API, mas na hora de gerar os <code>embedding</code>s podemos fazer localmente sem problemas</p>
 </section>
 <section class="section-block-markdown-cell">
 <h3 id="Documentos-com-os-quais-vamos-testar">Documentos com os quais vamos testar<a class="anchor-link" href="#Documentos-com-os-quais-vamos-testar">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>Para fazer todos esses testes, eu baixei o dataset <a href="https://www.kaggle.com/datasets/harshsinghal/aws-case-studies-and-blogs">aws-case-studies-and-blogs</a> e o deixei na pasta <code>rag-txt_dataset</code>, com os seguintes comandos eu te digo como baixá-lo e descompactá-lo.</p>
+<p>Para fazer todas estas provas, eu baixei o conjunto de dados <a href="https://www.kaggle.com/datasets/harshsinghal/aws-case-studies-and-blogs">aws-case-studies-and-blogs</a> e o coloquei na pasta <code>rag-txt_dataset</code>, com os seguintes comandos eu digo como baixá-lo e descomprimi-lo</p>
 </section>
 <section class="section-block-markdown-cell">
 <p>Criamos a pasta onde vamos baixar os documentos</p>
@@ -363,7 +362,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </s
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Baixamos o <code>.zip</code> com os documentos</p>
+<p>Descarregamos o <code>.zip</code> com os documentos</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -384,7 +383,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </s
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Descompactamos o <code>.zip</code></p>
+<p>Descomprimimos o <code>.zip</code></p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -412,331 +411,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </s
   inflating: rag_txt_dataset/AWS releases smart meter data analytics _ AWS for Industries.txt  
   inflating: rag_txt_dataset/Accelerate Time to Business Value Using Amazon SageMaker at Scale with NatWest Group _ Case Study _ AWS.txt  
   inflating: rag_txt_dataset/Accelerate Your Analytics Journey on AWS with DXC Analytics and AI Platform _ AWS Partner Network (APN) Blog.txt  
-  inflating: rag_txt_dataset/Accelerating Migration at Scale Using AWS Application Migration Service with 3M Company _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Accelerating Time to Market Using AWS and AWS Partner AccelByte _ Omeda Studios Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Accelerating customer onboarding using Amazon Connect _ NCS Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Achieving Burstable Scalability and Consistent Uptime Using AWS Lambda with TiVo _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Acrobits Uses Amazon Chime SDK to Easily Create Video Conferencing Application Boosting Collaboration for Global Users _ Acrobits Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Actuate AI Case study.txt  
-  inflating: rag_txt_dataset/Adzuna doubles its email open rates using Amazon SES _ Adzuna Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Amanotes Stays on Beat by Delivering Simple Music Games to Millions Worldwide on AWS.txt  
-  inflating: rag_txt_dataset/Amazon OpenSearch Services vector database capabilities explained _ AWS Big Data Blog.txt  
-  inflating: rag_txt_dataset/Anghami Case Study.txt  
-  inflating: rag_txt_dataset/Announcing enhanced table extractions with Amazon Textract _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/AppsFlyer Amazon EKS Case Study _ Advertising _ AWS.txt  
-  inflating: rag_txt_dataset/Arm Case Study.txt  
-  inflating: rag_txt_dataset/Arm Limited Case Study.txt  
-  inflating: rag_txt_dataset/Armitage Technologies case study.txt  
-  inflating: rag_txt_dataset/Armut Case Study.txt  
-  inflating: rag_txt_dataset/Auto-labeling module for deep learning-based Advanced Driver Assistance Systems on AWS _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/BIPO Improves Customer Experience on its HR Management System Using Machine Learning on AWS _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/BNS Group Case Study _ Amazon Web Services.txt  
-  inflating: rag_txt_dataset/Bank of Montreal Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Bazaarvoice Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Better Mortgage using Amazon Elastic Kubernetes _ Better Mortgage Video _ AWS.txt  
-  inflating: rag_txt_dataset/Boehringer Ingelheim Establishes Data-Driven Foundations Using AWS to Accelerate the Launch of New Medicines _ Boehringer Ingelheim Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Bosch Thermotechnology Accelerates IoT Deployment Using AWS Serverless Computing and AWS IoT Core _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Botprise Reduces Time to Remediation by 86 on Average Using Automation and AWS Security Hub _ Botprise Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Build a powerful question answering bot with Amazon SageMaker Amazon OpenSearch Service Streamlit and LangChain _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Build a semantic search engine for tabular columns with Transformers and Amazon OpenSearch Service _ AWS Big Data Blog.txt  
-  inflating: rag_txt_dataset/Build custom chatbot applications using OpenChatkit models on Amazon SageMaker _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Buildigo.txt  
-  inflating: rag_txt_dataset/Building a Scalable Interactive Learning Application for Kids Using AWS Services with Yellow Class _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Building a Scalable Machine Learning Model Monitoring System with DataRobot _ AWS Partner Network (APN) Blog.txt  
-  inflating: rag_txt_dataset/Building a medical image search platform on AWS _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Building generative AI applications for your startup part 1 _ AWS Startups Blog.txt  
-  inflating: rag_txt_dataset/CMD Solutions Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Calgary Airport Authority Enhances Passenger Services and Cybersecurity on the AWS Cloud _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/CalvertHealth-case-study.txt  
-  inflating: rag_txt_dataset/Capital One Saves Developer Time and Reduces Costs Going Serverless Using AWS Lambda and Amazon ECS _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Capture public health insights more quickly with no-code machine learning using Amazon SageMaker Canvas _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/CarTrade Tech Drives a Seamless Car Buying and Selling Experience with Improved Website Performance and Analytics _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/CaratLane Case Study - Amazon Web Services (AWS).txt  
-  inflating: rag_txt_dataset/Central East Ontario Hospital Partnership Launches a Clinical Information System in the AWS Cloud _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Circle of Life _ Amazon Web Services.txt  
-  inflating: rag_txt_dataset/Claro Embratel Credits AWS Training and Certification as Key Driver in Fourfold Growth of Sales Opportunities _ Claro Embratel Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Climedo Case Study.txt  
-  inflating: rag_txt_dataset/CloudCall Invests in AWS Skill Builder Pivots to a SaaS Model _ CloudCall Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/CloudWave Modernizes EHR Disaster Recovery and Provides Fast Secure Access to Archived Imaging Data on AWS _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Cognitran Deploys Customized CDN Solution in under 12 Weeks Using Amazon CloudFront.txt  
-  inflating: rag_txt_dataset/Comscore Maintains Privacy While Cross-Analyzing Data using AWS Clean Rooms _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Concert.ua Manages 1000 Traffic Spikes Using AWS Serverless _ AWS EC2.txt  
-  inflating: rag_txt_dataset/Cost Savings of 20 and 8 Hours of Data Processing Saved across 500 Spark Jobs Using AWS Graviton2 Processors _ Wealthfront Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Coventry University Group Empowers Next Generation of IT Professionals Using AWS Educate and AWS Academy _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Create high-quality images with Stable Diffusion models and deploy them cost-efficiently with Amazon SageMaker _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Creating Air Taxi Simulations Using Amazon EC2 with Wisk Aero _ Wisk Aero Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Creating an App for 12000 Game Show Viewers Using Amazon CloudFront with TUI _ TUI Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Creating an Optimized Solution for Smart Buildings Using Amazon EC2 G5g Instances with Mircoms OpenGN _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/DB Energie Case Study.txt  
-  inflating: rag_txt_dataset/DBS Bank Uses Amazon ElastiCache for Redis to Run Its Pricing Models at Real-Time Speed _ DBS Bank Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/DCI Saves 27 on Cloud Costs Gains Support for Long-Term Growth Using AWS _ Amazon EC2.txt  
-  inflating: rag_txt_dataset/DTN Case Study _ HPC _ AWS.txt  
-  inflating: rag_txt_dataset/Dallara Uses HPC on AWS to Off-Load Peak CFD Workloads for Race Car Simulations _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Dataminr Achieves up to Nine Times Better Throughput per Dollar Using AWS Inferentia _ Dataminr Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Deep Pool Optimizes Software Quality Control Using Amazon QuickSight _ Deep Pool Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Delivering Engaging Games at Scale Using AWS with Whatwapp _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Delivering Innovative Visual Search Capabilities Using AWS with Syte _ Syte Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Delivering Travel Deals across 110 Markets Using Amazon CloudFront with Skyscanner _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Delivering a Seamless Gaming Experience to 25 Million Players Using AWS with Travian Games _ Travian Games Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Democratize Access to HPC for Computer-Aided Materials Design Using Amazon EC2 Spot Instances with Good Chemistry _ Good Chemistry Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Democratize computer vision defect detection for manufacturing quality using no-code machine learning with Amazon SageMaker Canvas _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Deploy Falcon-40B with large model inference DLCs on Amazon SageMaker _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Deploy a serverless ML inference endpoint of large language models using FastAPI AWS Lambda and AWS CDK _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Deploying and benchmarking YOLOv8 on GPU-based edge devices using AWS IoT Greengrass _ The Internet of Things on AWS  Official Blog.txt  
-  inflating: rag_txt_dataset/Deputy Case Study _ Amazon Web Services.txt  
-  inflating: rag_txt_dataset/Design considerations for cost-effective video surveillance platforms with AWS IoT for Smart Homes _ The Internet of Things on AWS  Official Blog.txt  
-  inflating: rag_txt_dataset/Designing a hybrid AI_ML data access strategy with Amazon SageMaker _ AWS Architecture Blog.txt  
-  inflating: rag_txt_dataset/Developing a Pioneering Multicancer Early Detection Test _ GRAIL Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Dexatek Optimizes Its IoT Platform and Boosts Spend on Innovation by 30 with AWS _ Dexatek Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Directing ML-powered Operational Insights from Amazon DevOps Guru to your Datadog event stream _ AWS DevOps Blog.txt  
-  inflating: rag_txt_dataset/ENGIE Rapidly Migrates Assets and Accounts Easing Divestiture Using AWS _ Engie Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/EPAM Systems.txt  
-  inflating: rag_txt_dataset/Effectively solve distributed training convergence issues with Amazon SageMaker Hyperband Automatic Model Tuning _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Effortlessly Summarize Phone Conversations with Amazon Chime SDK Call Analytics_ Step-by-Step Guide _ Business Productivity.txt  
-  inflating: rag_txt_dataset/Empowering Customers to Take an Active Role in the Energy Transition Using AWS Serverless Services with Iberdrola _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Enhancing customer experience using Amazon CloudFront with Zalando _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Esade Business School Increases Graduates Employability Using AWS Education Programs _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Establishing the Nations Largest Mileage-Based User Fee Program Using Amazon Connect with the Virginia DMV _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Evolving ADPs Single Global Experience in MyADP and ADP Mobile Using AWS Lambda _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Expanding Opportunities Using Amazon WorkSpaces with The Chicago Lighthouse _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Exploring Generative AI in conversational experiences_ An Introduction with Amazon Lex Langchain and SageMaker Jumpstart _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/FLSmidth Case Study.txt  
-  inflating: rag_txt_dataset/FLYING WHALES Case Study.txt  
-  inflating: rag_txt_dataset/Facilitating the Most Live Streamed Super Bowl and Olympics Using AWS Services _ NBCUniversal Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/FanCode Case Study - Amazon Web Services (AWS).txt  
-  inflating: rag_txt_dataset/FanDuel Migrates to AWS in Less than 3 Weeks Improves the Customer Experience _ AWS.txt  
-  inflating: rag_txt_dataset/Fantom Case Study - Amazon Web Services (AWS).txt  
-  inflating: rag_txt_dataset/Fatshark Delivers Warhammer 40K_ Darktide Fully on AWS for Millions of Players _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Finch Computing Reduces Inference Costs by 80 Using AWS Inferentia for Language Translation _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Fine-tune GPT-J using an Amazon SageMaker Hugging Face estimator and the model parallel library _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Firework Games case study.txt  
-  inflating: rag_txt_dataset/Fujita Health University Case Study _ Amazon Web Services.txt  
-  inflating: rag_txt_dataset/GSR Scales Fast on AWS to Become One of the Largest Crypto Market Makers _ Amazon S3.txt  
-  inflating: rag_txt_dataset/Game Studio Small Impact Games Runs Successful Alpha and Beta Tests Using Amazon GameLift _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Games24x7.txt  
-  inflating: rag_txt_dataset/Ganit Transforms Fast Fashion Apparel Retail with Intelligent Demand Forecasting on AWS _ AWS Partner Network (APN) Blog.txt  
-  inflating: rag_txt_dataset/Generating 100000 Images Daily Using Amazon ECS _ Scenario Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Generative AI for Telcos_ taking customer experience and productivity to the next level _ AWS for Industries.txt  
-  inflating: rag_txt_dataset/Generative AI with Large Language Models  New Hands-on Course by DeepLearning.AI and AWS _ AWS News Blog.txt  
-  inflating: rag_txt_dataset/Genpact Delivers Innovative Services to Customers Faster by Running Critical Applications on AWS _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Geo.me Reduces Customers Annual Geospatial Costs by up to 90 Using Amazon Location Service _ Geo.me Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Gileads Journey from Migration to Innovation on AWS _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Global Unichip Corporation Case Study.txt  
-  inflating: rag_txt_dataset/Glossika case study.txt  
-  inflating: rag_txt_dataset/GoDaddy Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Greenway Health Scales to Hundreds of Terabytes of Data Using Amazon DocumentDB (with MongoDB compatibility) _ Greenway Health Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Helen of Troy Case Study _ Consumer Packaged Goods _ AWS.txt  
-  inflating: rag_txt_dataset/Help Customers Reduce Data Query Time by 70 and Improve Business Insights Capabilities with Amazon OpenSearch Service _ Deputy Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Helping Customers Modernize Their Cloud Infrastructure Using the AWS Well-Architected Framework with Comprinno _ Comprinno Technologies Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Helping Doctors Treat Pediatric Cancer Using AWS Serverless Services _ Nationwide Childrens Hospital Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Helping Fintech Startup Snoop Deploy Quickly and Scale Using Amazon ECS with AWS Fargate _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Helping Patients Access Personalized Healthcare from Anywhere Using Amazon Chime SDK with Salesforce _ Salesforce Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/High-quality human feedback for your generative AI applications from Amazon SageMaker Ground Truth Plus _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Highlight text as its being spoken using Amazon Polly _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Host ML models on Amazon SageMaker using Triton_ ONNX Models _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/How AWS is helping thredUP revolutionize the resale model for brands _ AWS for Industries.txt  
-  inflating: rag_txt_dataset/How BrainPad fosters internal knowledge sharing with Amazon Kendra _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/How Earth.com and Provectus implemented their MLOps Infrastructure with Amazon SageMaker _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/How Forethought saves over 66 in costs for generative AI models using Amazon SageMaker _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/How Generative AI will transform manufacturing _ AWS for Industries.txt  
-  inflating: rag_txt_dataset/How Imperva uses Amazon Athena for machine learning botnets detection _ AWS Big Data Blog.txt  
-  inflating: rag_txt_dataset/How KYTC Transformed the States Customer Experience for 4.1 Million Drivers Using Amazon Connect _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/How Marubeni is optimizing market decisions using AWS machine learning and analytics _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/How Technology Leaders Can Prepare for Generative AI _ AWS Cloud Enterprise Strategy Blog.txt  
-  inflating: rag_txt_dataset/IDEMIA Case Study _ Security and Compilance _ AWS.txt  
-  inflating: rag_txt_dataset/Idealo Case Study.txt  
-  inflating: rag_txt_dataset/Illumina Case Study _ Genomics _ AWS.txt  
-  inflating: rag_txt_dataset/Illumina Reduced Carbon Emissions by 89 and Lowered Data Storage Costs Using AWS _ Illumina Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Implement unified text and image search with a CLIP model using Amazon SageMaker and Amazon OpenSearch Service _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Improve Patient Safety Intelligence Using AWS AI_ML Services _ AWS for Industries.txt  
-  inflating: rag_txt_dataset/Improving Geospatial Processing Faster using Amazon Aurora with Ozius _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Improving Hiring Diversity and Accelerating App Development on AWS with Branch Insurance _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Improving Mergers and Acquisitions Using AWS Organizations with Warner Bros. Discovery _ Warner Bros. Discovery Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Improving Operational Efficiency with Predictive Maintenance Using Amazon Monitron _ Baxter Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Improving Patient Outcomes Using Amazon EC2 DL1 Instances _ Leidos Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Improving Search Capabilities and Speed Using Amazon OpenSearch Service with ArenaNet _ ArenaNet Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Improving Transportation with Mobility Data Using Amazon EMR and Serverless Managed Services _ Arity Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/InMotion Inovasi Teknologi Boosts Local-Language Engagement with Millions of Indonesians on AWS _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Increasing Reach and Reliability of Healthcare Software by Migrating 300 Servers to AWS in 6 Weeks _ Mayden Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Increasing Sales Opportunities by 83 Working with AWS Training and Certification with Fortinet _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Increasing Scalability and Data Durability of Television Voting Solution Using Amazon MemoryDB for Redis with Mediaset _ Mediaset Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Indecomm Case Study _ Amazon Web Services.txt  
-  inflating: rag_txt_dataset/Indivumed Case Study.txt  
-  inflating: rag_txt_dataset/Infor Case Study.txt  
-  inflating: rag_txt_dataset/Information Technology Institute Launches Postgraduate Artificial Intelligence Diploma Using AWS _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Insightful.Mobi Decreases Costs and Enhances Dashboard Performance Using Amazon QuickSight _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Insilico Case Study _ Life Sciences _ AWS.txt  
-  inflating: rag_txt_dataset/Intelligently Search Media Assets with Amazon Rekognition and Amazon ES _ AWS Architecture Blog.txt  
-  inflating: rag_txt_dataset/Interactively fine-tune Falcon-40B and other LLMs on Amazon SageMaker Studio notebooks using QLoRA _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Introducing popularity tuning for Similar-Items in Amazon Personalize _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Introducing the latest Machine Learning Lens for the AWS Well-Architected Framework _ AWS Architecture Blog.txt  
-  inflating: rag_txt_dataset/Isetan Mitsukoshi System Solutions seamlessly migrates databases to Amazon Aurora using Amazon DMA _ Isetan Mitsukoshi System Solutions Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Isha Foundation Delivers on its Mission for Millions by Transforming Content Delivery on AWS _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Jefferies Manages Packaged Applications at Scale in the Cloud through Amazon RDS Custom for Oracle _ Jefferies Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/KTO Case Study.txt  
-  inflating: rag_txt_dataset/Kee Wah Bakery Brings Timeless Baked Goods to Modern Shoppers with Eshop on AWS _ Kee Wah Bakery Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Kioxia uses AWS for better HPC performance and cost savings in semiconductor memory development and manufacturing _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Kirana Megatara Reduces Procurement Costs by 10 Percent for Raw Rubber with Speedy Reporting on AWS _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/LG AI Research Develops Foundation Model Using Amazon SageMaker _ LG AI Research Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/LTIMindtree Drives Digital Transformation for Global Customers with AWS Training and Certification.txt  
-  inflating: rag_txt_dataset/LambdaTest Improves Software Test Insights and Cuts Dashboard Response Time by 33 Using Amazon Redshift _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Largest metastatic cancer dataset now available at no cost to researchers worldwide _ AWS Public Sector Blog.txt  
-  inflating: rag_txt_dataset/Learn how MediSys in healthcare transformed its IT operations using AWS Professional Services _ MediSys Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/LegalZoom AWS Local Zones Case Study.txt  
-  inflating: rag_txt_dataset/Lendingkart _ Amazon Web Services.txt  
-  inflating: rag_txt_dataset/Lenme builds a secure and reliable lending platform with AWS _ Lenme Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/LetsGetChecked Case Study _ Amazon Connect _ AWS Lex.txt  
-  inflating: rag_txt_dataset/Leverage pgvector and Amazon Aurora PostgreSQL for Natural Language Processing Chatbots and Sentiment Analysis _ AWS Database Blog.txt  
-  inflating: rag_txt_dataset/LifeOmic Case Study _ AWS Lambda _ AWS.txt  
-  inflating: rag_txt_dataset/Lotte Data Communication Company Vietnam Simplifies API Integrations for Online Retailers on AWS _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Lucid Motors and Zerolight Case Study.txt  
-  inflating: rag_txt_dataset/Lyell GxP Compliance _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/MARVEL SNAP_ How Second Dinner and Nuverse Built and Scaled the Mobile Game of the Year Using AWS for Games _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Maxar Case Study.txt  
-  inflating: rag_txt_dataset/Measurable-AI-case-study.txt  
-  inflating: rag_txt_dataset/Mediality Leverages Automation to Deliver Racing Data Faster on AWS _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Mercks Manufacturing Data and Analytics Platform Triples Performance and Reduces Data Costs by 50 on AWS _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Midtrans Case Study _ Amazon Web Services.txt  
-  inflating: rag_txt_dataset/Migrating Large-Scale SAP Workloads Seamlessly to AWS with Sony _ Sony Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Mobileye Cuts Costs Using Amazon EC2 _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Mobileye Improves Deep Learning Training Performance and Reduces Costs Using Amazon EC2 DL1 Instances _ Mobileye Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Mobiuspace delivers up to 40 improved price-performance using Amazon EMR on EKS and Graviton instance _ Mobiuspace Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Modern Electron Case Study.txt  
-  inflating: rag_txt_dataset/Moderna Drives Commercial Innovation Using Amazon Connect and AI _ Moderna Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Modernizing FINRA Data Collection with Amazon DocumentDB _ FINRA Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Modernizing Infrastructure to Improve Reliability Using Amazon EC2 with Loacker _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Money Forward Increases Development Velocity 3x Working with AWS Training and Certification _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/N KID Group Case Study  Amazon Web Services (AWS).txt  
-  inflating: rag_txt_dataset/NBCUniversal Case Study _ Advertising _ AWS.txt  
-  inflating: rag_txt_dataset/NTT DOCOMO builds a new data analysis platform for 9000 workers with AWS attracting 13 times more users and invigorating data use _ NTT Docomo Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Naranja X Modernizes Financial Services More Efficiently with SaaS Solutions in AWS Marketplace _ Naranja X Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/NeuroPro Case Study.txt  
-  inflating: rag_txt_dataset/NodeReal case study.txt  
-  inflating: rag_txt_dataset/Novo Nordisk Uses ML for Computer Vision to Optimize Pharmaceutical Manufacturing on AWS _ Novo Nordisk Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Numerix Scales HPC Workloads for Price and Risk Modeling Using AWS Batch _ Numerix Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Oportun Increases the Accuracy of Sensitive-Data Discovery by 95 Using Amazon Macie _ Oportun Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Optimize software development with Amazon CodeWhisperer _ AWS DevOps Blog.txt  
-  inflating: rag_txt_dataset/Optimizing Fast Access to Big Data Using Amazon EMR at Thomson Reuters _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Optimizing Storage Cost and Performance Using Amazon EBS _ Devo Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Optoma-customer-references-case-study.txt  
-  inflating: rag_txt_dataset/Paige Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/PayEye Launches POC for Biometric Payments in 5 Months Using AWS _ Amazon EKS.txt  
-  inflating: rag_txt_dataset/Postis Case Study.txt  
-  inflating: rag_txt_dataset/Power recommendation and search using an IMDb knowledge graph  Part 1 _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Power recommendations and search using an IMDb knowledge graph  Part 3 _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Prima Group Case Study.txt  
-  inflating: rag_txt_dataset/Processing Data 10x Faster Using Amazon Redshift Serverless with BlocPower _ BlocPower Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Purple Technology Case Study _ AWS Step Functions.txt  
-  inflating: rag_txt_dataset/Queensland University of Technology Advances Global Research on Rare Diseases Using the AWS Cloud.txt  
-  inflating: rag_txt_dataset/Query Response Time Improved Using Amazon Redshift Serverless _ Playrix Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Rackspace Automates Infrastructure Management across Cloud Providers Using AWS Systems Manager _ Rackspace Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Razer Deepened Gamer Engagement using Amazon Personalize _ Video Testimonial _ AWS.txt  
-  inflating: rag_txt_dataset/Reaching Remote Learners Globally Using Amazon CloudFront _ Doping Hafiza Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Read Innovates Video Call Transcription Using Amazon EC2 G5 Instances Powered by NVIDIA _ Read Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Realizing the Full Value of EHR in a Digital Health Environment on AWS with Tufts Medicine _ Tufts Medicine Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Recommend and dynamically filter items based on user context in Amazon Personalize _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Red Canary Architects for Fault Tolerance and Saves up to 80 Using Amazon EC2 Spot Instances _ Red Canary Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Reducing Adverse-Event Reporting Time for Its Clients by 80 _ Indegene Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Reducing Costs of Cryo-EM Data Storage and Processing by 50 Using AWS _ Vertex Pharmaceuticals Case Study.txt  
-  inflating: rag_txt_dataset/Reducing Failover Time from 30 Minutes to 3 Minutes Using Amazon CloudWatch _ Thomson ReutersCase Study _ AWS.txt  
-  inflating: rag_txt_dataset/Reducing Infrastructure Costs by 66 by Migrating to AWS with SilverBlaze _ SilverBlaze Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Reducing Log Data Storage Cost Using Amazon OpenSearch Service with CMS _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Reducing Time to Results Carbon Footprint and Cost Using AWS HPC _ Baker Hughes Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Reinventing the data experience_ Use generative AI and modern data architecture to unlock insights _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Relay Therapeutics Case Study.txt  
-  inflating: rag_txt_dataset/ResMed Case Study _ AWS AppSync _ AWS.txt  
-  inflating: rag_txt_dataset/Resilience Builds a Global Data Mesh for Lab Connectivity on AWS _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Respond.io Scales Its Messaging Platform and Connects 10000 Companies with Customers on AWS _ Respond.io Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Retain original PDF formatting to view translated documents with Amazon Textract Amazon Translate and PDFBox _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Return Entertainment Case Study.txt  
-  inflating: rag_txt_dataset/Revive lost revenue from bad ecommerce search using Natural Language Processing _ AWS for Industries.txt  
-  inflating: rag_txt_dataset/Revolutionizing Manufacturing with Sphere and Amazon Lookout for Visions XR and AI Integration _ AWS Partner Network (APN) Blog.txt  
-  inflating: rag_txt_dataset/Rivian Case Study _ Automotive _ AWS.txt  
-  inflating: rag_txt_dataset/Rumah Siap Kerja (RSK) Case Study - Amazon Web Services (AWS).txt  
-  inflating: rag_txt_dataset/Run Jobs at Scale While Optimizing for Cost Using Amazon EC2 Spot Instances with ActionIQ _ ActionIQ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Rush University System for Health Creates a Population Health Analytics Platform on AWS _ Rush Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/SKODA Uses AWS to Predict and Prevent Production Line Breakdowns.txt  
-  inflating: rag_txt_dataset/SUPINFO Creates 5-Year Master of Engineering Degree Implementing AWS Education Programs _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/SURF Drives Ground-Breaking Research Accelerates Time to Insight Using AWS.txt  
-  inflating: rag_txt_dataset/Safe image generation and diffusion models with Amazon AI content moderation services _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Samsung Electronics Improves Demand Forecasting Using Amazon SageMaker Canvas _ Samsung Electronics Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Samsung Electronics Uses Amazon Chime SDK to Deliver a More Engaging Television Experience for Millions of Viewers _ Samsung Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Saving 80 on Costs While Improving Reliability and Performance Using Amazon Aurora with Panasonic Avionics _ Panasonic Avionics Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Saving time with personalized videos using AWS machine learning _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Scaling Authentic Educational Games Using Amazon GameLift with Immersed Games _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Scaling Data Pipeline from One to Five Satellites Seamlessly on AWS _ Axelspace Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Scaling Sustainability Solutions for Buildings Using AWS with BrainBox AI _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Scaling Text to Image to 100 Million Users Quickly Using Amazon SageMaker _ Canva Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Scaling Up to 30 While Reducing Costs by 20 Using AWS Graviton3 Processors with Instructure _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Scaling to Ingest 250 TB from 1 TB Daily Using Amazon Kinesis Data Streams with LaunchDarkly _ LaunchDarkly Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Securing Workforce Access at Scale Using AWS IAM Identity Center with Xylem _ Xylem Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/SecurionPay _ Amazon Redshift _ Amazon Quicksight _ Amazon Kinesis _ AWS.txt  
-  inflating: rag_txt_dataset/Security Posture Strengthened Using AWS Shield Advanced with OutSystems _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Selecting the right foundation model for your startup _ AWS Startups Blog.txt  
-  inflating: rag_txt_dataset/Shgardi Case Study.txt  
-  inflating: rag_txt_dataset/Showpad Accelerates Data Maturity to Unlock Innovation Using Amazon QuickSight _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Sixth Force Solutions _ Amazon Web Services.txt  
-  inflating: rag_txt_dataset/SmartSearch-case-study.txt  
-  inflating: rag_txt_dataset/Snap optimizes cost savings with Amazon S3 Glacier Instant Retrieval _ Snap Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Software Colombia and AWS Team Up to Create Powerful Identity Verification Solution _ Software Colombia Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Spacelift Case Study.txt  
-  inflating: rag_txt_dataset/Sprout Social Reduces Costs and Improves Performance Using Amazon EMR _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Spryker Case Study _ Amazon Elastic Compute Cloud _ AWS.txt  
-  inflating: rag_txt_dataset/Staffordshire University Uses AWS Academy to Help Students Meet Business Demand for Cloud Skills _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Stanford Multimodal Data Case Study _ Life Sciences _ AWS.txt  
-  inflating: rag_txt_dataset/Sterling Auxiliaries Case Study _ Amazon Web Services.txt  
-  inflating: rag_txt_dataset/Storengy Case Study.txt  
-  inflating: rag_txt_dataset/Streamline Workflows Using the AWS Support App in Slack with Okta _ Okta Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Streamline and Standardize the Complete ML Lifecycle Using Amazon SageMaker with Thomson Reuters _ Thomson Reuters Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Syngenta Case Study _ Amazon Web Services.txt  
-  inflating: rag_txt_dataset/TC Energy Builds an Operations Data Platform for 60000 Miles of Pipeline Using AWS Data Analytics _ TC Energy Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/TCSG Works with AWS Academy to Offer Digital Cloud Computing Credential to 22 Colleges _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/TEG on using Machine Learning and Amazon Personalize to boost user engagement and ticket sales _ Ticketek Video _ AWS.txt  
-  inflating: rag_txt_dataset/THREAD _ Life Sciences _ AWS.txt  
-  inflating: rag_txt_dataset/Taggle Systems Case Study _ Amazon Web Services.txt  
-  inflating: rag_txt_dataset/Takeda Accelerates Digital Transformation by Migrating to AWS _ Takeda Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Tally Solutions _ Amazon Web Services.txt  
-  inflating: rag_txt_dataset/Tangent Works Case Study.txt  
-  inflating: rag_txt_dataset/Technology that delivers_ iFood and Appoena gain agility with AWS Marketplace _ iFood Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Tempus Ex Case Study _ Amazon ECS _ AWS.txt  
-  inflating: rag_txt_dataset/Teva Case Study _ Biopharma _ AWS.txt  
-  inflating: rag_txt_dataset/The Mill Adventure Case Study.txt  
-  inflating: rag_txt_dataset/The Next Frontier_ Generative AI for Financial Services _ AWS for Industries.txt  
-  inflating: rag_txt_dataset/The Retail Race_ A Roadmap for Implementing a Smart Store Strategy _ AWS for Industries.txt  
-  inflating: rag_txt_dataset/The positive impact Generative AI could have for Retail _ AWS for Industries.txt  
-  inflating: rag_txt_dataset/Thomson Reuters Uses Amazon DMA to Accelerate Database Modernization _ Thomson Reuters Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Tokenize Builds A Scalable Cost-Effective Digital Exchange Platform On AWS _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Toppan Case Study.txt  
-  inflating: rag_txt_dataset/Toyota Motor North America Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Track customer traffic in aisles and cash counters using Computer Vision _ AWS for Industries.txt  
-  inflating: rag_txt_dataset/Train a Large Language Model on a single Amazon SageMaker GPU with Hugging Face and LoRA _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Transform analyze and discover insights from unstructured healthcare data using Amazon HealthLake _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Transforming fleet telematics into predictive analytics with Capgeminis Trusted Vehicle and AWS IoT FleetWise _ The Internet of Things on AWS  Official Blog.txt  
-  inflating: rag_txt_dataset/Translate redact and analyze text using SQL functions with Amazon Athena Amazon Translate and Amazon Comprehend _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Tyler Technologies Recovers Mission-Critical Workloads 12x Faster Using AWS Elastic Disaster Recovery _ Tyler Technologies Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Ultra Commerce Case Study.txt  
-  inflating: rag_txt_dataset/Ultrasound Business Area Improves Customer Experience Using AWS Systems Manager _ Siemens Healthineers Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Upskilling Over 2K Employees with AWS Training and Certification and Creating a Culture of Innovation _ Techcombank Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Upstox Saves 1 Million Annually Using Amazon S3 Storage Lens _ Upstox Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Use proprietary foundation models from Amazon SageMaker JumpStart in Amazon SageMaker Studio _ AWS Machine Learning Blog.txt  
-  inflating: rag_txt_dataset/Using Amazon EC2 Spot Instances and Karpenter to Simplify and Optimize Kubernetes Infrastructure _ Neeva Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Using Amazon SageMaker to Personalize Sleep Therapy for Millions of Patients _ ResMed Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Using Amazon SageMaker to accelerate and deploy predictive editorial analytics solutions _ Smartocto Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Using Amazon SageMaker to improve response time of its demand forecast service by 200 percent _ Visualfabriq Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Using Computer Vision to Enable Digital Building Twins with NavVis and AWS _ AWS Partner Network (APN) Blog.txt  
-  inflating: rag_txt_dataset/Valant Uses AWS Communication Developer Services to Help Behavioral Health Practices Drive Better Patient Engagement _ Valant Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Veolia Australia and New Zealand Case Study - Amazon Web Services (AWS).txt  
-  inflating: rag_txt_dataset/Vocareum Offers Amazon Lightsail to Help over 50000 Cloud Learners Build Cloud Skills _ Vocareum Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Volkswagen Passenger Cars Case Study.txt  
-  inflating: rag_txt_dataset/Voucherify Case Study.txt  
-  inflating: rag_txt_dataset/WaFd Bank Transforms Contact Centers Using Conversational AI on AWS _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Wave Commerce case study.txt  
-  inflating: rag_txt_dataset/WebBeds uses Amazon EC2 Spot Instances to save its business amid a reduction in travel worldwide and reduce costs up to 64 percent. _ WebBeds Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/What Will Generative AI Mean for Your Business_ _ AWS Cloud Enterprise Strategy Blog.txt  
-  inflating: rag_txt_dataset/Which Recurring Business Processes Can Small and Medium Businesses Automate_ _ AWS Smart Business Blog.txt  
-  inflating: rag_txt_dataset/Windsor.txt  
-  inflating: rag_txt_dataset/Wireless Car Case Study _ AWS IoT Core _ AWS.txt  
-  inflating: rag_txt_dataset/Yamato Logistics (HK) case study.txt  
+  ...
   inflating: rag_txt_dataset/Zomato Saves Big by Using AWS Graviton2 to Power Data-Driven Business Insights.txt  
   inflating: rag_txt_dataset/Zoox Case Study _ Automotive _ AWS.txt  
   inflating: rag_txt_dataset/e-banner Streamlines Its Contact Center Operations and Facilitates a Fully Remote Workforce with Amazon Connect _ e-banner Case Study _ AWS.txt  
@@ -749,7 +424,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </s
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Apagamos o <code>.zip</code></p>
+<p>Removamos o <code>.zip</code></p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -758,7 +433,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </s
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Vemos o que nos sobrou</p>
+<p>Vemos o que nos quedou</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -789,326 +464,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </s
 'Amazon OpenSearch Services vector database capabilities explained _ AWS Big Data Blog.txt'
 'Anghami Case Study.txt'
 'Announcing enhanced table extractions with Amazon Textract _ AWS Machine Learning Blog.txt'
-'AppsFlyer Amazon EKS Case Study _ Advertising _ AWS.txt'
-'Arm Case Study.txt'
-'Arm Limited Case Study.txt'
-'Armitage Technologies case study.txt'
-'Armut Case Study.txt'
-'Auto-labeling module for deep learning-based Advanced Driver Assistance Systems on AWS _ AWS Machine Learning Blog.txt'
-'AWS announces 21 startups selected for the AWS generative AI accelerator _ AWS Startups Blog.txt'
-'AWS Case Study - Ineos Team UK.txt'
-'AWS Case Study - StreamAMG.txt'
-'AWS Case Study_ Creditsafe.txt'
-'AWS Case Study_ Immowelt.txt'
-'AWS Customer Case Study _ Kepler Provides Effective Monitoring of Elderly Care Home Residents Using AWS _ AWS.txt'
-'AWS releases smart meter data analytics _ AWS for Industries.txt'
-'Bank of Montreal Case Study _ AWS.txt'
-'Bazaarvoice Case Study _ AWS.txt'
-'Better Mortgage using Amazon Elastic Kubernetes _ Better Mortgage Video _ AWS.txt'
-'BIPO Improves Customer Experience on its HR Management System Using Machine Learning on AWS _ Case Study _ AWS.txt'
-'BNS Group Case Study _ Amazon Web Services.txt'
-'Boehringer Ingelheim Establishes Data-Driven Foundations Using AWS to Accelerate the Launch of New Medicines _ Boehringer Ingelheim Case Study _ AWS.txt'
-'Bosch Thermotechnology Accelerates IoT Deployment Using AWS Serverless Computing and AWS IoT Core _ Case Study _ AWS.txt'
-'Botprise Reduces Time to Remediation by 86 on Average Using Automation and AWS Security Hub _ Botprise Case Study _ AWS.txt'
-'Build a powerful question answering bot with Amazon SageMaker Amazon OpenSearch Service Streamlit and LangChain _ AWS Machine Learning Blog.txt'
-'Build a semantic search engine for tabular columns with Transformers and Amazon OpenSearch Service _ AWS Big Data Blog.txt'
-'Build custom chatbot applications using OpenChatkit models on Amazon SageMaker _ AWS Machine Learning Blog.txt'
- Buildigo.txt
-'Building a medical image search platform on AWS _ AWS Machine Learning Blog.txt'
-'Building a Scalable Interactive Learning Application for Kids Using AWS Services with Yellow Class _ Case Study _ AWS.txt'
-'Building a Scalable Machine Learning Model Monitoring System with DataRobot _ AWS Partner Network (APN) Blog.txt'
-'Building generative AI applications for your startup part 1 _ AWS Startups Blog.txt'
-'Calgary Airport Authority Enhances Passenger Services and Cybersecurity on the AWS Cloud _ Case Study _ AWS.txt'
- CalvertHealth-case-study.txt
-'Capital One Saves Developer Time and Reduces Costs Going Serverless Using AWS Lambda and Amazon ECS _ Case Study _ AWS.txt'
-'Capture public health insights more quickly with no-code machine learning using Amazon SageMaker Canvas _ AWS Machine Learning Blog.txt'
-'CaratLane Case Study - Amazon Web Services (AWS).txt'
-'CarTrade Tech Drives a Seamless Car Buying and Selling Experience with Improved Website Performance and Analytics _ Case Study _ AWS.txt'
-'Central East Ontario Hospital Partnership Launches a Clinical Information System in the AWS Cloud _ Case Study _ AWS.txt'
-'Circle of Life _ Amazon Web Services.txt'
-'Claro Embratel Credits AWS Training and Certification as Key Driver in Fourfold Growth of Sales Opportunities _ Claro Embratel Case Study _ AWS.txt'
-'Climedo Case Study.txt'
-'CloudCall Invests in AWS Skill Builder Pivots to a SaaS Model _ CloudCall Case Study _ AWS.txt'
-'CloudWave Modernizes EHR Disaster Recovery and Provides Fast Secure Access to Archived Imaging Data on AWS _ Case Study _ AWS.txt'
-'CMD Solutions Case Study _ AWS.txt'
-'Cognitran Deploys Customized CDN Solution in under 12 Weeks Using Amazon CloudFront.txt'
-'Comscore Maintains Privacy While Cross-Analyzing Data using AWS Clean Rooms _ Case Study _ AWS.txt'
-'Concert.ua Manages 1000 Traffic Spikes Using AWS Serverless _ AWS EC2.txt'
-'Cost Savings of 20 and 8 Hours of Data Processing Saved across 500 Spark Jobs Using AWS Graviton2 Processors _ Wealthfront Case Study _ AWS.txt'
-'Coventry University Group Empowers Next Generation of IT Professionals Using AWS Educate and AWS Academy _ Case Study _ AWS.txt'
-'Create high-quality images with Stable Diffusion models and deploy them cost-efficiently with Amazon SageMaker _ AWS Machine Learning Blog.txt'
-'Creating Air Taxi Simulations Using Amazon EC2 with Wisk Aero _ Wisk Aero Case Study _ AWS.txt'
-'Creating an App for 12000 Game Show Viewers Using Amazon CloudFront with TUI _ TUI Case Study _ AWS.txt'
-'Creating an Optimized Solution for Smart Buildings Using Amazon EC2 G5g Instances with Mircoms OpenGN _ Case Study _ AWS.txt'
-'Dallara Uses HPC on AWS to Off-Load Peak CFD Workloads for Race Car Simulations _ Case Study _ AWS.txt'
-'Dataminr Achieves up to Nine Times Better Throughput per Dollar Using AWS Inferentia _ Dataminr Case Study _ AWS.txt'
-'DB Energie Case Study.txt'
-'DBS Bank Uses Amazon ElastiCache for Redis to Run Its Pricing Models at Real-Time Speed _ DBS Bank Case Study _ AWS.txt'
-'DCI Saves 27 on Cloud Costs Gains Support for Long-Term Growth Using AWS _ Amazon EC2.txt'
-'Deep Pool Optimizes Software Quality Control Using Amazon QuickSight _ Deep Pool Case Study _ AWS.txt'
-'Delivering a Seamless Gaming Experience to 25 Million Players Using AWS with Travian Games _ Travian Games Case Study _ AWS.txt'
-'Delivering Engaging Games at Scale Using AWS with Whatwapp _ Case Study _ AWS.txt'
-'Delivering Innovative Visual Search Capabilities Using AWS with Syte _ Syte Case Study _ AWS.txt'
-'Delivering Travel Deals across 110 Markets Using Amazon CloudFront with Skyscanner _ Case Study _ AWS.txt'
-'Democratize Access to HPC for Computer-Aided Materials Design Using Amazon EC2 Spot Instances with Good Chemistry _ Good Chemistry Case Study _ AWS.txt'
-'Democratize computer vision defect detection for manufacturing quality using no-code machine learning with Amazon SageMaker Canvas _ AWS Machine Learning Blog.txt'
-'Deploy a serverless ML inference endpoint of large language models using FastAPI AWS Lambda and AWS CDK _ AWS Machine Learning Blog.txt'
-'Deploy Falcon-40B with large model inference DLCs on Amazon SageMaker _ AWS Machine Learning Blog.txt'
-'Deploying and benchmarking YOLOv8 on GPU-based edge devices using AWS IoT Greengrass _ The Internet of Things on AWS  Official Blog.txt'
-'Deputy Case Study _ Amazon Web Services.txt'
-'Design considerations for cost-effective video surveillance platforms with AWS IoT for Smart Homes _ The Internet of Things on AWS  Official Blog.txt'
-'Designing a hybrid AI_ML data access strategy with Amazon SageMaker _ AWS Architecture Blog.txt'
-'Developing a Pioneering Multicancer Early Detection Test _ GRAIL Case Study _ AWS.txt'
-'Dexatek Optimizes Its IoT Platform and Boosts Spend on Innovation by 30 with AWS _ Dexatek Case Study _ AWS.txt'
-'Directing ML-powered Operational Insights from Amazon DevOps Guru to your Datadog event stream _ AWS DevOps Blog.txt'
-'DTN Case Study _ HPC _ AWS.txt'
-'e-banner Streamlines Its Contact Center Operations and Facilitates a Fully Remote Workforce with Amazon Connect _ e-banner Case Study _ AWS.txt'
-'Effectively solve distributed training convergence issues with Amazon SageMaker Hyperband Automatic Model Tuning _ AWS Machine Learning Blog.txt'
-'Effortlessly Summarize Phone Conversations with Amazon Chime SDK Call Analytics_ Step-by-Step Guide _ Business Productivity.txt'
-'Empowering Customers to Take an Active Role in the Energy Transition Using AWS Serverless Services with Iberdrola _ Case Study _ AWS.txt'
-'ENGIE Rapidly Migrates Assets and Accounts Easing Divestiture Using AWS _ Engie Case Study _ AWS.txt'
-'Enhancing customer experience using Amazon CloudFront with Zalando _ Case Study _ AWS.txt'
-'EPAM Systems.txt'
-'Esade Business School Increases Graduates Employability Using AWS Education Programs _ Case Study _ AWS.txt'
-'Establishing the Nations Largest Mileage-Based User Fee Program Using Amazon Connect with the Virginia DMV _ Case Study _ AWS.txt'
-'Evolving ADPs Single Global Experience in MyADP and ADP Mobile Using AWS Lambda _ Case Study _ AWS.txt'
-'Expanding Opportunities Using Amazon WorkSpaces with The Chicago Lighthouse _ Case Study _ AWS.txt'
-'Exploring Generative AI in conversational experiences_ An Introduction with Amazon Lex Langchain and SageMaker Jumpstart _ AWS Machine Learning Blog.txt'
-'Facilitating the Most Live Streamed Super Bowl and Olympics Using AWS Services _ NBCUniversal Case Study _ AWS.txt'
-'FanCode Case Study - Amazon Web Services (AWS).txt'
-'FanDuel Migrates to AWS in Less than 3 Weeks Improves the Customer Experience _ AWS.txt'
-'Fantom Case Study - Amazon Web Services (AWS).txt'
-'Fatshark Delivers Warhammer 40K_ Darktide Fully on AWS for Millions of Players _ Case Study _ AWS.txt'
-'Finch Computing Reduces Inference Costs by 80 Using AWS Inferentia for Language Translation _ Case Study _ AWS.txt'
-'Fine-tune GPT-J using an Amazon SageMaker Hugging Face estimator and the model parallel library _ AWS Machine Learning Blog.txt'
-'Firework Games case study.txt'
-'FLSmidth Case Study.txt'
-'FLYING WHALES Case Study.txt'
-'Fujita Health University Case Study _ Amazon Web Services.txt'
-'Game Studio Small Impact Games Runs Successful Alpha and Beta Tests Using Amazon GameLift _ Case Study _ AWS.txt'
- Games24x7.txt
-'Ganit Transforms Fast Fashion Apparel Retail with Intelligent Demand Forecasting on AWS _ AWS Partner Network (APN) Blog.txt'
-'Generating 100000 Images Daily Using Amazon ECS _ Scenario Case Study _ AWS.txt'
-'Generative AI for Telcos_ taking customer experience and productivity to the next level _ AWS for Industries.txt'
-'Generative AI with Large Language Models  New Hands-on Course by DeepLearning.AI and AWS _ AWS News Blog.txt'
-'Genpact Delivers Innovative Services to Customers Faster by Running Critical Applications on AWS _ Case Study _ AWS.txt'
-'Geo.me Reduces Customers Annual Geospatial Costs by up to 90 Using Amazon Location Service _ Geo.me Case Study _ AWS.txt'
-'Gileads Journey from Migration to Innovation on AWS _ Case Study _ AWS.txt'
-'Global Unichip Corporation Case Study.txt'
-'Glossika case study.txt'
-'GoDaddy Case Study _ AWS.txt'
-'Greenway Health Scales to Hundreds of Terabytes of Data Using Amazon DocumentDB (with MongoDB compatibility) _ Greenway Health Case Study _ AWS.txt'
-'GSR Scales Fast on AWS to Become One of the Largest Crypto Market Makers _ Amazon S3.txt'
-'Helen of Troy Case Study _ Consumer Packaged Goods _ AWS.txt'
-'Help Customers Reduce Data Query Time by 70 and Improve Business Insights Capabilities with Amazon OpenSearch Service _ Deputy Case Study _ AWS.txt'
-'Helping Customers Modernize Their Cloud Infrastructure Using the AWS Well-Architected Framework with Comprinno _ Comprinno Technologies Case Study _ AWS.txt'
-'Helping Doctors Treat Pediatric Cancer Using AWS Serverless Services _ Nationwide Childrens Hospital Case Study _ AWS.txt'
-'Helping Fintech Startup Snoop Deploy Quickly and Scale Using Amazon ECS with AWS Fargate _ Case Study _ AWS.txt'
-'Helping Patients Access Personalized Healthcare from Anywhere Using Amazon Chime SDK with Salesforce _ Salesforce Case Study _ AWS.txt'
-'Highlight text as its being spoken using Amazon Polly _ AWS Machine Learning Blog.txt'
-'High-quality human feedback for your generative AI applications from Amazon SageMaker Ground Truth Plus _ AWS Machine Learning Blog.txt'
-'Host ML models on Amazon SageMaker using Triton_ ONNX Models _ AWS Machine Learning Blog.txt'
-'How AWS is helping thredUP revolutionize the resale model for brands _ AWS for Industries.txt'
-'How BrainPad fosters internal knowledge sharing with Amazon Kendra _ AWS Machine Learning Blog.txt'
-'How Earth.com and Provectus implemented their MLOps Infrastructure with Amazon SageMaker _ AWS Machine Learning Blog.txt'
-'How Forethought saves over 66 in costs for generative AI models using Amazon SageMaker _ AWS Machine Learning Blog.txt'
-'How Generative AI will transform manufacturing _ AWS for Industries.txt'
-'How Imperva uses Amazon Athena for machine learning botnets detection _ AWS Big Data Blog.txt'
-'How KYTC Transformed the States Customer Experience for 4.1 Million Drivers Using Amazon Connect _ Case Study _ AWS.txt'
-'How Marubeni is optimizing market decisions using AWS machine learning and analytics _ AWS Machine Learning Blog.txt'
-'How Technology Leaders Can Prepare for Generative AI _ AWS Cloud Enterprise Strategy Blog.txt'
-'Idealo Case Study.txt'
-'IDEMIA Case Study _ Security and Compilance _ AWS.txt'
-'Illumina Case Study _ Genomics _ AWS.txt'
-'Illumina Reduced Carbon Emissions by 89 and Lowered Data Storage Costs Using AWS _ Illumina Case Study _ AWS.txt'
-'Implement unified text and image search with a CLIP model using Amazon SageMaker and Amazon OpenSearch Service _ AWS Machine Learning Blog.txt'
-'Improve Patient Safety Intelligence Using AWS AI_ML Services _ AWS for Industries.txt'
-'Improving Geospatial Processing Faster using Amazon Aurora with Ozius _ Case Study _ AWS.txt'
-'Improving Hiring Diversity and Accelerating App Development on AWS with Branch Insurance _ Case Study _ AWS.txt'
-'Improving Mergers and Acquisitions Using AWS Organizations with Warner Bros. Discovery _ Warner Bros. Discovery Case Study _ AWS.txt'
-'Improving Operational Efficiency with Predictive Maintenance Using Amazon Monitron _ Baxter Case Study _ AWS.txt'
-'Improving Patient Outcomes Using Amazon EC2 DL1 Instances _ Leidos Case Study _ AWS.txt'
-'Improving Search Capabilities and Speed Using Amazon OpenSearch Service with ArenaNet _ ArenaNet Case Study _ AWS.txt'
-'Improving Transportation with Mobility Data Using Amazon EMR and Serverless Managed Services _ Arity Case Study _ AWS.txt'
-'Increasing Reach and Reliability of Healthcare Software by Migrating 300 Servers to AWS in 6 Weeks _ Mayden Case Study _ AWS.txt'
-'Increasing Sales Opportunities by 83 Working with AWS Training and Certification with Fortinet _ Case Study _ AWS.txt'
-'Increasing Scalability and Data Durability of Television Voting Solution Using Amazon MemoryDB for Redis with Mediaset _ Mediaset Case Study _ AWS.txt'
-'Indecomm Case Study _ Amazon Web Services.txt'
-'Indivumed Case Study.txt'
-'Infor Case Study.txt'
-'Information Technology Institute Launches Postgraduate Artificial Intelligence Diploma Using AWS _ Case Study _ AWS.txt'
-'InMotion Inovasi Teknologi Boosts Local-Language Engagement with Millions of Indonesians on AWS _ Case Study _ AWS.txt'
-'Insightful.Mobi Decreases Costs and Enhances Dashboard Performance Using Amazon QuickSight _ Case Study _ AWS.txt'
-'Insilico Case Study _ Life Sciences _ AWS.txt'
-'Intelligently Search Media Assets with Amazon Rekognition and Amazon ES _ AWS Architecture Blog.txt'
-'Interactively fine-tune Falcon-40B and other LLMs on Amazon SageMaker Studio notebooks using QLoRA _ AWS Machine Learning Blog.txt'
-'Introducing popularity tuning for Similar-Items in Amazon Personalize _ AWS Machine Learning Blog.txt'
-'Introducing the latest Machine Learning Lens for the AWS Well-Architected Framework _ AWS Architecture Blog.txt'
-'iptiQ Case Study.txt'
-'Isetan Mitsukoshi System Solutions seamlessly migrates databases to Amazon Aurora using Amazon DMA _ Isetan Mitsukoshi System Solutions Case Study _ AWS.txt'
-'Isha Foundation Delivers on its Mission for Millions by Transforming Content Delivery on AWS _ Case Study _ AWS.txt'
-'Jefferies Manages Packaged Applications at Scale in the Cloud through Amazon RDS Custom for Oracle _ Jefferies Case Study _ AWS.txt'
-'Kee Wah Bakery Brings Timeless Baked Goods to Modern Shoppers with Eshop on AWS _ Kee Wah Bakery Case Study _ AWS.txt'
-'Kioxia uses AWS for better HPC performance and cost savings in semiconductor memory development and manufacturing _ Case Study _ AWS.txt'
-'Kirana Megatara Reduces Procurement Costs by 10 Percent for Raw Rubber with Speedy Reporting on AWS _ Case Study _ AWS.txt'
-'KTO Case Study.txt'
-'LambdaTest Improves Software Test Insights and Cuts Dashboard Response Time by 33 Using Amazon Redshift _ Case Study _ AWS.txt'
-'Largest metastatic cancer dataset now available at no cost to researchers worldwide _ AWS Public Sector Blog.txt'
-'Learn how MediSys in healthcare transformed its IT operations using AWS Professional Services _ MediSys Case Study _ AWS.txt'
-'LegalZoom AWS Local Zones Case Study.txt'
-'Lendingkart _ Amazon Web Services.txt'
-'Lenme builds a secure and reliable lending platform with AWS _ Lenme Case Study _ AWS.txt'
-'LetsGetChecked Case Study _ Amazon Connect _ AWS Lex.txt'
-'Leverage pgvector and Amazon Aurora PostgreSQL for Natural Language Processing Chatbots and Sentiment Analysis _ AWS Database Blog.txt'
-'LG AI Research Develops Foundation Model Using Amazon SageMaker _ LG AI Research Case Study _ AWS.txt'
-'LifeOmic Case Study _ AWS Lambda _ AWS.txt'
-'Lotte Data Communication Company Vietnam Simplifies API Integrations for Online Retailers on AWS _ Case Study _ AWS.txt'
-'LTIMindtree Drives Digital Transformation for Global Customers with AWS Training and Certification.txt'
-'Lucid Motors and Zerolight Case Study.txt'
-'Lyell GxP Compliance _ Case Study _ AWS.txt'
-'MARVEL SNAP_ How Second Dinner and Nuverse Built and Scaled the Mobile Game of the Year Using AWS for Games _ Case Study _ AWS.txt'
-'Maxar Case Study.txt'
- Measurable-AI-case-study.txt
-'Mediality Leverages Automation to Deliver Racing Data Faster on AWS _ Case Study _ AWS.txt'
-'Mercks Manufacturing Data and Analytics Platform Triples Performance and Reduces Data Costs by 50 on AWS _ Case Study _ AWS.txt'
-'Midtrans Case Study _ Amazon Web Services.txt'
-'Migrating Large-Scale SAP Workloads Seamlessly to AWS with Sony _ Sony Case Study _ AWS.txt'
-'Mobileye Cuts Costs Using Amazon EC2 _ Case Study _ AWS.txt'
-'Mobileye Improves Deep Learning Training Performance and Reduces Costs Using Amazon EC2 DL1 Instances _ Mobileye Case Study _ AWS.txt'
-'Mobiuspace delivers up to 40 improved price-performance using Amazon EMR on EKS and Graviton instance _ Mobiuspace Case Study _ AWS.txt'
-'Modern Electron Case Study.txt'
-'Moderna Drives Commercial Innovation Using Amazon Connect and AI _ Moderna Case Study _ AWS.txt'
-'Modernizing FINRA Data Collection with Amazon DocumentDB _ FINRA Case Study _ AWS.txt'
-'Modernizing Infrastructure to Improve Reliability Using Amazon EC2 with Loacker _ Case Study _ AWS.txt'
-'mod.io Provides Low Latency Gamer Experience Globally on AWS _ Case Study _ AWS.txt'
-'Money Forward Increases Development Velocity 3x Working with AWS Training and Certification _ Case Study _ AWS.txt'
-'myposter Case Study.txt'
-'N KID Group Case Study  Amazon Web Services (AWS).txt'
-'Naranja X Modernizes Financial Services More Efficiently with SaaS Solutions in AWS Marketplace _ Naranja X Case Study _ AWS.txt'
-'NBCUniversal Case Study _ Advertising _ AWS.txt'
-'NeuroPro Case Study.txt'
-'NodeReal case study.txt'
-'Novo Nordisk Uses ML for Computer Vision to Optimize Pharmaceutical Manufacturing on AWS _ Novo Nordisk Case Study _ AWS.txt'
-'NTT DOCOMO builds a new data analysis platform for 9000 workers with AWS attracting 13 times more users and invigorating data use _ NTT Docomo Case Study _ AWS.txt'
-'Numerix Scales HPC Workloads for Price and Risk Modeling Using AWS Batch _ Numerix Case Study _ AWS.txt'
-'Oportun Increases the Accuracy of Sensitive-Data Discovery by 95 Using Amazon Macie _ Oportun Case Study _ AWS.txt'
-'Optimize software development with Amazon CodeWhisperer _ AWS DevOps Blog.txt'
-'Optimizing Fast Access to Big Data Using Amazon EMR at Thomson Reuters _ Case Study _ AWS.txt'
-'Optimizing Storage Cost and Performance Using Amazon EBS _ Devo Case Study _ AWS.txt'
- Optoma-customer-references-case-study.txt
-'Paige Case Study _ AWS.txt'
-'PayEye Launches POC for Biometric Payments in 5 Months Using AWS _ Amazon EKS.txt'
-'Postis Case Study.txt'
-'Power recommendation and search using an IMDb knowledge graph  Part 1 _ AWS Machine Learning Blog.txt'
-'Power recommendations and search using an IMDb knowledge graph  Part 3 _ AWS Machine Learning Blog.txt'
-'Prima Group Case Study.txt'
-'Processing Data 10x Faster Using Amazon Redshift Serverless with BlocPower _ BlocPower Case Study _ AWS.txt'
-'Purple Technology Case Study _ AWS Step Functions.txt'
-'Queensland University of Technology Advances Global Research on Rare Diseases Using the AWS Cloud.txt'
-'Query Response Time Improved Using Amazon Redshift Serverless _ Playrix Case Study _ AWS.txt'
-'Rackspace Automates Infrastructure Management across Cloud Providers Using AWS Systems Manager _ Rackspace Case Study _ AWS.txt'
-'Razer Deepened Gamer Engagement using Amazon Personalize _ Video Testimonial _ AWS.txt'
-'Reaching Remote Learners Globally Using Amazon CloudFront _ Doping Hafiza Case Study _ AWS.txt'
-'Read Innovates Video Call Transcription Using Amazon EC2 G5 Instances Powered by NVIDIA _ Read Case Study _ AWS.txt'
-'Realizing the Full Value of EHR in a Digital Health Environment on AWS with Tufts Medicine _ Tufts Medicine Case Study _ AWS.txt'
-'Recommend and dynamically filter items based on user context in Amazon Personalize _ AWS Machine Learning Blog.txt'
-'Red Canary Architects for Fault Tolerance and Saves up to 80 Using Amazon EC2 Spot Instances _ Red Canary Case Study _ AWS.txt'
-'Reducing Adverse-Event Reporting Time for Its Clients by 80 _ Indegene Case Study _ AWS.txt'
-'Reducing Costs of Cryo-EM Data Storage and Processing by 50 Using AWS _ Vertex Pharmaceuticals Case Study.txt'
-'Reducing Failover Time from 30 Minutes to 3 Minutes Using Amazon CloudWatch _ Thomson ReutersCase Study _ AWS.txt'
-'Reducing Infrastructure Costs by 66 by Migrating to AWS with SilverBlaze _ SilverBlaze Case Study _ AWS.txt'
-'Reducing Log Data Storage Cost Using Amazon OpenSearch Service with CMS _ Case Study _ AWS.txt'
-'Reducing Time to Results Carbon Footprint and Cost Using AWS HPC _ Baker Hughes Case Study _ AWS.txt'
-'Reinventing the data experience_ Use generative AI and modern data architecture to unlock insights _ AWS Machine Learning Blog.txt'
-'Relay Therapeutics Case Study.txt'
-'Resilience Builds a Global Data Mesh for Lab Connectivity on AWS _ Case Study _ AWS.txt'
-'ResMed Case Study _ AWS AppSync _ AWS.txt'
-'Respond.io Scales Its Messaging Platform and Connects 10000 Companies with Customers on AWS _ Respond.io Case Study _ AWS.txt'
-'Retain original PDF formatting to view translated documents with Amazon Textract Amazon Translate and PDFBox _ AWS Machine Learning Blog.txt'
-'Return Entertainment Case Study.txt'
-'Revive lost revenue from bad ecommerce search using Natural Language Processing _ AWS for Industries.txt'
-'Revolutionizing Manufacturing with Sphere and Amazon Lookout for Visions XR and AI Integration _ AWS Partner Network (APN) Blog.txt'
-'Rivian Case Study _ Automotive _ AWS.txt'
-'Rumah Siap Kerja (RSK) Case Study - Amazon Web Services (AWS).txt'
-'Run Jobs at Scale While Optimizing for Cost Using Amazon EC2 Spot Instances with ActionIQ _ ActionIQ Case Study _ AWS.txt'
-'Rush University System for Health Creates a Population Health Analytics Platform on AWS _ Rush Case Study _ AWS.txt'
-'Safe image generation and diffusion models with Amazon AI content moderation services _ AWS Machine Learning Blog.txt'
-'Samsung Electronics Improves Demand Forecasting Using Amazon SageMaker Canvas _ Samsung Electronics Case Study _ AWS.txt'
-'Samsung Electronics Uses Amazon Chime SDK to Deliver a More Engaging Television Experience for Millions of Viewers _ Samsung Case Study _ AWS.txt'
-'Saving 80 on Costs While Improving Reliability and Performance Using Amazon Aurora with Panasonic Avionics _ Panasonic Avionics Case Study _ AWS.txt'
-'Saving time with personalized videos using AWS machine learning _ AWS Machine Learning Blog.txt'
-'Scaling Authentic Educational Games Using Amazon GameLift with Immersed Games _ Case Study _ AWS.txt'
-'Scaling Data Pipeline from One to Five Satellites Seamlessly on AWS _ Axelspace Case Study _ AWS.txt'
-'Scaling Sustainability Solutions for Buildings Using AWS with BrainBox AI _ Case Study _ AWS.txt'
-'Scaling Text to Image to 100 Million Users Quickly Using Amazon SageMaker _ Canva Case Study _ AWS.txt'
-'Scaling to Ingest 250 TB from 1 TB Daily Using Amazon Kinesis Data Streams with LaunchDarkly _ LaunchDarkly Case Study _ AWS.txt'
-'Scaling Up to 30 While Reducing Costs by 20 Using AWS Graviton3 Processors with Instructure _ Case Study _ AWS.txt'
-'Securing Workforce Access at Scale Using AWS IAM Identity Center with Xylem _ Xylem Case Study _ AWS.txt'
-'SecurionPay _ Amazon Redshift _ Amazon Quicksight _ Amazon Kinesis _ AWS.txt'
-'Security Posture Strengthened Using AWS Shield Advanced with OutSystems _ Case Study _ AWS.txt'
-'Selecting the right foundation model for your startup _ AWS Startups Blog.txt'
-'Shgardi Case Study.txt'
-'Showpad Accelerates Data Maturity to Unlock Innovation Using Amazon QuickSight _ Case Study _ AWS.txt'
-'Sixth Force Solutions _ Amazon Web Services.txt'
-'SKODA Uses AWS to Predict and Prevent Production Line Breakdowns.txt'
- SmartSearch-case-study.txt
-'Snap optimizes cost savings with Amazon S3 Glacier Instant Retrieval _ Snap Case Study _ AWS.txt'
-'Software Colombia and AWS Team Up to Create Powerful Identity Verification Solution _ Software Colombia Case Study _ AWS.txt'
-'Spacelift Case Study.txt'
-'Sprout Social Reduces Costs and Improves Performance Using Amazon EMR _ Case Study _ AWS.txt'
-'Spryker Case Study _ Amazon Elastic Compute Cloud _ AWS.txt'
-'Staffordshire University Uses AWS Academy to Help Students Meet Business Demand for Cloud Skills _ Case Study _ AWS.txt'
-'Stanford Multimodal Data Case Study _ Life Sciences _ AWS.txt'
-'Sterling Auxiliaries Case Study _ Amazon Web Services.txt'
-'Storengy Case Study.txt'
-'Streamline and Standardize the Complete ML Lifecycle Using Amazon SageMaker with Thomson Reuters _ Thomson Reuters Case Study _ AWS.txt'
-'Streamline Workflows Using the AWS Support App in Slack with Okta _ Okta Case Study _ AWS.txt'
-'SUPINFO Creates 5-Year Master of Engineering Degree Implementing AWS Education Programs _ Case Study _ AWS.txt'
-'SURF Drives Ground-Breaking Research Accelerates Time to Insight Using AWS.txt'
-'Syngenta Case Study _ Amazon Web Services.txt'
-'Taggle Systems Case Study _ Amazon Web Services.txt'
-'Takeda Accelerates Digital Transformation by Migrating to AWS _ Takeda Case Study _ AWS.txt'
-'Tally Solutions _ Amazon Web Services.txt'
-'Tangent Works Case Study.txt'
-'TC Energy Builds an Operations Data Platform for 60000 Miles of Pipeline Using AWS Data Analytics _ TC Energy Case Study _ AWS.txt'
-'TCSG Works with AWS Academy to Offer Digital Cloud Computing Credential to 22 Colleges _ Case Study _ AWS.txt'
-'Technology that delivers_ iFood and Appoena gain agility with AWS Marketplace _ iFood Case Study _ AWS.txt'
-'TEG on using Machine Learning and Amazon Personalize to boost user engagement and ticket sales _ Ticketek Video _ AWS.txt'
-'Tempus Ex Case Study _ Amazon ECS _ AWS.txt'
-'Teva Case Study _ Biopharma _ AWS.txt'
-'The Mill Adventure Case Study.txt'
-'The Next Frontier_ Generative AI for Financial Services _ AWS for Industries.txt'
-'The positive impact Generative AI could have for Retail _ AWS for Industries.txt'
-'The Retail Race_ A Roadmap for Implementing a Smart Store Strategy _ AWS for Industries.txt'
-'Thomson Reuters Uses Amazon DMA to Accelerate Database Modernization _ Thomson Reuters Case Study _ AWS.txt'
-'THREAD _ Life Sciences _ AWS.txt'
-'Tokenize Builds A Scalable Cost-Effective Digital Exchange Platform On AWS _ Case Study _ AWS.txt'
-'Toppan Case Study.txt'
-'Toyota Motor North America Case Study _ AWS.txt'
-'Track customer traffic in aisles and cash counters using Computer Vision _ AWS for Industries.txt'
-'Train a Large Language Model on a single Amazon SageMaker GPU with Hugging Face and LoRA _ AWS Machine Learning Blog.txt'
-'Transform analyze and discover insights from unstructured healthcare data using Amazon HealthLake _ AWS Machine Learning Blog.txt'
-'Transforming fleet telematics into predictive analytics with Capgeminis Trusted Vehicle and AWS IoT FleetWise _ The Internet of Things on AWS  Official Blog.txt'
-'Translate redact and analyze text using SQL functions with Amazon Athena Amazon Translate and Amazon Comprehend _ AWS Machine Learning Blog.txt'
-'Tyler Technologies Recovers Mission-Critical Workloads 12x Faster Using AWS Elastic Disaster Recovery _ Tyler Technologies Case Study _ AWS.txt'
-'Ultra Commerce Case Study.txt'
-'Ultrasound Business Area Improves Customer Experience Using AWS Systems Manager _ Siemens Healthineers Case Study _ AWS.txt'
-'Upskilling Over 2K Employees with AWS Training and Certification and Creating a Culture of Innovation _ Techcombank Case Study _ AWS.txt'
-'Upstox Saves 1 Million Annually Using Amazon S3 Storage Lens _ Upstox Case Study _ AWS.txt'
-'Use proprietary foundation models from Amazon SageMaker JumpStart in Amazon SageMaker Studio _ AWS Machine Learning Blog.txt'
-'Using Amazon EC2 Spot Instances and Karpenter to Simplify and Optimize Kubernetes Infrastructure _ Neeva Case Study _ AWS.txt'
-'Using Amazon SageMaker to accelerate and deploy predictive editorial analytics solutions _ Smartocto Case Study _ AWS.txt'
-'Using Amazon SageMaker to improve response time of its demand forecast service by 200 percent _ Visualfabriq Case Study _ AWS.txt'
-'Using Amazon SageMaker to Personalize Sleep Therapy for Millions of Patients _ ResMed Case Study _ AWS.txt'
-'Using Computer Vision to Enable Digital Building Twins with NavVis and AWS _ AWS Partner Network (APN) Blog.txt'
-'Valant Uses AWS Communication Developer Services to Help Behavioral Health Practices Drive Better Patient Engagement _ Valant Case Study _ AWS.txt'
-'Veolia Australia and New Zealand Case Study - Amazon Web Services (AWS).txt'
-'Vocareum Offers Amazon Lightsail to Help over 50000 Cloud Learners Build Cloud Skills _ Vocareum Case Study _ AWS.txt'
-'Volkswagen Passenger Cars Case Study.txt'
-'Voucherify Case Study.txt'
-'WaFd Bank Transforms Contact Centers Using Conversational AI on AWS _ Case Study _ AWS.txt'
-'Wave Commerce case study.txt'
-'WebBeds uses Amazon EC2 Spot Instances to save its business amid a reduction in travel worldwide and reduce costs up to 64 percent. _ WebBeds Case Study _ AWS.txt'
+...
 'What Will Generative AI Mean for Your Business_ _ AWS Cloud Enterprise Strategy Blog.txt'
 'Which Recurring Business Processes Can Small and Medium Businesses Automate_ _ AWS Smart Business Blog.txt'
  Windsor.txt
@@ -1122,7 +478,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </s
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Criando-os-chunks!">Criando os <code>chunk</code>s!<a class="anchor-link" href="#Criando-os-chunks!">¶</a></h3>
+<h3 id="A-criar-os-chunks!">A criar os <code>chunk</code>s!<a class="anchor-link" href="#A-criar-os-chunks!">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>Listamos os documentos com a função que havíamos criado</p>
@@ -1135,7 +491,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </s
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Comprovamos que o fizemos bem</p>
+<p>Verificamos que o fizemos bem</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -1190,23 +546,23 @@ Upstox Saves 1 Million Annually Using Amazon S3 Storage Lens _ Upstox Case Study
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Como vemos, existem 3611 <code>chunk</code>s. Como o limite diário da API da Hugging Face são 1000 chamadas na conta gratuita, se quisermos criar embeddings de todos os <code>chunk</code>s, acabaríamos com as chamadas disponíveis e além disso não poderíamos criar embeddings de todos os <code>chunk</code>s.</p>
+<p>Como vemos, há 3611 <code>chunk</code>s. Como o limite diário da API da Hugging Face são 1000 chamadas na conta gratuita, se quisermos criar embeddings de todos os <code>chunk</code>s, acabaríamos as chamadas disponíveis e, além disso, não poderíamos criar embeddings de todos os <code>chunk</code>s</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Voltamos a lembrar, este modelo de embeddings é muito pequeno, apenas 22M de parâmetros, por isso pode ser executado em quase qualquer computador, mais rápido ou mais devagar, mas pode.</p>
+<p>Lembramos que este modelo de embeddings é muito pequeno, somente 22M de parâmetros, por isso quase em qualquer computador pode ser executado, mais rápido ou mais lento, mas é possível.</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Como só vamos criar os embeddings dos <code>chunk</code>s uma vez, mesmo que não tenhamos um computador muito potente e demore muito tempo, isso só será executado uma vez. Então, quando quisermos fazer perguntas sobre a documentação, aí sim geraremos os embeddings do prompt com a API do Hugging Face e usaremos o LLM com a API. Portanto, só teremos que passar pelo processo de gerar os embeddings dos <code>chunk</code>s uma vez.</p>
+<p>Como só vamos a criar os embeddings dos <code>chunk</code>s uma vez, embora não tenhamos um computador muito potente e leve muito tempo, só será executado uma vez. Depois, quando quisermos fazer perguntas sobre a documentação, aí sim geraremos os embeddings do prompt com a API da Hugging Face e usaremos o LLM com a API. Portanto, só vamos ter que passar pelo processo de gerar os embeddings dos <code>chunk</code>s uma vez</p>
 </section>
 <section class="section-block-markdown-cell">
 <p>Geramos os embeddings dos <code>chunk</code>s</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Última biblioteca que vamos ter que instalar. Como o processo de gerar os embeddings dos <code>chunk</code>s vai ser lento, vamos instalar <code>tqdm</code> para que nos mostre uma barra de progresso. Instalamos com conda ou com pip, como preferir.</p>
-<div class="highlight"><pre><span></span><span class="sb">```</span>conda<span class="w"> </span>install<span class="w"> </span>conda-forge::tqdm<span class="sb">```</span>
+<p>Última biblioteca que vamos a ter que instalar. Como o processo de gerar os embeddings dos <code>chunk</code>s vai ser lento, vamos a instalar <code>tqdm</code> para que nos mostre uma barra de progresso. A instalamos com conda ou com pip, como preferir.</p>
+<div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>conda-forge::tqdm
 </pre></div>
 <p>o</p>
-<div class="highlight"><pre><span></span><span class="sb">```</span>pip<span class="w"> </span>install<span class="w"> </span>tqdm<span class="sb">```</span>
+<div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>tqdm
 </pre></div>
 </section>
 <section class="section-block-markdown-cell">
@@ -1237,7 +593,7 @@ Upstox Saves 1 Million Annually Using Amazon S3 Storage Lens _ Upstox Case Study
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Vemos um exemplo</p>
+<p>Vejamos um exemplo</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -1277,7 +633,7 @@ embedding shape: (384,)
 <h3 id="Carregar-os-chunks-no-banco-de-dados-vetorial">Carregar os <code>chunk</code>s no banco de dados vetorial<a class="anchor-link" href="#Carregar-os-chunks-no-banco-de-dados-vetorial">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>Uma vez que temos todos os chunks gerados, os carregamos no banco de dados vetorial. Usamos novamente <code>tqdm</code> para que nos mostre uma barra de progresso, porque isso também será lento</p>
+<p>Uma vez que temos todos os chunks gerados, os carregamos na base de dados vetorial. Voltamos a usar <code>tqdm</code> para que nos mostre uma barra de progresso, porque isso também vai ser lento</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -1307,7 +663,7 @@ embedding shape: (384,)
 <h2 id="Perguntas">Perguntas<a class="anchor-link" href="#Perguntas">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<p>Agora que temos o banco de dados vetorial, podemos fazer perguntas à documentação. Para isso, precisamos de uma função que nos devolva o <code>chunk</code> correto.</p>
+<p>Agora que temos a base de dados vetorial, podemos fazer perguntas à documentação. Para isso, precisamos de uma função que nos devolva o <code>chunk</code> correto</p>
 </section>
 <section class="section-block-markdown-cell">
 <h3 id="Obter-o-chunk-correto">Obter o <code>chunk</code> correto<a class="anchor-link" href="#Obter-o-chunk-correto">¶</a></h3>
@@ -1324,10 +680,11 @@ embedding shape: (384,)
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Por último, criamos uma <code>query</code>.
-Para gerar a query, escolhi aleatoriamente o documento <code>Using Amazon EC2 Spot Instances and Karpenter to Simplify and Optimize Kubernetes Infrastructure _ Neeva Case Study _ AWS.txt</code>, passei-o a um LLM e pedi-lhe que gerasse uma pergunta sobre o documento. A pergunta que ele gerou é
-Como a Neeva usou Karpenter e as Instâncias Spot do Amazon EC2 para melhorar o gerenciamento de sua infraestrutura e a otimização de custos?
-Assim, obtemos os <code>chunk</code>s mais relevantes para essa pergunta</p>
+<p>Por último, criamos uma <code>query</code>.</p>
+<p>Para gerar a consulta, peguei aleatoriamente o documento <code>Using Amazon EC2 Spot Instances and Karpenter to Simplify and Optimize Kubernetes Infrastructure _ Neeva Case Study _ AWS.txt</code>, passei-o para um LLM e pedi que gerasse uma pergunta sobre o documento. A pergunta que gerou é</p>
+<pre><code>Como a Neeva utilizou o Karpenter e as Instâncias Spot da Amazon EC2 para melhorar a gestão de infraestrutura e a otimização de custos?
+</code></pre>
+<p>Então obtemos os <code>chunk</code>s mais relevantes para essa pergunta</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -1337,7 +694,7 @@ Assim, obtemos os <code>chunk</code>s mais relevantes para essa pergunta</p>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Vamos ver quais <code>chunk</code>s nos devolveu</p>
+<p>Vamos a ver qué <code>chunk</code>s nos devolveu</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -1360,13 +717,13 @@ Rank 5: Using Amazon EC2 Spot Instances and Karpenter to Simplify and Optimize K
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Como havia dito, o documento que tinha escolhido ao acaso era <code>Using Amazon EC2 Spot Instances and Karpenter to Simplify and Optimize Kubernetes Infrastructure _ Neeva Case Study _ AWS.txt</code> e como pode ver os <code>chunk</code>s que nos devolveu são desse documento. Ou seja, de mais de 3000 <code>chunk</code>s existentes na base de dados, foi capaz de devolver os <code>chunk</code>s mais relevantes para essa pergunta, parece que isto funciona!</p>
+<p>Como eu havia dito, o documento que eu havia escolhido ao acaso era <code>Using Amazon EC2 Spot Instances and Karpenter to Simplify and Optimize Kubernetes Infrastructure _ Neeva Case Study _ AWS.txt</code> e como se pode ver os <code>chunk</code>s que nos devolveu são desse documento. Ou seja, de mais de 3000 <code>chunk</code>s que havia no banco de dados, foi capaz de devolver os <code>chunk</code>s mais relevantes diante disso, parece que isso funciona!</p>
 </section>
 <section class="section-block-markdown-cell">
 <h3 id="Gerar-a-resposta">Gerar a resposta<a class="anchor-link" href="#Gerar-a-resposta">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>Como já temos os <code>chunk</code>s mais relevantes, passamos eles ao LLM, junto com a pergunta, para que este gere uma resposta</p>
+<p>Como já temos os <code>chunk</code>s mais relevantes, passamos para o LLM, juntamente com a pergunta, para que este gere uma resposta</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -1434,17 +791,63 @@ By leveraging Karpenter and Amazon EC2 Spot Instances, Neeva has not only optimi
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Quando pedi ao LLM para gerar uma pergunta sobre o documento, também pedi para gerar a resposta correta. Esta é a resposta que o LLM me deu</p>
-<pre><code class="language-Neeva">Neeva
-Gestão Simplificada de Instâncias:
-Karpenter: Ao adotar o Karpenter, Neeva simplificou o processo de provisionamento e gerenciamento de recursos de computação para seus clusters Amazon EKS. O Karpenter provisiona e desprovisiona automaticamente instâncias com base na carga de trabalho, eliminando a necessidade de configurações manuais e reduzindo a complexidade de entender diferentes instâncias de computação.Instâncias Spot: A Neeva aproveitou as Instâncias Spot do Amazon EC2, que são capacidade ociosa do EC2 disponível com um desconto significativo (economia de até 90% no custo). Isso permitiu à empresa controlar os custos enquanto atendia aos seus requisitos de desempenho.Escalabilidade Aprimorada:
-Karpenter: A habilidade do Karpenter de escalar recursos dinamicamente permitiu que a Neeva ativasse novas instâncias rapidamente, permitindo que a empresa iterasse com maior rapidez e realizasse mais experimentos em menos tempo.Instâncias Spot: O uso de Instâncias Spot proporcionou flexibilidade e diversificação de instâncias, facilitando para a Neeva escalar seus recursos de computação de maneira eficiente.Produtividade Melhorada:
-Karpenter: Ao democratizar as mudanças de infraestrutura, o Karpenter permitiu que qualquer engenheiro modificasse as configurações do Kubernetes, reduzindo a dependência de conhecimentos especializados. Isso salvou a equipe da Neeva de até 100 horas por semana de tempo de espera na administração de sistemas.Instâncias Spot: A capacidade de provisionar e desprovisionar rapidamente Instâncias Spot reduziu atrasos na pipeline de desenvolvimento, garantindo que os trabalhos não ficassem presos devido à falta de recursos disponíveis.Eficiência de Custo:
-Karpenter: As melhores práticas do Karpenter para Instâncias Spot, incluindo flexibilidade e diversificação de instâncias, ajudaram a Neeva a usar essas instâncias de forma mais eficaz, mantendo-se dentro do orçamento.Instâncias Spot: As economias de custos ao usar Instâncias Spot permitiram que Neeva executasse trabalhos em larga escala, como indexação, por quase o mesmo custo, mas em uma fração do tempo. Por exemplo, Neeva reduziu seus trabalhos de indexação de 18 horas para apenas 3 horas.Melhor Utilização de Recursos:
+<p>Quando pedi ao LLM que me gerasse uma pergunta sobre o documento, também pedi que me gerasse a resposta correta. Esta é a resposta que o LLM me deu</p>
+<div class="highlight"><pre><span></span>A Neeva utilizou o Karpenter e as Instâncias Spot da Amazon EC2 para melhorar o gerenciamento de infraestrutura e a otimização de custos de várias maneiras:
 
-Karpenter: Karpenter forneceu melhor visibilidade do uso de recursos de computação, permitindo que Neeva monitorasse e otimizasse mais de perto seu consumo de recursos.Instâncias Spot: A combinação de Karpenter e Instâncias Spot permitiu que a Neeva operasse grandes modelos de linguagem de forma mais eficiente, aprimorando a experiência de busca para seus usuários.Em resumo, a adoção do Karpenter e das Amazon EC2 Spot Instances pela Neeva melhorou significativamente a gestão da infraestrutura, a otimização de custos e a eficiência geral do desenvolvimento, permitindo à empresa oferecer melhores experiências de pesquisa sem anúncios aos seus usuários.```
-</code></pre>
-<p>E esta foi a resposta gerada pelo nosso <code>RAG</code>
-Neeva, um motor de busca nativo da nuvem e sem anúncios fundado em 2019, utilizou Karpenter e Amazon EC2 Spot Instances para melhorar significativamente o gerenciamento de sua infraestrutura e a otimização de custos. Veja como:</p>
-<h3 id="Colabora%C3%A7%C3%A3o-Precoce-com-o-KarpenterNo-final-de-2021,-a-Neeva-come%C3%A7ou-a-trabalhar-de-perto-com-a-equipe-do-Karpenter,-experimentando-e-contribuindo-com-corre%C3%A7%C3%B5es-para-uma-vers%C3%A3o-inicial-do-Karpenter.-Essa-colabora%C3%A7%C3%A3o-permitiu-que-a-Neeva-integrasse-o-Karpenter-com-seu-painel-do-Kubernetes,-permitindo-que-a-empresa-coletasse-m%C3%A9tricas-valiosas-sobre-uso-e-desempenho.">Colaboração Precoce com o KarpenterNo final de 2021, a Neeva começou a trabalhar de perto com a equipe do Karpenter, experimentando e contribuindo com correções para uma versão inicial do Karpenter. Essa colaboração permitiu que a Neeva integrasse o Karpenter com seu painel do Kubernetes, permitindo que a empresa coletasse métricas valiosas sobre uso e desempenho.<a class="anchor-link" href="#Colabora%C3%A7%C3%A3o-Precoce-com-o-KarpenterNo-final-de-2021,-a-Neeva-come%C3%A7ou-a-trabalhar-de-perto-com-a-equipe-do-Karpenter,-experimentando-e-contribuindo-com-corre%C3%A7%C3%B5es-para-uma-vers%C3%A3o-inicial-do-Karpenter.-Essa-colabora%C3%A7%C3%A3o-permitiu-que-a-Neeva-integrasse-o-Karpenter-com-seu-painel-do-Kubernetes,-permitindo-que-a-empresa-coletasse-m%C3%A9tricas-valiosas-sobre-uso-e-desempenho.">¶</a></h3><h3 id="Combinando-Inst%C3%A2ncias-Spot-e-Inst%C3%A2ncias-Sob-DemandaNeeva-executa-seus-trabalhos-em-grande-escala,-o-que-pode-levar-a-custos-significativos.-Para-gerenciar-esses-custos-de-forma-eficaz,-a-empresa-adotou-uma-combina%C3%A7%C3%A3o-de-Inst%C3%A2ncias-Spot-do-Amazon-EC2-e-Inst%C3%A2ncias-Sob-Demanda.-As-Inst%C3%A2ncias-Spot-permitem-que-a-Neeva-fa%C3%A7a-lances-em-capacidade-n%C3%A3o-utilizada-do-EC2,-muitas-vezes-a-uma-fra%C3%A7%C3%A3o-do-pre%C3%A7o-Sob-Demanda,-enquanto-as-Inst%C3%A2ncias-Sob-Demanda-fornecem-a-confiabilidade-necess%C3%A1ria-para-pipelines-cr%C3%ADticos.">Combinando Instâncias Spot e Instâncias Sob DemandaNeeva executa seus trabalhos em grande escala, o que pode levar a custos significativos. Para gerenciar esses custos de forma eficaz, a empresa adotou uma combinação de Instâncias Spot do Amazon EC2 e Instâncias Sob Demanda. As Instâncias Spot permitem que a Neeva faça lances em capacidade não utilizada do EC2, muitas vezes a uma fração do preço Sob Demanda, enquanto as Instâncias Sob Demanda fornecem a confiabilidade necessária para pipelines críticos.<a class="anchor-link" href="#Combinando-Inst%C3%A2ncias-Spot-e-Inst%C3%A2ncias-Sob-DemandaNeeva-executa-seus-trabalhos-em-grande-escala,-o-que-pode-levar-a-custos-significativos.-Para-gerenciar-esses-custos-de-forma-eficaz,-a-empresa-adotou-uma-combina%C3%A7%C3%A3o-de-Inst%C3%A2ncias-Spot-do-Amazon-EC2-e-Inst%C3%A2ncias-Sob-Demanda.-As-Inst%C3%A2ncias-Spot-permitem-que-a-Neeva-fa%C3%A7a-lances-em-capacidade-n%C3%A3o-utilizada-do-EC2,-muitas-vezes-a-uma-fra%C3%A7%C3%A3o-do-pre%C3%A7o-Sob-Demanda,-enquanto-as-Inst%C3%A2ncias-Sob-Demanda-fornecem-a-confiabilidade-necess%C3%A1ria-para-pipelines-cr%C3%ADticos.">¶</a></h3><h3 id="Flexibilidade-e-Diversifica%C3%A7%C3%A3o-de-Inst%C3%A2nciasDe-acordo-com-Mohit-Agarwal,-l%C3%ADder-de-engenharia-de-infraestrutura-na-Neeva,-a-ado%C3%A7%C3%A3o-das-melhores-pr%C3%A1ticas-do-Karpenter-para-Spot-Instances,-incluindo-flexibilidade-e-diversifica%C3%A7%C3%A3o-de-inst%C3%A2ncias,-tem-sido-crucial.-Esta-abordagem-garante-que-a-Neeva-possa-ajustar-dinamicamente-seus-recursos-de-computa%C3%A7%C3%A3o-para-atender-a-cargas-de-trabalho-vari%C3%A1veis-enquanto-minimiza-os-custos.">Flexibilidade e Diversificação de InstânciasDe acordo com Mohit Agarwal, líder de engenharia de infraestrutura na Neeva, a adoção das melhores práticas do Karpenter para Spot Instances, incluindo flexibilidade e diversificação de instâncias, tem sido crucial. Esta abordagem garante que a Neeva possa ajustar dinamicamente seus recursos de computação para atender a cargas de trabalho variáveis enquanto minimiza os custos.<a class="anchor-link" href="#Flexibilidade-e-Diversifica%C3%A7%C3%A3o-de-Inst%C3%A2nciasDe-acordo-com-Mohit-Agarwal,-l%C3%ADder-de-engenharia-de-infraestrutura-na-Neeva,-a-ado%C3%A7%C3%A3o-das-melhores-pr%C3%A1ticas-do-Karpenter-para-Spot-Instances,-incluindo-flexibilidade-e-diversifica%C3%A7%C3%A3o-de-inst%C3%A2ncias,-tem-sido-crucial.-Esta-abordagem-garante-que-a-Neeva-possa-ajustar-dinamicamente-seus-recursos-de-computa%C3%A7%C3%A3o-para-atender-a-cargas-de-trabalho-vari%C3%A1veis-enquanto-minimiza-os-custos.">¶</a></h3><h3 id="Melhor-Escalabilidade-e-AgilidadeAo-usar-o-Karpenter-para-provisionar-recursos-de-infraestrutura-para-seus-clusters-Amazon-EKS,-Neeva-alcan%C3%A7ou-v%C3%A1rios-benef%C3%ADcios-importantes:--Escalabilidade:-Neeva-pode-escalar-seus-recursos-computacionais-para-cima-ou-para-baixo-conforme-necess%C3%A1rio,-garantindo-que-sempre-tenha-a-capacidade-necess%C3%A1ria-para-lidar-com-suas-cargas-de-trabalho.--Agilidade:-A-empresa-pode-iterar-rapidamente-e-democratizar-as-mudan%C3%A7as-de-infraestrutura,-reduzindo-o-tempo-gasto-na-administra%C3%A7%C3%A3o-de-sistemas-em-at%C3%A9-100-horas-por-semana.">Melhor Escalabilidade e AgilidadeAo usar o Karpenter para provisionar recursos de infraestrutura para seus clusters Amazon EKS, Neeva alcançou vários benefícios importantes:- <strong>Escalabilidade</strong>: Neeva pode escalar seus recursos computacionais para cima ou para baixo conforme necessário, garantindo que sempre tenha a capacidade necessária para lidar com suas cargas de trabalho.- <strong>Agilidade</strong>: A empresa pode iterar rapidamente e democratizar as mudanças de infraestrutura, reduzindo o tempo gasto na administração de sistemas em até 100 horas por semana.<a class="anchor-link" href="#Melhor-Escalabilidade-e-AgilidadeAo-usar-o-Karpenter-para-provisionar-recursos-de-infraestrutura-para-seus-clusters-Amazon-EKS,-Neeva-alcan%C3%A7ou-v%C3%A1rios-benef%C3%ADcios-importantes:--Escalabilidade:-Neeva-pode-escalar-seus-recursos-computacionais-para-cima-ou-para-baixo-conforme-necess%C3%A1rio,-garantindo-que-sempre-tenha-a-capacidade-necess%C3%A1ria-para-lidar-com-suas-cargas-de-trabalho.--Agilidade:-A-empresa-pode-iterar-rapidamente-e-democratizar-as-mudan%C3%A7as-de-infraestrutura,-reduzindo-o-tempo-gasto-na-administra%C3%A7%C3%A3o-de-sistemas-em-at%C3%A9-100-horas-por-semana.">¶</a></h3><h3 id="Ciclos-de-Desenvolvimento-AprimoradosA-integra%C3%A7%C3%A3o-do-Karpenter-e-das-Spot-Instances-tamb%C3%A9m-acelerou-os-ciclos-de-desenvolvimento-da-Neeva.-A-empresa-agora-pode-lan%C3%A7ar-novos-recursos-e-melhorias-mais-rapidamente,-o-que-%C3%A9-essencial-para-manter-uma-vantagem-competitiva-no-mercado-de-mecanismos-de-busca.">Ciclos de Desenvolvimento AprimoradosA integração do Karpenter e das Spot Instances também acelerou os ciclos de desenvolvimento da Neeva. A empresa agora pode lançar novos recursos e melhorias mais rapidamente, o que é essencial para manter uma vantagem competitiva no mercado de mecanismos de busca.<a class="anchor-link" href="#Ciclos-de-Desenvolvimento-AprimoradosA-integra%C3%A7%C3%A3o-do-Karpenter-e-das-Spot-Instances-tamb%C3%A9m-acelerou-os-ciclos-de-desenvolvimento-da-Neeva.-A-empresa-agora-pode-lan%C3%A7ar-novos-recursos-e-melhorias-mais-rapidamente,-o-que-%C3%A9-essencial-para-manter-uma-vantagem-competitiva-no-mercado-de-mecanismos-de-busca.">¶</a></h3><h3 id="Economia-de-Custos-e-Controle-Or%C3%A7ament%C3%A1rioUsando-Inst%C3%A2ncias-Spot,-a-Neeva-conseguiu-permanecer-dentro-do-seu-or%C3%A7amento-enquanto-atendia-aos-seus-requisitos-de-desempenho.-Esta-otimiza%C3%A7%C3%A3o-de-custos-%C3%A9-crucial-para-uma-empresa-que-prioriza-experi%C3%AAncias-voltadas-para-o-usu%C3%A1rio-e-n%C3%A3o-tem-incentivos-concorrentes-de-publicidade.">Economia de Custos e Controle OrçamentárioUsando Instâncias Spot, a Neeva conseguiu permanecer dentro do seu orçamento enquanto atendia aos seus requisitos de desempenho. Esta otimização de custos é crucial para uma empresa que prioriza experiências voltadas para o usuário e não tem incentivos concorrentes de publicidade.<a class="anchor-link" href="#Economia-de-Custos-e-Controle-Or%C3%A7ament%C3%A1rioUsando-Inst%C3%A2ncias-Spot,-a-Neeva-conseguiu-permanecer-dentro-do-seu-or%C3%A7amento-enquanto-atendia-aos-seus-requisitos-de-desempenho.-Esta-otimiza%C3%A7%C3%A3o-de-custos-%C3%A9-crucial-para-uma-empresa-que-prioriza-experi%C3%AAncias-voltadas-para-o-usu%C3%A1rio-e-n%C3%A3o-tem-incentivos-concorrentes-de-publicidade.">¶</a></h3><h3 id="Planos-FuturosNeeva-est%C3%A1-comprometida-com-a-continua%C3%A7%C3%A3o-de-sua-inova%C3%A7%C3%A3o-e-expans%C3%A3o.-A-empresa-planeja-lan%C3%A7ar-se-em-novas-regi%C3%B5es-e-melhorar-ainda-mais-seu-motor-de-busca,-enquanto-mant%C3%A9m-a-efici%C3%AAncia-de-custos.-Como-observa-Mohit-Agarwal,-%22A-maior-parte-do-nosso-processamento-%C3%A9-ou-ser%C3%A1-gerenciada-usando-Karpenter-daqui-para-frente.%22">Planos FuturosNeeva está comprometida com a continuação de sua inovação e expansão. A empresa planeja lançar-se em novas regiões e melhorar ainda mais seu motor de busca, enquanto mantém a eficiência de custos. Como observa Mohit Agarwal, "A maior parte do nosso processamento é ou será gerenciada usando Karpenter daqui para frente."<a class="anchor-link" href="#Planos-FuturosNeeva-est%C3%A1-comprometida-com-a-continua%C3%A7%C3%A3o-de-sua-inova%C3%A7%C3%A3o-e-expans%C3%A3o.-A-empresa-planeja-lan%C3%A7ar-se-em-novas-regi%C3%B5es-e-melhorar-ainda-mais-seu-motor-de-busca,-enquanto-mant%C3%A9m-a-efici%C3%AAncia-de-custos.-Como-observa-Mohit-Agarwal,-%22A-maior-parte-do-nosso-processamento-%C3%A9-ou-ser%C3%A1-gerenciada-usando-Karpenter-daqui-para-frente.%22">¶</a></h3><h3 id="Conclus%C3%A3oAo-aproveitar-o-Karpenter-e-as-Inst%C3%A2ncias-Spot-do-Amazon-EC2,-a-Neeva-n%C3%A3o-apenas-otimizou-seus-custos-de-infraestrutura,-mas-tamb%C3%A9m-aprimorou-sua-escalabilidade,-agilidade-e-velocidade-de-desenvolvimento.-Essa-abordagem-estrat%C3%A9gica-posicionou-a-Neeva-para-oferecer-experi%C3%AAncias-de-busca-de-alta-qualidade,-sem-an%C3%BAncios,-aos-seus-usu%C3%A1rios,-enquanto-mant%C3%A9m-um-forte-foco-no-controle-de-custos-e-na-inova%C3%A7%C3%A3o.">ConclusãoAo aproveitar o Karpenter e as Instâncias Spot do Amazon EC2, a Neeva não apenas otimizou seus custos de infraestrutura, mas também aprimorou sua escalabilidade, agilidade e velocidade de desenvolvimento. Essa abordagem estratégica posicionou a Neeva para oferecer experiências de busca de alta qualidade, sem anúncios, aos seus usuários, enquanto mantém um forte foco no controle de custos e na inovação.<a class="anchor-link" href="#Conclus%C3%A3oAo-aproveitar-o-Karpenter-e-as-Inst%C3%A2ncias-Spot-do-Amazon-EC2,-a-Neeva-n%C3%A3o-apenas-otimizou-seus-custos-de-infraestrutura,-mas-tamb%C3%A9m-aprimorou-sua-escalabilidade,-agilidade-e-velocidade-de-desenvolvimento.-Essa-abordagem-estrat%C3%A9gica-posicionou-a-Neeva-para-oferecer-experi%C3%AAncias-de-busca-de-alta-qualidade,-sem-an%C3%BAncios,-aos-seus-usu%C3%A1rios,-enquanto-mant%C3%A9m-um-forte-foco-no-controle-de-custos-e-na-inova%C3%A7%C3%A3o.">¶</a></h3><p>Por isso podemos concluir que o <code>RAG</code> funcionou corretamente!!!</p>
+Gerenciamento de Instâncias Simplificado:
+
+Karpenter: Ao adotar o Karpenter, a Neeva simplificou o processo de provisionamento e gerenciamento de recursos de computação para seus clusters Amazon EKS. O Karpenter provisiona e desprovisiona instâncias automaticamente com base na carga de trabalho, eliminando a necessidade de configurações manuais e reduzindo a complexidade de entender diferentes instâncias de computação.
+Instâncias Spot: A Neeva aproveitou as Instâncias Spot da Amazon EC2, que são capacidades EC2 não utilizadas disponíveis com um desconto significativo (até 90% de economia de custos). Isso permitiu que a empresa controlasse os custos ao mesmo tempo em que atendia aos seus requisitos de desempenho.
+Escalabilidade Aprimorada:
+
+Karpenter: A capacidade do Karpenter de dimensionar dinamicamente os recursos permitiu que a Neeva iniciasse novas instâncias rapidamente, permitindo que a empresa iterasse com uma velocidade maior e executasse mais experimentos em menos tempo.
+Instâncias Spot: O uso de Instâncias Spot forneceu flexibilidade e diversificação de instâncias, tornando mais fácil para a Neeva dimensionar seus recursos de computação de forma eficiente.
+Melhoria da Produtividade:
+
+Karpenter: Ao democratizar as alterações de infraestrutura, o Karpenter permitiu que qualquer engenheiro modificasse as configurações do Kubernetes, reduzindo a dependência de especialidades. Isso economizou para a equipe da Neeva até 100 horas por semana de tempo de espera na administração de sistemas.
+Instâncias Spot: A capacidade de provisionar e desprovisionar rapidamente instâncias Spot reduziu os atrasos no pipeline de desenvolvimento, garantindo que os trabalhos não ficassem presos devido à falta de recursos disponíveis.
+Eficiência de Custo:
+
+Karpenter: As melhores práticas do Karpenter para Instâncias Spot, incluindo flexibilidade e diversificação de instâncias, ajudaram a Neeva a usar essas instâncias de forma mais eficaz, permanecendo dentro do orçamento.
+Instâncias Spot: As economias de custo decorrentes do uso de Instâncias Spot permitiram que a Neeva executasse trabalhos em larga escala, como indexação, por quase o mesmo custo, mas em uma fração do tempo. Por exemplo, a Neeva reduziu seus trabalhos de indexação de 18 horas para apenas 3 horas.
+Melhor Utilização de Recursos:
+
+Karpenter: O Karpenter forneceu uma visibilidade melhor sobre o uso de recursos de computação, permitindo que a Neeva acompanhasse e otimizasse seu consumo de recursos de forma mais próxima.
+Instâncias Spot: A combinação de Karpenter e Instâncias Spot permitiu que a Neeva executasse grandes modelos de linguagem de forma mais eficiente, aprimorando a experiência de pesquisa para seus usuários.
+Em resumo, a adoção do Karpenter e das Instâncias Spot da Amazon EC2 pela Neeva melhorou significativamente a gestão de infraestrutura, a otimização de custos e a eficiência geral de desenvolvimento, permitindo que a empresa forneça melhores experiências de busca sem anúncios aos seus usuários.
+</pre></div>
+<p>E esta foi a resposta gerada pelo nosso <code>RAG</code></p>
+<div class="highlight"><pre><span></span>Neeva, um mecanismo de busca nativo em nuvem e sem anúncios, fundado em 2019, aproveitou o Karpenter e as Instâncias Spot da Amazon EC2 para melhorar significativamente a gestão de sua infraestrutura e a otimização de custos. Veja como:
+
+### Colaboração Inicial com Karpenter
+No es necesario traducir a portugues, el texto dice que se debe traducir al portugues texto markdown, pero el texto proporcionado ya está en español, sin embargo, si se refiere a traducir al portugues, aquí está la traducción:
+
+Fim de 2021, a Neeva começou a trabalhar em estreita colaboração com a equipe do Karpenter, experimentando e contribuindo com correções para uma versão inicial do Karpenter. Essa colaboração permitiu que a Neeva integrasse o Karpenter com o painel do Kubernetes, habilitando a empresa a coletar métricas valiosas sobre uso e desempenho.
+
+### Combinando Instâncias Spot e Instâncias On-Demand
+A Neeva executa seus trabalhos em larga escala, o que pode levar a custos significativos. Para gerenciar esses custos de forma eficaz, a empresa adotou uma combinação de Instâncias Spot da Amazon EC2 e Instâncias On-Demand. As Instâncias Spot permitem que a Neeva faça ofertas sobre a capacidade não utilizada da EC2, frequentemente por uma fração do preço On-Demand, enquanto as Instâncias On-Demand fornecem a confiabilidade necessária para pipelines críticos.
+
+### Flexibilidade e Diversificação de Instâncias
+De acordo com Mohit Agarwal, líder de engenharia de infraestrutura da Neeva, a adoção de Karpenter das melhores práticas para Instâncias Spot, incluindo flexibilidade e diversificação de instâncias, foi crucial. Essa abordagem garante que a Neeva possa ajustar dinamicamente seus recursos de computação para atender a cargas de trabalho variadas, minimizando os custos.
+
+### Melhorada Escalabilidade e Agilidade
+Ao utilizar o Karpenter para provisionar recursos de infraestrutura para seus clusters Amazon EKS, a Neeva alcançou vários benefícios importantes:
+- **Escalabilidade**: Neeva pode dimensionar seus recursos de computação para cima ou para baixo conforme necessário, garantindo que sempre tenha a capacidade necessária para lidar com suas cargas de trabalho.
+- **Agilidade**: A empresa pode iterar rapidamente e democratizar as alterações de infraestrutura, reduzindo o tempo gasto em administração de sistemas em até 100 horas por semana.
+
+### Ciclos de Desenvolvimento Aprimorados
+A integração do Karpenter e das Instâncias Spot também acelerou os ciclos de desenvolvimento da Neeva. A empresa agora pode lançar novos recursos e melhorias mais rapidamente, o que é essencial para manter uma vantagem competitiva no mercado de mecanismos de busca.
+
+### Economia de Custo e Controle Orçamentário
+Usando Instâncias Spot, a Neeva conseguiu permanecer dentro do seu orçamento ao mesmo tempo em que atende aos seus requisitos de desempenho. Essa otimização de custos é fundamental para uma empresa que prioriza experiências centradas no usuário e não tem incentivos concorrentes de publicidade.
+
+### Planos Futuros
+A Neeva está comprometida em continuar sua inovação e expansão. A empresa planeja lançar em novas regiões e melhorar ainda mais seu mecanismo de busca, mantendo ao mesmo tempo a eficiência de custos. Como Mohit Agarwal observa, "A maior parte de nosso processamento é ou será gerenciada usando Karpenter em frente."
+
+### Conclusão
+Aproveitando Karpenter e Instâncias Spot da Amazon EC2, a Neeva não apenas otimizou seus custos de infraestrutura, mas também melhorou sua escalabilidade, agilidade e velocidade de desenvolvimento. Essa abordagem estratégica posicionou a Neeva para oferecer experiências de busca de alta qualidade e sem anúncios aos seus usuários, mantendo um forte foco no controle de custos e inovação.
+</pre></div>
+<p>Por lo que podemos concluir que el <code>RAG</code> ha funcionado correctamente!!!</p>
+<p>Debería ser:</p>
+<p>Por lo que podemos concluir que o <code>RAG</code> funcionou corretamente!!!</p>
 </section>

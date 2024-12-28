@@ -4,6 +4,7 @@ from gemini import Gemini
 from gpt4o import GPT4o
 from groq_llm import Groq_llama3_1_70B
 from qwen2_5_72B import Qwen2_5_72B
+from ollama_qwen_2_5_72B import Ollama_qwen2_5_72B
 from notebook_utils import Notebook
 
 KEY_ORIGINAL = "original"
@@ -13,9 +14,7 @@ SYSTEM_INSTRUCTION = """
     Eres un experto corrector de texto markdown. Tu misión es corregir ortograficamente texto markdown.
 
     Enfoque en la corrección: Por favor, revisa el siguiente texto y corrige únicamente los errores ortográficos, sin modificar la estructura, el estilo ni el contenido.
-    No hagas cambios del tipo 'Con estos modelos podemos hacer...' a 'Con estos modelos se puede hacer...', tampoco quiero cambios del tipo 'Podemos obtener la longitud de nuestro string mediante la función `len()`' a 'Podemos obtener la longitud de nuestro string mediante la función `len()`.' es decir, no añadas puntos al final de la oración, solo corrige si hay errores de ortografía.
     Como el texto va a estar en español, si hay palabras en inglés, no las corrijas, se han puesto aposta.
-    Si hay palabras tipo `embedding`s no lo corrijas a `embeddings`, se han puesto aposta.
 
     Te van a pasar textos markdown y tienes que corregirlos ortograficamente en español. Responde solo con la corrección, responde con el texto que hay y la corrección que sugieres.
 
@@ -37,7 +36,8 @@ GEMINI_LLM = "Gemini"
 GPT4O_LLM = "GPT4o"
 GROQ_LLM = "Groq_llama3_1_70B"
 QWEN_2_5_72B = "Qwen2.5-72B"
-MODEL = QWEN_2_5_72B
+OLLAMA_QWEN_2_5_72B = "Ollama_qwen2_5_72B"
+MODEL = OLLAMA_QWEN_2_5_72B
 
 def apply_corrections(model, line, debug=False):
     # If line is empty, return it
@@ -100,6 +100,8 @@ def ortografic_corrections_jupyter_notebook(notebook_path):
         model = Groq_llama3_1_70B(system_instruction=SYSTEM_INSTRUCTION)
     elif MODEL == QWEN_2_5_72B:
         model = Qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION, system_check=SYSTEM_CHECK, num_checks=NUMBER_OF_CHECKS)
+    elif MODEL == OLLAMA_QWEN_2_5_72B:
+        model = Ollama_qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION, system_check=SYSTEM_CHECK, num_checks=NUMBER_OF_CHECKS)
 
     # Get notebook content as a dictionary
     notebook = Notebook(notebook_path)

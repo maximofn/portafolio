@@ -24,6 +24,7 @@ KEYWORDS_ES_KEY = 'keywords_es'
 KEYWORDS_EN_KEY = 'keywords_en'
 KEYWORDS_PT_KEY = 'keywords_pt'
 IMAGE_KEY = 'image'
+IMAGE_HOVER_PATH_KEY = 'image_hover_path'
 DATE_KEY = 'date'
 
 
@@ -79,12 +80,13 @@ def get_notebook_metadata(notebook_path):
         is_keywords_en_in_metadata = KEYWORDS_EN_KEY in metadata[MAXIMO_FN_KEY].keys()
         is_keywords_pt_in_metadata = KEYWORDS_PT_KEY in metadata[MAXIMO_FN_KEY].keys()
         is_image_in_metadata = IMAGE_KEY in metadata[MAXIMO_FN_KEY].keys()
+        is_image_hover_path_in_metadata = IMAGE_HOVER_PATH_KEY in metadata[MAXIMO_FN_KEY].keys()
         is_date_in_metadata = DATE_KEY in metadata[MAXIMO_FN_KEY].keys()
 
         if is_title_es_in_metadata and is_title_en_in_metadata and is_title_pt_in_metadata and is_end_url_in_metadata and \
             is_description_es_in_metadata and is_description_en_in_metadata and is_description_pt_in_metadata and \
             is_keywords_es_in_metadata and is_keywords_en_in_metadata and is_keywords_pt_in_metadata and \
-            is_image_in_metadata and is_date_in_metadata:
+            is_image_in_metadata and is_image_hover_path_in_metadata and is_date_in_metadata:
                 title_es = metadata[MAXIMO_FN_KEY][TITLE_ES_KEY]
                 title_en = metadata[MAXIMO_FN_KEY][TITLE_EN_KEY]
                 title_pt = metadata[MAXIMO_FN_KEY][TITLE_PT_KEY]
@@ -96,6 +98,7 @@ def get_notebook_metadata(notebook_path):
                 keywords_en = metadata[MAXIMO_FN_KEY][KEYWORDS_EN_KEY]
                 keywords_pt = metadata[MAXIMO_FN_KEY][KEYWORDS_PT_KEY]
                 image = metadata[MAXIMO_FN_KEY][IMAGE_KEY]
+                image_hover_path = metadata[MAXIMO_FN_KEY][IMAGE_HOVER_PATH_KEY]
                 witdh, height = get_image_width_height(image)
                 image_extension = get_image_extension(image)
                 date = metadata[MAXIMO_FN_KEY][DATE_KEY]
@@ -113,13 +116,14 @@ def get_notebook_metadata(notebook_path):
             if not is_keywords_en_in_metadata: print(f'\tNo {KEYWORDS_EN_KEY} key in metadata')
             if not is_keywords_pt_in_metadata: print(f'\tNo {KEYWORDS_PT_KEY} key in metadata')
             if not is_image_in_metadata: print(f'\tNo {IMAGE_KEY} key in metadata')
+            if not is_image_hover_path_in_metadata: print(f'\tNo {IMAGE_HOVER_PATH_KEY} key in metadata')
             if not is_date_in_metadata: print(f'\tNo {DATE_KEY} key in metadata')
 
     else:
         print(f'No {MAXIMO_FN_KEY} key in metadata')
 
     return title_es, title_en, title_pt, end_url, description_es, description_en, description_pt, \
-        keywords_es, keywords_en, keywords_pt, image, witdh, height, image_extension, date
+        keywords_es, keywords_en, keywords_pt, image, image_hover_path, witdh, height, image_extension, date
 
 def check_if_notebook_metadata_is_ok(metadata):
     print("Metadata of notebook:")
@@ -134,10 +138,11 @@ def check_if_notebook_metadata_is_ok(metadata):
     print(f"\tKeywords EN: {metadata[8]}")
     print(f"\tKeywords PT: {metadata[9]}")
     print(f"\tImage: {metadata[10]}")
-    print(f"\tWidth: {metadata[11]}")
-    print(f"\tHeight: {metadata[12]}")
-    print(f"\tImage extension: {metadata[13]}")
-    print(f"\tDate: {metadata[14]}")
+    print(f"\tImage hover path: {metadata[11]}")
+    print(f"\tWidth: {metadata[12]}")
+    print(f"\tHeight: {metadata[13]}")
+    print(f"\tImage extension: {metadata[14]}")
+    print(f"\tDate: {metadata[15]}")
     if BYPASS_CHECK_METADATA:
         return True
     if ask_for_something("Is this metadata ok? (y/n)", ['y', 'yes'], ['n', 'no']):

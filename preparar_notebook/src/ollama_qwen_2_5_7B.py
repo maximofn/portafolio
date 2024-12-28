@@ -5,7 +5,7 @@ import torch
 from torch import cosine_similarity
 import numpy as np
 
-class Ollama_qwen2_5_72B:
+class Ollama_qwen2_5_7B:
     def __init__(self, system_instruction, system_check, num_checks, temperature=0.7, top_p=0.7, max_tokens=1024):
         self.system_instruction = system_instruction
         self.system_check = system_check

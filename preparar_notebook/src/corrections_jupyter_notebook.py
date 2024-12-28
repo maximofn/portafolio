@@ -4,7 +4,7 @@ from gemini import Gemini
 from gpt4o import GPT4o
 from groq_llm import Groq_llama3_1_70B
 from qwen2_5_72B import Qwen2_5_72B
-from ollama_qwen_2_5_72B import Ollama_qwen2_5_72B
+from ollama_qwen_2_5_7B import Ollama_qwen2_5_7B
 from notebook_utils import Notebook
 
 KEY_ORIGINAL = "original"
@@ -36,8 +36,8 @@ GEMINI_LLM = "Gemini"
 GPT4O_LLM = "GPT4o"
 GROQ_LLM = "Groq_llama3_1_70B"
 QWEN_2_5_72B = "Qwen2.5-72B"
-OLLAMA_QWEN_2_5_72B = "Ollama_qwen2_5_72B"
-MODEL = OLLAMA_QWEN_2_5_72B
+OLLAMA_QWEN_2_5_7B = "Ollama_qwen2_5_7B"
+MODEL = OLLAMA_QWEN_2_5_7B
 
 def apply_corrections(model, line, debug=False):
     # If line is empty, return it
@@ -100,8 +100,8 @@ def ortografic_corrections_jupyter_notebook(notebook_path):
         model = Groq_llama3_1_70B(system_instruction=SYSTEM_INSTRUCTION)
     elif MODEL == QWEN_2_5_72B:
         model = Qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION, system_check=SYSTEM_CHECK, num_checks=NUMBER_OF_CHECKS)
-    elif MODEL == OLLAMA_QWEN_2_5_72B:
-        model = Ollama_qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION, system_check=SYSTEM_CHECK, num_checks=NUMBER_OF_CHECKS)
+    elif MODEL == OLLAMA_QWEN_2_5_7B:
+        model = Ollama_qwen2_5_7B(system_instruction=SYSTEM_INSTRUCTION, system_check=SYSTEM_CHECK, num_checks=NUMBER_OF_CHECKS)
 
     # Get notebook content as a dictionary
     notebook = Notebook(notebook_path)

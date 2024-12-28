@@ -1,7 +1,9 @@
 from pathlib import Path
 import json
+
 def add_page_to_its_json_file_from_metadata(metadata, notebook_path):
-    debug = True
+    debug = False
+
     title_es = metadata[0]
     title_en = metadata[1]
     title_pt = metadata[2]
@@ -19,7 +21,7 @@ def add_page_to_its_json_file_from_metadata(metadata, notebook_path):
     image_extension = metadata[14]
     date = metadata[15]
 
-    print(f"Notebook path: {notebook_path}")
+    if debug: print(f"Notebook path: {notebook_path}")
 
     # json file path
     json_file_path = Path(notebook_path).parent.parent / "portfolio"
@@ -29,7 +31,7 @@ def add_page_to_its_json_file_from_metadata(metadata, notebook_path):
         json_file_path = json_file_path / "last_tips.json"
     else: 
         print(f"Unknown notebook path: {notebook_path}")
-        return
+        exit(1)
     if debug: print(f"JSON file path: {json_file_path}")
 
     # Read the json file

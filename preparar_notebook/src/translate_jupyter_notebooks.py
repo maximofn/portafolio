@@ -3,6 +3,7 @@ from gemini import Gemini
 from gpt4o import GPT4o
 from groq_llm import Groq_llama3_1_70B
 from qwen2_5_72B import Qwen2_5_72B
+from ollama_qwen_2_5_7B import Ollama_qwen2_5_7B
 from llama_3_3_70B import Llama_3_3_70B
 from notebook_utils import Notebook
 import re
@@ -48,7 +49,7 @@ SYSTEM_INSTRUCTION_NOTEBOOK_TRANSLATION_CHECKER = """
     Recuerda, responde solo lo que te pido, tu respuesta forma parte de un script de automatización que va a comprobar si tu salida es una de las esperadas.
 """
 NUMBER_OF_PHRASE_CHECKS = 0
-NUMBER_OF_NOTEBOOK_CHECKS = 3
+NUMBER_OF_NOTEBOOK_CHECKS = 0
 DISCLAIMER_EN = " > Disclaimer: This post has been translated to English using a machine translation model. Please, let me know if you find any mistakes."
 DISCLAIMER_PT = " > Aviso: Este post foi traduzido para o português usando um modelo de tradução automática. Por favor, me avise se encontrar algum erro."
 GEMINI_LLM = "Gemini"
@@ -56,13 +57,25 @@ GPT4o_LLM = "GPT4o"
 GROQ_LLM = "Groq_llama3_1_70B"
 QWEN_2_5_72B = "Qwen2.5-72B"
 LLAMA_3_3_70B = "Llama3.3-70B"
-TRANSLATOR_MODEL = LLAMA_3_3_70B
+OLLAMA_QWEN_2_5_7B = "Ollama_qwen2_5_7B"
+TRANSLATOR_MODEL = OLLAMA_QWEN_2_5_7B
 CHECKER_MODEL = GEMINI_LLM
 
-def translate_text(model, line):
+def translate_text(model, line, notebook_number):
     # if line has not text, return it. Check with regex if line has only spaces
     if re.match(r"^\s*$", line):
         return line
+
+    # If line is start or end of highlight markdown
+    if line.startswith("```"):
+        return line
+
+    # If line is only 'o'
+    if line.lower() == "o":
+        if notebook_number == 0:
+            return "or"
+        else:
+            return "o"
     
     # Translate line with the model
     correction_string = model.chat(line)
@@ -145,6 +158,12 @@ def translate_jupyter_notebook(notebook_path):
     elif TRANSLATOR_MODEL == QWEN_2_5_72B:
         translator_model_en = Qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION_EN, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
         translator_model_pt = Qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION_PT, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
+    elif TRANSLATOR_MODEL == LLAMA_3_3_70B:
+        translator_model_en = Llama_3_3_70B(system_instruction=SYSTEM_INSTRUCTION_EN, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
+        translator_model_pt = Llama_3_3_70B(system_instruction=SYSTEM_INSTRUCTION_PT, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
+    elif TRANSLATOR_MODEL == OLLAMA_QWEN_2_5_7B:
+        translator_model_en = Ollama_qwen2_5_7B(system_instruction=SYSTEM_INSTRUCTION_EN, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
+        translator_model_pt = Ollama_qwen2_5_7B(system_instruction=SYSTEM_INSTRUCTION_PT, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
     translations_models = [translator_model_en, translator_model_pt]
 
     # load checker LLM
@@ -185,10 +204,10 @@ def translate_jupyter_notebook(notebook_path):
         if cell['cell_type'] == 'markdown':
             for notebook_number, notebook in enumerate(target_notebooks):
                 if type(cell['source']) == str:
-                    target_cells[notebook_number][cell_counter]['source'] = translate_text(translations_models[notebook_number], cell['source'])
+                    target_cells[notebook_number][cell_counter]['source'] = translate_text(translations_models[notebook_number], cell['source'], notebook_number)
                 elif type(cell['source']) == list:
                     for number_line, line in enumerate(cell['source']):
-                        target_cells[notebook_number][cell_counter]['source'][number_line] = translate_text(translations_models[notebook_number], line)
+                        target_cells[notebook_number][cell_counter]['source'][number_line] = translate_text(translations_models[notebook_number], line, notebook_number)
             markdown_cell_counter += 1
         bar.set_description(f"\t\tCell {markdown_cell_counter}/{total_markdown_cells}")
     print(f"\tEnd of translation")

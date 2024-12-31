@@ -66,6 +66,7 @@ clases = [
     'gu',
     'nx',
     'gh',
+    'ge',
 ]
 
 def check_for_new_classes(path_file):

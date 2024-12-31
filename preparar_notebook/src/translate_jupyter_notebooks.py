@@ -58,7 +58,7 @@ GROQ_LLM = "Groq_llama3_1_70B"
 QWEN_2_5_72B = "Qwen2.5-72B"
 LLAMA_3_3_70B = "Llama3.3-70B"
 OLLAMA_QWEN_2_5_7B = "Ollama_qwen2_5_7B"
-TRANSLATOR_MODEL = OLLAMA_QWEN_2_5_7B
+TRANSLATOR_MODEL = QWEN_2_5_72B
 CHECKER_MODEL = GEMINI_LLM
 
 def translate_text(model, line, notebook_number):

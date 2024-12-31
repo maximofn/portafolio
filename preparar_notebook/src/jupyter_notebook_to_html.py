@@ -244,7 +244,7 @@ def convert_to_html(notebook_path, metadata, notebook_title):
     end_url = metadata[3]
     descriptions_list = [metadata[4], metadata[5], metadata[6]]
     keywords_list = [metadata[7], metadata[8], metadata[9]]
-    image, witdh, height, image_extension, date = metadata[10], metadata[11], metadata[12], metadata[13], metadata[14]
+    image, image_hover_path, witdh, height, image_extension, date = metadata[10], metadata[11], metadata[12], metadata[13], metadata[14], metadata[15]
 
     # Convert the notebooks to html
     for notebook_number, notebook in enumerate(notebook_paths):

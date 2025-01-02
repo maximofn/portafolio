@@ -50,22 +50,24 @@ const closing_brace = '}';
       <a class="anchor-link" href="#Funci%C3%B3n-para-dividir-la-documentaci%C3%B3n-en-chunks"><h3>Función para dividir la documentación en <code>chunk</code>s</h3></a>
       <a class="anchor-link" href="#Funci%C3%B3n-para-generar-embeddings-de-un-chunk"><h3>Función para generar embeddings de un <code>chunk</code></h3></a>
       <a class="anchor-link" href="#Documentos-con-los-que-vamos-a-probar"><h3>Documentos con los que vamos a probar</h3></a>
-      <a class="anchor-link" href="#A-crear-los-chunks!"><h3>A crear los <code>chunk</code>s!</h3></a>
       <a class="anchor-link" href="#Cargar-los-chunks-en-la-base-de-datos-vectorial"><h3>Cargar los <code>chunk</code>s en la base de datos vectorial</h3></a>
       <a class="anchor-link" href="#Preguntas"><h2>Preguntas</h2></a>
       <a class="anchor-link" href="#Obtener-el-chunk-correcto"><h3>Obtener el <code>chunk</code> correcto</h3></a>
       <a class="anchor-link" href="#Generar-la-respuesta"><h3>Generar la respuesta</h3></a>
+      <a class="anchor-link" href="#L%C3%ADmites-de-naive-RAG"><h2>Límites de naive RAG</h2></a>
+      <a class="anchor-link" href="#L%C3%ADmites-en-la-b%C3%BAsqueda-de-informaci%C3%B3n-(retriever)"><h3>Límites en la búsqueda de información (retriever)</h3></a>
+      <a class="anchor-link" href="#L%C3%ADmites-en-la-generaci%C3%B3n-de-respuestas-(generator)"><h3>Límites en la generación de respuestas (generator)</h3></a>
     </aside>
 
 
     <div class="post-body-content">
       
       <section class="section-block-markdown-cell">
-      <h1 id="RAG:-Fundamentos-y-t%C3%A9cnicas-avanzadas">RAG: Fundamentos y técnicas avanzadas<a class="anchor-link" href="#RAG:-Fundamentos-y-t%C3%A9cnicas-avanzadas"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 0" src={svg_paths.link_svg_path}/></a></h1>
+      <h1 id="RAG:-Fundamentos-y-naive-RAG">RAG: Fundamentos y naive RAG<a class="anchor-link" href="#RAG:-Fundamentos-y-naive-RAG"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 0" src={svg_paths.link_svg_path}/></a></h1>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>En este post vamos a ver en qué consiste la técnica de <code>RAG</code> (<code>Retrieval Augmented Generation</code>) y cómo se puede implementar en un modelo de lenguaje.</p>
+      <p>En este post vamos a ver en qué consiste la técnica de <code>RAG</code> (<code>Retrieval Augmented Generation</code>) y cómo se puede implementar en un modelo de lenguaje. Además, lo haremos con la arquitectura de RAG más básica, llamada <code>naive RAG</code>.</p>
       </section>
       
       <section class="section-block-markdown-cell">
@@ -77,12 +79,12 @@ const closing_brace = '}';
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>Para poder usar la <code>API Inference</code> de HuggingFace, lo primero que necesitas es tener una cuenta en HuggingFace, una vez la tengas hay que ir a <a href="https://huggingface.co/settings/keys" target="_blank" rel="nofollow noreferrer">Access tokens</a> en la configuración de tu perfil y generar un token nuevo.</p>
-      <p>Hay que ponerle un nombre, en mi caso le voy a poner <code>rag-fundamentals</code> y habilitar el permiso <code>Make calls to serverless Inference API</code>. Se nos creará un token que tenemos que copiar</p>
+      <p>Para poder usar la <code>API Inference</code> de HuggingFace, lo primero que necesitas es tener una cuenta en HuggingFace. Una vez la tengas, hay que ir a <a href="https://huggingface.co/settings/keys" target="_blank" rel="nofollow noreferrer">Access tokens</a> en la configuración de tu perfil y generar un nuevo token.</p>
+      <p>Hay que ponerle un nombre. En mi caso, le voy a poner <code>rag-fundamentals</code> y habilitar el permiso <code>Make calls to serverless Inference API</code>. Nos creará un token que tenemos que copiar</p>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>Para gestionar el token vamos a crear un archivo en la misma ruta en la que estemos trabajando llamado <code>.env</code> y vamos a poner el token que hemos copiado en el archivo de la siguiente manera:</p>
+      <p>Para gestionar el token, vamos a crear un archivo en la misma ruta en la que estemos trabajando llamado ".env" y vamos a poner el token que hemos copiado en el archivo de la siguiente manera:</p>
       <div class="highlight"><pre><span></span><span class="nv">RAG_FUNDAMENTALS_ADVANCE_TECHNIQUES_TOKEN</span><span class="o">=</span><span class="s2">"hf_...."</span>
       </pre></div>
       </section>
@@ -118,7 +120,7 @@ const closing_brace = '}';
 
       
       <section class="section-block-markdown-cell">
-      <p>Ahora que tenemos un token, creamos un cliente, para ello necesitamos tener instalada la librería <code>huggingface_hub</code>, que lo hacemos mediante conda o pip</p>
+      <p>Ahora que tenemos un token, creamos un cliente. Para ello, necesitamos tener instalada la librería <code>huggingface_hub</code>. La instalamos mediante conda o pip.</p>
       <div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>huggingface_hub
       </pre></div>
       <p>o</p>
@@ -199,7 +201,7 @@ const closing_brace = '}';
       </section>
       
       <section class="section-block-markdown-cell">
-      <p><code>RAG</code> son las siglas de <code>Retrieval Augmented Generation</code>, es una técnica creada para obtener información de documentos. Aunque los LLMs pueden llegar a ser muy poderosos y tener mucho conocimiento, nunca van a ser capaces de responderte sobre unos documentos privados, como informes de tu empresa, documentación interna, etc. Por ello se creó <code>RAG</code>, para poder usar estos LLMs en esa documentación privada.</p>
+      <p><code>RAG</code> son las siglas de <code>Retrieval Augmented Generation</code>, es una técnica creada para obtener información de documentos. Aunque los LLMs pueden llegar a ser muy poderosos y tener mucho conocimiento, nunca van a ser capaces de responder sobre unos documentos privados, como informes de tu empresa, documentación interna, etc. Por ello se creó <code>RAG</code>, para poder usar estos LLMs en esa documentación privada.</p>
       <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="What is RAG?" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/RAG.webp" width="1600" height="900"/></p>
       </section>
       
@@ -225,7 +227,7 @@ const closing_brace = '}';
       
       <section class="section-block-markdown-cell">
       <p>Hemos dicho que la documentación se divide en <code>chunk</code>s y se le pasa al LLM el <code>chunk</code> en el que está la respuesta a la pregunta del usuario. Pero, ¿cómo se sabe en qué <code>chunk</code> está la respuesta? Para ello lo que se hace es convertir la pregunta del usuario a un embedding, y se calcula la similitud entre el embedding de la pregunta y los embeddings de los <code>chunk</code>s. De modo que el <code>chunk</code> con mayor similitud es el que se le pasa al LLM.</p>
-      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="RAG - embeddings similarity" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/rag-chunk_retreival.webp" width="1374" height="351"/></p>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/rag-chunk_retreival.webp" width="1374" height="351"/></p>
       </section>
       
       <section class="section-block-markdown-cell">
@@ -233,7 +235,7 @@ const closing_brace = '}';
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>Por un lado tenemos el <code>retrieval</code>, que es obtener <code>chunk</code> correcto de la documentación, por otro lado tenemos el <code>augmented</code>, que es pasarle al LLM la pregunta del usuario y el <code>chunk</code> y por último tenemos el <code>generation</code>, que es obtener la respuesta generada por el LLM.</p>
+      <p>Por un lado tenemos el <code>retrieval</code>, que es obtener el <code>chunk</code> correcto de la documentación, por otro lado tenemos el <code>augmented</code>, que es pasarle al LLM la pregunta del usuario y el <code>chunk</code> y por último tenemos el <code>generation</code>, que es obtener la respuesta generada por el LLM.</p>
       </section>
       
       <section class="section-block-markdown-cell">
@@ -258,7 +260,7 @@ const closing_brace = '}';
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>Como hemos dicho, todo se va a basar en embeddings, por lo que lo primero que hacemos es crear una función para obtener embeddings de un texto. Vamos a usar el modelo <code>sentence-transformers/all-MiniLM-L6-v2</code></p>
+      <p>Como hemos dicho, todo se va a basar en embeddings. Por lo que, lo primero que hacemos es crear una función para obtener embeddings de un texto. Vamos a usar el modelo <code>sentence-transformers/all-MiniLM-L6-v2</code></p>
       </section>
       
       <CodeBlockInputCell
@@ -601,7 +603,7 @@ const closing_brace = '}';
       ></CodeBlockOutputCell>
       
       <section class="section-block-markdown-cell">
-      <p>Descomprimimos el <code>.zip</code></p>
+      <p>Descomprimimos el .zip</p>
       </section>
       
       <CodeBlockInputCell
@@ -641,7 +643,7 @@ const closing_brace = '}';
       ></CodeBlockOutputCell>
       
       <section class="section-block-markdown-cell">
-      <p>Borramos el <code>.zip</code></p>
+      <p>Borramos el .zip</p>
       </section>
       
       <CodeBlockInputCell
@@ -702,7 +704,7 @@ const closing_brace = '}';
       ></CodeBlockOutputCell>
       
       <section class="section-block-markdown-cell">
-      <h3 id="A-crear-los-chunks!">A crear los <code>chunk</code>s!<a class="anchor-link" href="#A-crear-los-chunks!"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 15" src={svg_paths.link_svg_path}/></a></h3>
+      <p>A crear los <code>chunk</code>s!</p>
       </section>
       
       <section class="section-block-markdown-cell">
@@ -875,7 +877,7 @@ const closing_brace = '}';
       ></CodeBlockOutputCell>
       
       <section class="section-block-markdown-cell">
-      <h3 id="Cargar-los-chunks-en-la-base-de-datos-vectorial">Cargar los <code>chunk</code>s en la base de datos vectorial<a class="anchor-link" href="#Cargar-los-chunks-en-la-base-de-datos-vectorial"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 16" src={svg_paths.link_svg_path}/></a></h3>
+      <h3 id="Cargar-los-chunks-en-la-base-de-datos-vectorial">Cargar los <code>chunk</code>s en la base de datos vectorial<a class="anchor-link" href="#Cargar-los-chunks-en-la-base-de-datos-vectorial"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 15" src={svg_paths.link_svg_path}/></a></h3>
       </section>
       
       <section class="section-block-markdown-cell">
@@ -905,7 +907,7 @@ const closing_brace = '}';
       ></CodeBlockOutputCell>
       
       <section class="section-block-markdown-cell">
-      <h2 id="Preguntas">Preguntas<a class="anchor-link" href="#Preguntas"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 17" src={svg_paths.link_svg_path}/></a></h2>
+      <h2 id="Preguntas">Preguntas<a class="anchor-link" href="#Preguntas"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 16" src={svg_paths.link_svg_path}/></a></h2>
       </section>
       
       <section class="section-block-markdown-cell">
@@ -913,7 +915,7 @@ const closing_brace = '}';
       </section>
       
       <section class="section-block-markdown-cell">
-      <h3 id="Obtener-el-chunk-correcto">Obtener el <code>chunk</code> correcto<a class="anchor-link" href="#Obtener-el-chunk-correcto"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 18" src={svg_paths.link_svg_path}/></a></h3>
+      <h3 id="Obtener-el-chunk-correcto">Obtener el <code>chunk</code> correcto<a class="anchor-link" href="#Obtener-el-chunk-correcto"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 17" src={svg_paths.link_svg_path}/></a></h3>
       </section>
       
       <section class="section-block-markdown-cell">
@@ -986,7 +988,7 @@ const closing_brace = '}';
       </section>
       
       <section class="section-block-markdown-cell">
-      <h3 id="Generar-la-respuesta">Generar la respuesta<a class="anchor-link" href="#Generar-la-respuesta"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 19" src={svg_paths.link_svg_path}/></a></h3>
+      <h3 id="Generar-la-respuesta">Generar la respuesta<a class="anchor-link" href="#Generar-la-respuesta"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 18" src={svg_paths.link_svg_path}/></a></h3>
       </section>
       
       <section class="section-block-markdown-cell">
@@ -1072,6 +1074,9 @@ const closing_brace = '}';
       
       <section class="section-block-markdown-cell">
       <p>Cuando le pedí al LLM que me generara una pregunta sobre el documento, también le pedí que me generara la respuesta correcta. Esta es la respuesta que me dio el LLM</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
       <div class="highlight"><pre><span></span>Neeva used Karpenter and Amazon EC2 Spot Instances to improve its infrastructure management and cost optimization in several ways:
       
       Simplified Instance Management:
@@ -1096,7 +1101,13 @@ const closing_brace = '}';
       Spot Instances: The combination of Karpenter and Spot Instances enabled Neeva to run large language models more efficiently, enhancing the search experience for its users.
       In summary, Neeva's adoption of Karpenter and Amazon EC2 Spot Instances significantly improved its infrastructure management, cost optimization, and overall development efficiency, enabling the company to deliver better ad-free search experiences to its users.
       </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
       <p>Y esta ha sido la respuesta generada por nuestro <code>RAG</code></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
       <div class="highlight"><pre><span></span>Neeva, a cloud-native, ad-free search engine founded in 2019, has leveraged Karpenter and Amazon EC2 Spot Instances to significantly improve its infrastructure management and cost optimization. Here’s how:
       
       ### Early Collaboration with Karpenter
@@ -1125,7 +1136,66 @@ const closing_brace = '}';
       ### Conclusion
       By leveraging Karpenter and Amazon EC2 Spot Instances, Neeva has not only optimized its infrastructure costs but also enhanced its scalability, agility, and development speed. This strategic approach has positioned Neeva to deliver high-quality, ad-free search experiences to its users while maintaining a strong focus on cost control and innovation.
       </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
       <p>Por lo que podemos concluir que el <code>RAG</code> ha funcionado correctamente!!!</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="L%C3%ADmites-de-naive-RAG">Límites de naive RAG<a class="anchor-link" href="#L%C3%ADmites-de-naive-RAG"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 19" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Como hemos dicho, hoy hemos explicado <code>naive RAG</code>, que es la arquitectura más sencilla de RAG, pero tiene sus limitaciones</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="Naive RAG architecture" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/naive_RAG_architecture.webp" width="870" height="398"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Las limitaciones de esta arquitectura son:</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="L%C3%ADmites-en-la-b%C3%BAsqueda-de-informaci%C3%B3n-(retriever)">Límites en la búsqueda de información (retriever)<a class="anchor-link" href="#L%C3%ADmites-en-la-b%C3%BAsqueda-de-informaci%C3%B3n-(retriever)"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 20" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <ul>
+      <li><p>Limitado conocimiento del contexto y la documentación: Cuando el sistema de naive RAG busca los chunks, busca los que tienen un significado semántico similar al prompt, pero no es capaz de saber cuáles son los más relevantes para la pregunta del usuario, o cuáles son los que tienen una información más actualizada, o su información es más correcta que la de otros chunks. Por ejemplo, si un usuario pregunta sobre los problemas de los edulcorantes en el sistema digestivo, el naive RA puede devolver documentos sobre edulcorantes o sobre el sistema digestivo, pero no es capaz de saber que los documentos sobre el sistema digestivo son los más relevantes para la pregunta del usuario. Otro ejemplo es si el usuario pregunta sobre los últimos avances en la IA, pero el naive RAG no es capaz de saber cuales son los últimos papers de la base de datos.</p>
+      </li>
+      <li><p>No hay una sincronización entre el retrieval y el generador. Como hemos visto son dos sistemas independientes, por un lado el retrieval busca los documentos más similares a la pregunta del usuario y esos documentos se le pasan al generador, que genera una respuesta.</p>
+      </li>
+      <li><p>Ineficiente escala ante grandes bases de datos. Como el retrieval busca los documentos con mayor similitud semántica con toda la base de datos, cuando esta se hace muy grande podemos tener tiempos de búsqueda muy largos.</p>
+      </li>
+      <li><p>Poca adaptación a la pregunta del usuario. Si el usuario hace una pregunta que tiene que ver con varios documentos, es decir, no hay ningún documento que contenga toda la información de la pregunta del usuario, el sistema recuperará todos esos documentos y se los pasará al generador, que puede usarlos o no. O en un peor caso, puede que se deje algún documento relevante para generar la respuesta.</p>
+      </li>
+      </ul>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="L%C3%ADmites-en-la-generaci%C3%B3n-de-respuestas-(generator)">Límites en la generación de respuestas (generator)<a class="anchor-link" href="#L%C3%ADmites-en-la-generaci%C3%B3n-de-respuestas-(generator)"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 21" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <ul>
+      <li><p>El modelo podría alucinar respuestas aun pasándole información relevante.</p>
+      </li>
+      <li><p>El modelo podría estar limitado por temas relacionados con el odio, la discriminación, etc.</p>
+      </li>
+      </ul>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Para sobrepasar estos límites, se suelen utilizar técnicas como el</p>
+      <ul>
+      <li><p>Pre-retrieval: Que incluye técnicas para mejorar la indexación, por lo que la búsqueda de la información es más eficiente. O técnicas como la mejora de la pregunta del usuario para que el retrieval pueda encontrar los documentos más relevantes.</p>
+      </li>
+      <li><p>Post-retrieval: Aquí se usan técnicas como el re-ranking de los documentos, que es una técnica que se usa para mejorar la búsqueda de la información relevante</p>
+      </li>
+      </ul>
       </section>
       
 

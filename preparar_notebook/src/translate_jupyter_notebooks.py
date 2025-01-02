@@ -4,6 +4,7 @@ from gpt4o import GPT4o
 from groq_llm import Groq_llama3_1_70B
 from qwen2_5_72B import Qwen2_5_72B
 from ollama_qwen_2_5_7B import Ollama_qwen2_5_7B
+from ollama_qwen_2_5_72B import Ollama_qwen2_5_72B
 from llama_3_3_70B import Llama_3_3_70B
 from notebook_utils import Notebook
 import re
@@ -58,6 +59,7 @@ GROQ_LLM = "Groq_llama3_1_70B"
 QWEN_2_5_72B = "Qwen2.5-72B"
 LLAMA_3_3_70B = "Llama3.3-70B"
 OLLAMA_QWEN_2_5_7B = "Ollama_qwen2_5_7B"
+OLLAMA_QWEN_2_5_72B = "Ollama_qwen2_5_72B"
 TRANSLATOR_MODEL = QWEN_2_5_72B
 CHECKER_MODEL = GEMINI_LLM
 
@@ -164,6 +166,9 @@ def translate_jupyter_notebook(notebook_path):
     elif TRANSLATOR_MODEL == OLLAMA_QWEN_2_5_7B:
         translator_model_en = Ollama_qwen2_5_7B(system_instruction=SYSTEM_INSTRUCTION_EN, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
         translator_model_pt = Ollama_qwen2_5_7B(system_instruction=SYSTEM_INSTRUCTION_PT, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
+    elif TRANSLATOR_MODEL == OLLAMA_QWEN_2_5_72B:
+        translator_model_en = Ollama_qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION_EN, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
+        translator_model_pt = Ollama_qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION_PT, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
     translations_models = [translator_model_en, translator_model_pt]
 
     # load checker LLM

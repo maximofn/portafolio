@@ -1,10 +1,13 @@
 from utils import ask_for_something, string_to_dict
 from tqdm import tqdm
+import os
+import git
 from gemini import Gemini
 from gpt4o import GPT4o
 from groq_llm import Groq_llama3_1_70B
 from qwen2_5_72B import Qwen2_5_72B
 from ollama_qwen_2_5_7B import Ollama_qwen2_5_7B
+from ollama_qwen_2_5_72B import Ollama_qwen2_5_72B
 from notebook_utils import Notebook
 
 KEY_ORIGINAL = "original"
@@ -37,7 +40,8 @@ GPT4O_LLM = "GPT4o"
 GROQ_LLM = "Groq_llama3_1_70B"
 QWEN_2_5_72B = "Qwen2.5-72B"
 OLLAMA_QWEN_2_5_7B = "Ollama_qwen2_5_7B"
-MODEL = OLLAMA_QWEN_2_5_7B
+OLLAMA_QWEN_2_5_72B = "Ollama_qwen2_5_72B"
+MODEL = OLLAMA_QWEN_2_5_72B
 
 def apply_corrections(model, line, debug=False):
     # If line is empty, return it
@@ -80,15 +84,50 @@ def apply_corrections(model, line, debug=False):
             original_value = correction_dict[f'{KEY_ORIGINAL}']
             correction_vaue = correction_dict[f'{KEY_CORRECTION}']
             explanation_value = correction_dict[f'{KEY_EXPLANATION}']
-            print(f"\n{KEY_ORIGINAL}  : {original_value}\n{KEY_CORRECTION}: {correction_vaue}\n{KEY_EXPLANATION}: {explanation_value}")
-            if ask_for_something("Do you want to apply this correction? (y/n)", ['y', 'yes'], ['n', 'no']):
-                return correction_vaue
-            else:
-                return original_value
+            # print(f"\n{KEY_ORIGINAL}  : {original_value}\n{KEY_CORRECTION}: {correction_vaue}\n{KEY_EXPLANATION}: {explanation_value}")
+            # if ask_for_something("Do you want to apply this correction? (y/n)", ['y', 'yes'], ['n', 'no']):
+            #     return correction_vaue
+            # else:
+            #     return original_value
+            return correction_vaue
         else:
             return line
     else:
         return line
+
+def is_file_in_git_changes(file_path):
+    """
+    Comprueba si un archivo está en la lista de cambios de git usando gitpython
+    Args:
+        file_path: Ruta al archivo a comprobar
+    Returns:
+        bool: True si el archivo está en la lista de cambios, False en caso contrario
+    """
+    try:
+        # Inicializamos el repositorio
+        repo = git.Repo(search_parent_directories=True)
+        
+        # Obtenemos el path relativo al repositorio
+        relative_path = os.path.relpath(file_path, repo.working_dir)
+        
+        # Comprobamos si el archivo está en el índice o sin seguimiento
+        diff_index = repo.index.diff(None)  # Cambios sin staging
+        diff_staged = repo.index.diff('HEAD')  # Cambios en staging
+        untracked = repo.untracked_files  # Archivos sin seguimiento
+        
+        # Verificamos si el archivo está en alguna de las listas de cambios
+        return any([
+            any(d.a_path == relative_path or d.b_path == relative_path for d in diff_index),
+            any(d.a_path == relative_path or d.b_path == relative_path for d in diff_staged),
+            relative_path in untracked
+        ])
+        
+    except git.exc.InvalidGitRepositoryError:
+        print("No se encontró un repositorio git válido")
+        return False
+    except Exception as e:
+        print(f"Error al comprobar el estado de git para {file_path}: {e}")
+        return False
 
 def ortografic_corrections_jupyter_notebook(notebook_path):
     # load LLM
@@ -102,6 +141,17 @@ def ortografic_corrections_jupyter_notebook(notebook_path):
         model = Qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION, system_check=SYSTEM_CHECK, num_checks=NUMBER_OF_CHECKS)
     elif MODEL == OLLAMA_QWEN_2_5_7B:
         model = Ollama_qwen2_5_7B(system_instruction=SYSTEM_INSTRUCTION, system_check=SYSTEM_CHECK, num_checks=NUMBER_OF_CHECKS)
+    elif MODEL == OLLAMA_QWEN_2_5_72B:
+        model = Ollama_qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION, system_check=SYSTEM_CHECK, num_checks=NUMBER_OF_CHECKS)
+
+    # Get notebook name
+    notebook_name = os.path.basename(notebook_path)
+    print(f"Notebook name: {notebook_name}")
+    
+    # Comprobar si el notebook tiene cambios en git
+    if is_file_in_git_changes(notebook_path):
+        print(f"The notebook {notebook_name} has changes in git. First commit it and then run the script again.")
+        exit(1)
 
     # Get notebook content as a dictionary
     notebook = Notebook(notebook_path)

@@ -60,7 +60,7 @@ QWEN_2_5_72B = "Qwen2.5-72B"
 LLAMA_3_3_70B = "Llama3.3-70B"
 OLLAMA_QWEN_2_5_7B = "Ollama_qwen2_5_7B"
 OLLAMA_QWEN_2_5_72B = "Ollama_qwen2_5_72B"
-TRANSLATOR_MODEL = QWEN_2_5_72B
+TRANSLATOR_MODEL = OLLAMA_QWEN_2_5_72B
 CHECKER_MODEL = GEMINI_LLM
 
 def translate_text(model, line, notebook_number):
@@ -182,6 +182,9 @@ def translate_jupyter_notebook(notebook_path):
     elif CHECKER_MODEL == QWEN_2_5_72B:
         checker_model = Qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION_NOTEBOOK_TRANSLATION_CHECKER, system_check=SYSTEM_INSTRUCTION_NOTEBOOK_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
 
+    # Get notebook name
+    notebook_name = notebook_path.name
+
     # Get notebook content as a dictionary
     print(f"\tLoading notebook {notebook_path}")
     notebook = Notebook(notebook_path)
@@ -264,8 +267,15 @@ def translate_jupyter_notebook(notebook_path):
         if translation_check != "Todo correcto":
             print(f"\tError in {TARGET_LANGUAJES_DICT[TARGET_LANGUAJES[notebook_number]].upper()} translation")
             print(translation_check)
+            # Save translation_check in a file
+            if notebook_number == 0:
+                language = "en"
+            else:
+                language = "pt"
+            with open(f"translation_check_{notebook_name}_{language}.txt", "w") as file:
+                file.write(translation_check)
             # analyze_translation_errors(translation_check)
-            ask_for_something("\nHave you changed this mistakes? (y/n)", ['y', 'yes'], ['n', 'no'])
+            # ask_for_something("\nHave you changed this mistakes? (y/n)", ['y', 'yes'], ['n', 'no'])
             # exit(1)
 
     # Save translated notebooks

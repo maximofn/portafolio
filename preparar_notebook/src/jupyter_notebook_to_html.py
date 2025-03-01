@@ -1,5 +1,6 @@
 import os
 import pathlib
+import platform
 from check_for_new_classes import check_for_new_classes
 from utils import get_portafolio_path
 from format_code_blocks import format_code_blocks
@@ -246,18 +247,35 @@ def convert_to_html(notebook_path, metadata, notebook_title):
     keywords_list = [metadata[7], metadata[8], metadata[9]]
     image, image_hover_path, witdh, height, image_extension, date = metadata[10], metadata[11], metadata[12], metadata[13], metadata[14], metadata[15]
 
+    # Detect the operating system
+    system = platform.system()
+
     # Convert the notebooks to html
     for notebook_number, notebook in enumerate(notebook_paths):
         language = LANGUAJES_DICT[LANGUAGES[notebook_number]].upper()
 
-        # Execute the following command in the terminal: jupyter nbconvert --to html --template posts_template self.notebook_path
-        if CONVERT_TO_HTML_WITH_NBCONVERT: os.system(f"jupyter nbconvert --to html --template posts_template {notebook}")
+        # Choose the appropriate command based on the operating system
+        try:
+            if CONVERT_TO_HTML_WITH_NBCONVERT:
+                if system == "Darwin":  # macOS
+                    os.system(f"jupyter nbconvert --to html --template-file=/Users/macm1/miniforge3/share/jupyter/posts_template/index.html.j2 {notebook}")
+                else:  # Linux/Ubuntu
+                    os.system(f"jupyter nbconvert --to html --template posts_template {notebook}")
+        except Exception as e:
+            print(f"Error: {e}")
+            print(f"notebook: {notebook}")
+            exit(1)
 
         # Move the generated html file to the destination path
         destiny_path = path / HTML_FILES
         destiny_name = notebook.stem + ".html"
         full_destiny_path = destiny_path / destiny_name
-        if CONVERT_TO_HTML_WITH_NBCONVERT: os.system(f"mv {notebook.with_suffix('.html')} {full_destiny_path}")
+        try:
+            if CONVERT_TO_HTML_WITH_NBCONVERT: os.system(f"mv {notebook.with_suffix('.html')} {full_destiny_path}")
+        except Exception as e:
+            print(f"Error: {e}")
+            print(f"notebook: {notebook}")
+            exit(1)
     
         # Find for new classes in the generated html files
         print(f"\tChecking for new classes for {language}...", end=" ")

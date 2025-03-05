@@ -1,0 +1,976 @@
+---
+import PostLayout from '@layouts/PostLayout.astro';
+import CodeBlockInputCell from '@components/CodeBlockInputCell.astro';
+import CodeBlockOutputCell from '@components/CodeBlockOutputCell.astro';
+
+const { metadata_page } = await import('@portfolio/consts.json');
+const { colors } = await import('@portfolio/consts.json');
+const { svg_paths } = await import('@portfolio/consts.json');
+
+const page_title = 'Desplegar backend com LLM no HuggingFace';
+const end_url = 'deploy-backend-with-llm-in-huggingface';
+const description = 'Do you want to deploy a backend with your own LLM? In this post I explain how to do it with HuggingFace Spaces, FastAPI, Langchain and Docker.';
+const keywords = 'hugging face, fastapi, langchain, docker, backend, llm';
+const languaje = 'PT';
+const image_path = 'https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend_llm_thumbnail.webp';
+const opening_brace = '{';
+const closing_brace = '}';
+---
+
+<PostLayout 
+    title={page_title}
+    languaje={languaje}
+    description={description}
+    keywords={keywords}
+    author={metadata_page.author}
+    theme_color={colors.background_color}
+    end_url={end_url}
+    image_path={image_path}
+    image_width=960
+    image_height=720
+    image_extension=webp
+    article_date=2025-03-02+T00:00:00Z
+>
+
+  <section class="post-body">
+
+
+    <aside class="post-index">
+      <a class="anchor-link" href="#Desplegar-backend-com-Gradio"><h2>Desplegar backend com Gradio</h2></a>
+      <a class="anchor-link" href="#Criar-espa%C3%A7o"><h3>Criar espaço</h3></a>
+      <a class="anchor-link" href="#C%C3%B3digo"><h3>Código</h3></a>
+      <a class="anchor-link" href="#app.py"><h4>app.py</h4></a>
+      <a class="anchor-link" href="#requirements.txt"><h4>requirements.txt</h4></a>
+      <a class="anchor-link" href="#LEIA-ME.md"><h4>LEIA-ME.md</h4></a>
+      <a class="anchor-link" href="#Implanta%C3%A7%C3%A3o"><h3>Implantação</h3></a>
+      <a class="anchor-link" href="#Backend"><h3>Backend</h3></a>
+      <a class="anchor-link" href="#Teste-da-API"><h3>Teste da API</h3></a>
+      <a class="anchor-link" href="#Deploy-do-backend-com-FastAPI,-Langchain-e-Docker"><h2>Deploy do backend com FastAPI, Langchain e Docker</h2></a>
+      <a class="anchor-link" href="#Criar-espa%C3%A7o"><h3>Criar espaço</h3></a>
+      <a class="anchor-link" href="#C%C3%B3digo"><h3>Código</h3></a>
+      <a class="anchor-link" href="#app.py"><h4>app.py</h4></a>
+      <a class="anchor-link" href="#Dockerfile"><h4>Dockerfile</h4></a>
+      <a class="anchor-link" href="#requirements.txt"><h4>requirements.txt</h4></a>
+      <a class="anchor-link" href="#README.md"><h4>README.md</h4></a>
+      <a class="anchor-link" href="#Execu%C3%A7%C3%A3o-local"><h2>Execução local</h2></a>
+      <a class="anchor-link" href="#Documenta%C3%A7%C3%A3o-da-API"><h2>Documentação da API</h2></a>
+      <a class="anchor-link" href="#Token-do-HuggingFace"><h3>Token do HuggingFace</h3></a>
+      <a class="anchor-link" href="#Adicionar-o-token-aos-secrets-do-espa%C3%A7o"><h3>Adicionar o token aos secrets do espaço</h3></a>
+      <a class="anchor-link" href="#Implanta%C3%A7%C3%A3o"><h3>Implantação</h3></a>
+      <a class="anchor-link" href="#URL-do-backend"><h3>URL do backend</h3></a>
+      <a class="anchor-link" href="#Documenta%C3%A7%C3%A3o"><h3>Documentação</h3></a>
+      <a class="anchor-link" href="#Teste-da-API"><h3>Teste da API</h3></a>
+      <a class="anchor-link" href="#Deploy-do-backend-com-Gradio-e-modelo-rodando-no-servidor"><h2>Deploy do backend com Gradio e modelo rodando no servidor</h2></a>
+      <a class="anchor-link" href="#Criar-Espa%C3%A7o"><h3>Criar Espaço</h3></a>
+      <a class="anchor-link" href="#C%C3%B3digo"><h3>Código</h3></a>
+      <a class="anchor-link" href="#app.py"><h4>app.py</h4></a>
+      <a class="anchor-link" href="#requirements.txt"><h4>requirements.txt</h4></a>
+      <a class="anchor-link" href="#Teste-da-API"><h4>Teste da API</h4></a>
+      <a class="anchor-link" href="#Deploy-de-backend-com-FastAPI,-Langchain-e-Docker-e-modelo-rodando-no-servidor"><h2>Deploy de backend com FastAPI, Langchain e Docker e modelo rodando no servidor</h2></a>
+      <a class="anchor-link" href="#Criar-Espa%C3%A7o"><h3>Criar Espaço</h3></a>
+      <a class="anchor-link" href="#C%C3%B3digo"><h3>Código</h3></a>
+      <a class="anchor-link" href="#app.py"><h4>app.py</h4></a>
+      <a class="anchor-link" href="#requirements.txt"><h4>requirements.txt</h4></a>
+      <a class="anchor-link" href="#Dockerfile"><h4>Dockerfile</h4></a>
+      <a class="anchor-link" href="#Teste-da-API"><h3>Teste da API</h3></a>
+      <a class="anchor-link" href="#Conclus%C3%B5es"><h2>Conclusões</h2></a>
+    </aside>
+
+
+    <div class="post-body-content">
+      
+      <section class="section-block-markdown-cell">
+      <h1 id="Deployar-backend-no-HuggingFace">Deployar backend no HuggingFace<a class="anchor-link" href="#Deployar-backend-no-HuggingFace"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 96" src={svg_paths.link_svg_path}/></a></h1>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <blockquote>
+      <p>Aviso: Este post foi traduzido para o português usando um modelo de tradução automática. Por favor, me avise se encontrar algum erro.</p>
+      </blockquote>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Neste post, vamos ver como deployar um backend no HuggingFace. Vamos ver como fazer isso de duas maneiras, através da forma comum, criando uma aplicação com Gradio, e através de uma opção diferente usando FastAPI, Langchain e Docker.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Para ambos casos será necessário ter uma conta no HuggingFace, já que vamos implantar o backend em um espaço do HuggingFace.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Desplegar-backend-com-Gradio">Desplegar backend com Gradio<a class="anchor-link" href="#Desplegar-backend-com-Gradio"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 97" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Criar-espa%C3%A7o">Criar espaço<a class="anchor-link" href="#Criar-espa%C3%A7o"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 98" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Primeiro de tudo, criamos um novo espaço na Hugging Face.</p>
+      <ul>
+      <li>Colocamos um nome, uma descrição e escolhemos a licença.* Escolhemos o Gradio como o tipo de SDK. Ao escolher o Gradio, serão exibidas algumas templates, então escolhemos a template do chatbot.* Selecionamos o HW no qual vamos a desdobrar o backend, eu vou escolher a CPU gratuita, mas você escolha o que melhor considerar.* E por último, temos que escolher se queremos criar o espaço público ou privado.</li>
+      </ul>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="backend gradio - criar espaço" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-gradio-create-space.webp" width="880" height="773"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="C%C3%B3digo">Código<a class="anchor-link" href="#C%C3%B3digo"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 99" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Ao criar o space, podemos cloná-lo ou podemos ver os arquivos na própria página do HuggingFace. Podemos ver que foram criados 3 arquivos, <code>app.py</code>, <code>requirements.txt</code> e <code>README.md</code>. Então, vamos ver o que colocar em cada um.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="app.py">app.py<a class="anchor-link" href="#app.py"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 100" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Aqui está o código do aplicativo. Como escolhemos o template de chatbot, já temos muito feito, mas vamos ter que mudar 2 coisas: primeiro, o modelo de linguagem e o system prompt.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Como modelo de linguagem, vejo <code>HuggingFaceH4/zephyr-7b-beta</code>, mas vamos utilizar <code>Qwen/Qwen2.5-72B-Instruct</code>, que é um modelo muito capaz.
+      Então, procure pelo texto <code>client = InferenceClient("HuggingFaceH4/zephyr-7b-beta")</code> e substitua-o por <code>client = InferenceClient("Qwen/Qwen2.5-72B-Instruct")</code>, ou espere que colocarei todo o código mais tarde.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Também vamos alterar o system prompt, que por padrão é <code>You are a friendly Chatbot.</code>, mas como o modelo foi treinado principalmente em inglês, é provável que se você falar com ele em outro idioma, ele responda em inglês. Então, vamos mudá-lo para <code>You are a friendly Chatbot. Always reply in the language in which the user is writing to you.</code>.
+      Então, procure pelo texto <code>gr.Textbox(value="You are a friendly Chatbot.", label="System message"),</code> e substitua-o por <code>gr.Textbox(value="You are a friendly Chatbot. Always reply in the language in which the user is writing to you.", label="System message"),</code>, ou espere até eu colocar todo o código agora.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">gradio</span> <span class="k">as</span> <span class="nn">grdo</span> <span class="n">huggingface_hub</span> <span class="kn">import</span> <span class="nn">InferenceClient</span>
+      <span class="sd">""""""</span><span class="n">Para</span> <span class="n">mais</span> <span class="n">informações</span> <span class="n">sobre</span> <span class="n">o</span> <span class="n">suporte</span> <span class="n">da</span> <span class="n">API</span> <span class="n">de</span> <span class="n">Inferência</span> <span class="n">do</span> <span class="err">`</span><span class="n">huggingface_hub</span><span class="err">`</span><span class="p">,</span> <span class="n">consulte</span> <span class="n">a</span> <span class="n">documentação</span><span class="p">:</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">huggingface</span><span class="o">.</span><span class="n">co</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">huggingface_hub</span><span class="o">/</span><span class="n">v0</span><span class="mf">.22.2</span><span class="o">/</span><span class="n">en</span><span class="o">/</span><span class="n">guides</span><span class="o">/</span><span class="n">inference</span><span class="s2">""""""</span><span class="n">client</span> <span class="o">=</span> <span class="n">InferenceClient</span><span class="p">(</span><span class="s2">"Qwen/Qwen2.5-72B-Instruct"</span><span class="p">)</span>
+      
+      <span class="k">def</span> <span class="nf">responder</span><span class="p">(</span><span class="n">mensagem</span><span class="p">,</span><span class="n">história</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span><span class="n">Mensagem</span> <span class="n">do</span> <span class="n">sistema</span><span class="p">,</span><span class="n">max_tokens</span><span class="p">,</span><span class="n">temperatura</span><span class="p">,</span><span class="n">top_p</span><span class="p">,):</span><span class="n">mensagens</span> <span class="o">=</span> <span class="p">[{opening_brace}</span><span class="s2">"papel"</span><span class="p">:</span> <span class="s2">"sistema"</span><span class="p">,</span> <span class="s2">"conteúdo"</span><span class="p">:</span> <span class="n">system_message</span><span class="p">{closing_brace}]</span>
+      <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">history</span><span class="p">:</span><span class="k">if</span> <span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">messages</span><span class="o">.</span><span class="n">append</span><span class="p">({opening_brace}</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">]{closing_brace})</span><span class="k">if</span> <span class="n">val</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="n">messages</span><span class="o">.</span><span class="n">append</span><span class="p">({opening_brace}</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"assistant"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">val</span><span class="p">[</span><span class="mi">1</span><span class="p">]{closing_brace})</span>
+      <span class="n">messages</span><span class="o">.</span><span class="n">append</span><span class="p">({opening_brace}</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">message</span><span class="p">{closing_brace})</span>
+      <span class="n">response</span> <span class="o">=</span> <span class="s2">""</span>
+      <span class="n">para</span> <span class="n">mensagem</span> <span class="n">em</span> <span class="n">client</span><span class="o">.</span><span class="n">chat_completion</span><span class="p">(</span><span class="n">mensagens</span><span class="p">,</span><span class="n">max_tokens</span><span class="o">=</span><span class="n">max_tokens</span><span class="p">,</span><span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span><span class="n">top_p</span><span class="o">=</span><span class="n">top_p</span><span class="p">,):</span><span class="n">token</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">delta</span><span class="o">.</span><span class="n">content</span>
+      <span class="n">response</span> <span class="o">+=</span> <span class="n">tokenyield</span> <span class="n">response</span>
+      
+      <span class="sd">""""""</span><span class="n">Para</span> <span class="n">informações</span> <span class="n">sobre</span> <span class="n">como</span> <span class="n">personalizar</span> <span class="n">a</span> <span class="n">ChatInterface</span><span class="p">,</span> <span class="n">consulte</span> <span class="n">a</span> <span class="n">documentação</span> <span class="n">do</span> <span class="n">gradio</span><span class="p">:</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">www</span><span class="o">.</span><span class="n">gradio</span><span class="o">.</span><span class="n">app</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">chatinterface</span><span class="s2">""""""</span><span class="n">demo</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">ChatInterface</span><span class="p">(</span><span class="n">responda</span><span class="p">,</span><span class="err">```</span><span class="n">markdown</span>
+      <span class="n">additional_inputs</span><span class="o">=</span><span class="p">[</span>
+      <span class="err">```</span><span class="n">gr</span><span class="o">.</span><span class="n">Textbox</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">"Você é um chatbot amigável. Sempre responda na língua em que o usuário está escrevendo para você."</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Mensagem do sistema"</span><span class="p">),</span><span class="n">gr</span><span class="o">.</span><span class="n">Slider</span><span class="p">(</span><span class="n">minimum</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">maximum</span><span class="o">=</span><span class="mi">2048</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Máximo de novos tokens"</span><span class="p">),</span><span class="n">gr</span><span class="o">.</span><span class="n">Slider</span><span class="p">(</span><span class="n">mínimo</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span> <span class="n">máximo</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span> <span class="n">valor</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="mi">7</span><span class="p">,</span> <span class="n">passo</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span> <span class="n">rótulo</span><span class="o">=</span><span class="s2">"Temperatura"</span><span class="p">),</span><span class="n">gr</span><span class="o">.</span><span class="n">Slider</span><span class="p">(</span><span class="n">mínimo</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span><span class="n">máximo</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span><span class="n">value</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span><span class="n">passo</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s2">"Top-p (amostragem do núcleo)"</span><span class="p">),],)</span>
+      
+      <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span><span class="n">demo</span><span class="o">.</span><span class="n">launch</span><span class="p">()</span><span class="err">```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="requirements.txt">requirements.txt<a class="anchor-link" href="#requirements.txt"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 101" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Este é o arquivo onde serão escritas as dependências, mas para este caso vai ser muito simples:</p>
+      <pre><code class="language-txt">txt
+      huggingface_hub==0.25.2```</code></pre>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="LEIA-ME.md">LEIA-ME.md<a class="anchor-link" href="#LEIA-ME.md"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 102" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Este é o arquivo no qual vamos colocar as informações do espaço. Nos spaces da HuggingFace, no início dos readmes, coloca-se um código para que a HuggingFace saiba como exibir a miniatura do espaço, qual arquivo deve ser usado para executar o código, versão do sdk, etc.</p>
+      <div class="highlight"><pre><span></span>---título: SmolLM2emoji: 💬colorFrom: amarelocolorTo: roxosdk: gradiosdk_version: 5.0.1app_file: app.pypinned: falselicença: apache-2.0short_description: Bate-papo com o Gradio SmolLM2---
+      Um exemplo de chatbot usando [<span class="nt">Gradio</span>](<span class="na">https://gradio.app</span>), [<span class="sb">`huggingface_hub`</span>](https://huggingface.co/docs/huggingface_hub/v0.22.2/en/index) e a [<span class="nt">Hugging Face Inference API</span>](<span class="na">https://huggingface.co/docs/api-inference/index</span>).```
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Implanta%C3%A7%C3%A3o">Implantação<a class="anchor-link" href="#Implanta%C3%A7%C3%A3o"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 103" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Se nós clonamos o espaço, temos que fazer um commit e um push. Se modificamos os arquivos no HuggingFace, basta salvá-los.
+      Então, quando as alterações estiverem no HuggingFace, teremos que esperar alguns segundos para que o espaço seja construído e possamos usá-lo.
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" alt="backend gradio - chatbot" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-gradio-chatbot.webp" width="1882" height="863"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Backend">Backend<a class="anchor-link" href="#Backend"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 104" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Muito bem, fizemos um chatbot, mas não era essa a intenção, aqui tínhamos vindo fazer um backend! Pára, pára, olha o que diz abaixo do chatbot
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" alt="backend gradio - Use via API" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-gradio-chatbot-edited.webp" width="1882" height="863"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Podemos ver um texto <code>Use via API</code>, onde se clicarmos, se abrirá um menu com uma API para poder usar o chatbot.
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" alt="backend gradio - API" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend%20gradio%20-%20API.webp" width="1882" height="863"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vemos que nos dá uma documentação de como usar a API, tanto com Python, com JavaScript, quanto com bash.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Teste-da-API">Teste da API<a class="anchor-link" href="#Teste-da-API"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 105" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Usamos o código de exemplo de Python.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">gradio_client</span> <span class="kn">import</span> <span class="n">Client</span>',
+          '',
+          '<span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="s2">"Maximofn/SmolLM2"</span><span class="p">)</span>',
+          '<span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>',
+          '		<span class="n">message</span><span class="o">=</span><span class="s2">"Hola, ¿cómo estás? Me llamo Máximo"</span><span class="p">,</span>',
+          '		<span class="n">system_message</span><span class="o">=</span><span class="s2">"You are a friendly Chatbot. Always reply in the language in which the user is writing to you."</span><span class="p">,</span>',
+          '		<span class="n">max_tokens</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>',
+          '		<span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>',
+          '		<span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>',
+          '		<span class="n">api_name</span><span class="o">=</span><span class="s2">"/chat"</span>',
+          '<span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Loaded as API: https://maximofn-smollm2.hf.space ✔',
+          '¡Hola Máximo! Mucho gusto, estoy bien, gracias por preguntar. ¿Cómo estás tú? ¿En qué puedo ayudarte hoy?',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Estamos fazendo chamadas à API do <code>InferenceClient</code> da HuggingFace, então poderíamos pensar, Para que fizemos um backend, se podemos chamar diretamente a API da HuggingFace? Bem, você vai ver isso abaixo.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>',
+          '		<span class="n">message</span><span class="o">=</span><span class="s2">"¿Cómo me llamo?"</span><span class="p">,</span>',
+          '		<span class="n">system_message</span><span class="o">=</span><span class="s2">"You are a friendly Chatbot. Always reply in the language in which the user is writing to you."</span><span class="p">,</span>',
+          '		<span class="n">max_tokens</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>',
+          '		<span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>',
+          '		<span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>',
+          '		<span class="n">api_name</span><span class="o">=</span><span class="s2">"/chat"</span>',
+          '<span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Tu nombre es Máximo. ¿Es correcto?',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>O modelo de bate-papo do Gradio gerencia o histórico para nós, de forma que cada vez que criamos um novo <code>cliente</code>, uma nova thread de conversa é criada.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos a tentar criar um novo cliente e ver se uma nova thread de conversa é criada.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">gradio_client</span> <span class="kn">import</span> <span class="n">Client</span>',
+          '',
+          '<span class="n">new_client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="s2">"Maximofn/SmolLM2"</span><span class="p">)</span>',
+          '<span class="n">result</span> <span class="o">=</span> <span class="n">new_client</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>',
+          '		<span class="n">message</span><span class="o">=</span><span class="s2">"Hola, ¿cómo estás? Me llamo Luis"</span><span class="p">,</span>',
+          '		<span class="n">system_message</span><span class="o">=</span><span class="s2">"You are a friendly Chatbot. Always reply in the language in which the user is writing to you."</span><span class="p">,</span>',
+          '		<span class="n">max_tokens</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>',
+          '		<span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>',
+          '		<span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>',
+          '		<span class="n">api_name</span><span class="o">=</span><span class="s2">"/chat"</span>',
+          '<span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Loaded as API: https://maximofn-smollm2.hf.space ✔',
+          'Hola Luis, estoy muy bien, gracias por preguntar. ¿Cómo estás tú? Es un gusto conocerte. ¿En qué puedo ayudarte hoy?',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Agora vamos perguntar novamente como me chamo</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="n">result</span> <span class="o">=</span> <span class="n">new_client</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>',
+          '		<span class="n">message</span><span class="o">=</span><span class="s2">"¿Cómo me llamo?"</span><span class="p">,</span>',
+          '		<span class="n">system_message</span><span class="o">=</span><span class="s2">"You are a friendly Chatbot. Always reply in the language in which the user is writing to you."</span><span class="p">,</span>',
+          '		<span class="n">max_tokens</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>',
+          '		<span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>',
+          '		<span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>',
+          '		<span class="n">api_name</span><span class="o">=</span><span class="s2">"/chat"</span>',
+          '<span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Te llamas Luis. ¿Hay algo más en lo que pueda ayudarte?',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Como podemos ver, temos dois clientes, cada um com seu próprio fio de conversa.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Deploy-do-backend-com-FastAPI,-Langchain-e-Docker">Deploy do backend com FastAPI, Langchain e Docker<a class="anchor-link" href="#Deploy-do-backend-com-FastAPI,-Langchain-e-Docker"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 106" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Agora vamos a fazer o mesmo, criar um backend de um chatbot, com o mesmo modelo, mas nesse caso usando FastAPI, Langchain e Docker.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Criar-espa%C3%A7o">Criar espaço<a class="anchor-link" href="#Criar-espa%C3%A7o"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 107" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Temos que criar um novo espaço, mas nesse caso faremos de outra maneira</p>
+      <ul>
+      <li>Colocamos um nome, uma descrição e escolhemos a licença.* Escolhemos Docker como o tipo de SDK. Ao escolher Docker, aparecerão modelos, então escolhemos um modelo em branco.* Selecionamos o HW no qual vamos a desdobrar o backend, eu vou escolher a CPU gratuita, mas você escolha o que melhor considerar.* E por fim, é preciso escolher se queremos criar o espaço público ou privado.</li>
+      </ul>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="backend docker - criar espaço" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-create-space.webp" width="945" height="753"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="C%C3%B3digo">Código<a class="anchor-link" href="#C%C3%B3digo"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 108" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Agora, ao criar o space, vemos que temos apenas um arquivo, o <code>README.md</code>. Então vamos ter que criar todo o código nós mesmos.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="app.py">app.py<a class="anchor-link" href="#app.py"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 109" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos a criar o código do aplicativo</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Começamos com as bibliotecas necessárias</p>
+      <div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">fastapi</span> <span class="kn">import</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">HTTPExceptionfrom</span> <span class="n">pydantic</span> <span class="kn">import</span> <span class="nn">BaseModeldo</span> <span class="n">huggingface_hub</span> <span class="kn">import</span> <span class="nn">InferenceClient</span>
+      <span class="err">```</span><span class="n">markdown</span>
+      <span class="kn">from</span> <span class="nn">langchain_core.messages</span> <span class="kn">import</span> <span class="n">HumanMessage</span><span class="p">,</span> <span class="n">AIMessage</span>
+      <span class="err">```</span><span class="kn">from</span> <span class="nn">langgraph.checkpoint.memory</span> <span class="kn">import</span> <span class="n">MemorySaverfrom</span> <span class="n">langgraph</span><span class="o">.</span><span class="n">graph</span> <span class="kn">import</span> <span class="nn">START</span><span class="o">,</span> <span class="nn">MessagesState</span><span class="o">,</span> <span class="nn">StateGraph</span>
+      <span class="kn">import</span> <span class="nn">osfrom</span> <span class="n">dotenv</span> <span class="kn">import</span> <span class="nn">load_dotenvload_dotenv</span><span class="p">()</span><span class="err">```</span>
+      
+      <span class="n">Carregamos</span> <span class="err">`</span><span class="n">fastapi</span><span class="err">`</span> <span class="n">para</span> <span class="n">poder</span> <span class="n">criar</span> <span class="k">as</span> <span class="n">rotas</span> <span class="n">da</span> <span class="n">API</span><span class="p">,</span> <span class="err">`</span><span class="n">pydantic</span><span class="err">`</span> <span class="n">para</span> <span class="n">criar</span> <span class="n">o</span> <span class="n">template</span> <span class="n">das</span> <span class="n">queries</span><span class="p">,</span> <span class="err">`</span><span class="n">huggingface_hub</span><span class="err">`</span> <span class="n">para</span> <span class="n">poder</span> <span class="n">criar</span> <span class="n">um</span> <span class="n">modelo</span> <span class="n">de</span> <span class="n">linguagem</span><span class="p">,</span> <span class="err">`</span><span class="n">langchain</span><span class="err">`</span> <span class="n">para</span> <span class="n">indicar</span> <span class="n">ao</span> <span class="n">modelo</span> <span class="n">se</span> <span class="k">as</span> <span class="n">mensagens</span> <span class="n">são</span> <span class="n">do</span> <span class="n">chatbot</span> <span class="n">ou</span> <span class="n">do</span> <span class="n">usuário</span> <span class="n">e</span> <span class="err">`</span><span class="n">langgraph</span><span class="err">`</span> <span class="n">para</span> <span class="n">criar</span> <span class="n">o</span> <span class="n">chatbot</span><span class="o">.</span>
+      <span class="n">Além</span> <span class="n">disso</span><span class="p">,</span> <span class="n">carregamos</span> <span class="err">`</span><span class="n">os</span><span class="err">`</span> <span class="n">e</span> <span class="err">`</span><span class="n">dotenv</span><span class="err">`</span> <span class="n">para</span> <span class="n">poder</span> <span class="n">carregar</span> <span class="k">as</span> <span class="n">variáveis</span> <span class="n">de</span> <span class="n">ambiente</span><span class="o">.</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Carregamos o token do HuggingFace</p>
+      <div class="highlight"><pre><span></span><span class="c1"># Token da HuggingFaceHUGGINGFACE_TOKEN = os.environ.get("HUGGINGFACE_TOKEN", os.getenv("HUGGINGFACE_TOKEN"))```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Criamos o modelo de linguagem</p>
+      <div class="highlight"><pre><span></span><span class="c1"># Inicializar o modelo da HuggingFacemodel = InferenceClient(model="Qwen/Qwen2.5-72B-Instruct",api_key=os.getenv("HUGGINGFACE_TOKEN"))```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Criamos agora uma função para chamar o modelo</p>
+      <div class="highlight"><pre><span></span><span class="c1"># Defina a função que chama o modelodef chamar_modelo(estado: MessagesState):""""""Chame o modelo com as mensagens fornecidas</span>
+      <span class="n">Argumentos</span><span class="p">:</span><span class="n">estado</span><span class="p">:</span> <span class="n">EstadoMensagens</span>
+      <span class="n">Retorna</span><span class="p">:</span><span class="n">um</span> <span class="n">dicionário</span> <span class="n">contendo</span> <span class="n">o</span> <span class="n">texto</span> <span class="n">gerado</span> <span class="n">e</span> <span class="n">o</span> <span class="n">ID</span> <span class="n">do</span> <span class="n">thread</span><span class="s2">""""""</span><span class="c1"># Converter mensagens do LangChain para o formato do HuggingFacehf_messages = []for msg in state["messages"]:Se `isinstance(msg, HumanMessage)`:hf_messages.append({opening_brace}"role": "user", "content": msg.content{closing_brace})elif isinstance(msg, AIMessage):hf_messages.append({opening_brace}"role": "assistant", "content": msg.content{closing_brace})    </span>
+      <span class="c1"># Chamar a APIresposta = modelo.completar_chat(mensagens=hf_mensagens,temperature=0.5,max_tokens=64,top_p=0,7)    </span>
+      <span class="c1"># Converter a resposta para o formato LangChain```python</span>
+      <span class="n">ai_message</span> <span class="o">=</span> <span class="n">AIMessage</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+      <span class="err">```</span><span class="k">return</span> <span class="p">{opening_brace}</span><span class="s2">"messages"</span><span class="p">:</span> <span class="n">state</span><span class="p">[</span><span class="s2">"messages"</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">ai_message</span><span class="p">]{closing_brace}</span><span class="err">```</span>
+      
+      <span class="n">Convertemos</span> <span class="k">as</span> <span class="n">mensagens</span> <span class="n">do</span> <span class="n">formato</span> <span class="n">LangChain</span> <span class="n">para</span> <span class="n">o</span> <span class="n">formato</span> <span class="n">HuggingFace</span><span class="p">,</span> <span class="n">assim</span> <span class="n">podemos</span> <span class="n">usar</span> <span class="n">o</span> <span class="n">modelo</span> <span class="n">de</span> <span class="n">linguagem</span><span class="o">.</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Definimos uma template para as queries</p>
+      <div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">QueryRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span><span class="n">query</span><span class="p">:</span> <span class="n">strthread_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"padrão"</span><span class="err">```</span>
+      
+      <span class="n">As</span> <span class="n">consultas</span> <span class="n">terão</span> <span class="n">um</span> <span class="err">`</span><span class="n">query</span><span class="err">`</span><span class="p">,</span> <span class="n">a</span> <span class="n">mensagem</span> <span class="n">do</span> <span class="n">usuário</span><span class="p">,</span> <span class="n">e</span> <span class="n">um</span> <span class="err">`</span><span class="n">thread_id</span><span class="err">`</span><span class="p">,</span> <span class="n">que</span> <span class="n">é</span> <span class="n">o</span> <span class="n">identificador</span> <span class="n">do</span> <span class="n">fio</span> <span class="n">da</span> <span class="n">conversação</span> <span class="n">e</span> <span class="n">mais</span> <span class="n">adiante</span> <span class="n">explicaremos</span> <span class="n">para</span> <span class="n">que</span> <span class="n">o</span> <span class="n">utilizamos</span><span class="o">.</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Criamos um grafo de LangGraph</p>
+      <div class="highlight"><pre><span></span><span class="c1"># Definir o gráficoworkflow = StateGraph(state_schema=MessagesState)</span>
+      <span class="c1"># Defina o nódo na gráficoworkflow.add_edge(START, "model")workflow.add_node("modelo", call_model)</span>
+      <span class="c1"># Adicionar memóriamemory = MemorySaver()graph_app = workflow.compile(checkpointer=memory)```</span>
+      
+      <span class="n">Com</span> <span class="n">isso</span><span class="p">,</span> <span class="n">criamos</span> <span class="n">um</span> <span class="n">grafo</span> <span class="n">de</span> <span class="n">LangGraph</span><span class="p">,</span> <span class="n">que</span> <span class="n">é</span> <span class="n">uma</span> <span class="n">estrutura</span> <span class="n">de</span> <span class="n">dados</span> <span class="n">que</span> <span class="n">nos</span> <span class="n">permite</span> <span class="n">criar</span> <span class="n">um</span> <span class="n">chatbot</span> <span class="n">e</span> <span class="n">gerenciar</span> <span class="n">o</span> <span class="n">estado</span> <span class="n">do</span> <span class="n">chatbot</span> <span class="n">para</span> <span class="n">nós</span><span class="p">,</span> <span class="n">ou</span> <span class="n">seja</span><span class="p">,</span> <span class="n">entre</span> <span class="n">outras</span> <span class="n">coisas</span><span class="p">,</span> <span class="n">o</span> <span class="n">histórico</span> <span class="n">de</span> <span class="n">mensagens</span><span class="o">.</span> <span class="n">Dessa</span> <span class="n">forma</span><span class="p">,</span> <span class="n">não</span> <span class="n">precisamos</span> <span class="n">fazer</span> <span class="n">isso</span> <span class="n">nós</span> <span class="n">mesmos</span><span class="o">.</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Criamos a aplicação de FastAPI</p>
+      <div class="highlight"><pre><span></span><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"LangChain FastAPI"</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"API para gerar texto usando LangChain e LangGraph"</span><span class="p">)</span><span class="err">```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Criamos os endpoints da API</p>
+      <div class="highlight"><pre><span></span><span class="c1"># Ponto de entrada Bem-vindo@app.get("/")async def api_home():"""Ponto de entrada Welcome"""return {opening_brace}"detail": "Bem-vindo ao tutorial de FastAPI, Langchain, Docker"{closing_brace}</span>
+      <span class="c1"># Gerar ponto final@app.post("/generate")async def gerar(request: QueryRequest):""""""Ponto final para gerar texto usando o modelo de linguagem    </span>
+      <span class="n">Argumentos</span><span class="p">:</span><span class="n">solicitação</span><span class="p">:</span> <span class="n">QueryRequestquery</span><span class="p">:</span> <span class="n">strthread_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"padrão"</span>
+      <span class="n">Retorna</span><span class="p">:</span><span class="n">um</span> <span class="n">dicionário</span> <span class="n">contendo</span> <span class="n">o</span> <span class="n">texto</span> <span class="n">gerado</span> <span class="n">e</span> <span class="n">o</span> <span class="n">ID</span> <span class="n">do</span> <span class="n">thread</span><span class="s2">""""""</span><span class="n">tente</span><span class="p">:</span><span class="c1"># Configurar o ID da threadconfig = {opening_brace}"configurable": {opening_brace}"thread_id": request.thread_id{closing_brace}{closing_brace}        </span>
+      <span class="c1"># Crie a mensagem de entradainput_messages = [HumanMessage(content=request.query)]        </span>
+      <span class="c1"># Invocar o gráficooutput = graph_app.invoke({opening_brace}"messages": input_messages{closing_brace}, config)        </span>
+      <span class="c1"># Obter a resposta do modeloresposta = output["messages"][-1].conteúdo        </span>
+      <span class="k">return</span> <span class="p">{opening_brace}</span><span class="s2">"generated_text"</span><span class="p">:</span> <span class="n">resposta</span><span class="p">,</span><span class="s2">"thread_id"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">thread_id</span><span class="p">{closing_brace}</span><span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span><span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Erro ao gerar texto: </span><span class="si">{opening_brace}</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">{closing_brace}</span><span class="s2">"</span><span class="p">)</span><span class="err">```</span>
+      
+      <span class="n">Criamos</span> <span class="n">o</span> <span class="n">endpoint</span> <span class="err">`</span><span class="o">/</span><span class="err">`</span> <span class="n">que</span> <span class="n">nos</span> <span class="n">retornará</span> <span class="n">um</span> <span class="n">texto</span> <span class="n">quando</span> <span class="n">acessarmos</span> <span class="n">a</span> <span class="n">API</span><span class="p">,</span> <span class="n">e</span> <span class="n">o</span> <span class="n">endpoint</span> <span class="err">`</span><span class="o">/</span><span class="n">generate</span><span class="err">`</span> <span class="n">que</span> <span class="n">é</span> <span class="n">o</span> <span class="n">que</span> <span class="n">usaremos</span> <span class="n">para</span> <span class="n">gerar</span> <span class="n">o</span> <span class="n">texto</span><span class="o">.</span>
+      <span class="n">Se</span> <span class="n">nós</span> <span class="n">olharmos</span> <span class="n">para</span> <span class="n">a</span> <span class="n">função</span> <span class="err">`</span><span class="n">generate</span><span class="err">`</span><span class="p">,</span> <span class="n">temos</span> <span class="n">a</span> <span class="n">variável</span> <span class="err">`</span><span class="n">config</span><span class="err">`</span><span class="p">,</span> <span class="n">que</span> <span class="n">é</span> <span class="n">um</span> <span class="n">dicionário</span> <span class="n">que</span> <span class="n">contém</span> <span class="n">o</span> <span class="err">`</span><span class="n">thread_id</span><span class="err">`</span><span class="o">.</span> <span class="n">Este</span> <span class="err">`</span><span class="n">thread_id</span><span class="err">`</span> <span class="n">é</span> <span class="n">o</span> <span class="n">que</span> <span class="n">nos</span> <span class="n">permite</span> <span class="n">ter</span> <span class="n">um</span> <span class="n">histórico</span> <span class="n">de</span> <span class="n">mensagens</span> <span class="n">de</span> <span class="n">cada</span> <span class="n">usuário</span><span class="p">,</span> <span class="n">desta</span> <span class="n">forma</span><span class="p">,</span> <span class="n">diferentes</span> <span class="n">usuários</span> <span class="n">podem</span> <span class="n">usar</span> <span class="n">o</span> <span class="n">mesmo</span> <span class="n">endpoint</span> <span class="n">e</span> <span class="n">ter</span> <span class="n">seu</span> <span class="n">próprio</span> <span class="n">histórico</span> <span class="n">de</span> <span class="n">mensagens</span><span class="o">.</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Por último, temos o código para que se possa executar a aplicação</p>
+      <div class="highlight"><pre><span></span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span><span class="kn">import</span> <span class="nn">uvicornuvicorn.run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s2">"0.0.0.0"</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">7860</span><span class="p">)</span><span class="err">```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos escrever todo o código juntos</p>
+      <div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">fastapi</span> <span class="kn">import</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">HTTPExceptionfrom</span> <span class="n">pydantic</span> <span class="kn">import</span> <span class="nn">BaseModeldo</span> <span class="n">huggingface_hub</span> <span class="kn">import</span> <span class="nn">InferenceClient</span>
+      <span class="err">```</span><span class="n">markdown</span>
+      <span class="kn">from</span> <span class="nn">langchain_core.messages</span> <span class="kn">import</span> <span class="n">HumanMessage</span><span class="p">,</span> <span class="n">AIMessage</span>
+      <span class="err">```</span><span class="kn">from</span> <span class="nn">langgraph.checkpoint.memory</span> <span class="kn">import</span> <span class="n">MemorySaverfrom</span> <span class="n">langgraph</span><span class="o">.</span><span class="n">graph</span> <span class="kn">import</span> <span class="nn">START</span><span class="o">,</span> <span class="nn">MessagesState</span><span class="o">,</span> <span class="nn">StateGraph</span>
+      <span class="kn">import</span> <span class="nn">osfrom</span> <span class="n">dotenv</span> <span class="kn">import</span> <span class="nn">load_dotenvload_dotenv</span><span class="p">()</span>
+      <span class="c1"># Token da HuggingFaceHUGGINGFACE_TOKEN = os.environ.get("HUGGINGFACE_TOKEN", os.getenv("HUGGINGFACE_TOKEN"))</span>
+      <span class="c1"># Inicialize o modelo do HuggingFacemodel = InferenceClient(model="Qwen/Qwen2.5-72B-Instruct",api_key=os.getenv("HUGGINGFACE_TOKEN"))</span>
+      <span class="c1"># Defina a função que chama o modelodef chamar_modelo(estado: EstadoMensagens):""""""Chame o modelo com as mensagens fornecidas</span>
+      <span class="n">Argumentos</span><span class="p">:</span><span class="n">estado</span><span class="p">:</span> <span class="n">MensagensState</span>
+      <span class="n">Retorna</span><span class="p">:</span><span class="n">um</span> <span class="n">dicionário</span> <span class="n">contendo</span> <span class="n">o</span> <span class="n">texto</span> <span class="n">gerado</span> <span class="n">e</span> <span class="n">o</span> <span class="n">ID</span> <span class="n">do</span> <span class="n">thread</span><span class="s2">""""""</span><span class="c1"># Converter mensagens do LangChain para o formato do HuggingFacehf_messages = []for msg in state["messages"]:if isinstance(msg, HumanMessage):hf_messages.append({opening_brace}"role": "user", "content": msg.content{closing_brace})elif isinstance(msg, AIMessage):hf_messages.append({opening_brace}"role": "assistant", "content": msg.content{closing_brace})    </span>
+      <span class="c1"># Chame a APIresposta = modelo.completar_chat(mensagens=hf_mensagens,temperature=0.5,max_tokens=64,top_p=0,7)    </span>
+      <span class="c1"># Converter a resposta para o formato LangChain```markdown</span>
+      <span class="n">ai_message</span> <span class="o">=</span> <span class="n">AIMessage</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+      <span class="err">```</span><span class="k">return</span> <span class="p">{opening_brace}</span><span class="s2">"messages"</span><span class="p">:</span> <span class="n">state</span><span class="p">[</span><span class="s2">"messages"</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">ai_message</span><span class="p">]{closing_brace}</span>
+      <span class="c1"># Definir o gráficoworkflow = StateGraph(state_schema=MessagesState)</span>
+      <span class="c1"># Defina o nó no grafoworkflow.add_edge(START, "model")workflow.add_node("modelo", call_model)</span>
+      <span class="c1"># Adicionar memóriamemory = MemorySaver()graph_app = workflow.compile(checkpointer=memory)</span>
+      <span class="c1"># Defina o modelo de dados para o pedidoclass QueryRequest(BaseModel):query: strthread_id: str = "padrão"</span>
+      <span class="c1"># Criar a aplicação FastAPIapp = FastAPI(title="LangChain FastAPI", description="API para gerar texto usando LangChain e LangGraph")</span>
+      <span class="c1"># Ponto de entrada Bem-vindo@app.get("/")async def api_home():"""Ponto de entrada Welcome"""return {opening_brace}"detalhe": "Bem-vindo ao tutorial de FastAPI, Langchain, Docker"{closing_brace}</span>
+      <span class="c1"># Gerar ponto final@app.post("/gerar")async def generate(request: QueryRequest):"""Ponto final para gerar texto usando o modelo de linguagem    </span>
+      <span class="n">Argumentos</span><span class="p">:</span><span class="n">solicitação</span><span class="p">:</span> <span class="n">QueryRequestquery</span><span class="p">:</span> <span class="n">strthread_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"padrão"</span>
+      <span class="n">Retorna</span><span class="p">:</span><span class="n">um</span> <span class="n">dicionário</span> <span class="n">contendo</span> <span class="n">o</span> <span class="n">texto</span> <span class="n">gerado</span> <span class="n">e</span> <span class="n">o</span> <span class="n">ID</span> <span class="n">do</span> <span class="n">fio</span><span class="s2">"""tente:# Configurar o ID da threadconfig = {opening_brace}"configurable": {opening_brace}"thread_id": request.thread_id{closing_brace}{closing_brace}        </span>
+      <span class="s2"># Criar a mensagem de entradainput_messages = [HumanMessage(content=request.query)]        </span>
+      <span class="s2"># Invocar o gráficooutput = graph_app.invoke({opening_brace}"messages": input_messages{closing_brace}, config)        </span>
+      <span class="s2"># Obter a resposta do modeloresposta = output["messages"][-1].conteúdo        </span>
+      <span class="s2">return {opening_brace}"generated_text": resposta,"thread_id": request.thread_id{closing_brace}except Exception as e:raise HTTPException(status_code=500, detail=f"Erro ao gerar texto: {opening_brace}str(e){closing_brace}")</span>
+      <span class="s2">if __name__ == "__main__":import uvicornuvicorn.run(app, host="0.0.0.0", port=7860)```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Dockerfile">Dockerfile<a class="anchor-link" href="#Dockerfile"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 110" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Agora vemos como criar o Dockerfile</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Primeiro indicamos a partir de qual imagem vamos começar</p>
+      <div class="highlight"><pre><span></span><span class="k">FROM</span><span class="w"> </span><span class="s">python:3.13-slim```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Agora criamos o diretório de trabalho</p>
+      <div class="highlight"><pre><span></span><span class="k">RUN</span><span class="w"> </span>useradd<span class="w"> </span>-m<span class="w"> </span>-u<span class="w"> </span><span class="m">1000</span><span class="w"> </span>userWORKDIR<span class="w"> </span>/app<span class="sb">```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Copiamos o arquivo com as dependências e instalamos</p>
+      <div class="highlight"><pre><span></span><span class="k">COPY</span><span class="w"> </span>--chown<span class="o">=</span>user<span class="w"> </span>./requirements.txt<span class="w"> </span>requirements.txtRUN<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--no-cache-dir<span class="w"> </span>--upgrade<span class="w"> </span>-r<span class="w"> </span>requirements.txt<span class="sb">```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Copiamos o resto do código</p>
+      <div class="highlight"><pre><span></span><span class="k">COPY</span><span class="w"> </span>--chown<span class="o">=</span>user<span class="w"> </span>.<span class="w"> </span>/app<span class="sb">```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Exponhamos o porto 7860</p>
+      <div class="highlight"><pre><span></span><span class="k">EXPOSE</span><span class="w"> </span><span class="s">7860```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Criamos as variáveis de ambiente</p>
+      <div class="highlight"><pre><span></span><span class="k">RUN</span><span class="w"> </span>--mount<span class="o">=</span><span class="nv">type</span><span class="o">=</span>secret,id<span class="o">=</span>HUGGINGFACE_TOKEN,mode<span class="o">=</span><span class="m">0444</span>,required<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\t</span>est<span class="w"> </span>-f<span class="w"> </span>/run/secrets/HUGGINGFACE_TOKEN<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"Segredo existe!"</span><span class="sb">```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Por último, indicamos o comando para executar a aplicação</p>
+      <div class="highlight"><pre><span></span><span class="k">CMD</span><span class="w"> </span><span class="p">[</span><span class="s2">"uvicorn"</span><span class="p">,</span><span class="w"> </span><span class="s2">"app:app"</span><span class="p">,</span><span class="w"> </span><span class="s2">"--host"</span><span class="p">,</span><span class="w"> </span><span class="s2">"0.0.0.0"</span><span class="p">,</span><span class="w"> </span><span class="s2">"--port"</span><span class="p">,</span><span class="w"> </span><span class="s2">"7860"</span><span class="p">]</span><span class="sb">```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Agora colocamos tudo junto</p>
+      <div class="highlight"><pre><span></span><span class="k">FROM</span><span class="w"> </span><span class="s">python:3.13-slim</span>
+      <span class="k">RUN</span><span class="w"> </span>useradd<span class="w"> </span>-m<span class="w"> </span>-u<span class="w"> </span><span class="m">1000</span><span class="w"> </span>userWORKDIR<span class="w"> </span>/app
+      <span class="k">COPY</span><span class="w"> </span>--chown<span class="o">=</span>user<span class="w"> </span>./requirements.txt<span class="w"> </span>requirements.txtRUN<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--no-cache-dir<span class="w"> </span>--upgrade<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+      <span class="k">COPY</span><span class="w"> </span>--chown<span class="o">=</span>user<span class="w"> </span>.<span class="w"> </span>/app
+      <span class="k">EXPOSE</span><span class="w"> </span><span class="s">7860</span>
+      <span class="k">RUN</span><span class="w"> </span>--mount<span class="o">=</span><span class="nv">type</span><span class="o">=</span>secret,id<span class="o">=</span>HUGGINGFACE_TOKEN,mode<span class="o">=</span><span class="m">0444</span>,required<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\t</span>est<span class="w"> </span>-f<span class="w"> </span>/run/secrets/HUGGINGFACE_TOKEN<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"Segredo existe!"</span>
+      <span class="k">CMD</span><span class="w"> </span><span class="p">[</span><span class="s2">"uvicorn"</span><span class="p">,</span><span class="w"> </span><span class="s2">"app:app"</span><span class="p">,</span><span class="w"> </span><span class="s2">"--host"</span><span class="p">,</span><span class="w"> </span><span class="s2">"0.0.0.0"</span><span class="p">,</span><span class="w"> </span><span class="s2">"--port"</span><span class="p">,</span><span class="w"> </span><span class="s2">"7860"</span><span class="p">]</span><span class="sb">```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="requirements.txt">requirements.txt<a class="anchor-link" href="#requirements.txt"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 111" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Criamos o arquivo com as dependências</p>
+      <pre><code class="language-txt">txt
+      fastapiuvicornpedidospydantic&gt;=2.0.0langchainlangchain-huggingfacelangchain-corelanggraph &gt; 0.2.27python-dotenv.2.11```</code></pre>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="README.md">README.md<a class="anchor-link" href="#README.md"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 112" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Por fim, criamos o arquivo README.md com informações sobre o espaço e as instruções para o HuggingFace.</p>
+      <div class="highlight"><pre><span></span>---título: Backend do SmolLM2emoji: 📊colorFrom: amarelocolorTo: vermelhosdk: dockerpinned: falselicença: apache-2.0short_description: Backend do chat SmolLM2app_port: 7860---
+      <span class="gh"># Backend do SmolLM2</span>
+      Este projeto implementa uma API FastAPI que usa LangChain e LangGraph para gerar texto com o modelo Qwen2.5-72B-Instruct do HuggingFace.
+      <span class="gu">## Configuração</span>
+      <span class="gu">### No HuggingFace Spaces</span>
+      Este projeto está projetado para ser executado em HuggingFace Spaces. Para configurá-lo:
+      <span class="k">1.</span> Crie um novo Espaço no HuggingFace com o SDK Docker2. Configure a variável de ambiente <span class="sb">`HUGGINGFACE_TOKEN`</span> ou <span class="sb">`HF_TOKEN`</span> na configuração do Space:- Vá para a aba "Configurações" do seu Espaço- Role para a seção "Secrets do repositório"- Adicione uma nova variável com o nome <span class="sb">`HUGGINGFACE_TOKEN`</span> e seu token como valor- Salve as alterações
+      <span class="gu">### Desenvolvimento local</span>
+      Para o desenvolvimento local:
+      <span class="k">1.</span> Clone este repositório2. Crie um arquivo <span class="sb">`.env`</span> na raiz do projeto com seu token do HuggingFace:```
+      ```HUGGINGFACE_TOKEN=seu_token_aqui```
+      ```3. Instale as dependências:```
+      ```pip install -r requirements.txt```
+      Por favor, forneça o texto em Markdown que você gostaria de traduzir para o português.
+      </pre></div>
+      <h2 id="Execu%C3%A7%C3%A3o-local">Execução local<a class="anchor-link" href="#Execu%C3%A7%C3%A3o-local"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 113" src={opening_brace}svg_paths.link_svg_path{closing_brace}/></a></h2><p>``bashuvicorn app:app --reload```
+      Por favor, forneça o texto em Markdown que você gostaria de traduzir para o português.</p>
+      <pre><code>A API estará disponível em `http://localhost:8000`.
+      ## Endpoints
+      ### GET `/`
+      Ponto final de boas-vindas que retorna uma mensagem de saudação.
+      ### POST `/gerar`
+      Ponto final para gerar texto usando o modelo de linguagem.
+      **Parâmetros da solicitação:**``json{opening_brace}"query": "Sua pergunta aqui","thread_id": "identificador_de_thread_opcional"{closing_brace}```
+      Por favor, forneça o texto em markdown que você gostaria de traduzir para o português.</code></pre>
+      <p><strong>Resposta:</strong>``json<code>{opening_brace}"Texto gerado pelo modelo""thread_id": "identificador do thread"{closing_brace}</code>
+      Por favor, forneça o texto em Markdown que deseja traduzir para o português.</p>
+      <pre><code>## Docker
+      Para executar a aplicação em um contêiner Docker:
+      ``bash# Construa a imagemdocker build -t smollm2-backend .
+      # Executar o contêinerdocker run -p 8000:8000 --env-file .env smollm2-backend```</code></pre>
+      <h2 id="Documenta%C3%A7%C3%A3o-da-API">Documentação da API<a class="anchor-link" href="#Documenta%C3%A7%C3%A3o-da-API"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 114" src={opening_brace}svg_paths.link_svg_path{closing_brace}/></a></h2><p>A documentação interativa da API está disponível em:- Swagger UI: <code>http://localhost:8000/docs</code>- ReDoc: `<a href="http://localhost:8000/redoc%60%60%60%60">http://localhost:8000/redoc%60%60%60%60</a></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Token-do-HuggingFace">Token do HuggingFace<a class="anchor-link" href="#Token-do-HuggingFace"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 115" src={opening_brace}svg_paths.link_svg_path{closing_brace}/></a></h3><p>Se você notou no código e no Dockerfile, usamos um token do HuggingFace, então vamos ter que criar um. Em nossa conta do HuggingFace, criamos um <a href="https://huggingface.co/settings/tokens/new?tokenType=fineGrained">novo token</a>, damos um nome a ele e concedemos as seguintes permissões:</p>
+      <ul>
+      <li>Acesso de leitura aos conteúdos de todos os repositórios sob o seu namespace pessoal* Acesso de leitura aos conteúdos de todos os repositórios sob seu namespace pessoal* Fazer chamadas para provedores de inferência* Fazer chamadas para Pontos de Extremidade de Inferência</li>
+      </ul>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="backend docker - token" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-token.webp" width="1878" height="1216"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Adicionar-o-token-aos-secrets-do-espa%C3%A7o">Adicionar o token aos secrets do espaço<a class="anchor-link" href="#Adicionar-o-token-aos-secrets-do-espa%C3%A7o"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 116" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Agora que já temos o token, precisamos adicioná-lo ao espaço. Na parte superior do aplicativo, poderemos ver um botão chamado <code>Settings</code>, clicamos nele e poderemos ver a seção de configuração do espaço.
+      Se formos para baixo, poderemos ver uma seção onde podemos adicionar <code>Variables</code> e <code>Secrets</code>. Neste caso, como estamos adicionando um token, vamos adicioná-lo aos <code>Secrets</code>.
+      Damos o nome <code>HUGGINGFACE_TOKEN</code> e o valor do token.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Implanta%C3%A7%C3%A3o">Implantação<a class="anchor-link" href="#Implanta%C3%A7%C3%A3o"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 117" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Se nós clonamos o espaço, temos que fazer um commit e um push. Se modificamos os arquivos no HuggingFace, basta salvá-los.
+      Então, quando as alterações estiverem no HuggingFace, teremos que esperar alguns segundos para que o espaço seja construído e possamos usá-lo.
+      Neste caso, construímos apenas um backend, portanto o que vamos ver ao entrar no espaço é o que definimos no endpoint <code>/</code>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" alt="backend docker - espaço" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-space.webp" width="2832" height="1360"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="URL-do-backend">URL do backend<a class="anchor-link" href="#URL-do-backend"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 118" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Precisamos saber a URL do backend para poder fazer chamadas à API. Para isso, temos que clicar nos três pontos no canto superior direito para ver as opções.
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" alt="backend docker - opções" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-options.webp" width="1878" height="1216"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>No menu suspenso, clicamos em <code>Embed this Spade</code>. Será aberta uma janela indicando como incorporar o espaço com um iframe e também fornecerá a URL do espaço.
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" alt="backend docker - embed" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-embed.webp" width="1926" height="864"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Se agora formos para essa URL, veremos o mesmo que no espaço.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Documenta%C3%A7%C3%A3o">Documentação<a class="anchor-link" href="#Documenta%C3%A7%C3%A3o"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 119" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>FastAPI, além de ser uma API extremamente rápida, tem outra grande vantagem: gera documentação automaticamente.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Se adicionarmos <code>/docs</code> à URL que vimos anteriormente, poderemos visualizar a documentação da API com o <code>Swagger UI</code>.
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" alt="backend docker - swagger doc" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-swagger-doc.webp" width="2834" height="1352"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Também podemos adicionar <code>/redoc</code> à URL para ver a documentação com <code>ReDoc</code>.
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" alt="backend docker - redoc doc" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-redoc.webp" width="2834" height="1384"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Teste-da-API">Teste da API<a class="anchor-link" href="#Teste-da-API"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 120" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>O bom da documentação <code>Swagger UI</code> é que nos permite testar a API diretamente do navegador.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Adicionamos <code>/docs</code> à URL que obtivemos, abrimos o menu suspenso do endpoint <code>/generate</code> e clicamos em <code>Try it out</code>, modificamos o valor da <code>query</code> e do <code>thread_id</code> e clicamos em <code>Execute</code>.
+      No primeiro caso vou colocar</p>
+      <ul>
+      <li><strong>query</strong>: Olá, como você está? Sou Máximo* <strong>thread_id</strong>: user1</li>
+      </ul>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="backend docker - test API" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-test-API.webp" width="2720" height="1334"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Recebemos a seguinte resposta <code>Olá Máximo! Estou muito bem, obrigado por perguntar. Como você está? Em que posso ajudar hoje?</code>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" alt="backend docker -response 1 - user1" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-response1-user1.webp" width="2720" height="1282"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vamos testar agora a mesma pergunta, mas com um <code>thread_id</code> diferente, neste caso <code>user2</code>.
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" alt="backend docker - query 1 - user2" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-query1-user2.webp" width="2720" height="1336"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>E nos responde isso <code>Olá Luis! Estou muito bem, obrigado por perguntar. Como você está? No que posso ajudar hoje?</code>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" alt="backend docker - response 1 - user2" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-response1-user2.webp" width="2720" height="1224"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Agora pedimos nosso nome com os dois usuários e obtemos isso</p>
+      <ul>
+      <li>Para o usuário <strong>user1</strong>: <code>Você se chama Máximo. Há algo mais em que eu possa ajudar você?</code>* Para o usuário <strong>user2</strong>: <code>Você se chama Luis. Há mais alguma coisa em que eu possa ajudá-lo hoje, Luis?</code></li>
+      </ul>
+      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="backend docker - response 2 - user1" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-response2-user1.webp" width="2720" height="1224"/>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" alt="backend docker - response 2 - user2" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-response2-user2.webp" width="2720" height="1214"/></p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Deploy-do-backend-com-Gradio-e-modelo-rodando-no-servidor">Deploy do backend com Gradio e modelo rodando no servidor<a class="anchor-link" href="#Deploy-do-backend-com-Gradio-e-modelo-rodando-no-servidor"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 121" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Os dois backends que criamos na verdade não estão executando um modelo, mas sim fazendo chamadas para Inference Endpoints da HuggingFace. Mas pode ser que queiramos que tudo rode no servidor, inclusive o modelo. Pode ser que você tenha feito um fine-tuning de um LLM para seu caso de uso, por isso já não pode fazer chamadas para Inference Endpoints.
+      Então vamos ver como modificar o código dos dois backends para executar um modelo no servidor e não fazer chamadas para Inference Endpoints.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Criar-Espa%C3%A7o">Criar Espaço<a class="anchor-link" href="#Criar-Espa%C3%A7o"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 122" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Na hora de criar o space no HuggingFace fazemos o mesmo que antes, criamos um novo space, colocamos um nome e uma descrição, selecionamos Gradio como SDK, selecionamos o HW em que vamos deployar, no meu caso selecionei o HW mais básico e gratuito, e selecionamos se o faremos privado ou público.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="C%C3%B3digo">Código<a class="anchor-link" href="#C%C3%B3digo"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 123" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Temos que fazer alterações em <code>app.py</code> e em <code>requirements.txt</code> para que, em vez de fazer chamadas a Inference Endpoints, o modelo seja executado localmente.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="app.py">app.py<a class="anchor-link" href="#app.py"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 124" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>As mudanças que temos que fazer são</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Importar <code>AutoModelForCausalLM</code> e <code>AutoTokenizer</code> da biblioteca <code>transformers</code> e importar <code>torch</code></p>
+      <div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">AutoTokenizerimport</span> <span class="n">torch</span><span class="err">```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Em vez de criar um modelo com <code>InferenceClient</code>, criamos com <code>AutoModelForCausalLM</code> e <code>AutoTokenizer</code>.</p>
+      <div class="highlight"><pre><span></span><span class="c1"># Carregar o modelo e o tokenizermodel_name = "HuggingFaceTB/SmolLM2-1.7B-Instruct"tokenizer = AutoTokenizer.from_pretrained(model_name)model = AutoModelForCausalLM.from_pretrained(nome_do_modelo,torch_dtype=torch.float16,device_map="auto")```</span>
+      
+      <span class="n">Utilizo</span> <span class="err">`</span><span class="n">HuggingFaceTB</span><span class="o">/</span><span class="n">SmolLM2</span><span class="o">-</span><span class="mf">1.7</span><span class="n">B</span><span class="o">-</span><span class="n">Instruct</span><span class="err">`</span> <span class="n">porque</span> <span class="n">é</span> <span class="n">um</span> <span class="n">modelo</span> <span class="n">bastante</span> <span class="n">capaz</span> <span class="n">com</span> <span class="n">apenas</span> <span class="mf">1.7</span><span class="n">B</span> <span class="n">de</span> <span class="n">parâmetros</span><span class="o">.</span> <span class="n">Como</span> <span class="n">escolhi</span> <span class="n">o</span> <span class="n">hardware</span> <span class="n">mais</span> <span class="n">básico</span><span class="p">,</span> <span class="n">não</span> <span class="n">posso</span> <span class="n">usar</span> <span class="n">modelos</span> <span class="n">muito</span> <span class="n">grandes</span><span class="o">.</span> <span class="n">Você</span><span class="p">,</span> <span class="n">se</span> <span class="n">quiser</span> <span class="n">usar</span> <span class="n">um</span> <span class="n">modelo</span> <span class="n">maior</span><span class="p">,</span> <span class="n">tem</span> <span class="n">duas</span> <span class="n">opções</span><span class="p">:</span> <span class="n">usar</span> <span class="n">o</span> <span class="n">hardware</span> <span class="n">gratuito</span> <span class="n">e</span> <span class="n">aceitar</span> <span class="n">que</span> <span class="n">a</span> <span class="n">inferência</span> <span class="n">será</span> <span class="n">mais</span> <span class="n">lenta</span><span class="p">,</span> <span class="n">ou</span> <span class="n">usar</span> <span class="n">um</span> <span class="n">hardware</span> <span class="n">mais</span> <span class="n">potente</span><span class="p">,</span> <span class="n">mas</span> <span class="n">pago</span><span class="o">.</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Modificar a função <code>respond</code> para que construa o prompt com a estrutura necessária pela biblioteca <code>transformers</code>, tokenizar o prompt, fazer a inferência e destokenizar a resposta.</p>
+      <div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">responder</span><span class="p">(</span><span class="n">mensagem</span><span class="p">,</span><span class="n">histórico</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span><span class="n">Mensagem</span> <span class="n">do</span> <span class="n">sistema</span><span class="p">,</span><span class="n">max_tokens</span><span class="p">,</span><span class="n">temperatura</span><span class="p">,</span><span class="n">top_p</span><span class="p">,):</span><span class="c1"># Construir o prompt com o formato corretoprompt = f"&lt;|system|&gt;\n{opening_brace}system_message{closing_brace}&lt;/s&gt;\n"    </span>
+      <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">history</span><span class="p">:</span><span class="k">if</span> <span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"&lt;|user|&gt;</span><span class="se">\n</span><span class="si">{opening_brace}</span><span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">{closing_brace}</span><span class="s2">&lt;/s&gt;</span><span class="se">\n</span><span class="s2">"</span><span class="k">if</span> <span class="n">val</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="n">prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"&lt;|assistant|&gt;</span><span class="se">\n</span><span class="si">{opening_brace}</span><span class="n">val</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">{closing_brace}</span><span class="s2">&lt;/s&gt;</span><span class="se">\n</span><span class="s2">"</span>    
+      <span class="n">prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"&lt;|user|&gt;</span><span class="se">\n</span><span class="si">{opening_brace}</span><span class="n">message</span><span class="si">{closing_brace}</span><span class="s2">&lt;/s&gt;</span><span class="se">\n</span><span class="s2">&lt;|assistant|&gt;</span><span class="se">\n</span><span class="s2">"</span>    
+      <span class="c1"># Tokenizar o promptinputs = tokenizer(prompt, return_tensors="pt").to(model.device)    </span>
+      <span class="c1"># Gerar a respostaoutputs = model.generate(**entradas,**max_new_tokens=max_tokens,temperature=temperature,top_p=top_p,do_sample=True,pad_token_id=tokenizer.eos_token_id)    </span>
+      <span class="c1"># Decodificar a respostaresponse = tokenizer.decode(outputs[0], skip_special_tokens=True)    </span>
+      <span class="c1"># Extrair apenas a parte da resposta do assistenteresponse = response.split("&lt;|assistant|&gt;\n")[-1].strip()    </span>
+      <span class="k">yield</span> <span class="n">response</span><span class="err">```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>A seguir deixo todo o código</p>
+      <div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">gradio</span> <span class="k">as</span> <span class="nn">grfrom</span> <span class="n">transformers</span> <span class="kn">import</span> <span class="nn">AutoModelForCausalLM</span><span class="o">,</span> <span class="nn">AutoTokenizerimport</span> <span class="n">torch</span>
+      <span class="sd">""""""</span><span class="n">Para</span> <span class="n">mais</span> <span class="n">informações</span> <span class="n">sobre</span> <span class="n">o</span> <span class="n">suporte</span> <span class="n">à</span> <span class="n">API</span> <span class="n">de</span> <span class="n">Inferência</span> <span class="n">do</span> <span class="err">`</span><span class="n">huggingface_hub</span><span class="err">`</span><span class="p">,</span> <span class="n">consulte</span> <span class="n">a</span> <span class="n">documentação</span><span class="p">:</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">huggingface</span><span class="o">.</span><span class="n">co</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">huggingface_hub</span><span class="o">/</span><span class="n">v0</span><span class="mf">.22.2</span><span class="o">/</span><span class="n">en</span><span class="o">/</span><span class="n">guides</span><span class="o">/</span><span class="n">inference</span><span class="s2">""""""</span>
+      <span class="c1"># Carregar o modelo e o tokenizermodel_name = "HuggingFaceTB/SmolLM2-1.7B-Instruct"tokenizer = AutoTokenizer.from_pretrained(model_name)model = AutoModelForCausalLM.from_pretrained(nome_do_modelo,torch_dtype=torch.float16,device_map="auto")</span>
+      <span class="k">def</span> <span class="nf">responder</span><span class="p">(</span><span class="n">mensagem</span><span class="p">,</span><span class="n">história</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span><span class="n">Mensagem</span> <span class="n">do</span> <span class="n">sistema</span><span class="p">,</span><span class="n">max_tokens</span><span class="p">,</span><span class="n">temperatura</span><span class="p">,</span><span class="n">top_p</span><span class="p">,):</span><span class="c1"># Construir o prompt com o formato corretoprompt = f"&lt;|system|&gt;\n{opening_brace}system_message{closing_brace}&lt;/s&gt;\n"    </span>
+      <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">history</span><span class="p">:</span><span class="k">if</span> <span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"&lt;|user|&gt;</span><span class="se">\n</span><span class="si">{opening_brace}</span><span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">{closing_brace}</span><span class="s2">&lt;/s&gt;</span><span class="se">\n</span><span class="s2">"</span><span class="k">if</span> <span class="n">val</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="n">prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"&lt;|assistant|&gt;</span><span class="se">\n</span><span class="si">{opening_brace}</span><span class="n">val</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">{closing_brace}</span><span class="s2">&lt;/s&gt;</span><span class="se">\n</span><span class="s2">"</span>    
+      <span class="n">prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"&lt;|user|&gt;</span><span class="se">\n</span><span class="si">{opening_brace}</span><span class="n">message</span><span class="si">{closing_brace}</span><span class="s2">&lt;/s&gt;</span><span class="se">\n</span><span class="s2">&lt;|assistant|&gt;</span><span class="se">\n</span><span class="s2">"</span>    
+      <span class="c1"># Tokenizar o promptinputs = tokenizer(prompt, return_tensors="pt").to(model.device)    </span>
+      <span class="c1"># Gerar a respostasaídas = modelo.gerar(**entradas,**max_new_tokens=max_tokens,temperature=temperature,top_p=top_p,do_sample=True,pad_token_id=tokenizer.eos_token_id)    </span>
+      <span class="c1"># Decodificar a respostaresponse = tokenizer.decode(outputs[0], skip_special_tokens=True)    </span>
+      <span class="c1"># Extrair apenas a parte da resposta do assistenteresponse = response.split("&lt;|assistant|&gt;\n")[-1].strip()    </span>
+      <span class="k">yield</span> <span class="n">response</span>
+      
+      <span class="sd">""""""</span><span class="n">Para</span> <span class="n">informações</span> <span class="n">sobre</span> <span class="n">como</span> <span class="n">personalizar</span> <span class="n">o</span> <span class="n">ChatInterface</span><span class="p">,</span> <span class="n">consulte</span> <span class="n">a</span> <span class="n">documentação</span> <span class="n">do</span> <span class="n">Gradio</span><span class="p">:</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">www</span><span class="o">.</span><span class="n">gradio</span><span class="o">.</span><span class="n">app</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">chatinterface</span><span class="s2">""""""</span><span class="n">demo</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">ChatInterface</span><span class="p">(</span><span class="n">responda</span><span class="p">,</span><span class="err">```</span><span class="n">markdown</span>
+      <span class="n">additional_inputs</span><span class="o">=</span><span class="p">[</span>
+      <span class="err">```</span><span class="n">gr</span><span class="o">.</span><span class="n">Textbox</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">"Você é um Chatbot amigável. Sempre responda na língua em que o usuário está escrevendo para você."</span><span class="n">rótulo</span><span class="o">=</span><span class="s2">"Mensagem do sistema"</span><span class="p">),</span><span class="n">gr</span><span class="o">.</span><span class="n">Slider</span><span class="p">(</span><span class="n">minimum</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">maximum</span><span class="o">=</span><span class="mi">2048</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Máximo de novos tokens"</span><span class="p">),</span><span class="n">gr</span><span class="o">.</span><span class="n">Slider</span><span class="p">(</span><span class="n">mínimo</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span> <span class="n">máximo</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span> <span class="n">valor</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="mi">7</span><span class="p">,</span> <span class="n">passo</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span> <span class="n">rótulo</span><span class="o">=</span><span class="s2">"Temperatura"</span><span class="p">),</span><span class="n">gr</span><span class="o">.</span><span class="n">Slider</span><span class="p">()</span><span class="n">mínimo</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span><span class="n">máximo</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span><span class="n">value</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span><span class="n">passo</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s2">"Top-p (amostragem do núcleo)"</span><span class="p">),],)</span>
+      
+      <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span><span class="n">demo</span><span class="o">.</span><span class="n">launch</span><span class="p">()</span><span class="err">```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="requirements.txt">requirements.txt<a class="anchor-link" href="#requirements.txt"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 125" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Neste arquivo, devemos adicionar as novas bibliotecas que vamos utilizar, neste caso <code>transformers</code>, <code>accelerate</code> e <code>torch</code>. O arquivo completo ficaria:</p>
+      <pre><code class="language-txt">txt
+      huggingface_hub==0.25.2gradio&gt;=4.0.0transformers&gt;=4.36.0torch&gt;=2.0.0accelerate&gt;=0.25.0```</code></pre>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Teste-da-API">Teste da API<a class="anchor-link" href="#Teste-da-API"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 126" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Desplegamos o space e testamos diretamente a API.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">from</span> <span class="nn">gradio_client</span> <span class="kn">import</span> <span class="n">Client</span>',
+          '',
+          '<span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="s2">"Maximofn/SmolLM2_localModel"</span><span class="p">)</span>',
+          '<span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>',
+          '		<span class="n">message</span><span class="o">=</span><span class="s2">"Hola, ¿cómo estás? Me llamo Máximo"</span><span class="p">,</span>',
+          '		<span class="n">system_message</span><span class="o">=</span><span class="s2">"You are a friendly Chatbot. Always reply in the language in which the user is writing to you."</span><span class="p">,</span>',
+          '		<span class="n">max_tokens</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>',
+          '		<span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>',
+          '		<span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>',
+          '		<span class="n">api_name</span><span class="o">=</span><span class="s2">"/chat"</span>',
+          '<span class="p">)</span>',
+          '<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Loaded as API: https://maximofn-smollm2-localmodel.hf.space ✔',
+          'Hola Máximo, soy su Chatbot amable y estoy funcionando bien. Gracias por tu mensaje, me complace ayudarte hoy en día. ¿Cómo puedo servirte?',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Surpreende-me o quão rápido o modelo responde, mesmo estando em um servidor sem GPU.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Deploy-de-backend-com-FastAPI,-Langchain-e-Docker-e-modelo-rodando-no-servidor">Deploy de backend com FastAPI, Langchain e Docker e modelo rodando no servidor<a class="anchor-link" href="#Deploy-de-backend-com-FastAPI,-Langchain-e-Docker-e-modelo-rodando-no-servidor"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 127" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Agora fazemos o mesmo que antes, mas com FastAPI, LangChain e Docker.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Criar-Espa%C3%A7o">Criar Espaço<a class="anchor-link" href="#Criar-Espa%C3%A7o"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 128" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Ao criar o space no HuggingFace, fazemos o mesmo que antes: criamos um novo espaço, colocamos um nome e uma descrição, selecionamos Docker como SDK, escolhemos o HW em que vamos implantá-lo, no meu caso, escolho o HW mais básico e gratuito, e decidimos se o faremos privado ou público.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="C%C3%B3digo">Código<a class="anchor-link" href="#C%C3%B3digo"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 129" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="app.py">app.py<a class="anchor-link" href="#app.py"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 130" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Já não importamos <code>InferenceClient</code> e agora importamos <code>AutoModelForCausalLM</code> e <code>AutoTokenizer</code> da biblioteca <code>transformers</code> e importamos <code>torch</code>.</p>
+      <div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">AutoTokenizerimport</span> <span class="n">torch</span><span class="err">```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Instanciamos o modelo e o tokenizer com <code>AutoModelForCausalLM</code> e <code>AutoTokenizer</code>.</p>
+      <div class="highlight"><pre><span></span><span class="c1"># Inicialize o modelo e o tokenizadorprint("Carregando modelo e tokenizer...")dispositivo = "cuda" if torch.cuda.is_available() else "cpu"model_name = "HuggingFaceTB/SmolLM2-1.7B-Instruct"</span>
+      <span class="n">tente</span><span class="p">:</span><span class="c1"># Carregar o modelo no formato BF16 para melhor desempenho e menor uso de memóriatokenizer = AutoTokenizer.from_pretrained(model_name)    </span>
+      <span class="k">if</span> <span class="n">device</span> <span class="o">==</span> <span class="s2">"cuda"</span><span class="p">:</span><span class="nb">print</span><span class="p">(</span><span class="s2">"Usando GPU para o modelo..."</span><span class="p">)</span><span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">nome_do_modelo</span><span class="p">,</span><span class="n">torch_dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span><span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">,</span><span class="n">low_cpu_mem_usage</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="k">else</span><span class="p">:</span><span class="nb">print</span><span class="p">(</span><span class="s2">"Usando CPU para o modelo..."</span><span class="p">)</span><span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">nome_do_modelo</span><span class="p">,</span><span class="n">device_map</span><span class="o">=</span><span class="p">{opening_brace}</span><span class="s2">""</span><span class="p">:</span> <span class="n">device</span><span class="p">{closing_brace},</span><span class="n">torch_dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Modelo carregado com sucesso em: </span><span class="si">{opening_brace}</span><span class="n">device</span><span class="si">{closing_brace}</span><span class="s2">"</span><span class="p">)</span><span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Erro ao carregar o modelo: </span><span class="si">{opening_brace}</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">{closing_brace}</span><span class="s2">"</span><span class="p">)</span><span class="n">aumentar</span><span class="err">```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Re definimos a função <code>call_model</code> para que faça a inferência com o modelo local.</p>
+      <div class="highlight"><pre><span></span><span class="c1"># Defina a função que chama o modelodef chamar_modelo(estado: EstadoMensagens):"""Chame o modelo com as mensagens fornecidas</span>
+      <span class="n">Argumentos</span><span class="p">:</span><span class="n">estado</span><span class="p">:</span> <span class="n">EstadoMensagens</span>
+      <span class="n">Retorna</span><span class="p">:</span><span class="n">dicionário</span><span class="p">:</span> <span class="n">Um</span> <span class="n">dicionário</span> <span class="n">contendo</span> <span class="n">o</span> <span class="n">texto</span> <span class="n">gerado</span> <span class="n">e</span> <span class="n">o</span> <span class="n">ID</span> <span class="n">do</span> <span class="n">thread</span><span class="s2">""""""</span><span class="c1"># Converter mensagens LangChain para formato de bate-papomensagens = []for msg in state["messages"]:if isinstance(msg, HumanMessage):messages.append({opening_brace}"role": "user", "content": msg.content{closing_brace})elif isinstance(msg, AIMessage):messages.append({opening_brace}"role": "assistant", "content": msg.content{closing_brace})    </span>
+      <span class="c1"># Prepare o input usando o modelo de bate-papoinput_text = tokenizer.apply_chat_template(messages, tokenize=False)inputs = tokenizer.encode(input_text, return_tensors="pt").to(device)    </span>
+      <span class="c1"># Gerar respostasaídas = modelo.gerar(entradas,max_new_tokens=512,  # Aumente o número de tokens para respostas mais longastemperature=0.7,top_p=0,9,do_sample=True,pad_token_id=tokenizer.eos_token_id)    </span>
+      <span class="c1"># Decodificar e limpar a respostaresponse = tokenizer.decode(outputs[0], skip_special_tokens=True)# Extrair apenas a resposta do assistente (após a última mensagem do usuário)response = response.split("Assistant:")[-1].strip()    </span>
+      <span class="c1"># Converter a resposta para o formato LangChain```markdown</span>
+      <span class="n">ai_message</span> <span class="o">=</span> <span class="n">AIMessage</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="n">response</span><span class="p">)</span>
+      <span class="err">```</span><span class="k">return</span> <span class="p">{opening_brace}</span><span class="s2">"messages"</span><span class="p">:</span> <span class="n">state</span><span class="p">[</span><span class="s2">"messages"</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">ai_message</span><span class="p">]{closing_brace}</span><span class="err">```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="requirements.txt">requirements.txt<a class="anchor-link" href="#requirements.txt"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 131" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Temos que remover <code>langchain-huggingface</code> e adicionar <code>transformers</code>, <code>accelerate</code> e <code>torch</code> no arquivo <code>requirements.txt</code>. O arquivo ficaria:</p>
+      <pre><code class="language-txt">txt
+      fastapiuvicornsolicitaçõespydantic&gt;=2.0.0langchain&gt;=0.1.0langchain-core&gt;=0.1.10langgraph&gt;=0.2.27python-dotenv&gt;=1.0.0transformers&gt;=4.36.0torch&gt;=2.0.0accelerate&gt;=0.26.0```</code></pre>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h4 id="Dockerfile">Dockerfile<a class="anchor-link" href="#Dockerfile"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 132" src={svg_paths.link_svg_path}/></a></h4>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Já não precisamos ter <code>RUN --mount=type=secret,id=HUGGINGFACE_TOKEN,mode=0444,required=true</code> porque como o modelo vai estar no servidor e não vamos fazer chamadas para Inference Endpoints, não precisamos do token. O arquivo ficaria:</p>
+      <div class="highlight"><pre><span></span><span class="k">FROM</span><span class="w"> </span><span class="s">python:3.13-slim</span>
+      <span class="k">RUN</span><span class="w"> </span>useradd<span class="w"> </span>-m<span class="w"> </span>-u<span class="w"> </span><span class="m">1000</span><span class="w"> </span>userWORKDIR<span class="w"> </span>/app
+      <span class="k">COPY</span><span class="w"> </span>--chown<span class="o">=</span>user<span class="w"> </span>./requirements.txt<span class="w"> </span>requirements.txtRUN<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--no-cache-dir<span class="w"> </span>--upgrade<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+      <span class="k">COPY</span><span class="w"> </span>--chown<span class="o">=</span>user<span class="w"> </span>.<span class="w"> </span>/app
+      <span class="k">EXPOSE</span><span class="w"> </span><span class="s">7860</span>
+      <span class="k">CMD</span><span class="w"> </span><span class="p">[</span><span class="s2">"uvicorn"</span><span class="p">,</span><span class="w"> </span><span class="s2">"app:app"</span><span class="p">,</span><span class="w"> </span><span class="s2">"--host"</span><span class="p">,</span><span class="w"> </span><span class="s2">"0.0.0.0"</span><span class="p">,</span><span class="w"> </span><span class="s2">"--port"</span><span class="p">,</span><span class="w"> </span><span class="s2">"7860"</span><span class="p">]</span><span class="sb">```</span>
+      </pre></div>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h3 id="Teste-da-API">Teste da API<a class="anchor-link" href="#Teste-da-API"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 133" src={svg_paths.link_svg_path}/></a></h3>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Deployamos o space e testamos a API. Neste caso, vou testar diretamente do Python.</p>
+      </section>
+      
+      <CodeBlockInputCell
+        text={[
+          '<span></span><span class="kn">import</span> <span class="nn">requests</span>',
+          '',
+          '<span class="n">url</span> <span class="o">=</span> <span class="s2">"https://maximofn-smollm2-backend-localmodel.hf.space/generate"</span>',
+          '<span class="n">data</span> <span class="o">=</span> <span class="p">{</span>',
+          '    <span class="s2">"query"</span><span class="p">:</span> <span class="s2">"Hola, ¿cómo estás?"</span><span class="p">,</span>',
+          '    <span class="s2">"thread_id"</span><span class="p">:</span> <span class="s2">"user1"</span>',
+          '<span class="p">}</span>',
+          '',
+          '<span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>',
+          '<span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>',
+          '    <span class="n">result</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>',
+          '    <span class="nb">print</span><span class="p">(</span><span class="s2">"Respuesta:"</span><span class="p">,</span> <span class="n">result</span><span class="p">[</span><span class="s2">"generated_text"</span><span class="p">])</span>',
+          '    <span class="nb">print</span><span class="p">(</span><span class="s2">"Thread ID:"</span><span class="p">,</span> <span class="n">result</span><span class="p">[</span><span class="s2">"thread_id"</span><span class="p">])</span>',
+          '<span class="k">else</span><span class="p">:</span>',
+          '    <span class="nb">print</span><span class="p">(</span><span class="s2">"Error:"</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
+      <CodeBlockOutputCell
+        text={[
+          'Respuesta: system',
+          'You are a friendly Chatbot. Always reply in the language in which the user is writing to you.',
+          'user',
+          'Hola, ¿cómo estás?',
+          'assistant',
+          'Estoy bien, gracias por preguntar. Estoy muy emocionado de la semana que viene.',
+          'Thread ID: user1',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Este demora um pouco mais que o anterior. Na verdade, demora o normal para um modelo sendo executado em um servidor sem GPU. O estranho é quando o deployamos no Gradio. Não sei o que a HuggingFace faz por trás, ou talvez tenha sido coincidência.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <h2 id="Conclus%C3%B5es">Conclusões<a class="anchor-link" href="#Conclus%C3%B5es"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 134" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Vimos como criar um backend com um LLM, tanto fazendo chamadas ao Inference Endpoint da HuggingFace, quanto fazendo chamadas a um modelo rodando localmente. Vimos como fazer isso com Gradio ou com FastAPI, Langchain e Docker.</p>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>A partir daqui você tem o conhecimento para poder implantar seus próprios modelos, mesmo que não sejam LLMs, podem ser modelos multimodais. A partir daqui você pode fazer o que quiser.</p>
+      </section>
+      
+
+
+
+
+
+
+    </div>-->
+
+  </section>
+
+</PostLayout>

@@ -1,0 +1,477 @@
+<section class="section-block-markdown-cell">
+<h1 id="Environment-Management-with-uv">Environment Management with uv<a class="anchor-link" href="#Environment-Management-with-uv">¶</a></h1>
+</section>
+<section class="section-block-markdown-cell">
+<blockquote>
+<p>Disclaimer: This post has been translated to English using a machine translation model. Please, let me know if you find any mistakes.</p>
+</blockquote>
+</section>
+<section class="section-block-markdown-cell">
+<p>So far I have been managing my environments with conda. But for a while now I've been reading a lot about <code>poetry</code>, but especially about <code>uv</code>. What are the advantages of <code>uv</code>? Speed. <code>uv</code> is implemented in Rust, so it manages environments and installs packages extremely quickly.</p>
+</section>
+<section class="section-block-markdown-cell">
+<p>The following table shows the speed difference between different package managers. Source: <a href="https://github.com/rasbt/LLMs-from-scratch/blob/main/setup/01_optional-python-setup-preferences/native-uv.md#native-uv-python-and-package-management">LLMs-from-scratch/setup/01_optional-python-setup-preferences/native-uv.md</a></p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Speed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>conda install &lt;pkg&gt;</code></td>
+<td>slow</td>
+</tr>
+<tr>
+<td><code>pip install &lt;pkg&gt;</code></td>
+<td>up to 10 times faster than the previous version</td>
+</tr>
+<tr>
+<td><code>uv pip install &lt;pkg&gt;</code></td>
+<td>between 5 and 10 times faster than the previous</td>
+</tr>
+<tr>
+<td><code>uv add &lt;pkg&gt;</code></td>
+<td>between 2 and 5 times faster than the previous</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section class="section-block-markdown-cell">
+<p>Looking at the table, it's definitely worth using <code>uv</code>. So let's see how to create an environment and install packages with <code>uv</code>.</p>
+</section>
+<section class="section-block-markdown-cell">
+<h2 id="Repository-download">Repository download<a class="anchor-link" href="#Repository-download">¶</a></h2>
+</section>
+<section class="section-block-markdown-cell">
+<p>As I said, I am using [LLMs-from-scratch/setup/01_optional-python-setup-preferences
+<a href="https://github.com/rasbt/LLMs-from-scratch/blob/main/setup/01_optional-python-setup-preferences/native-uv.md">native-uv.md</a> as the source, so let's download the repository, install the proposed environment, and see how to run a script.</p>
+<p>We use <code>--depth 1</code> to download only the latest commit of the repository and make it clone faster, we are not interested in the history.</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">rasbt</span><span class="o">/</span><span class="n">LLMs</span><span class="o">-</span><span class="n">from</span><span class="o">-</span><span class="n">scratch</span><span class="o">.</span><span class="n">git</span> <span class="o">--</span><span class="n">depth</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>Cloning into 'LLMs-from-scratch'...
+remote: Enumerating objects: 260, done.
+remote: Counting objects: 100% (260/260), done.
+remote: Compressing objects: 100% (226/226), done.
+remote: Total 260 (delta 61), reused 121 (delta 22), pack-reused 0 (from 0)
+Receiving objects: 100% (260/260), 1.64 MiB | 6.94 MiB/s, done.
+Resolving deltas: 100% (61/61), done.
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<p>Now we are going to the repository that we have downloaded</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">cd</span> <span class="n">LLMs</span><span class="o">-</span><span class="n">from</span><span class="o">-</span><span class="n">scratch</span>
+</pre></div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<h2 id="Install-uv">Install <code>uv</code><a class="anchor-link" href="#Install-uv">¶</a></h2>
+</section>
+<section class="section-block-markdown-cell">
+<p>If we are on macOS or Linux, we can install using the command</p>
+<div class="highlight"><pre><span></span>curl<span class="w"> </span>-LsSf<span class="w"> </span>https://astral.sh/uv/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh
+</pre></div>
+<p>If we are on Windows</p>
+<div class="highlight"><pre><span></span>curl<span class="w"> </span>-LsSf<span class="w"> </span>https://astral.sh/uv/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh
+</pre></div>
+</section>
+<section class="section-block-markdown-cell">
+<h2 id="Create-environment">Create environment<a class="anchor-link" href="#Create-environment">¶</a></h2>
+</section>
+<section class="section-block-markdown-cell">
+<p>If we do an <code>ls</code> we can see that there is a file called <code>pyproject.toml</code>, this will be the file that <code>uv</code> will use to create the environment.</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">ls</span>
+</pre></div>
+</div>
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>2025-03-10-uv.ipynb <span class="ansi-cyan-intense-fg ansi-bold">appendix-D</span>          <span class="ansi-cyan-intense-fg ansi-bold">ch04</span>                pyproject.toml
+CITATION.cff        <span class="ansi-cyan-intense-fg ansi-bold">appendix-E</span>          <span class="ansi-cyan-intense-fg ansi-bold">ch05</span>                requirements.txt
+LICENSE.txt         <span class="ansi-cyan-intense-fg ansi-bold">ch01</span>                <span class="ansi-cyan-intense-fg ansi-bold">ch06</span>                <span class="ansi-cyan-intense-fg ansi-bold">setup</span>
+README.md           <span class="ansi-cyan-intense-fg ansi-bold">ch02</span>                <span class="ansi-cyan-intense-fg ansi-bold">ch07</span>
+<span class="ansi-cyan-intense-fg ansi-bold">appendix-A</span>          <span class="ansi-cyan-intense-fg ansi-bold">ch03</span>                pixi.toml
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<p>So let's see what the file has</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">cat</span> <span class="n">pyproject</span><span class="o">.</span><span class="n">toml</span>
+</pre></div>
+</div>
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>[project]
+name = "llms-from-scratch"
+version = "0.1.0"
+description = "Implement a ChatGPT-like LLM in PyTorch from scratch, step by step"
+readme = "README.md"
+requires-python = "&gt;=3.10"
+dependencies = [
+    "torch&gt;=2.3.0",
+    "jupyterlab&gt;=4.0",
+    "tiktoken&gt;=0.5.1",
+    "matplotlib&gt;=3.7.1",
+    "tensorflow&gt;=2.18.0",
+    "tqdm&gt;=4.66.1",
+    "numpy&gt;=1.26,&lt;2.1",
+    "pandas&gt;=2.2.1",
+    "pip&gt;=25.0.1",
+]
+
+[tool.setuptools.packages]
+find = {}
+
+[tool.uv.sources]
+llms-from-scratch = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "llms-from-scratch",
+]
+
+[tool.ruff]
+line-length = 140
+
+[tool.ruff.lint]
+exclude = [".venv"]
+# Ignored rules (W504 removed)
+ignore = [
+    "C406", "E226", "E402", "E702", "E703",
+    "E722", "E731", "E741"
+]
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<p>As can be seen, there are data such as the name, version, etc., and the dependencies, which are the packages we are going to install.</p>
+</section>
+<section class="section-block-markdown-cell">
+<p>To create the environment, we use the command <code>uv sync</code>, and we add the <code>--dev</code> flag to also install development dependencies and the <code>--python</code> flag to specify the version of Python we want to use.</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">uv</span> <span class="n">sync</span> <span class="o">--</span><span class="n">dev</span> <span class="o">--</span><span class="n">python</span> <span class="mf">3.11</span>
+</pre></div>
+</div>
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>Using CPython <span class="ansi-cyan-fg">3.11.11</span>
+Creating virtual environment at: <span class="ansi-cyan-fg">.venv</span>
+Resolved <span class="ansi-bold">160 packages</span> in 175ms                                       
+Installed <span class="ansi-bold">139 packages</span> in 1.46s                             
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">absl-py</span>==2.1.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">anyio</span>==4.8.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">appnope</span>==0.1.4
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">argon2-cffi</span>==23.1.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">argon2-cffi-bindings</span>==21.2.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">arrow</span>==1.3.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">asttokens</span>==3.0.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">astunparse</span>==1.6.3
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">async-lru</span>==2.0.4
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">attrs</span>==25.1.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">babel</span>==2.17.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">beautifulsoup4</span>==4.13.3
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">bleach</span>==6.2.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">certifi</span>==2025.1.31
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">cffi</span>==1.17.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">charset-normalizer</span>==3.4.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">comm</span>==0.2.2
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">contourpy</span>==1.3.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">cycler</span>==0.12.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">debugpy</span>==1.8.13
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">decorator</span>==5.2.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">defusedxml</span>==0.7.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">executing</span>==2.2.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">fastjsonschema</span>==2.21.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">filelock</span>==3.17.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">flatbuffers</span>==25.2.10
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">fonttools</span>==4.56.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">fqdn</span>==1.5.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">fsspec</span>==2025.3.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">gast</span>==0.6.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">google-pasta</span>==0.2.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">grpcio</span>==1.70.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">h11</span>==0.14.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">h5py</span>==3.13.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">httpcore</span>==1.0.7
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">httpx</span>==0.28.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">idna</span>==3.10
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">ipykernel</span>==6.29.5
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">ipython</span>==9.0.2
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">ipython-pygments-lexers</span>==1.1.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">isoduration</span>==20.11.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">jedi</span>==0.19.2
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">jinja2</span>==3.1.6
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">json5</span>==0.10.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">jsonpointer</span>==3.0.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">jsonschema</span>==4.23.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">jsonschema-specifications</span>==2024.10.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">jupyter-client</span>==8.6.3
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">jupyter-core</span>==5.7.2
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">jupyter-events</span>==0.12.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">jupyter-lsp</span>==2.2.5
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">jupyter-server</span>==2.15.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">jupyter-server-terminals</span>==0.5.3
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">jupyterlab</span>==4.3.5
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">jupyterlab-pygments</span>==0.3.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">jupyterlab-server</span>==2.27.3
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">keras</span>==3.9.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">kiwisolver</span>==1.4.8
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">libclang</span>==18.1.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">markdown</span>==3.7
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">markdown-it-py</span>==3.0.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">markupsafe</span>==3.0.2
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">matplotlib</span>==3.10.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">matplotlib-inline</span>==0.1.7
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">mdurl</span>==0.1.2
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">mistune</span>==3.1.2
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">ml-dtypes</span>==0.4.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">mpmath</span>==1.3.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">namex</span>==0.0.8
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">nbclient</span>==0.10.2
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">nbconvert</span>==7.16.6
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">nbformat</span>==5.10.4
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">nest-asyncio</span>==1.6.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">networkx</span>==3.4.2
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">notebook-shim</span>==0.2.4
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">numpy</span>==2.0.2
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">opt-einsum</span>==3.4.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">optree</span>==0.14.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">overrides</span>==7.7.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">packaging</span>==24.2
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">pandas</span>==2.2.3
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">pandocfilters</span>==1.5.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">parso</span>==0.8.4
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">pexpect</span>==4.9.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">pillow</span>==11.1.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">pip</span>==25.0.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">platformdirs</span>==4.3.6
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">prometheus-client</span>==0.21.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">prompt-toolkit</span>==3.0.50
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">protobuf</span>==5.29.3
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">psutil</span>==7.0.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">ptyprocess</span>==0.7.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">pure-eval</span>==0.2.3
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">pycparser</span>==2.22
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">pygments</span>==2.19.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">pyparsing</span>==3.2.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">python-dateutil</span>==2.9.0.post0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">python-json-logger</span>==3.3.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">pytz</span>==2025.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">pyyaml</span>==6.0.2
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">pyzmq</span>==26.2.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">referencing</span>==0.36.2
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">regex</span>==2024.11.6
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">requests</span>==2.32.3
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">rfc3339-validator</span>==0.1.4
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">rfc3986-validator</span>==0.1.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">rich</span>==13.9.4
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">rpds-py</span>==0.23.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">send2trash</span>==1.8.3
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">setuptools</span>==76.0.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">six</span>==1.17.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">sniffio</span>==1.3.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">soupsieve</span>==2.6
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">stack-data</span>==0.6.3
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">sympy</span>==1.13.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">tensorboard</span>==2.18.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">tensorboard-data-server</span>==0.7.2
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">tensorflow</span>==2.18.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">tensorflow-io-gcs-filesystem</span>==0.37.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">termcolor</span>==2.5.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">terminado</span>==0.18.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">tiktoken</span>==0.9.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">tinycss2</span>==1.4.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">torch</span>==2.6.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">tornado</span>==6.4.2
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">tqdm</span>==4.67.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">traitlets</span>==5.14.3
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">types-python-dateutil</span>==2.9.0.20241206
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">typing-extensions</span>==4.12.2
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">tzdata</span>==2025.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">uri-template</span>==1.3.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">urllib3</span>==2.3.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">wcwidth</span>==0.2.13
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">webcolors</span>==24.11.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">webencodings</span>==0.5.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">websocket-client</span>==1.8.0
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">werkzeug</span>==3.1.3
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">wheel</span>==0.45.1
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">wrapt</span>==1.17.2
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<p>It has created the environment and installed the packages in a lightning-fast way</p>
+</section>
+<section class="section-block-markdown-cell">
+<p>Moreover, if we run <code>ls</code> again now we will see a new folder called <code>.venv</code>, that is the folder for the virtual environment.</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">ls</span> <span class="o">-</span><span class="n">a</span>
+</pre></div>
+</div>
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre><span class="ansi-cyan-intense-fg ansi-bold">.</span>                   CITATION.cff        <span class="ansi-cyan-intense-fg ansi-bold">ch02</span>                pyproject.toml
+<span class="ansi-cyan-intense-fg ansi-bold">..</span>                  LICENSE.txt         <span class="ansi-cyan-intense-fg ansi-bold">ch03</span>                requirements.txt
+<span class="ansi-cyan-intense-fg ansi-bold">.git</span>                README.md           <span class="ansi-cyan-intense-fg ansi-bold">ch04</span>                <span class="ansi-cyan-intense-fg ansi-bold">setup</span>
+<span class="ansi-cyan-intense-fg ansi-bold">.github</span>             <span class="ansi-cyan-intense-fg ansi-bold">appendix-A</span>          <span class="ansi-cyan-intense-fg ansi-bold">ch05</span>                uv.lock
+.gitignore          <span class="ansi-cyan-intense-fg ansi-bold">appendix-D</span>          <span class="ansi-cyan-intense-fg ansi-bold">ch06</span>
+<span class="ansi-cyan-intense-fg ansi-bold">.venv</span>               <span class="ansi-cyan-intense-fg ansi-bold">appendix-E</span>          <span class="ansi-cyan-intense-fg ansi-bold">ch07</span>
+2025-03-10-uv.ipynb <span class="ansi-cyan-intense-fg ansi-bold">ch01</span>                pixi.toml
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<h2 id="Add-packages">Add packages<a class="anchor-link" href="#Add-packages">¶</a></h2>
+</section>
+<section class="section-block-markdown-cell">
+<p>If we want to add packages to our environment that are not in the <code>pyproject.toml</code> file, we can do so with the command <code>uv add &lt;pkg&gt;</code>.</p>
+</section>
+<section class="section-block-markdown-cell">
+<p>For example, if we run <code>cat pyproject.toml | grep dotenv</code> we will see that the package <code>python-dotenv</code> is not installed.</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">cat</span> <span class="n">pyproject</span><span class="o">.</span><span class="n">toml</span> <span class="o">|</span> <span class="n">grep</span> <span class="n">dotenv</span>
+</pre></div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<p>So we add the package</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">uv</span> <span class="n">add</span> <span class="n">dotenv</span>
+</pre></div>
+</div>
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>Resolved <span class="ansi-bold">162 packages</span> in 92ms                                        
+Installed <span class="ansi-bold">2 packages</span> in 5ms                                      ░░░░░░░░░░░░░░░░░░░░ [0/0] Installing wheels...                                 
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">dotenv</span>==0.9.9
+ <span class="ansi-green-fg">+</span> <span class="ansi-bold">python-dotenv</span>==1.0.1
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<p>If we now run <code>cat pyproject.toml | grep dotenv</code> again, we will see that it has been added to the file.</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">cat</span> <span class="n">pyproject</span><span class="o">.</span><span class="n">toml</span> <span class="o">|</span> <span class="n">grep</span> <span class="n">dotenv</span>
+</pre></div>
+</div>
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>    "dotenv&gt;=0.9.9",
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<p>This is very good because now with this new <code>pyproject.toml</code> file we can recreate the environment with the command <code>uv sync</code> on any other computer.</p>
+</section>
+<section class="section-block-markdown-cell">
+<h2 id="Running-a-script">Running a script<a class="anchor-link" href="#Running-a-script">¶</a></h2>
+</section>
+<section class="section-block-markdown-cell">
+<p>Now that we have an environment, we can run a script in two ways, the first with <code>uv run python &lt;script&gt;.py</code>, which will activate the <code>.venv</code> environment and run the script.</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">uv</span> <span class="n">run</span> <span class="n">python</span> <span class="n">setup</span><span class="o">/</span><span class="mi">02</span><span class="n">_installing</span><span class="o">-</span><span class="n">python</span><span class="o">-</span><span class="n">libraries</span><span class="o">/</span><span class="n">python_environment_check</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>[OK] Your Python version is 3.11.11
+[OK] torch 2.6.0
+[OK] jupyterlab 4.3.5
+[OK] tiktoken 0.9.0
+[OK] matplotlib 3.10.1
+[OK] tensorflow 2.18.0
+[OK] tqdm 4.67.1
+[OK] numpy 2.0.2
+[OK] pandas 2.2.3
+[OK] psutil 7.0.0
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<p>However, if what we want is to run the script directly with <code>python &lt;script&gt;.py</code>, we need to activate the environment manually first.</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">source</span> <span class="o">.</span><span class="n">venv</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span> <span class="o">&amp;&amp;</span> <span class="n">python</span> <span class="n">setup</span><span class="o">/</span><span class="mi">02</span><span class="n">_installing</span><span class="o">-</span><span class="n">python</span><span class="o">-</span><span class="n">libraries</span><span class="o">/</span><span class="n">python_environment_check</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>[OK] Your Python version is 3.11.11
+[OK] torch 2.6.0
+[OK] jupyterlab 4.3.5
+[OK] tiktoken 0.9.0
+[OK] matplotlib 3.10.1
+[OK] tensorflow 2.18.0
+[OK] tqdm 4.67.1
+[OK] numpy 2.0.2
+[OK] pandas 2.2.3
+[OK] psutil 7.0.0
+</pre>
+</div>
+</div>
+</div>
+</section>

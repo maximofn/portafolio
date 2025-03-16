@@ -1,0 +1,179 @@
+---
+import Layout from '@layouts/Layout.astro';
+
+const { social_links } = await import('@portfolio/consts.json');
+const { metadata_page } = await import('@portfolio/consts.json');
+const { colors } = await import('@portfolio/consts.json');
+const { color_palette } = await import('@portfolio/consts.json');
+const { sticky_top_positions } = await import('@portfolio/consts.json');
+
+const page_title = metadata_page.title + " - Naviground";
+const url = social_links.portfolio_link_external + "/naviground"
+const description = "Perception system for autonomous vehicle";
+const keywords = "Perception, autonomous vehicle";
+
+const images_width = 1920*2/3;
+const images_height =1080*2/3;
+const buyMeACoffee_width = 305;
+const buyMeACoffee_height = 28;
+
+const inline_code_background_color = color_palette.color_950;
+
+const sticky_top_default=sticky_top_positions.sticky_top_default;
+const sticky_top_649px=sticky_top_positions.sticky_top_649px;
+const sticky_top_418px=sticky_top_positions.sticky_top_418px;
+const sticky_top_334px=sticky_top_positions.sticky_top_334px;
+const sticky_top_315px=sticky_top_positions.sticky_top_315px;
+const sticky_top_229px=sticky_top_positions.sticky_top_229px;
+const sticky_top_h3_increment = "50px"
+---
+
+<Layout 
+	title={page_title}
+	languaje={metadata_page.languaje_en}
+	description={description}
+	keywords={keywords}
+	author={metadata_page.author}
+	theme_color={colors.background_color}
+	url={url}
+	icon={metadata_page.icon}
+>
+	<div class="project">
+		<h1>Naviground</h1>
+		<h4>Perception system for autonomous vehicle</h4>
+		<figure class="video-container">
+			<video 
+				preload="auto"
+				controls
+				width={images_width}
+				height={images_height}
+			>
+				<source src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/naviground.webm" type="video/webm"/>
+				<source src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/naviground.mp4" type="video/mp4"/>
+			</video>
+		</figure>
+
+        <p>Naviground is a navigation system implementable in manned and unmanned terrestrial vehicles. It allows navigation in structured and unstructured environments. I participated in the development of the perception system, especially in the detection of the environment using cameras.</p>
+
+        <section>
+            <h2>Vision system</h2>
+            <p>Although the navigation system had LIDAR and RADAR sensors, for several reasons it was desired to have a perception system formed only by cameras.</p>
+            <ul>
+                <li>Although the price of LIDAR and RADAR has decreased a lot in recent years, it is still more expensive than the cameras.</li>
+                <li>LIDAR and RADAR sensors are active sensors (emit an electromagnetic wave and measure the reflection), so in a war environment they make the vehicle detectable.</li>
+                <li>As an autonomous vehicle, the processing cannot be done on a very powerful machine, so if the processing of the amount of data that LIDAR and RADAR generate can be eliminated, it is better.</li>
+            </ul>
+            <p>To perform the detection of the environment, we used three types of neural networks:</p>
+            <ul>
+                <li>
+                    <p>Semantic segmentation networks</p>
+                    <p>They classify what class each pixel of the image belongs to, obtaining a segmentation mask.</p>
+                    <figure>
+                        <img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/semantic_segmentation.webp" alt="Semantic segmentation" width={images_width} height={images_height} loading="lazy">
+                    </figure>
+                </li>
+                <li>
+                    <p>Object classification networks</p>
+                    <p>They can detect objects in the image using a YOLO.</p>
+                    <figure>
+                        <img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/yolo.webp" alt="Object classification with YOLO" width={images_width/2} height={images_height/2} loading="lazy">
+                    </figure>
+                </li>
+                <li>
+                    <p>Depth estimation</p>
+                    <p>A neural network can estimate the depth of each pixel of the image, so we can obtain the distance to each object.</p>
+                    <figure>
+                        <img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/depth.webp" alt="Depth estimation" width={images_width/2} height={images_height/2} loading="lazy">
+                    </figure>
+                </li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Training</h2>
+            <p>Our problem was that as it was a vehicle for structured and unstructured environments, the pre-trained networks did not suit us, so we had to make trainings of the segmentation and object classification networks.</p>
+        </section>
+        
+        <section>
+            <h3>Dataset</h3>
+            <p>We had hours of videos recorded during tests in environments like this, so we created a dataset</p>
+            <figure>
+                <img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/naviground-dataset.webp" alt="Videos of Naviground" width={images_width/2} height={images_height/2} loading="lazy">
+            </figure>
+            <p>We created an algorithm that, using an unsupervised classifier, created several clusters of images, where the images of each cluster were similar to each other. In this way, we stayed with a few images of each cluster, so we had a dataset with heterogeneous images.</p>
+        </section>
+
+        <section>
+            <h3>Labeler</h3>
+            <p>Labeling objects for YOLO, although it is tedious, it is a relatively fast and easy process</p>
+            <figure>
+                <img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/yolo-labeling.gif" alt="YOLO labeling" width={images_width/2} height={images_height/2} loading="lazy">
+            </figure>
+            <p>However, labeling images for semantic segmentation, where each pixel has to be labeled, is a slow and tedious process. As none of the labeling tools for segmentation convinced us, we built our own labeling tool. It was so good that it was reused in other projects and even talked about commercializing it.</p>
+        </section>
+
+        <section>
+            <h3>Training images generation</h3>
+            <p>One of the problems we had is that all the training images were day, with sun, without rain, etc. So to make the networks more robust we needed more images. But that means that someone has to go out at night, wait for it to rain to have images with rain, wait for it to snow, which is more complicated, etc.</p>
+            <p>At that time there were many good image generation networks, so we could generate images with new environmental conditions, but the problem was that they had to be labeled, and for segmentation it required a lot of time.</p>
+            <p>So I built a pipeline that, using generative AI, modified the environmental conditions of the images that we already had labeled, having images in different environmental conditions, but without having to lose time labeling them.</p>
+        </section>
+        
+        <section>
+            <h2>Optimization with TensorRT</h2>
+            <p>As this had to work in a vehicle, it could not use a powerful computer. So a embedded device, a Jetson Orin, was used. So it was important to optimize the neural networks to make the inference as fast as possible.</p>
+            <p>I optimized them with TensorRT, making them run up to 40% faster in some cases.</p>
+            <figure>
+                <img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/naviground-ascod.webp" alt="ASCOD" width={images_width/2} height={images_height/2} loading="lazy">
+            </figure>
+            <figure>
+                <img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/naviground-system.webp" alt="Naviground system" width={images_width/2} height={images_height/2} loading="lazy">
+            </figure>
+        </section>
+	</div>
+
+</Layout>
+
+<style define:vars={{
+	inline_code_background_color,
+	sticky_top_default,
+	sticky_top_649px,
+	sticky_top_418px,
+	sticky_top_334px,
+	sticky_top_315px,
+	sticky_top_229px,
+	sticky_top_h3_increment,
+}}>
+	.project {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.inline-code {
+		background-color: var(--inline_code_background_color);
+		border-radius: 7px;
+		padding: 0.2em 0.4em;
+		font-style: oblique;
+		font-family: 'Courier New', Courier, monospace;
+	}
+
+	section {
+		position: relative;
+	}
+
+	h1 {
+		margin-bottom: 0px;
+	}
+
+	h4 {
+		padding-left: 0px;
+	}
+
+    figure {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding-bottom: 2em;
+        padding-top: 2em;
+    }
+</style>

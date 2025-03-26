@@ -221,7 +221,14 @@ def format_cell_code_blocks(html_content):
                     elif '</pre></div>' in html_content_lines[k]:
                         content_html += '      </div>\n'
                     else:
-                        content_html += f"<pre>{html_content_lines[k]}</pre>\n"
+                        # Get position of first character not space
+                        position_first_character_not_space = None
+                        for l in range(len(html_content_lines[k])):
+                            if html_content_lines[k][l] != " ":
+                                position_first_character_not_space = l
+                                break
+                        if position_first_character_not_space is not None:
+                            content_html += f"        <pre>{" "*(l-6)}{html_content_lines[k][position_first_character_not_space:]}</pre>\n"
         
         else:
             content_html += f"{html_content_lines[i]}\n"

@@ -188,6 +188,46 @@ def img_base64_to_webp(html_content, notebook_title):
         content_html += f"{line}\n"
     return content_html
 
+def format_cell_code_blocks(html_content):
+    content_html = ""
+    html_content_lines = html_content.split("\n")
+    start_cell_code_block = None
+    end_cell_code_block = None
+
+    for i in range(len(html_content_lines)):
+        if start_cell_code_block is not None and end_cell_code_block is not None:
+            if i < end_cell_code_block:
+                continue
+            else:
+                start_cell_code_block = None
+                end_cell_code_block = None
+        else:
+            start_cell_code_block = None
+            end_cell_code_block = None
+
+        # Get the start and end of the cell code block
+        if '<div class="highlight"><pre>' in html_content_lines[i]:
+            start_cell_code_block = i
+            for j in range(i, len(html_content_lines)):
+                if '</pre></div>' in html_content_lines[j]:
+                    end_cell_code_block = j+1
+                    break
+            
+            if start_cell_code_block is not None and end_cell_code_block is not None:
+                for k in range(start_cell_code_block, end_cell_code_block):
+                    if '<div class="highlight"><pre>' in html_content_lines[k]:
+                        content_html += '      <div class="highlight">\n'
+                        content_html += f"  {html_content_lines[k].replace('<div class="highlight"><pre>', '<pre>')}</pre>\n"
+                    elif '</pre></div>' in html_content_lines[k]:
+                        content_html += '      </div>\n'
+                    else:
+                        content_html += f"<pre>{html_content_lines[k]}</pre>\n"
+        
+        else:
+            content_html += f"{html_content_lines[i]}\n"
+    
+    return content_html
+
 def add_witdh_and_height_to_image(html_content):
     content_html = ""
     html_content_lines = html_content.split("\n")
@@ -355,6 +395,7 @@ const closing_brace = '{closing_brace}';
         content_html = format_images(content_html)
         content_html = replace_braces(content_html)
         content_html = img_base64_to_webp(content_html, notebook_title)
+        content_html = format_cell_code_blocks(content_html)
         webp_img_counter = 0
         content_html = add_witdh_and_height_to_image(content_html)
 

@@ -217,7 +217,8 @@ def format_cell_code_blocks(html_content):
                 for k in range(start_cell_code_block, end_cell_code_block):
                     if '<div class="highlight"><pre>' in html_content_lines[k]:
                         content_html += '      <div class="highlight">\n'
-                        content_html += f"  {html_content_lines[k].replace('<div class="highlight"><pre>', '<pre>')}</pre>\n"
+                        lines_k = html_content_lines[k].replace('<div class="highlight"><pre>', '<pre>')
+                        content_html += f"  {lines_k}</pre>\n"
                     elif '</pre></div>' in html_content_lines[k]:
                         content_html += '      </div>\n'
                     else:
@@ -228,7 +229,9 @@ def format_cell_code_blocks(html_content):
                                 position_first_character_not_space = l
                                 break
                         if position_first_character_not_space is not None:
-                            content_html += f"        <pre>{" "*(l-6)}{html_content_lines[k][position_first_character_not_space:]}</pre>\n"
+                            lines_k = html_content_lines[k][position_first_character_not_space:]
+                            spaces = " "*(l-6)
+                            content_html += f"        <pre>{spaces}{lines_k}</pre>\n"
         
         else:
             content_html += f"{html_content_lines[i]}\n"

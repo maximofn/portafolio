@@ -49,6 +49,7 @@ clases = [
     'na',
     'nv',
     'nt',
+    'nl',
     'o',
     'ow',
     'p',

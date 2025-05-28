@@ -3,6 +3,8 @@ from mcp.server.fastmcp import FastMCP, Image
 from github import GITHUB_TOKEN, create_github_headers
 from handlers import register_handlers
 from PIL import Image as PILImage
+import urllib.parse
+import requests
 
 # Create an MCP server
 mcp = FastMCP("GitHubMCP")
@@ -65,6 +67,60 @@ def create_thumbnail(image_path: str) -> Image:
     img = PILImage.open(image_path)
     img.thumbnail((100, 100))
     return Image(data=img.tobytes(), format="png")
+
+@mcp.tool()
+def get_repository_image(owner: str) -> (Image, str):
+    """
+    Get the image of a github profile
+    """
+    profile_url = f"https://github.com/{owner}"
+
+    try:
+        # 1. Extract the username from the profile url
+        parsed_url = urllib.parse.urlparse(profile_url)
+        path_parts = parsed_url.path.strip('/').split('/')
+        
+        if not path_parts or not path_parts[0]:
+            print(f"Error: Can't extract the username from '{profile_url}'")
+            return None
+        
+        username = path_parts[0] # We assume that the username is the first part of the path
+
+        # 2. Construct the URL of the GitHub API
+        api_url = f"https://api.github.com/users/{username}"
+
+        # 3. Make the request to the API
+        response = requests.get(api_url)
+        response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
+
+        # 4. Parse the JSON response
+        user_data = response.json()
+
+        # 5. Get the avatar url
+        avatar_url = user_data.get("avatar_url")
+
+        # 6. Get the image from the avatar url
+        if avatar_url:
+            response = requests.get(avatar_url)
+            response.raise_for_status()
+            image_data = response.content
+            image_path = f'/Users/macm1/Documents/web/portafolio/posts/MCP_github/{owner}.png'
+            with open(image_path, 'wb') as f:
+                f.write(image_data)
+            return Image(data=image_data, format="png"), f"Image of {owner} saved in {image_path}"
+        else:
+            print(f"Error: 'avatar_url' not found in the API response for '{username}'.")
+            return None, f"Error: 'avatar_url' not found in the API response for '{username}'."
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error contacting the GitHub API ({api_url}): {e}")
+        return None, f"Error contacting the GitHub API ({api_url}): {e}"
+    except KeyError:
+        print(f"Error: The API response for '{username}' is not in the expected format.")
+        return None, f"Error: The API response for '{username}' is not in the expected format."
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return None, f"An unexpected error occurred: {e}"
 
 
 if __name__ == "__main__":

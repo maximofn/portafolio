@@ -1,10 +1,10 @@
 import httpx
-from mcp.server.fastmcp import FastMCP, Image
+from mcp.server.fastmcp import FastMCP, Image, Context
 from github import GITHUB_TOKEN, create_github_headers
 from handlers import register_handlers
-from PIL import Image as PILImage
 import urllib.parse
 import requests
+from time import sleep
 
 # Create an MCP server
 mcp = FastMCP("GitHubMCP")
@@ -62,13 +62,6 @@ async def list_repository_issues(owner: str, repo_name: str) -> list[dict]:
             return [{"error": f"An unexpected error occurred: {str(e)}"}]
 
 @mcp.tool()
-def create_thumbnail(image_path: str) -> Image:
-    """Create a thumbnail from an image"""
-    img = PILImage.open(image_path)
-    img.thumbnail((100, 100))
-    return Image(data=img.tobytes(), format="png")
-
-@mcp.tool()
 def get_repository_image(owner: str) -> (Image, str):
     """
     Get the image of a github profile
@@ -121,6 +114,16 @@ def get_repository_image(owner: str) -> (Image, str):
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         return None, f"An unexpected error occurred: {e}"
+
+@mcp.tool()
+async def issues_summary(issues: list[str], ctx: Context) -> str:
+    """Create a summary of the issues"""
+    for i, issue in enumerate(issues):
+        ctx.info(f"Processing {issue}")
+        await ctx.report_progress(i, len(issues))
+        data, mime_type = await ctx.read_resource(f"file://{issue}")
+        sleep(10) # Simulate a long task, sleep for 10 seconds
+    return "Processing complete"
 
 
 if __name__ == "__main__":

@@ -1,7 +1,8 @@
 import httpx
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import FastMCP, Image
 from github import GITHUB_TOKEN, create_github_headers
 from handlers import register_handlers
+from PIL import Image as PILImage
 
 # Create an MCP server
 mcp = FastMCP("GitHubMCP")
@@ -57,6 +58,14 @@ async def list_repository_issues(owner: str, repo_name: str) -> list[dict]:
             }]
         except Exception as e:
             return [{"error": f"An unexpected error occurred: {str(e)}"}]
+
+@mcp.tool()
+def create_thumbnail(image_path: str) -> Image:
+    """Create a thumbnail from an image"""
+    img = PILImage.open(image_path)
+    img.thumbnail((100, 100))
+    return Image(data=img.tobytes(), format="png")
+
 
 if __name__ == "__main__":
     # Initialize and run the server

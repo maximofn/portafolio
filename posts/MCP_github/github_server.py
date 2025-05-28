@@ -1,7 +1,6 @@
 import httpx
 from mcp.server.fastmcp import FastMCP, Image, Context
 from github import GITHUB_TOKEN, create_github_headers
-from handlers import register_handlers
 import urllib.parse
 import requests
 from time import sleep
@@ -9,12 +8,6 @@ from time import sleep
 # Create an MCP server
 mcp = FastMCP("GitHubMCP")
 
-# Register handlers
-register_handlers(mcp)
-
-# --- Tool: List Repository Issues ---
-# This tool will list open issues for a specific GitHub repository
-# It takes the owner and repo name as parameters
 @mcp.tool()
 async def list_repository_issues(owner: str, repo_name: str) -> list[dict]:
     """
@@ -65,6 +58,13 @@ async def list_repository_issues(owner: str, repo_name: str) -> list[dict]:
 def get_repository_image(owner: str) -> (Image, str):
     """
     Get the image of a github profile
+
+    Args:
+        owner: The owner of the repository (e.g., 'modelcontextprotocol')
+
+    Returns:
+        Image: The image of the github profile
+        str: The path to the image
     """
     profile_url = f"https://github.com/{owner}"
 
@@ -117,7 +117,16 @@ def get_repository_image(owner: str) -> (Image, str):
 
 @mcp.tool()
 async def issues_summary(issues: list[str], ctx: Context) -> str:
-    """Create a summary of the issues"""
+    """
+    Create a summary of the issues
+
+    Args:
+        issues: The list of issues to summarize
+        ctx: The context of the MCP server
+
+    Returns:
+        str: The summary of the issues
+    """
     for i, issue in enumerate(issues):
         ctx.info(f"Processing {issue}")
         await ctx.report_progress(i, len(issues))

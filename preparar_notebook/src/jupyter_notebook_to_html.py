@@ -332,6 +332,7 @@ def convert_to_html(notebook_path, metadata, notebook_title):
         check_for_new_classes(full_destiny_path)
         print("Done")
 
+        continue
         # Create astro file with html file path content
         print(f"\tCreating astro file for {language}...", end=" ")
         portafolio_path = pathlib.Path(get_portafolio_path(script_path))

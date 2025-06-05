@@ -8,12 +8,59 @@ from time import sleep
 # Create an MCP server
 mcp = FastMCP("GitHubMCP")
 
+# @mcp.list_resources()
+# async def list_resources() -> list[types.Resource]:
+#     return [
+#         types.Resource(
+#             uri="example://resource",
+#             name="Example Resource"
+#         )
+#     ]
+
+# @app.list_tools()
+# async def list_tools() -> list[types.Tool]:
+#     return [
+#         types.Tool(
+#             name="calculate_sum",
+#             description="Add two numbers together",
+#             inputSchema={
+#                 "type": "object",
+#                 "properties": {
+#                     "a": {"type": "number"},
+#                     "b": {"type": "number"}
+#                 },
+#                 "required": ["a", "b"]
+#             }
+#         )
+#     ]
+
+# {
+#   name: string;          // Unique identifier for the tool
+#   description?: string;  // Human-readable description
+#   inputSchema: {         // JSON Schema for the tool's parameters
+#     type: "object",
+#     properties: { ... }  // Tool-specific parameters
+#   },
+#   annotations?: {        // Optional hints about tool behavior
+#     title?: string;      // Human-readable title for the tool
+#     readOnlyHint?: boolean;    // If true, the tool does not modify its environment
+#     destructiveHint?: boolean; // If true, the tool may perform destructive updates
+#     idempotentHint?: boolean;  // If true, repeated calls with same args have no additional effect
+#     openWorldHint?: boolean;   // If true, tool interacts with external entities
+#   }
+# }
+
 @mcp.tool()
 async def list_repository_issues(owner: str, repo_name: str) -> list[dict]:
     """
     Lists open issues for a given GitHub repository.
-    owner: The owner of the repository (e.g., 'modelcontextprotocol')
-    repo_name: The name of the repository (e.g., 'python-sdk')
+
+    Args:
+        owner: The owner of the repository (e.g., 'modelcontextprotocol')
+        repo_name: The name of the repository (e.g., 'python-sdk')
+
+    Returns:
+        list[dict]: A list of dictionaries, each containing information about an issue
     """
     # Construct the URL for the GitHub API endpoint for issues
     # We'll filter by 'open' state

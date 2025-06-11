@@ -8,40 +8,53 @@ from groq_llm import Groq_llama3_1_70B
 from qwen2_5_72B import Qwen2_5_72B
 from ollama_qwen_2_5_7B import Ollama_qwen2_5_7B
 from ollama_qwen_2_5_72B import Ollama_qwen2_5_72B
+from mlx_qwen_3_4B import MLX_Qwen3_4B
+from mlx_qwen_3_14B import MLX_Qwen3_14B
 from notebook_utils import Notebook
 
 KEY_ORIGINAL = "original"
 KEY_CORRECTION = "correccion"
 KEY_EXPLANATION = "explicación"
-SYSTEM_INSTRUCTION = """
-    Eres un experto corrector de texto markdown. Tu misión es corregir ortograficamente texto markdown.
+SYSTEM_INSTRUCTION = """Eres un experto corrector de texto que SÓLO responde con JSON.
+Tu misión es corregir ortográficamente texto.
 
-    Enfoque en la corrección: Por favor, revisa el siguiente texto y corrige únicamente los errores ortográficos, sin modificar la estructura, el estilo ni el contenido.
-    Como el texto va a estar en español, si hay palabras en inglés, no las corrijas, se han puesto aposta.
+Instrucciones:
+1. Revisa el texto que te proporciono.
+2. Corrige ÚNICAMENTE errores ortográficos en español. No cambies el contenido, estilo, ni palabras en inglés.
+3. Tu respuesta DEBE SER un objeto JSON y NADA MÁS.
+4. El JSON debe tener tres claves: "original", "correccion", y "explicación".
+5. Si no hay errores, devuelve un JSON con todas las claves y sus valores como strings vacíos.
 
-    Te van a pasar textos markdown y tienes que corregirlos ortograficamente en español. Responde solo con la corrección, responde con el texto que hay y la corrección que sugieres.
+Ejemplo de JSON de salida si hay un error:
+{
+    "original": "El coche es rogo.",
+    "correccion": "El coche es rojo.",
+    "explicación": "Se corrigió 'rogo' por 'rojo'."
+}
 
-    El formato de salida tiene que ser un json con llaves llamadas `original`, otra `correccion` y la última será `explicación` con la explicación de qué cambia y por qué. Si no hay errores ortográficos responde ese json con las llaves vacías. Es decir será un json así:
-    ```
-    {
-        "original": "",
-        "correccion": "",
-        "explicación": ""
-    }
-    ```
+Ejemplo de JSON de salida si NO hay errores:
+{
+    "original": "",
+    "correccion": "",
+    "explicación": ""
+}
 
-    Recuerda, rellena el json solo con los textos markdown que tienen errores, no pongas en el json los que no tienen errores y no quiero que añadir un punto al final de la oración sea una corrección.
-    Y muy importante, lo que respondas se va a pasar por una herramienta de conversión de strings a diccionarios, así que responde solo con el json, no pongas nada más en la respuesta.
+NO incluyas "```json" ni "```" en tu respuesta. Responde únicamente con el contenido del JSON.
 """
-SYSTEM_CHECK = "Estás seguro?"
+SYSTEM_CHECK = """
+You are a JSON validator. Check if the previous response is a valid JSON with the keys 'original', 'correccion', and 'explicación'.
+"""
 NUMBER_OF_CHECKS = 0
+MAX_TOKENS = 2048
 GEMINI_LLM = "Gemini"
 GPT4O_LLM = "GPT4o"
 GROQ_LLM = "Groq_llama3_1_70B"
 QWEN_2_5_72B = "Qwen2.5-72B"
 OLLAMA_QWEN_2_5_7B = "Ollama_qwen2_5_7B"
 OLLAMA_QWEN_2_5_72B = "Ollama_qwen2_5_72B"
-MODEL = OLLAMA_QWEN_2_5_72B
+MLX_QWEN_3_4B = "MLX_Qwen3_4B"
+MLX_QWEN_3_14B = "MLX_Qwen3_14B"
+MODEL = MLX_QWEN_3_4B
 
 def apply_corrections(model, line, debug=False):
     # If line is empty, return it
@@ -77,6 +90,15 @@ def apply_corrections(model, line, debug=False):
     if type(correction_string) != str:
         print(f"LLM Error is not a string: {correction_string}")
         return line
+    
+    # If correction_string has thinking, remove it
+    if correction_string.startswith("<think>") and '</think>' in correction_string:
+        # Get position of </think>
+        position_end_think = correction_string.find('</think>')
+        # Get the text between <think> and </think>
+        thinking_text = correction_string[0:position_end_think]
+        # Remove the thinking text from the correction_string
+        correction_string = correction_string[position_end_think+len('</think>'):]
 
     correction_dict = string_to_dict(correction_string)
     if f"{KEY_EXPLANATION}" in correction_dict.keys() and f"{KEY_CORRECTION}" in correction_dict.keys() and f"{KEY_ORIGINAL}" in correction_dict.keys():
@@ -143,6 +165,10 @@ def ortografic_corrections_jupyter_notebook(notebook_path):
         model = Ollama_qwen2_5_7B(system_instruction=SYSTEM_INSTRUCTION, system_check=SYSTEM_CHECK, num_checks=NUMBER_OF_CHECKS)
     elif MODEL == OLLAMA_QWEN_2_5_72B:
         model = Ollama_qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION, system_check=SYSTEM_CHECK, num_checks=NUMBER_OF_CHECKS)
+    elif MODEL == MLX_QWEN_3_4B:
+        model = MLX_Qwen3_4B(system_instruction=SYSTEM_INSTRUCTION, system_check=SYSTEM_CHECK, num_checks=NUMBER_OF_CHECKS)
+    elif MODEL == MLX_QWEN_3_14B:
+        model = MLX_Qwen3_14B(system_instruction=SYSTEM_INSTRUCTION, system_check=SYSTEM_CHECK, num_checks=NUMBER_OF_CHECKS)
 
     # Get notebook name
     notebook_name = os.path.basename(notebook_path)

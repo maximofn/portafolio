@@ -65,6 +65,12 @@ class TestExtractTitles(unittest.TestCase):
         # Malformed JSON file
         with open(self.notebook_malformed_json_path, 'w') as f:
             f.write("this is not valid json")
+        
+        # Open test_get_notebook_metadata.ipynb and copy the content to the src directory
+        with open(os.path.join(self.test_dir, 'test_get_notebook_metadata.ipynb'), 'r') as f:
+            notebook_content = json.load(f)
+        with open(os.path.join(self.test_dir, '../src/test_get_notebook_metadata.ipynb'), 'w') as f:
+            json.dump(notebook_content, f)
 
     def tearDown(self):
         # Clean up dummy files
@@ -72,6 +78,7 @@ class TestExtractTitles(unittest.TestCase):
         os.remove(self.notebook_no_titles_path)
         os.remove(self.notebook_empty_cells_path)
         os.remove(self.notebook_malformed_json_path)
+        os.remove(os.path.join(self.test_dir, '../src/test_get_notebook_metadata.ipynb'))
         # Remove dummy_notebook.ipynb from src if it exists from previous step
         src_dummy_notebook = os.path.join(self.test_dir, '../src/dummy_notebook.ipynb')
         if os.path.exists(src_dummy_notebook):
@@ -111,6 +118,11 @@ class TestExtractTitles(unittest.TestCase):
     def test_malformed_json_notebook(self):
         titles = extract_titles(self.notebook_malformed_json_path)
         self.assertEqual(titles, [])
+    
+    def test_python_notebook(self):
+        expected_titles = [{'text': 'Introducción a Python', 'level': 'h1'}, {'text': '1. Resumen', 'level': 'h2'}, {'text': '2. Tipos de datos de Python', 'level': 'h2'}, {'text': '2.1. Strings', 'level': 'h3'}, {'text': '2.2. Números', 'level': 'h3'}, {'text': '2.2.1. Enteros', 'level': 'h4'}, {'text': '2.2.2. Float', 'level': 'h4'}, {'text': '2.2.3. Complejos', 'level': 'h4'}, {'text': '2.2.4. Conversión', 'level': 'h4'}, {'text': '2.3. Secuencias', 'level': 'h3'}, {'text': '2.3.1. Listas', 'level': 'h4'}, {'text': '2.3.1.1. Editar listas', 'level': 'h5'}, {'text': '2.3.1.2. List comprehension', 'level': 'h5'}, {'text': '2.3.1.3. Ordenar listas', 'level': 'h5'}, {'text': '2.3.1.4. Copiar listas', 'level': 'h5'}, {'text': '2.3.1.5. Concatenar listas', 'level': 'h5'}, {'text': '2.3.2. Tuplas', 'level': 'h4'}, {'text': '2.3.2.1. Modificar tuplas', 'level': 'h5'}, {'text': '2.3.2.2. Desempaquetar tuplas', 'level': 'h5'}, {'text': '2.3.2.3. Concatenar tuplas', 'level': 'h5'}, {'text': '2.3.2.4. Métodos de las tuplas', 'level': 'h5'}, {'text': '2.3.3. Range', 'level': 'h4'}, {'text': '2.4. Diccionarios', 'level': 'h3'}, {'text': '2.4.1. Acceder a los ítems', 'level': 'h4'}, {'text': '2.4.2. Modificar los ítems', 'level': 'h4'}, {'text': '2.4.3. Añadir ítems', 'level': 'h4'}, {'text': '2.4.4. Eliminar items', 'level': 'h4'}, {'text': '2.4.5. Copiar diccionarios', 'level': 'h4'}, {'text': '2.4.6. Diccionarios anidados', 'level': 'h4'}, {'text': '2.4.7. Métodos de los diccionarios', 'level': 'h4'}, {'text': '2.4.8. Dictionary comprehension', 'level': 'h4'}, {'text': '2.5. Sets', 'level': 'h3'}, {'text': '2.5.1. Set', 'level': 'h4'}, {'text': '2.5.1.1. Añadir ítems', 'level': 'h5'}, {'text': '2.5.1.2. Eliminar ítems', 'level': 'h5'}, {'text': '2.5.1.3. Unir ítems', 'level': 'h5'}, {'text': '2.5.1.4. Métodos de los sets', 'level': 'h5'}, {'text': '2.5.2. Frozenset', 'level': 'h4'}, {'text': '2.6. Booleanos', 'level': 'h3'}, {'text': '2.6.1. Otros tipos de datos True o False', 'level': 'h4'}, {'text': '2.7. Binarios', 'level': 'h3'}, {'text': '2.7.1. Bytes', 'level': 'h4'}, {'text': '2.7.2. Bytearray', 'level': 'h4'}, {'text': '2.7.3. Memoryview', 'level': 'h4'}, {'text': '3. Operadores', 'level': 'h2'}, {'text': '3.1. Operadores aritméticos', 'level': 'h3'}, {'text': '3.2. Operadores de comparación', 'level': 'h3'}, {'text': '3.3. Operadores lógicos', 'level': 'h3'}, {'text': '3.4. Operadores de identidad', 'level': 'h3'}, {'text': '3.5. Operadores de pertenencia', 'level': 'h3'}, {'text': '3.6. Operadores bit a bit', 'level': 'h3'}, {'text': '3.7. Operadores de asignación', 'level': 'h3'}, {'text': '4. Control de flujo', 'level': 'h2'}, {'text': '4.1. If', 'level': 'h3'}, {'text': '4.2. While', 'level': 'h3'}, {'text': '4.3. For', 'level': 'h3'}, {'text': '5. Funciones', 'level': 'h2'}, {'text': '5.1. Built in functions', 'level': 'h3'}, {'text': '5.2. Documentación de una función', 'level': 'h3'}, {'text': '5.3. Decoradores', 'level': 'h3'}, {'text': '5.4. `*args` y `**kwargs`', 'level': 'h3'}, {'text': 'código de la función aquí', 'level': 'h1'}, {'text': '5.4.1. `*args`', 'level': 'h4'}, {'text': '5.4.2. `**kwargs`', 'level': 'h4'}, {'text': '6. Funciones adicionales', 'level': 'h2'}, {'text': '6.1. Funciones *lambda*', 'level': 'h3'}, {'text': '6.2. Función `map`', 'level': 'h3'}, {'text': '6.3. Función `filter`', 'level': 'h3'}, {'text': '6.4. Función `reduce`', 'level': 'h3'}, {'text': '6.5. Función `zip`', 'level': 'h3'}, {'text': '6.5. Generadores', 'level': 'h3'}, {'text': '6.6. High order functions', 'level': 'h3'}, {'text': '7. Clases y objetos', 'level': 'h2'}, {'text': '7.1. Herencia', 'level': 'h3'}, {'text': '7.2. Sobrecarga de operadores', 'level': 'h3'}, {'text': '7.3. Iteradores personalizados', 'level': 'h3'}, {'text': '7.4. Llamada a objetos como funciones', 'level': 'h3'}, {'text': '7.5. Atributos y funciones privados', 'level': 'h3'}, {'text': '8. Iteradores', 'level': 'h2'}, {'text': '8.1. Crear un objeto iterador', 'level': 'h3'}, {'text': '8.2. Iterar obteniendo el índice y el valor', 'level': 'h3'}, {'text': '8.3. Iterar por dos objetos iterables a la vez', 'level': 'h3'}, {'text': '9. Alcance de variables', 'level': 'h2'}, {'text': '9.1. Alcance local', 'level': 'h3'}, {'text': '9.2. Alcance global', 'level': 'h3'}, {'text': '10. Módulos', 'level': 'h2'}, {'text': '10.1. Entry points: archivos como módulos y no como scripts', 'level': 'h3'}, {'text': '11. Paquetes', 'level': 'h2'}, {'text': '12. Try... Except', 'level': 'h2'}, {'text': '12.1. Crear una excepción', 'level': 'h3'}, {'text': '13. Keywords o palabras reservadas', 'level': 'h2'}, {'text': '14. El Zen de Python', 'level': 'h2'}]
+        titles = extract_titles(os.path.join(self.test_dir, '../src/test_get_notebook_metadata.ipynb'))
+        self.assertEqual(titles, expected_titles)
 
 if __name__ == '__main__':
     unittest.main()

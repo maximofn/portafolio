@@ -9,9 +9,10 @@ from gemini import Gemini
 from gpt4o import GPT4o
 from groq_llm import Groq_llama3_1_70B
 from qwen2_5_72B import Qwen2_5_72B
+from mlx_qwen_3_0_6B import MLX_Qwen3_0_6B
 from mlx_qwen_3_4B import MLX_Qwen3_4B
 from mlx_qwen_3_14B import MLX_Qwen3_14B
-from corrections_jupyter_notebook import SYSTEM_INSTRUCTION, SYSTEM_CHECK, NUMBER_OF_CHECKS, MAX_TOKENS, MODEL, GEMINI_LLM, GPT4O_LLM, GROQ_LLM, QWEN_2_5_72B, MLX_QWEN_3_4B, MLX_QWEN_3_14B
+from corrections_jupyter_notebook import SYSTEM_INSTRUCTION, SYSTEM_CHECK, NUMBER_OF_CHECKS, MAX_TOKENS, MODEL, GEMINI_LLM, GPT4O_LLM, GROQ_LLM, QWEN_2_5_72B, MLX_QWEN_3_0_6B, MLX_QWEN_3_4B, MLX_QWEN_3_14B
 from corrections_jupyter_notebook import apply_corrections
 
 DEBUG = True
@@ -26,6 +27,8 @@ class Test_corrections_jupyter_notebook(unittest.TestCase):
             self.model = Groq_llama3_1_70B(system_instruction=SYSTEM_INSTRUCTION)
         elif MODEL == QWEN_2_5_72B:
             self.model = Qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION, system_check=SYSTEM_CHECK, num_checks=NUMBER_OF_CHECKS)
+        elif MODEL == MLX_QWEN_3_0_6B:
+            self.model = MLX_Qwen3_0_6B(system_instruction=SYSTEM_INSTRUCTION, system_check=SYSTEM_CHECK, num_checks=NUMBER_OF_CHECKS, max_tokens=MAX_TOKENS)
         elif MODEL == MLX_QWEN_3_4B:
             self.model = MLX_Qwen3_4B(system_instruction=SYSTEM_INSTRUCTION, system_check=SYSTEM_CHECK, num_checks=NUMBER_OF_CHECKS, max_tokens=MAX_TOKENS)
         elif MODEL == MLX_QWEN_3_14B:

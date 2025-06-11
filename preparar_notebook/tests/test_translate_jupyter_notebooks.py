@@ -1,9 +1,13 @@
 from unittest.mock import patch
 import unittest
-from preparar_notebook.src.translate_jupyter_notebooks import translate_text
-from preparar_notebook.src.translate_jupyter_notebooks import GEMINI_LLM, GPT4o_LLM, GROQ_LLM, QWEN_2_5_72B, LLAMA_3_3_70B, TRANSLATOR_MODEL
-from preparar_notebook.src.translate_jupyter_notebooks import SYSTEM_INSTRUCTION_EN, SYSTEM_INSTRUCTION_PT, SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, SYSTEM_INSTRUCTION_NOTEBOOK_TRANSLATION_CHECKER
-from preparar_notebook.src.translate_jupyter_notebooks import NUMBER_OF_PHRASE_CHECKS, NUMBER_OF_NOTEBOOK_CHECKS
+import sys
+import os
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+from translate_jupyter_notebooks import translate_text
+from translate_jupyter_notebooks import GEMINI_LLM, GPT4o_LLM, GROQ_LLM, QWEN_2_5_72B, LLAMA_3_3_70B, TRANSLATOR_MODEL
+from translate_jupyter_notebooks import SYSTEM_INSTRUCTION_EN, SYSTEM_INSTRUCTION_PT, SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, SYSTEM_INSTRUCTION_NOTEBOOK_TRANSLATION_CHECKER
+from translate_jupyter_notebooks import NUMBER_OF_PHRASE_CHECKS, NUMBER_OF_NOTEBOOK_CHECKS
 from gemini import Gemini
 from gpt4o import GPT4o
 from groq_llm import Groq_llama3_1_70B

@@ -1,6 +1,10 @@
 from unittest.mock import patch
 import unittest
-from preparar_notebook.src.format_code_blocks import remove_empty_lines, format_code_blocks
+import sys
+import os
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+from format_code_blocks import remove_empty_lines, format_code_blocks
 
 class Test_format_code_blocks(unittest.TestCase):
     def test_remove_empty_lines_with_empty_lines(self):

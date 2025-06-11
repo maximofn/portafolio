@@ -1,6 +1,10 @@
 from unittest.mock import patch
 import unittest
-from preparar_notebook.src.check_for_new_classes import check_for_new_classes
+import sys
+import os
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+from check_for_new_classes import check_for_new_classes
 
 class Test_check_for_new_classes(unittest.TestCase):
     @patch('sys.stdout')    # Mock the stdout to avoid printing to the console

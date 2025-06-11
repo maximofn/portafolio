@@ -1,6 +1,10 @@
 from unittest.mock import patch
 import unittest
-from preparar_notebook.src.get_notebook_metadata import get_image_width_height, get_image_extension, get_notebook_metadata
+import sys
+import os
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+from get_notebook_metadata import get_image_width_height, get_image_extension, get_notebook_metadata
 
 class Test_get_notebook_metadata(unittest.TestCase):
     def test_get_image_width_height(self):

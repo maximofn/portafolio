@@ -1,7 +1,10 @@
 from unittest.mock import patch
 import unittest
-from preparar_notebook.src.notebook_utils import Notebook
+import sys
 import os
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+from notebook_utils import Notebook
 
 class Test_notebook_utils(unittest.TestCase):
     def setUp(self):

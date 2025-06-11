@@ -1,6 +1,7 @@
 import argparse
 import json
 import pathlib
+import re
 import xml.etree.ElementTree as ET
 
 
@@ -10,6 +11,8 @@ def notebook_to_xml_tree(notebook_path):
         notebook_json = json.load(f)
 
     root = ET.Element('notebook')
+
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
 
     for cell in notebook_json.get('cells', []):
         cell_type = cell.get('cell_type')
@@ -52,7 +55,8 @@ def notebook_to_xml_tree(notebook_path):
                     elif 'traceback' in output:
                         tb = output['traceback']
                         if isinstance(tb, list):
-                            output_text = ''.join(tb)
+                            raw_traceback = ''.join(tb)
+                            output_text = ansi_escape.sub('', raw_traceback)
                         else:
                             output_text = str(tb)
                     else:

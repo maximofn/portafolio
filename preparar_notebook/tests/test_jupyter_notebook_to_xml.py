@@ -4,7 +4,7 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
-
+import xml.etree.ElementTree as ET
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 
@@ -12,9 +12,18 @@ from jupyter_notebook_to_xml import convert_notebook_to_xml
 
 class TestJupyterNotebookToXml(unittest.TestCase):
     def setUp(self):
+        # Create tmpdir
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.nb_path = self.tmpdir / 'test_notebook.ipynb'
-        notebook_content = {
+
+        # Create notebooks_translated folder into tmpdir
+        self.nb_translated_dir = self.tmpdir / 'notebooks_translated'
+        self.nb_translated_dir.mkdir(exist_ok=True)
+
+        # Create notebooks
+        self.nb_path_es = self.tmpdir / 'test_notebook_es.ipynb'
+        self.nb_path_en = self.nb_translated_dir / 'test_notebook_EN.ipynb'
+        self.nb_path_pt = self.nb_translated_dir / 'test_notebook_PT.ipynb'
+        notebook_content_es = {
             "cells": [
                 {"cell_type": "markdown", "source": ["# Title"]},
                 {
@@ -29,8 +38,42 @@ class TestJupyterNotebookToXml(unittest.TestCase):
             "nbformat": 4,
             "nbformat_minor": 2
         }
-        with open(self.nb_path, 'w') as f:
-            json.dump(notebook_content, f)
+        notebook_content_en = {
+            "cells": [
+                {"cell_type": "markdown", "source": ["# Title"]},
+                {
+                    "cell_type": "code",
+                    "source": ["print('hi')"],
+                    "outputs": [
+                        {"output_type": "stream", "name": "stdout", "text": ["hi\n"]}
+                    ]
+                }
+            ],
+            "metadata": {},
+            "nbformat": 4,
+            "nbformat_minor": 2
+        }
+        notebook_content_pt = {
+            "cells": [
+                {"cell_type": "markdown", "source": ["# Title"]},
+                {
+                    "cell_type": "code",
+                    "source": ["print('hi')"],
+                    "outputs": [
+                        {"output_type": "stream", "name": "stdout", "text": ["hi\n"]}
+                    ]
+                }
+            ],
+            "metadata": {},
+            "nbformat": 4,
+            "nbformat_minor": 2
+        }
+        with open(self.nb_path_es, 'w') as f:
+            json.dump(notebook_content_es, f)
+        with open(self.nb_path_en, 'w') as f:
+            json.dump(notebook_content_en, f)
+        with open(self.nb_path_pt, 'w') as f:
+            json.dump(notebook_content_pt, f)
 
         # Open 2024-09-09-Tuplas-de-un-solo-elemento.ipynb and copy the content to the src directory
         self.test_dir = Path(__file__).parent
@@ -39,35 +82,65 @@ class TestJupyterNotebookToXml(unittest.TestCase):
         with open(os.path.join(self.test_dir, '../src/2024-09-09-Tuplas-de-un-solo-elemento.ipynb'), 'w') as f:
             json.dump(notebook_content, f)
 
+        # Create preparar_notebook/src/translated_notebooks directory
+        self.translated_notebooks_dir = self.test_dir.parent
+        self.translated_notebooks_src_dir = self.translated_notebooks_dir / 'src'
+        self.translated_notebooks_src_translated_notebooks_dir = self.translated_notebooks_src_dir / 'notebooks_translated'
+        self.translated_notebooks_src_translated_notebooks_dir.mkdir(exist_ok=True)
+
+        # Open 2024-09-09-Tuplas-de-un-solo-elemento_EN.ipynb and copy the content to the src directory
+        with open(os.path.join(self.test_dir, '2024-09-09-Tuplas-de-un-solo-elemento_EN.ipynb'), 'r') as f:
+            notebook_content_en = json.load(f)
+        with open(os.path.join(self.translated_notebooks_src_translated_notebooks_dir, '2024-09-09-Tuplas-de-un-solo-elemento_EN.ipynb'), 'w') as f:
+            json.dump(notebook_content_en, f)
+
+        # Open 2024-09-09-Tuplas-de-un-solo-elemento_PT.ipynb and copy the content to the src directory
+        with open(os.path.join(self.test_dir, '2024-09-09-Tuplas-de-un-solo-elemento_PT.ipynb'), 'r') as f:
+            notebook_content_pt = json.load(f)
+        with open(os.path.join(self.translated_notebooks_src_translated_notebooks_dir, '2024-09-09-Tuplas-de-un-solo-elemento_PT.ipynb'), 'w') as f:
+            json.dump(notebook_content_pt, f)
+
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
         os.remove(os.path.join(self.test_dir, '../src/2024-09-09-Tuplas-de-un-solo-elemento.ipynb'))
+        os.remove(os.path.join(self.translated_notebooks_src_translated_notebooks_dir, '2024-09-09-Tuplas-de-un-solo-elemento_EN.ipynb'))
+        os.remove(os.path.join(self.translated_notebooks_src_translated_notebooks_dir, '2024-09-09-Tuplas-de-un-solo-elemento_PT.ipynb'))
 
     def test_convert_notebook_to_xml(self):
-        xml_file = convert_notebook_to_xml(str(self.nb_path))
-        self.assertTrue(xml_file.exists())
-        import xml.etree.ElementTree as ET
-        tree = ET.parse(xml_file)
-        root = tree.getroot()
-        tags = [child.tag for child in root]
-        self.assertEqual(tags, ['markdown', 'input_code', 'output_code'])
-        self.assertEqual(root.find('markdown').text, '# Title')
-        self.assertEqual(root.find('input_code').text, "print('hi')")
-        self.assertEqual(root.find('output_code').text, 'hi\n')
+        xml_files = convert_notebook_to_xml(str(self.nb_path_es))
+        self.assertEqual(len(xml_files), 3)
+        for xml_file in xml_files:
+            self.assertTrue(xml_file.exists())
+            tree = ET.parse(xml_file)
+            root = tree.getroot()
+            tags = [child.tag for child in root]
+            self.assertEqual(tags, ['markdown', 'input_code', 'output_code'])
+            self.assertEqual(root.find('markdown').text, '# Title')
+            self.assertEqual(root.find('input_code').text, "print('hi')")
+            self.assertEqual(root.find('output_code').text, 'hi\n')
     
     def test_convert_notebook_to_xml_with_2024_09_09_Tuplas_de_un_solo_elemento(self):
-        xml_file = convert_notebook_to_xml(os.path.join(self.test_dir, '../src/2024-09-09-Tuplas-de-un-solo-elemento.ipynb'))
-        self.assertTrue(xml_file.exists())
-        import xml.etree.ElementTree as ET
-        tree = ET.parse(xml_file)
-        root = tree.getroot()
-        tags = [child.tag for child in root]
-        expected_tags = ['markdown', 'markdown', 'input_code', 'output_code', 'markdown', 'input_code', 'output_code', 'markdown', 'input_code', 'output_code', 'markdown', 'input_code', 'output_code', 'markdown', 'input_code', 'output_code', 'markdown', 'input_code', 'output_code', 'markdown']
-        self.assertEqual(tags, expected_tags)
-        self.assertEqual(root.find('markdown').text, '# Tuplas de un solo elemento')
-        self.assertEqual(root.find('input_code').text, "list = [1]\ntype(list)")
-        self.assertEqual(root.find('output_code').text, 'list')
-        os.remove(xml_file)
+        xml_files = convert_notebook_to_xml(os.path.join(self.translated_notebooks_src_dir, '2024-09-09-Tuplas-de-un-solo-elemento.ipynb'))
+        self.assertEqual(len(xml_files), 3)
+        for xml_file in xml_files:
+            self.assertTrue(xml_file.exists())
+            tree = ET.parse(xml_file)
+            root = tree.getroot()
+            tags = [child.tag for child in root]
+            if '_EN' in xml_file.name or '_PT' in xml_file.name:
+                expected_tags = ['markdown', 'markdown', 'markdown', 'input_code', 'output_code', 'markdown', 'input_code', 'output_code', 'markdown', 'input_code', 'output_code', 'markdown', 'input_code', 'output_code', 'markdown', 'input_code', 'output_code', 'markdown', 'input_code', 'output_code', 'markdown']
+            else:
+                expected_tags = ['markdown', 'markdown', 'input_code', 'output_code', 'markdown', 'input_code', 'output_code', 'markdown', 'input_code', 'output_code', 'markdown', 'input_code', 'output_code', 'markdown', 'input_code', 'output_code', 'markdown', 'input_code', 'output_code', 'markdown']
+            self.assertEqual(tags, expected_tags)
+            if '_EN' in xml_file.name:
+                self.assertEqual(root.find('markdown').text, '# Single Element Tuples')
+            elif '_PT' in xml_file.name:
+                self.assertEqual(root.find('markdown').text, '# Tuplas de um único elemento')
+            else:
+                self.assertEqual(root.find('markdown').text, '# Tuplas de un solo elemento')
+            self.assertEqual(root.find('input_code').text, "list = [1]\ntype(list)")
+            self.assertEqual(root.find('output_code').text, 'list')
+            os.remove(xml_file)
 
 if __name__ == '__main__':
     unittest.main()

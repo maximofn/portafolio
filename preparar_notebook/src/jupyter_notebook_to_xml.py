@@ -84,8 +84,8 @@ def convert_notebook_to_xml(notebook_path):
     notebook_extension = notebook_path.suffix
 
     # Create the paths for the translated notebooks
-    notebook_name_en = notebook_name + "_" + ENGLISH + notebook_extension
-    notebook_name_pt = notebook_name + "_" + PORTUGUESE + notebook_extension
+    notebook_name_en = notebook_name.replace("_es", "") + "_" + ENGLISH + notebook_extension
+    notebook_name_pt = notebook_name.replace("_es", "") + "_" + PORTUGUESE + notebook_extension
     notebook_paths = [notebook_path, path/NOTEBOOKS_TRANSLATED/notebook_name_en, path/NOTEBOOKS_TRANSLATED/notebook_name_pt]
 
     # Convert every notebook to XML

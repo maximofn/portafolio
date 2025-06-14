@@ -6,6 +6,9 @@ from qwen2_5_72B import Qwen2_5_72B
 from ollama_qwen_2_5_7B import Ollama_qwen2_5_7B
 from ollama_qwen_2_5_72B import Ollama_qwen2_5_72B
 from llama_3_3_70B import Llama_3_3_70B
+from mlx_qwen_3_0_6B import MLX_Qwen3_0_6B
+from mlx_qwen_3_4B import MLX_Qwen3_4B
+from mlx_qwen_3_14B import MLX_Qwen3_14B
 from notebook_utils import Notebook
 import re
 from utils import ask_for_something
@@ -60,6 +63,9 @@ QWEN_2_5_72B = "Qwen2.5-72B"
 LLAMA_3_3_70B = "Llama3.3-70B"
 OLLAMA_QWEN_2_5_7B = "Ollama_qwen2_5_7B"
 OLLAMA_QWEN_2_5_72B = "Ollama_qwen2_5_72B"
+MLX_QWEN_3_0_6B = "MLX_Qwen3_0_6B"
+MLX_QWEN_3_4B = "MLX_Qwen3_4B"
+MLX_QWEN_3_14B = "MLX_Qwen3_14B"
 TRANSLATOR_MODEL = OLLAMA_QWEN_2_5_72B
 CHECKER_MODEL = GEMINI_LLM
 
@@ -80,15 +86,24 @@ def translate_text(model, line, notebook_number):
             return "o"
     
     # Translate line with the model
-    correction_string = model.chat(line)
+    translated_string = model.chat(line)
 
-    # if correction_string is not string, it's an error
-    if type(correction_string) != str:
-        print(f"LLM Error: {correction_string}")
+    # if translated_string is not string, it's an error
+    if type(translated_string) != str:
+        print(f"LLM Error: {translated_string}")
         # exit(1)
         print(f"\tline to translate: {line}")
+    
+    # If translated_string has thinking, remove it
+    if translated_string.startswith("<think>") and '</think>' in translated_string:
+        # Get position of </think>
+        position_end_think = translated_string.find('</think>')
+        # Get the text between <think> and </think>
+        thinking_text = translated_string[0:position_end_think]
+        # Remove the thinking text from the translated_string
+        translated_string = translated_string[position_end_think+len('</think>'):]
 
-    return correction_string
+    return translated_string
 
 def analyze_translation_errors(error):
     print(error)
@@ -169,6 +184,15 @@ def translate_jupyter_notebook(notebook_path):
     elif TRANSLATOR_MODEL == OLLAMA_QWEN_2_5_72B:
         translator_model_en = Ollama_qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION_EN, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
         translator_model_pt = Ollama_qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION_PT, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
+    elif TRANSLATOR_MODEL == MLX_QWEN_3_0_6B:
+        translator_model_en = MLX_Qwen3_0_6B(system_instruction=SYSTEM_INSTRUCTION_EN, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
+        translator_model_pt = MLX_Qwen3_0_6B(system_instruction=SYSTEM_INSTRUCTION_PT, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
+    elif TRANSLATOR_MODEL == MLX_QWEN_3_4B:
+        translator_model_en = MLX_Qwen3_4B(system_instruction=SYSTEM_INSTRUCTION_EN, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
+        translator_model_pt = MLX_Qwen3_4B(system_instruction=SYSTEM_INSTRUCTION_PT, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
+    elif TRANSLATOR_MODEL == MLX_QWEN_3_14B:
+        translator_model_en = MLX_Qwen3_14B(system_instruction=SYSTEM_INSTRUCTION_EN, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
+        translator_model_pt = MLX_Qwen3_14B(system_instruction=SYSTEM_INSTRUCTION_PT, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
     translations_models = [translator_model_en, translator_model_pt]
 
     # load checker LLM

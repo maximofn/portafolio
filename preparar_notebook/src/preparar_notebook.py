@@ -5,6 +5,7 @@ from corrections_jupyter_notebook import ortografic_corrections_jupyter_notebook
 from translate_jupyter_notebooks import translate_jupyter_notebook
 from error_codes import QUOTA_EXCEEDED_ERROR
 from jupyter_notebook_to_html import convert_to_html
+from jupyter_notebook_to_xml import convert_notebook_to_xml
 from add_page_to_its_json_file import add_page_to_its_json_file_from_metadata
 from add_page_to_its_sitemap import add_page_to_its_sitemap_from_metadata
 import json
@@ -18,6 +19,8 @@ def parse_args():
     parser.add_argument('--yes_correct_ortografic_errors', action='store_true', help='Correct ortografic errors')
     parser.add_argument('--no_translate', action='store_true', help='Do not translate the notebook')
     parser.add_argument('--yes_translate', action='store_true', help='Translate the notebook')
+    parser.add_argument('--no_convert_to_xml', action='store_true', help='Do not convert the notebook to xml')
+    parser.add_argument('--yes_convert_to_xml', action='store_true', help='Convert the notebook to xml')
     parser.add_argument('--no_convert_to_html', action='store_true', help='Do not convert the notebook to html')
     parser.add_argument('--yes_convert_to_html', action='store_true', help='Convert the notebook to html')
     parser.add_argument('--no_add_to_json', action='store_true', help='Do not add the astro metadata to the json file')
@@ -34,6 +37,8 @@ if __name__ == "__main__":
     yes_correct_ortografic_errors = args.yes_correct_ortografic_errors
     no_translate = args.no_translate
     yes_translate = args.yes_translate
+    no_convert_to_xml = args.no_convert_to_xml
+    yes_convert_to_xml = args.yes_convert_to_xml
     no_convert_to_html = args.no_convert_to_html
     yes_convert_to_html = args.yes_convert_to_html
     no_add_to_json = args.no_add_to_json
@@ -70,6 +75,16 @@ if __name__ == "__main__":
             if ask_for_something("\nDo you want to translate the notebook? (y/n)", ['y', 'yes'], ['n', 'no']):
                 # Translate notebook
                 translate_jupyter_notebook(notebook_path)
+    
+    # Convert to XML
+    if not no_convert_to_xml:
+        if yes_convert_to_xml:
+            print("Converting to XML")
+            # Convert to XML
+            convert_notebook_to_xml(notebook_path)
+        else:
+            if ask_for_something("\nDo you want to convert the notebook to xml? (y/n)", ['y', 'yes'], ['n', 'no']):
+                print("Converting to XML")
     
     # Convert to HTML
     if not no_convert_to_html:

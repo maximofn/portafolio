@@ -26,6 +26,7 @@ def string_to_dict(notebook_content):
         return dict_content
     except Exception as e:
         print(f"Error converting string to dictionary: {e}")
+        print(f"Input string: {notebook_content}")
         return {}
 
 def get_portafolio_path(path):

@@ -173,3 +173,17 @@ class Test_corrections_jupyter_notebook(unittest.TestCase):
             line = "How did Neeva use Karpenter and Amazon EC2 Spot Instances to improve its infrastructure management and cost optimization?"
             result = apply_corrections(self.model, line, debug=DEBUG)
             self.assertEqual(result, "How did Neeva use Karpenter and Amazon EC2 Spot Instances to improve its infrastructure management and cost optimization?")
+
+    if DEBUG:
+        @patch('builtins.input', return_value='y')   # Mock the input to avoid asking for input
+        def test_apply_corrections_example6(self, mock_input):
+            line = "Git-sim"
+            result = apply_corrections(self.model, line, debug=DEBUG)
+            self.assertEqual(result, "Git-sim")
+    else:
+        @patch('builtins.input', return_value='y')   # Mock the input to avoid asking for input
+        @patch('sys.stdout')    # Mock the stdout to avoid printing to the console
+        def test_apply_corrections_example6(self, mock_stdout, mock_input):
+            line = "Git-sim"
+            result = apply_corrections(self.model, line, debug=DEBUG)
+            self.assertEqual(result, "Git-sim")

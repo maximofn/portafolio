@@ -21,10 +21,11 @@ Tu misión es corregir ortográficamente texto.
 
 Instrucciones:
 1. Revisa el texto que te proporciono.
-2. Corrige ÚNICAMENTE errores ortográficos en español. No cambies el contenido, estilo, ni palabras en inglés.
-3. Tu respuesta DEBE SER un objeto JSON y NADA MÁS.
-4. El JSON debe tener tres claves: "original", "correccion", y "explicación".
-5. Si no hay errores, devuelve un JSON con todas las claves y sus valores como strings vacíos.
+2. Corrige ÚNICAMENTE errores ortográficos en español. No cambies el contenido, el estilo ni las palabras en inglés.
+3. No traduzcas ni alteres términos técnicos, nombres de herramientas o código. Por ejemplo, `Git-sim` debe permanecer `Git-sim`.
+4. Tu respuesta DEBE SER un objeto JSON y NADA MÁS.
+5. El JSON debe tener tres claves: "original", "correccion", y "explicación".
+6. Si no hay errores, devuelve un JSON con todas las claves y sus valores como strings vacíos.
 
 Ejemplo de JSON de salida si hay un error:
 {
@@ -83,10 +84,6 @@ def apply_corrections(model, line, debug=False):
         correction_string = model.chat(line, debug=debug)
     except Exception as e:
         print(f"Error LLM model chat: {e}")
-    # correction_string = "```json\n{"
-    # corr = "corr "
-    # correction_string = correction_string + f"\n    \"{KEY_ORIGINAL}\": \"{line}\",\n    \"{KEY_CORRECTION}\": \"{corr+line}\",\n    \"{KEY_EXPLANATION}\": \"test\"\n"
-    # correction_string = correction_string + "}\n```"
 
     # if correction_string is not string, it's an error
     if type(correction_string) != str:
@@ -102,17 +99,18 @@ def apply_corrections(model, line, debug=False):
         # Remove the thinking text from the correction_string
         correction_string = correction_string[position_end_think+len('</think>'):]
 
-    correction_dict = string_to_dict(correction_string)
+    try:
+        correction_dict = string_to_dict(correction_string)
+    except Exception as e:
+        print(f"Error converting string to dictionary: {e}")
+        print(f"Line to correct: {line}")
+        print(f"Correction string: {correction_string}")
+    
     if f"{KEY_EXPLANATION}" in correction_dict.keys() and f"{KEY_CORRECTION}" in correction_dict.keys() and f"{KEY_ORIGINAL}" in correction_dict.keys():
         if len(correction_dict[f'{KEY_EXPLANATION}']) > 0:
-            original_value = correction_dict[f'{KEY_ORIGINAL}']
+            # original_value = correction_dict[f'{KEY_ORIGINAL}']
             correction_vaue = correction_dict[f'{KEY_CORRECTION}']
-            explanation_value = correction_dict[f'{KEY_EXPLANATION}']
-            # print(f"\n{KEY_ORIGINAL}  : {original_value}\n{KEY_CORRECTION}: {correction_vaue}\n{KEY_EXPLANATION}: {explanation_value}")
-            # if ask_for_something("Do you want to apply this correction? (y/n)", ['y', 'yes'], ['n', 'no']):
-            #     return correction_vaue
-            # else:
-            #     return original_value
+            # explanation_value = correction_dict[f'{KEY_EXPLANATION}']
             return correction_vaue
         else:
             return line
@@ -185,7 +183,7 @@ def ortografic_corrections_jupyter_notebook(notebook_path):
 
     # Get notebook content as a dictionary
     notebook = Notebook(notebook_path)
-    notebook_content_dict = notebook.get_content_as_json()
+    # notebook_content_dict = notebook.get_content_as_json()
     cells = notebook.cells()   # Get only with the cells
     total_markdown_cells = notebook.number_markdown_cells()
 

@@ -73,6 +73,10 @@ def convert_notebook_to_xml(notebook_path):
     notebook_path = pathlib.Path(notebook_path)
     xml_tree = notebook_to_xml_tree(notebook_path)
 
+    # Indent the XML tree for pretty printing.
+    # This adds newlines and indentation to make the XML file readable.
+    ET.indent(xml_tree, space="  ")
+
     xml_dir = notebook_path.parent / 'xml_files'
     xml_dir.mkdir(exist_ok=True)
     xml_file = xml_dir / f"{notebook_path.stem}.xml"

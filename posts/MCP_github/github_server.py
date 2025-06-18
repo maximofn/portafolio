@@ -1,7 +1,6 @@
 import httpx
 from typing import Optional
 from mcp.server.fastmcp import FastMCP, Image, Context
-from mcp.server.fastmcp.tools import Tool, ToolManager
 from mcp.server.fastmcp.resources import (Resource, ResourceManager, 
                         ResourceTemplate, BinaryResource, DirectoryResource, FileResource, FunctionResource, HttpResource, TextResource)
 from mcp.server.fastmcp.prompts import Prompt, PromptManager

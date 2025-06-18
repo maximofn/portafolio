@@ -3,8 +3,6 @@ from typing import Optional
 from mcp.server.fastmcp import FastMCP, Image, Context
 from mcp.server.fastmcp.prompts import Prompt, PromptManager
 from github import GITHUB_TOKEN, create_github_headers
-import urllib.parse
-import requests
 from time import sleep
 
 # Create an MCP server

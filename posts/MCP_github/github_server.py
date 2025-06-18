@@ -8,6 +8,20 @@ from time import sleep
 # Create an MCP server
 mcp = FastMCP("GitHubMCP")
 
+@mcp.prompt()
+def summarize_repository_issues(owner: str, repo_name: str) -> str:
+    """
+    Generates a prompt to summarize the open issues of a repository.
+
+    Args:
+        owner: The owner of the repository.
+        repo_name: The name of the repository.
+
+    Returns:
+        A string with the request for the LLM.
+    """
+    return f"Please provide a summary of the open issues for the repository '{owner}/{repo_name}'."
+
 @mcp.resource("github://repo/{owner}/{repo_name}")
 async def get_repository_info(owner: str, repo_name: str) -> dict:
     """

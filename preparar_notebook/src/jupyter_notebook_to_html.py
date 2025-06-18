@@ -9,7 +9,7 @@ import requests
 from io import BytesIO
 from img_base64 import base64_to_webp
 
-CONVERT_TO_HTML_WITH_NBCONVERT = True
+CONVERT_TO_HTML_WITH_NBCONVERT = False
 
 HTML_FILES = "html_files"
 NOTEBOOKS_TRANSLATED = "notebooks_translated"
@@ -311,6 +311,8 @@ def convert_to_html(notebook_path, metadata, notebook_title):
                     os.system(f"jupyter nbconvert --to html --template-file=/Users/macm1/miniforge3/share/jupyter/posts_template/index.html.j2 {notebook}")
                 else:  # Linux/Ubuntu
                     os.system(f"jupyter nbconvert --to html --template posts_template {notebook}")
+            else:
+                print(f"Converting {notebook} to html...")
         except Exception as e:
             print(f"Error: {e}")
             print(f"notebook: {notebook}")
@@ -321,7 +323,10 @@ def convert_to_html(notebook_path, metadata, notebook_title):
         destiny_name = notebook.stem + ".html"
         full_destiny_path = destiny_path / destiny_name
         try:
-            if CONVERT_TO_HTML_WITH_NBCONVERT: os.system(f"mv {notebook.with_suffix('.html')} {full_destiny_path}")
+            if CONVERT_TO_HTML_WITH_NBCONVERT: 
+                os.system(f"mv {notebook.with_suffix('.html')} {full_destiny_path}")
+            else:
+                pass
         except Exception as e:
             print(f"Error: {e}")
             print(f"notebook: {notebook}")

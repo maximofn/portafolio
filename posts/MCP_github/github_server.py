@@ -12,6 +12,52 @@ from time import sleep
 # Create an MCP server
 mcp = FastMCP("GitHubMCP")
 
+@mcp.resource("github://repo/{owner}/{repo_name}")
+async def get_repository_info(owner: str, repo_name: str) -> dict:
+    """
+    Gets detailed information for a given GitHub repository.
+
+    Args:
+        owner: The owner of the repository (e.g., 'modelcontextprotocol')
+        repo_name: The name of the repository (e.g., 'python-sdk')
+
+    Returns:
+        dict: A dictionary containing repository details.
+    """
+    api_url = f"https://api.github.com/repos/{owner}/{repo_name}"
+    print(f"Fetching repository info from {api_url}...")
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(api_url, headers=create_github_headers())
+            response.raise_for_status()
+            repo_data = response.json()
+            
+            return {
+                "full_name": repo_data.get("full_name"),
+                "description": repo_data.get("description"),
+                "stars": repo_data.get("stargazers_count"),
+                "forks": repo_data.get("forks_count"),
+                "open_issues": repo_data.get("open_issues_count"),
+                "language": repo_data.get("language"),
+                "url": repo_data.get("html_url")
+            }
+        except httpx.HTTPStatusError as e:
+            error_message = e.response.json().get("message", "No additional message from API.")
+            if e.response.status_code == 403 and GITHUB_TOKEN:
+                error_message += " (Rate limit with token or token lacks permissions?)"
+            elif e.response.status_code == 403 and not GITHUB_TOKEN:
+                error_message += " (Rate limit without token. Consider creating a .env file with GITHUB_TOKEN.)"
+            
+            print(f"GitHub API error: {e.response.status_code}. {error_message}")
+            return {
+                "error": f"GitHub API error: {e.response.status_code}",
+                "message": error_message
+            }
+        except Exception as e:
+            print(f"An unexpected error occurred: {str(e)}")
+            return {"error": f"An unexpected error occurred: {str(e)}"}
+
 @mcp.tool()
 async def list_repository_issues(owner: str, repo_name: str, ctx: Context) -> list[dict]:
     """

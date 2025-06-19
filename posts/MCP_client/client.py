@@ -65,35 +65,35 @@ class MCPClient:
         
         print("✅ Connection established successfully")
         
-        # Listar herramientas disponibles
+        # List available tools
         await self.list_available_tools()
         
     async def list_available_tools(self):
-        """Lista y muestra las herramientas disponibles en el servidor MCP."""
+        """List available tools in the MCP server."""
         try:
-            # Obtener lista de herramientas del servidor
+            # Get list of tools from the server
             tools_result = await self.session.list_tools()
             
             if tools_result.tools:
-                print(f"\n🛠️  Herramientas disponibles ({len(tools_result.tools)}):")
+                print(f"\n🛠️  Available tools ({len(tools_result.tools)}):")
                 print("=" * 50)
                 
                 for tool in tools_result.tools:
                     print(f"📋 {tool.name}")
                     if tool.description:
-                        print(f"   Descripción: {tool.description}")
+                        print(f"   Description: {tool.description}")
                     
-                    # Mostrar parámetros si están disponibles
+                    # Show parameters if available
                     if hasattr(tool, 'inputSchema') and tool.inputSchema:
                         if 'properties' in tool.inputSchema:
                             params = list(tool.inputSchema['properties'].keys())
-                            print(f"   Parámetros: {', '.join(params)}")
+                            print(f"   Parameters: {', '.join(params)}")
                     print()
             else:
-                print("⚠️  No se encontraron herramientas disponibles en el servidor")
+                print("⚠️  No tools found in the server")
                 
         except Exception as e:
-            print(f"❌ Error al listar herramientas: {str(e)}")
+            print(f"❌ Error listing tools: {str(e)}")
     
     async def process_query(self, query: str) -> str:
         """
@@ -181,7 +181,7 @@ class MCPClient:
                                 "content": [{
                                     "type": "tool_result",
                                     "tool_use_id": tool_call_id,
-                                    "content": combined_content.strip()
+                                    "content": "Create a human readable response from the following tool response: " + combined_content.strip()
                                 }]
                             })
                         else:
@@ -212,7 +212,7 @@ class MCPClient:
                         print(error_msg)
                         response_text += f"\n\n{error_msg}"
             
-            return tool_result.content
+            return response_text
             
         except Exception as e:
             error_msg = f"❌ Error al procesar consulta: {str(e)}"
@@ -223,7 +223,7 @@ class MCPClient:
         """
         Main chat loop with user interaction.
         """
-        print("\n🤖 MCP client started. Write 'quit' to exit.")
+        print("\n🤖 MCP client started. Write 'quit', 'q', 'exit', 'salir' to exit.")
         print("💬 You can ask questions about GitHub repositories!")
         print("-" * 60)
         

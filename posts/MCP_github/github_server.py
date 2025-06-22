@@ -242,9 +242,7 @@ if __name__ == "__main__":
     print("DEBUG: Starting FastMCP GitHub server...")
     print(f"DEBUG: Server name: {mcp.name}")
     
-    # Initialize and run the server, run with uv run client.py http://localhost:8000/mcp
+    # Initialize and run the server
     mcp.run(
-        transport="streamable-http",
-        host="0.0.0.0",
-        port=8000,
+        transport="stdio"
     )

@@ -20,18 +20,22 @@ class FastMCPClient:
         self.anthropic = Anthropic()
         self.client = None
         
-    async def connect_to_server(self, server_url: str):
+    async def connect_to_server(self, server_script_path: str):
         """
-        Connect to the specified FastMCP server via HTTP.
+        Connect to the specified FastMCP server.
         
         Args:
-            server_url: URL of the HTTP server (e.g., "http://localhost:8000")
+            server_script_path: Path to the server script (Python)
         """
-        print(f"🔗 Connecting to FastMCP HTTP server: {server_url}")
+        print(f"🔗 Connecting to FastMCP server: {server_script_path}")
         
-        # Create FastMCP client for HTTP connection using SSE transport
-        self.client = Client(server_url)
-        # Note: FastMCP Client automatically detects HTTP URLs and uses SSE transport
+        # Determine the server type based on the extension
+        if not server_script_path.endswith('.py'):
+            raise ValueError(f"Unsupported server type. Use .py files. Received: {server_script_path}")
+        
+        # Create FastMCP client 
+        self.client = Client(server_script_path)
+        # Note: FastMCP Client automatically infers transport from .py files
         
         print("✅ Client created successfully")
         
@@ -185,10 +189,9 @@ class FastMCPClient:
         """
         Main chat loop with user interaction.
         """
-        print("\n🤖 FastMCP HTTP client started. Write 'quit', 'q', 'exit', 'salir' to exit.")
+        print("\n🤖 FastMCP client started. Write 'quit', 'q', 'exit', 'salir' to exit.")
         print("💬 You can ask questions about GitHub repositories!")
-        print("📚 The client can use tools from the FastMCP HTTP server")
-        print("🌐 Connected via Server-Sent Events (SSE)")
+        print("📚 The client can use tools from the FastMCP server")
         print("-" * 60)
         
         while True:
@@ -232,25 +235,18 @@ async def main():
     """
     # Verify command line arguments
     if len(sys.argv) != 2:
-        print("❌ Usage: python client.py <http_server_url>")
-        print("📝 Example: python client.py http://localhost:8000")
-        print("📝 Note: Now connects to HTTP server instead of executing script")
+        print("❌ Usage: python client.py <path_to_fastmcp_server>")
+        print("📝 Example: python client.py ../MCP_github/github_server.py")
         sys.exit(1)
     
-    server_url = sys.argv[1]
-    
-    # Validate URL format
-    if not server_url.startswith(('http://', 'https://')):
-        print("❌ Error: Server URL must start with http:// or https://")
-        print("📝 Example: python client.py http://localhost:8000")
-        sys.exit(1)
+    server_script_path = sys.argv[1]
     
     # Create and run client
     client = FastMCPClient()
     
     try:
         # Connect to the server
-        await client.connect_to_server(server_url)
+        await client.connect_to_server(server_script_path)
         
         # List available tools after connection
         await client.list_available_tools()

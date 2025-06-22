@@ -1,5 +1,5 @@
 import httpx
-from fastmcp import FastMCP
+from fastmcp import FastMCP, Context
 from github import GITHUB_TOKEN, create_github_headers
 
 USER_ID = 1234567890
@@ -20,20 +20,22 @@ sub_mcp = FastMCP(
     tags={"public", "production"},
     exclude_args=["user_id"],   # user_id has to be injected by server, not provided by LLM
 )
-async def list_repository_issues(owner: str, repo_name: str, user_id: int = USER_ID) -> list[dict]:
+async def list_repository_issues(owner: str, repo_name: str, ctx: Context, user_id: int = USER_ID) -> list[dict]:
     """
     Lists open issues for a given GitHub repository.
 
     Args:
         owner: The owner of the repository (e.g., 'modelcontextprotocol')
         repo_name: The name of the repository (e.g., 'python-sdk')
+        ctx: The context of the request
+        user_id: The user ID (automatically injected by the server)
 
     Returns:
         list[dict]: A list of dictionaries, each containing information about an issue
     """
     # Limit to first 10 issues to avoid very long responses
     api_url = f"https://api.github.com/repos/{owner}/{repo_name}/issues?state=open&per_page=10"
-    print(f"Fetching issues from {api_url}...")
+    ctx.info(f"Fetching issues from {api_url}...")
     
     async with httpx.AsyncClient() as client:
         try:
@@ -42,7 +44,7 @@ async def list_repository_issues(owner: str, repo_name: str, user_id: int = USER
             issues_data = response.json()
             
             if not issues_data:
-                print("No open issues found for this repository.")
+                ctx.info("No open issues found for this repository.")
                 return [{"message": "No open issues found for this repository."}]
 
             issues_summary = []
@@ -61,7 +63,7 @@ async def list_repository_issues(owner: str, repo_name: str, user_id: int = USER
                     "summary": summary
                 })
             
-            print(f"Found {len(issues_summary)} open issues.")
+            ctx.info(f"Found {len(issues_summary)} open issues.")
             
             # Add context information
             result = {
@@ -80,13 +82,13 @@ async def list_repository_issues(owner: str, repo_name: str, user_id: int = USER
             elif e.response.status_code == 403 and not GITHUB_TOKEN:
                 error_message += " (Rate limit without token. Consider creating a .env file with GITHUB_TOKEN.)"
             
-            print(f"GitHub API error: {e.response.status_code}. {error_message}")
+            ctx.error(f"GitHub API error: {e.response.status_code}. {error_message}")
             return [{
                 "error": f"GitHub API error: {e.response.status_code}",
                 "message": error_message
             }]
         except Exception as e:
-            print(f"An unexpected error occurred: {str(e)}")
+            ctx.error(f"An unexpected error occurred: {str(e)}")
             return [{"error": f"An unexpected error occurred: {str(e)}"}]
 
 

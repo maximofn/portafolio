@@ -1,7 +1,8 @@
 import httpx
-from typing import Optional
 from fastmcp import FastMCP
 from github import GITHUB_TOKEN, create_github_headers
+
+USER_ID = 1234567890
 
 # Create FastMCP server
 mcp = FastMCP(
@@ -15,8 +16,11 @@ sub_mcp = FastMCP(
     name="SubMCP",
 )
 
-@mcp.tool(tags={"public", "production"})
-async def list_repository_issues(owner: str, repo_name: str) -> list[dict]:
+@mcp.tool(
+    tags={"public", "production"},
+    exclude_args=["user_id"],   # user_id has to be injected by server, not provided by LLM
+)
+async def list_repository_issues(owner: str, repo_name: str, user_id: int = USER_ID) -> list[dict]:
     """
     Lists open issues for a given GitHub repository.
 
@@ -64,7 +68,8 @@ async def list_repository_issues(owner: str, repo_name: str) -> list[dict]:
                 "total_found": len(issues_summary),
                 "repository": f"{owner}/{repo_name}",
                 "note": "Showing first 10 open issues" if len(issues_summary) == 10 else f"Showing all {len(issues_summary)} open issues",
-                "issues": issues_summary
+                "issues": issues_summary,
+                "requested_by_user_id": user_id
             }
             
             return [result]

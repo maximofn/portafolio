@@ -243,4 +243,6 @@ if __name__ == "__main__":
     print(f"DEBUG: Server name: {mcp.name}")
     
     # Initialize and run the server
-    mcp.run()
+    mcp.run(
+        transport="stdio"
+    )

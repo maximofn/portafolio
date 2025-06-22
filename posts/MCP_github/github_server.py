@@ -7,7 +7,7 @@ from github import GITHUB_TOKEN, create_github_headers
 mcp = FastMCP(
     name="GitHubMCP",
     instructions="This server provides tools, resources and prompts to interact with the GitHub API.",
-    include_tags={"private"}
+    include_tags={"public"}
 )
 
 @mcp.tool(tags={"public", "production"})

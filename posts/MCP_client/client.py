@@ -10,45 +10,43 @@ from mcp.client.stdio import stdio_client
 # Load environment variables from .env file
 load_dotenv()
 
-class MCPClient:
+class FastMCPClient:
     """
-    MCP client that integrates with Claude to process user queries
-    and use tools exposed by an MCP server.
+    FastMCP client that integrates with Claude to process user queries
+    and use tools exposed by a FastMCP server via STDIO.
     """
     
-    def __init__(self):
-        """Initialize the MCP client with Anthropic and resource management."""
+    def __init__(self, server_script_path: str):
+        """Initialize the FastMCP client with Anthropic and resource management."""
         self.exit_stack = AsyncExitStack()
         self.anthropic = Anthropic()
         self.session = None
         self.server_params = None
+        self.server_script_path = server_script_path
         
-    async def connect_to_server(self, server_script_path: str):
+    async def connect_to_server(self):
         """
-        Connect to the specified MCP server.
-        
-        Args:
-            server_script_path: Path to the server script (Python or JavaScript)
+        Connect to the FastMCP server via STDIO.
         """
-        print(f"🔗 Conectando al servidor MCP: {server_script_path}")
+        print(f"🔗 Connecting to FastMCP server: {self.server_script_path}")
         
         # Determine the server type based on the extension
-        if server_script_path.endswith('.py'):
+        if self.server_script_path.endswith('.py'):
             # Python server
             self.server_params = StdioServerParameters(
                 command="python",
-                args=[server_script_path],
+                args=[self.server_script_path],
                 env=None
             )
-        elif server_script_path.endswith('.js'):
+        elif self.server_script_path.endswith('.js'):
             # JavaScript/Node.js server
             self.server_params = StdioServerParameters(
                 command="node", 
-                args=[server_script_path],
+                args=[self.server_script_path],
                 env=None
             )
         else:
-            raise ValueError(f"Tipo de servidor no soportado. Use archivos .py o .js. Recibido: {server_script_path}")
+            raise ValueError(f"Unsupported server type. Use .py or .js files. Got: {self.server_script_path}")
         
         # Set up connection to the server
         stdio_transport = await self.exit_stack.enter_async_context(
@@ -65,11 +63,12 @@ class MCPClient:
         
         print("✅ Connection established successfully")
         
-        # List available tools
+        # List available tools and resources
         await self.list_available_tools()
+        await self.list_available_resources()
         
     async def list_available_tools(self):
-        """List available tools in the MCP server."""
+        """List available tools in the FastMCP server."""
         try:
             # Get list of tools from the server
             tools_result = await self.session.list_tools()
@@ -94,10 +93,134 @@ class MCPClient:
                 
         except Exception as e:
             print(f"❌ Error listing tools: {str(e)}")
+
+    async def list_available_resources(self):
+        """List available resources and resource templates in the FastMCP server."""
+        try:
+            # Get list of static resources from the server
+            resources_result = await self.session.list_resources()
+            
+            # Get list of resource templates from the server  
+            templates_result = await self.session.list_resource_templates()
+            
+            total_count = len(resources_result.resources) + len(templates_result.resourceTemplates)
+            
+            if total_count > 0:
+                print(f"\n📂 Available resources & templates ({total_count}):")
+                print("=" * 50)
+                
+                # Show static resources
+                for resource in resources_result.resources:
+                    print(f"📄 {resource.uri}")
+                    if resource.name:
+                        print(f"   Name: {resource.name}")
+                    if resource.description:
+                        print(f"   Description: {resource.description}")
+                    if resource.mimeType:
+                        print(f"   Type: {resource.mimeType}")
+                    print()
+                
+                # Show resource templates
+                for template in templates_result.resourceTemplates:
+                    print(f"📋 {template.uriTemplate} (template)")
+                    if template.name:
+                        print(f"   Name: {template.name}")
+                    if template.description:
+                        print(f"   Description: {template.description}")
+                    if template.mimeType:
+                        print(f"   Type: {template.mimeType}")
+                    print()
+            else:
+                print("⚠️  No resources or templates found in the server")
+                
+        except Exception as e:
+            print(f"❌ Error listing resources: {str(e)}")
+
+    async def read_resource(self, uri: str) -> str:
+        """
+        Read a resource from the FastMCP server.
+        
+        Args:
+            uri: URI of the resource to read
+            
+        Returns:
+            str: Content of the resource
+        """
+        try:
+            print(f"📖 Reading resource: {uri}")
+            
+            # Try to read resource from the server
+            resource_result = await self.session.read_resource(uri)
+            
+            if resource_result.contents:
+                # Combine all content into a single string
+                combined_content = ""
+                for content in resource_result.contents:
+                    # Check if it's TextResourceContents (has text attribute)
+                    if hasattr(content, 'text'):
+                        combined_content += content.text + "\n"
+                    # Check if it's BlobResourceContents (has data attribute)
+                    elif hasattr(content, 'data'):
+                        combined_content += f"[Binary content from resource {uri}]\n"
+                    else:
+                        combined_content += f"[Unknown content type from resource {uri}]\n"
+                
+                print(f"✅ Resource read successfully")
+                return combined_content.strip()
+            else:
+                return f"❌ Resource {uri} has no content"
+                
+        except Exception as e:
+            error_msg = f"❌ Error reading resource {uri}: {str(e)}"
+            print(error_msg)
+            return error_msg
+
+    async def call_tool(self, tool_name: str, arguments: dict) -> str:
+        """
+        Call a tool on the FastMCP server via STDIO.
+        
+        Args:
+            tool_name: Name of the tool to call
+            arguments: Arguments for the tool
+            
+        Returns:
+            str: Result from the tool
+        """
+        try:
+            print(f"🔧 Calling tool: {tool_name}")
+            print(f"📝 Arguments: {arguments}")
+            
+            # Execute tool on the MCP server
+            tool_result = await self.session.call_tool(tool_name, arguments)
+            
+            print(f"✅ Tool executed successfully")
+            
+            # Format result for Claude
+            if tool_result.content:
+                # Combine all content into a single result
+                combined_content = ""
+                for content in tool_result.content:
+                    # Check if it's TextContent (has text attribute)
+                    if hasattr(content, 'text'):
+                        combined_content += content.text + "\n"
+                    # Check if it's ImageContent (has data attribute)  
+                    elif hasattr(content, 'data'):
+                        combined_content += f"[Binary content returned by tool {tool_name}]\n"
+                    else:
+                        combined_content += f"[Unknown content type returned by tool {tool_name}]\n"
+                
+                return combined_content.strip()
+            else:
+                return "Tool executed without response content"
+                    
+        except Exception as e:
+            error_msg = f"❌ Error calling tool {tool_name}: {str(e)}"
+            print(error_msg)
+            return error_msg
     
     async def process_query(self, query: str) -> str:
         """
-        Process a user query, interacting with Claude and MCP tools.
+        Process a user query, interacting with Claude and FastMCP tools.
         
         Args:
             query: User query
@@ -106,18 +229,43 @@ class MCPClient:
             str: Final processed response
         """
         try:
-            # Get available tools
+            # Get available tools, resources and templates from the server
             tools_result = await self.session.list_tools()
+            resources_result = await self.session.list_resources()
+            templates_result = await self.session.list_resource_templates()
             
             # Prepare tools for Claude in correct format
             claude_tools = []
             for tool in tools_result.tools:
                 claude_tool = {
                     "name": tool.name,
-                    "description": tool.description or f"Herramienta {tool.name}",
+                    "description": tool.description or f"Tool {tool.name}",
                     "input_schema": tool.inputSchema or {"type": "object", "properties": {}}
                 }
                 claude_tools.append(claude_tool)
+            
+            # Add a special tool for reading resources and templates
+            available_uris = []
+            available_uris.extend([str(r.uri) for r in resources_result.resources])
+            available_uris.extend([str(t.uriTemplate) for t in templates_result.resourceTemplates])
+            
+            if available_uris:
+                resource_tool = {
+                    "name": "read_mcp_resource",
+                    "description": "Read a resource from the FastMCP server. Available resources and templates: " + 
+                                 ", ".join(available_uris),
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {
+                            "uri": {
+                                "type": "string",
+                                "description": "URI of the resource to read (can be static resource or template with parameters filled)"
+                            }
+                        },
+                        "required": ["uri"]
+                    }
+                }
+                claude_tools.append(resource_tool)
             
             # Create initial message for Claude
             messages = [
@@ -130,7 +278,7 @@ class MCPClient:
             # First call to Claude
             response = self.anthropic.messages.create(
                 model="claude-3-5-sonnet-20241022",
-                max_tokens=6000,  # Increase tokens for longer responses
+                max_tokens=6000,
                 messages=messages,
                 tools=claude_tools if claude_tools else None
             )
@@ -148,74 +296,46 @@ class MCPClient:
                     tool_args = content_block.input
                     tool_call_id = content_block.id
                     
-                    print(f"🔧 Claude wants to use tool: {tool_name}")
-                    print(f"📝 Arguments: {tool_args}")
+                    # Check if it's the special resource reading tool
+                    if tool_name == "read_mcp_resource":
+                        # Read resource directly
+                        tool_result = await self.read_resource(tool_args["uri"])
+                    else:
+                        # Execute regular tool on the FastMCP server
+                        tool_result = await self.call_tool(tool_name, tool_args)
                     
-                    try:
-                        # Execute tool on the MCP server
-                        tool_result = await self.session.call_tool(
-                            tool_name, 
-                            tool_args
-                        )
-                        
-                        print(f"✅ Tool executed successfully")
-                        
-                        # Add tool result to the conversation
-                        messages.append({
-                            "role": "assistant", 
-                            "content": response.content
-                        })
-                        
-                        # Format result for Claude
-                        if tool_result.content:
-                            # Combine all content into a single result
-                            combined_content = ""
-                            for content in tool_result.content:
-                                if content.type == "text":
-                                    combined_content += content.text + "\n"
-                                elif content.type == "image":
-                                    combined_content += f"[Image returned by the tool {tool_name}]\n"
-                            
-                            messages.append({
-                                "role": "user",
-                                "content": [{
-                                    "type": "tool_result",
-                                    "tool_use_id": tool_call_id,
-                                    "content": "Create a human readable response from the following tool response: " + combined_content.strip()
-                                }]
-                            })
-                        else:
-                            messages.append({
-                                "role": "user", 
-                                "content": [{
-                                    "type": "tool_result",
-                                    "tool_use_id": tool_call_id, 
-                                    "content": "Tool executed without response content"
-                                }]
-                            })
-                        
-                        # Second call to Claude with the tool result
-                        final_response = self.anthropic.messages.create(
-                            model="claude-3-5-sonnet-20241022",
-                            max_tokens=6000,  # Increase tokens for longer responses
-                            messages=messages,
-                            tools=claude_tools if claude_tools else None
-                        )
-                        
-                        # Extract text from the final response
-                        for final_content in final_response.content:
-                            if final_content.type == "text":
-                                response_text += final_content.text
-                                
-                    except Exception as e:
-                        error_msg = f"❌ Error al ejecutar herramienta {tool_name}: {str(e)}"
-                        print(error_msg)
-                        response_text += f"\n\n{error_msg}"
+                    # Add tool result to the conversation
+                    messages.append({
+                        "role": "assistant", 
+                        "content": response.content
+                    })
+                    
+                    messages.append({
+                        "role": "user",
+                        "content": [{
+                            "type": "tool_result",
+                            "tool_use_id": tool_call_id,
+                            "content": f"Tool result: {tool_result}"
+                        }]
+                    })
+                    
+                    # Second call to Claude with the tool result
+                    final_response = self.anthropic.messages.create(
+                        model="claude-3-5-sonnet-20241022",
+                        max_tokens=6000,
+                        messages=messages,
+                        tools=claude_tools if claude_tools else None
+                    )
+                    
+                    # Extract text from the final response
+                    for final_content in final_response.content:
+                        if final_content.type == "text":
+                            response_text += final_content.text
             
             return response_text
             
         except Exception as e:
-            error_msg = f"❌ Error al procesar consulta: {str(e)}"
+            error_msg = f"❌ Error processing query: {str(e)}"
             print(error_msg)
             return error_msg
     
@@ -223,13 +343,14 @@ class MCPClient:
         """
         Main chat loop with user interaction.
         """
-        print("\n🤖 MCP client started. Write 'quit', 'q', 'exit', 'salir' to exit.")
+        print("\n🤖 FastMCP client started. Write 'quit', 'q', 'exit', 'salir' to exit.")
         print("💬 You can ask questions about GitHub repositories!")
+        print("📚 The client can use both tools and resources from the FastMCP server")
         print("-" * 60)
         
         while True:
             try:
-                # Solicitar entrada del usuario
+                # Get user input
                 user_input = input("\n👤 You: ").strip()
                 
                 if user_input.lower() in ['quit', 'q', 'exit', 'salir']:
@@ -253,7 +374,8 @@ class MCPClient:
             except Exception as e:
                 print(f"\n❌ Error in chat: {str(e)}")
                 continue
-    
+
+
     async def cleanup(self):
         """Clean up resources and close connections."""
         print("🧹 Cleaning up resources...")
@@ -263,28 +385,35 @@ class MCPClient:
 
 async def main():
     """
-    Main function that initializes and runs the MCP client.
+    Main function that initializes and runs the FastMCP client.
     """
     # Verify command line arguments
     if len(sys.argv) != 2:
-        print("❌ Usage: python client.py <path_to_mcp_server>")
+        print("❌ Usage: python client.py <path_to_fastmcp_server>")
         print("📝 Example: python client.py ../MCP_github/github_server.py")
         sys.exit(1)
     
     server_script_path = sys.argv[1]
     
+    print(f"🚀 Starting FastMCP client...")
+    print(f"📄 Server script: {server_script_path}")
+    
     # Create and run client
-    client = MCPClient()
+    client = FastMCPClient(server_script_path)
     
     try:
         # Connect to the server
-        await client.connect_to_server(server_script_path)
+        await client.connect_to_server()
         
         # Start chat loop
         await client.chat_loop()
         
     except Exception as e:
-        print(f"❌ Error fatal: {str(e)}")
+        print(f"❌ Fatal error: {str(e)}")
+        print("💡 Make sure:")
+        print("   1. The server script path is correct")
+        print("   2. You have ANTHROPIC_API_KEY in your .env file")
+        print("   3. The server script is executable")
     finally:
         # Ensure resources are cleaned up
         await client.cleanup()
@@ -292,5 +421,4 @@ async def main():
 
 if __name__ == "__main__":
     # Entry point of the script
-    asyncio.run(main())
-
+    asyncio.run(main()) 

@@ -138,25 +138,29 @@ class FastMCPClient:
                     }
                     claude_tools.append(claude_tool)
                 
-                # Add a special tool for reading resources
+                # Add a special tool for reading resources (including template resources)
+                resource_description = "Read a resource from the MCP server. "
                 if resources_list:
                     # Convert URIs to strings to avoid AnyUrl object issues
                     resource_uris = [str(r.uri) for r in resources_list]
-                    claude_tools.append({
-                        "name": "read_mcp_resource",
-                        "description": "Read a resource from the MCP server. Available resources: " + 
-                                     ", ".join(resource_uris),
-                        "input_schema": {
-                            "type": "object",
-                            "properties": {
-                                "resource_uri": {
-                                    "type": "string",
-                                    "description": "URI of the resource to read"
-                                }
-                            },
-                            "required": ["resource_uri"]
-                        }
-                    })
+                    resource_description += f"Available static resources: {', '.join(resource_uris)}. "
+                
+                resource_description += "Also supports template resources like github://repo/owner/repo_name for GitHub repository information."
+                
+                claude_tools.append({
+                    "name": "read_mcp_resource",
+                    "description": resource_description,
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {
+                            "resource_uri": {
+                                "type": "string",
+                                "description": "URI of the resource to read. Can be static (like resource://server_info) or template-based (like github://repo/facebook/react)"
+                            }
+                        },
+                        "required": ["resource_uri"]
+                    }
+                })
                 
                 # Create initial message for Claude
                 messages = [

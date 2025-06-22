@@ -11,6 +11,10 @@ mcp = FastMCP(
     exclude_tags={"first_issue"}
 )
 
+sub_mcp = FastMCP(
+    name="SubMCP",
+)
+
 @mcp.tool(tags={"public", "production"})
 async def list_repository_issues(owner: str, repo_name: str) -> list[dict]:
     """
@@ -224,6 +228,15 @@ async def first_repository_issue(owner: str, repo_name: str) -> list[dict]:
             print(f"An unexpected error occurred: {str(e)}")
             return [{"error": f"An unexpected error occurred: {str(e)}"}]
 
+
+@sub_mcp.tool(tags={"public"})
+def hello_world() -> str:
+    """
+    Returns a simple greeting.
+    """
+    return "Hello, world!"
+
+mcp.mount("sub_mcp", sub_mcp)
 
 if __name__ == "__main__":
     print("DEBUG: Starting FastMCP GitHub server...")

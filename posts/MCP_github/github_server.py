@@ -6,12 +6,11 @@ from github import GITHUB_TOKEN, create_github_headers
 # Create FastMCP server
 mcp = FastMCP(
     name="GitHubMCP",
-    instructions="""
-    This server provides tools, resources and prompts to interact with the GitHub API.
-    """
+    instructions="This server provides tools, resources and prompts to interact with the GitHub API.",
+    include_tags={"public"}
 )
 
-@mcp.tool()
+@mcp.tool(tags={"public", "production"})
 async def list_repository_issues(owner: str, repo_name: str) -> list[dict]:
     """
     Lists open issues for a given GitHub repository.
@@ -65,6 +64,103 @@ async def list_repository_issues(owner: str, repo_name: str) -> list[dict]:
             }
             
             return [result]
+        except httpx.HTTPStatusError as e:
+            error_message = e.response.json().get("message", "No additional message from API.")
+            if e.response.status_code == 403 and GITHUB_TOKEN:
+                error_message += " (Rate limit with token or token lacks permissions?)"
+            elif e.response.status_code == 403 and not GITHUB_TOKEN:
+                error_message += " (Rate limit without token. Consider creating a .env file with GITHUB_TOKEN.)"
+            
+            print(f"GitHub API error: {e.response.status_code}. {error_message}")
+            return [{
+                "error": f"GitHub API error: {e.response.status_code}",
+                "message": error_message
+            }]
+        except Exception as e:
+            print(f"An unexpected error occurred: {str(e)}")
+            return [{"error": f"An unexpected error occurred: {str(e)}"}]
+
+
+@mcp.tool(tags={"private", "development"})
+async def list_all_repository_issues(owner: str, repo_name: str, state: str = "open") -> list[dict]:
+    """
+    Lists all issues for a given GitHub repository with pagination support.
+
+    Args:
+        owner: The owner of the repository (e.g., 'modelcontextprotocol')
+        repo_name: The name of the repository (e.g., 'python-sdk')
+        state: The state of issues to retrieve ('open', 'closed', or 'all'). Defaults to 'open'.
+
+    Returns:
+        list[dict]: A list of dictionaries, each containing information about an issue
+    """
+    all_issues = []
+    page = 1
+    per_page = 100  # Maximum allowed by GitHub API
+    
+    print(f"Fetching all {state} issues from {owner}/{repo_name}...")
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            while True:
+                api_url = f"https://api.github.com/repos/{owner}/{repo_name}/issues"
+                params = {
+                    "state": state,
+                    "per_page": per_page,
+                    "page": page
+                }
+                
+                print(f"Fetching page {page}...")
+                response = await client.get(api_url, headers=create_github_headers(), params=params)
+                response.raise_for_status()
+                issues_data = response.json()
+                
+                if not issues_data:
+                    # No more issues to fetch
+                    break
+                
+                # Process issues from this page
+                for issue in issues_data:
+                    # Create a more concise summary
+                    summary = f"#{issue.get('number', 'N/A')}: {issue.get('title', 'No title')}"
+                    if issue.get('comments', 0) > 0:
+                        summary += f" ({issue.get('comments')} comments)"
+                    
+                    all_issues.append({
+                        "number": issue.get("number"),
+                        "title": issue.get("title"),
+                        "user": issue.get("user", {}).get("login"),
+                        "url": issue.get("html_url"),
+                        "state": issue.get("state"),
+                        "comments": issue.get("comments"),
+                        "created_at": issue.get("created_at"),
+                        "updated_at": issue.get("updated_at"),
+                        "summary": summary
+                    })
+                
+                # If we got less than per_page issues, we've reached the end
+                if len(issues_data) < per_page:
+                    break
+                
+                page += 1
+            
+            if not all_issues:
+                print(f"No {state} issues found for this repository.")
+                return [{"message": f"No {state} issues found for this repository."}]
+            
+            print(f"Found {len(all_issues)} {state} issues in total.")
+            
+            # Add context information
+            result = {
+                "total_found": len(all_issues),
+                "repository": f"{owner}/{repo_name}",
+                "state_filter": state,
+                "note": f"Showing all {len(all_issues)} {state} issues",
+                "issues": all_issues
+            }
+            
+            return [result]
+            
         except httpx.HTTPStatusError as e:
             error_message = e.response.json().get("message", "No additional message from API.")
             if e.response.status_code == 403 and GITHUB_TOKEN:

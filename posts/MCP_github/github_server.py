@@ -236,6 +236,14 @@ async def first_repository_issue(owner: str, repo_name: str) -> list[dict]:
             return [{"error": f"An unexpected error occurred: {str(e)}"}]
 
 
+@mcp.resource("resource://server_info", tags={"public"})
+def server_info() -> str:
+    """
+    Returns information about the server.
+    """
+    return "This is the MCP GitHub server development for MaximoFN blog post"
+
+
 @sub_mcp.tool(tags={"public"})
 def hello_world() -> str:
     """

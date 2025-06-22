@@ -4,7 +4,12 @@ from fastmcp import FastMCP
 from github import GITHUB_TOKEN, create_github_headers
 
 # Create FastMCP server
-mcp = FastMCP("GitHubMCP")
+mcp = FastMCP(
+    name="GitHubMCP",
+    instructions="""
+    This server provides tools, resources and prompts to interact with the GitHub API.
+    """
+)
 
 @mcp.tool()
 async def list_repository_issues(owner: str, repo_name: str) -> list[dict]:

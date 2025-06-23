@@ -93,6 +93,38 @@ class FastMCPClient:
         except Exception as e:
             print(f"❌ Error listing resources: {str(e)}")
 
+    async def list_available_prompts(self):
+        """List available prompts in the FastMCP server."""
+        try:
+            # Get list of prompts from the server using FastMCP context
+            async with self.client as client:
+                prompts = await client.list_prompts()
+                
+                if prompts:
+                    print(f"\n💭 Available prompts ({len(prompts)}):")
+                    print("=" * 50)
+                    
+                    for prompt in prompts:
+                        print(f"🎯 {prompt.name}")
+                        if prompt.description:
+                            print(f"   Description: {prompt.description}")
+                        
+                        # Show parameters if available
+                        if hasattr(prompt, 'arguments') and prompt.arguments:
+                            params = []
+                            for arg in prompt.arguments:
+                                param_info = f"{arg.name}: {arg.description or 'No description'}"
+                                if arg.required:
+                                    param_info += " (required)"
+                                params.append(param_info)
+                            print(f"   Parameters: {', '.join(params)}")
+                        print()
+                else:
+                    print("⚠️  No prompts found in the server")
+                    
+        except Exception as e:
+            print(f"❌ Error listing prompts: {str(e)}")
+
     async def read_resource(self, resource_uri: str):
         """
         Read a specific resource from the server.
@@ -111,6 +143,37 @@ class FastMCPClient:
             print(f"❌ Error reading resource {resource_uri}: {str(e)}")
             return None
 
+    async def get_prompt(self, prompt_name: str, prompt_args: dict = None):
+        """
+        Get/call a specific prompt from the server.
+        
+        Args:
+            prompt_name: Name of the prompt to call
+            prompt_args: Arguments for the prompt (if any)
+            
+        Returns:
+            str: Generated prompt content
+        """
+        try:
+            async with self.client as client:
+                if prompt_args:
+                    result = await client.get_prompt(prompt_name, prompt_args)
+                else:
+                    result = await client.get_prompt(prompt_name)
+                
+                # Extract the prompt text from the response
+                if hasattr(result, 'messages') and result.messages:
+                    # FastMCP returns prompts as message objects
+                    return '\n'.join([msg.content.text for msg in result.messages if hasattr(msg.content, 'text')])
+                elif hasattr(result, 'content'):
+                    return str(result.content)
+                else:
+                    return str(result)
+                    
+        except Exception as e:
+            print(f"❌ Error getting prompt {prompt_name}: {str(e)}")
+            return None
+
     async def process_query(self, query: str) -> str:
         """
         Process a user query, interacting with Claude and FastMCP tools and resources.
@@ -124,9 +187,10 @@ class FastMCPClient:
         try:
             # Use FastMCP context for all operations
             async with self.client as client:
-                # Get available tools and resources
+                # Get available tools, resources, and prompts
                 tools_list = await client.list_tools()
                 resources_list = await client.list_resources()
+                prompts_list = await client.list_prompts()
                 
                 # Prepare tools for Claude in correct format
                 claude_tools = []
@@ -159,6 +223,47 @@ class FastMCPClient:
                             }
                         },
                         "required": ["resource_uri"]
+                    }
+                })
+                
+                # Add a special tool for using prompts
+                prompt_description = "Generate specialized prompts from the MCP server. Use this when users want to:\n"
+                prompt_description += "- Create well-structured questions about repositories\n"
+                prompt_description += "- Get help formulating prompts for specific tasks\n"
+                prompt_description += "- Generate template questions for analysis\n"
+                if prompts_list:
+                    prompt_names = [p.name for p in prompts_list]
+                    prompt_description += f"\nAvailable prompts: {', '.join(prompt_names)}\n"
+                    prompt_description += "- generate_issues_prompt: Creates structured questions about GitHub repository issues"
+                
+                prompt_description += "\n\nIMPORTANT: Use prompts when users explicitly ask for help creating questions or prompts, or when they want to formulate better questions about repositories."
+                
+                claude_tools.append({
+                    "name": "use_mcp_prompt",
+                    "description": prompt_description,
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {
+                            "prompt_name": {
+                                "type": "string",
+                                "description": "Name of the prompt to use. Available: 'generate_issues_prompt'"
+                            },
+                            "prompt_args": {
+                                "type": "object",
+                                "description": "Arguments for the prompt. For generate_issues_prompt: {'owner': 'repo-owner', 'repo_name': 'repo-name'}",
+                                "properties": {
+                                    "owner": {
+                                        "type": "string",
+                                        "description": "Repository owner (e.g., 'huggingface', 'microsoft')"
+                                    },
+                                    "repo_name": {
+                                        "type": "string", 
+                                        "description": "Repository name (e.g., 'transformers', 'vscode')"
+                                    }
+                                }
+                            }
+                        },
+                        "required": ["prompt_name"]
                     }
                 })
                 
@@ -215,6 +320,20 @@ class FastMCPClient:
                                 else:
                                     tool_result = "Error: No resource URI provided"
                                     result_content = tool_result
+                                    
+                            elif tool_name == "use_mcp_prompt":
+                                # Handle prompt usage
+                                prompt_name = tool_args.get("prompt_name")
+                                prompt_args = tool_args.get("prompt_args", {})
+                                
+                                if prompt_name:
+                                    tool_result = await self.get_prompt(prompt_name, prompt_args)
+                                    print(f"💭 Prompt '{prompt_name}' generated successfully")
+                                    result_content = str(tool_result) if tool_result else "Error generating prompt"
+                                else:
+                                    tool_result = "Error: No prompt name provided"
+                                    result_content = tool_result
+                                    
                             else:
                                 # Execute regular tool on the FastMCP server
                                 tool_result = await client.call_tool(tool_name, tool_args)
@@ -278,7 +397,16 @@ class FastMCPClient:
         """
         print("\n🤖 FastMCP client started. Write 'quit', 'q', 'exit', 'salir' to exit.")
         print("💬 You can ask questions about GitHub repositories!")
-        print("📚 The client can use tools and resources from the FastMCP server")
+        print("📚 The client can use tools, resources, and prompts from the FastMCP server")
+        print()
+        print("💭 PROMPT Examples:")
+        print("   • 'Generate a prompt for asking about issues in facebook/react'")
+        print("   • 'Help me create a good question about microsoft/vscode issues'") 
+        print("   • 'I need a structured prompt for analyzing tensorflow/tensorflow'")
+        print()
+        print("🔧 DIRECT Examples:")
+        print("   • 'Show me the issues in huggingface/transformers'")
+        print("   • 'Get repository info for github://repo/google/chrome'")
         print("-" * 60)
         
         while True:
@@ -335,9 +463,10 @@ async def main():
         # Connect to the server
         await client.connect_to_server(server_script_path)
         
-        # List available tools and resources after connection
+        # List available tools, resources, and prompts after connection
         await client.list_available_tools()
         await client.list_available_resources()
+        await client.list_available_prompts()
         
         # Start chat loop
         await client.chat_loop()

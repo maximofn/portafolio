@@ -329,6 +329,36 @@ async def repository_info(owner: str, repo_name: str, ctx: Context) -> dict:
             }
     
 
+@mcp.prompt(
+    name="generate_issues_prompt",
+    description="Generates a structured prompt for asking about GitHub repository issues. Use this when users want to formulate questions about repository issues, or need help creating prompts for issue analysis.",
+    tags={"public"}
+)
+def generate_issues_prompt(owner: str, repo_name: str) -> str:
+    """
+    Generates a structured prompt for asking about GitHub repository issues.
+    
+    This prompt template helps users formulate clear questions about repository issues
+    and can be used as a starting point for issue analysis or research.
+    
+    Args:
+        owner: Repository owner (e.g., 'huggingface', 'microsoft')
+        repo_name: Repository name (e.g., 'transformers', 'vscode')
+    
+    Returns:
+        A formatted prompt asking about repository issues
+    """
+    return f"""Please provide information about the open issues in the repository {owner}/{repo_name}. 
+
+I'm interested in:
+- Current open issues and their status
+- Recent issue trends and patterns
+- Common issue categories or topics
+- Any critical or high-priority issues
+
+Repository: {owner}/{repo_name}"""
+
+
 @sub_mcp.tool(tags={"public"})
 def hello_world() -> str:
     """

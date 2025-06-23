@@ -1,16 +1,46 @@
 import httpx
 from fastmcp import FastMCP, Context
+from fastmcp.server.auth import BearerAuthProvider
+from fastmcp.server.auth.providers.bearer import RSAKeyPair
+from fastmcp.server.dependencies import get_access_token, AccessToken
 from github import GITHUB_TOKEN, create_github_headers
 import datetime
 
 USER_ID = 1234567890
 
-# Create FastMCP server
+# Generar un par de claves RSA para desarrollo y testing
+print("🔐 Generando par de claves RSA para autenticación...")
+key_pair = RSAKeyPair.generate()
+
+# Configurar el proveedor de autenticación Bearer
+auth_provider = BearerAuthProvider(
+    public_key=key_pair.public_key,
+    issuer="https://github-mcp.maxfn.dev",
+    audience="github-mcp-server",
+    required_scopes=["github:read"]  # Scope global requerido para todos los requests
+)
+
+# Generar un token de prueba para desarrollo
+development_token = key_pair.create_token(
+    subject="dev-user-maxfn",
+    issuer="https://github-mcp.maxfn.dev",
+    audience="github-mcp-server",
+    scopes=["github:read", "github:write"],
+    expires_in_seconds=3600 * 24  # Token válido por 24 horas
+)
+
+print(f"🎫 Token de desarrollo generado:")
+print(f"   {development_token}")
+print("💡 Usa este token en el cliente para autenticarte")
+print("-" * 60)
+
+# Create FastMCP server con autenticación
 mcp = FastMCP(
     name="GitHubMCP",
     instructions="This server provides tools, resources and prompts to interact with the GitHub API.",
     include_tags={"public"},
-    exclude_tags={"first_issue"}
+    exclude_tags={"first_issue"},
+    auth=auth_provider  # Añadir autenticación al servidor
 )
 
 sub_mcp = FastMCP(
@@ -66,13 +96,26 @@ async def list_repository_issues(owner: str, repo_name: str, ctx: Context, user_
             
             ctx.info(f"Found {len(issues_summary)} open issues.")
             
+            # Obtener información del token de acceso autenticado
+            try:
+                access_token: AccessToken = get_access_token()
+                authenticated_user = access_token.client_id
+                user_scopes = access_token.scopes
+                ctx.info(f"Request authenticated for user: {authenticated_user} with scopes: {user_scopes}")
+            except Exception as e:
+                authenticated_user = "unknown"
+                user_scopes = []
+                ctx.warning(f"Could not get access token info: {e}")
+
             # Add context information
             result = {
                 "total_found": len(issues_summary),
                 "repository": f"{owner}/{repo_name}",
                 "note": "Showing first 10 open issues" if len(issues_summary) == 10 else f"Showing all {len(issues_summary)} open issues",
                 "issues": issues_summary,
-                "requested_by_user_id": user_id
+                "requested_by_user_id": user_id,
+                "authenticated_user": authenticated_user,
+                "user_scopes": user_scopes
             }
             
             return [result]
@@ -353,6 +396,8 @@ if __name__ == "__main__":
     print(f"DEBUG: Server name: {mcp.name}")
     
     # Initialize and run the server, run with uv run client.py http://localhost:8000/mcp
+    # 1. Run server with uv run github_server.py. It gives you a token to use in the client.py
+    # 2. Run client.py with the token you got from the server.py - uv run client.py http://localhost:8000/mcp <your_bearer_token>
     mcp.run(
         transport="streamable-http",
         host="0.0.0.0",

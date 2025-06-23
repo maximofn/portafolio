@@ -44,6 +44,11 @@ class FastMCPClient:
         # Note: FastMCP Client automatically detects HTTP URLs and uses SSE transport
         
         print("✅ Client created successfully")
+
+        # Ping to server to check if it's alive
+        async with self.client as client:
+            response = await client.ping()
+            print(f"🏓 Server ping response: {response}")
         
     async def list_available_tools(self):
         """List available tools in the FastMCP server."""

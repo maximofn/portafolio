@@ -37,12 +37,44 @@ python src/preparar_notebook.py <notebook_path>
 ```
 
 ### Available Options
-- `--no_check_metadata`: Skip metadata validation
-- `--yes_correct_ortografic_errors`: Auto-correct orthographic errors
-- `--yes_translate`: Auto-translate notebook
-- `--yes_convert_to_html`: Auto-convert to HTML
-- `--yes_add_to_json`: Auto-add to JSON metadata
-- `--yes_add_to_sitemap`: Auto-add to sitemap
+
+#### Positional Arguments
+- `file`: Path to the Jupyter notebook file to process (required)
+
+#### Metadata Validation
+- `--no_check_metadata`: Skip metadata validation step
+
+#### Orthographic Corrections
+- `--no_correct_ortografic_errors`: Skip orthographic error correction step
+- `--yes_correct_ortografic_errors`: Automatically perform orthographic corrections without prompting
+
+#### Translation
+- `--no_translate`: Skip translation step
+- `--yes_translate`: Automatically translate the notebook without prompting
+
+#### HTML Conversion
+- `--no_convert_to_html`: Skip HTML conversion step
+- `--yes_convert_to_html`: Automatically convert to HTML without prompting
+
+#### JSON Metadata
+- `--no_add_to_json`: Skip adding astro metadata to JSON file
+- `--yes_add_to_json`: Automatically add astro metadata to JSON file without prompting
+
+#### Sitemap Integration
+- `--no_add_to_sitemap`: Skip adding astro metadata to sitemap file
+- `--yes_add_to_sitemap`: Automatically add astro metadata to sitemap file without prompting
+
+#### Example Usage
+```bash
+# Run with all steps enabled (will prompt for each step)
+python src/preparar_notebook.py my_notebook.ipynb
+
+# Skip metadata check and auto-approve all other steps
+python src/preparar_notebook.py my_notebook.ipynb --no_check_metadata --yes_correct_ortografic_errors --yes_translate --yes_convert_to_html --yes_add_to_json --yes_add_to_sitemap
+
+# Only convert to HTML, skip all other steps
+python src/preparar_notebook.py my_notebook.ipynb --no_check_metadata --no_correct_ortografic_errors --no_translate --yes_convert_to_html --no_add_to_json --no_add_to_sitemap
+```
 
 ### Running Tests
 ```bash

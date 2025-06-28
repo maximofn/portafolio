@@ -238,11 +238,14 @@ async def first_repository_issue(owner: str, repo_name: str) -> list[dict]:
 
 
 @mcp.resource("resource://server_info", tags={"public"})
-def server_info() -> str:
+def server_info(ctx: Context) -> str:
     """
     Returns information about the server.
     """
-    return "This is the MCP GitHub server development for MaximoFN blog post"
+    return {
+        "info": "This is the MCP GitHub server development for MaximoFN blog post",
+        "requested_id": ctx.request_id
+    }
 
 
 @sub_mcp.tool(tags={"public"})

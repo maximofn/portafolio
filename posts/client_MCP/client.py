@@ -5,6 +5,7 @@ from contextlib import AsyncExitStack
 from anthropic import Anthropic
 from dotenv import load_dotenv
 from fastmcp import Client
+from fastmcp.client.auth import BearerAuth
 
 # Load environment variables from .env file
 load_dotenv()
@@ -21,17 +22,26 @@ class FastMCPClient:
         self.anthropic = Anthropic()
         self.client = None
 
-    async def connect_to_server(self, server_url: str):
+    async def connect_to_server(self, server_url: str, auth_token: str = None):
         """
-        Connect to the specified FastMCP server via HTTP.
+        Connect to the specified FastMCP server via HTTP with optional authentication.
 
         Args:
             server_url: URL of the HTTP server (e.g., "http://localhost:8000/mcp")
+            auth_token: Bearer token for authentication (optional)
         """
         print(f"🔗 Connecting to FastMCP HTTP server: {server_url}")
 
+        # Create authentication if token is provided
+        auth = None
+        if auth_token:
+            auth = BearerAuth(token=auth_token)
+            print("🔐 Using Bearer token authentication")
+        else:
+            print("⚠️  No authentication token provided - connecting without auth")
+
         # Create FastMCP client for HTTP connection using SSE transport
-        self.client = Client(server_url)
+        self.client = Client(server_url, auth=auth)
         # Note: FastMCP Client automatically detects HTTP URLs and uses SSE transport
 
         print("✅ Client created successfully")
@@ -184,10 +194,9 @@ class FastMCPClient:
         try:
             # Use FastMCP context for all operations
             async with self.client as client:
-                # Get available tools, resources, and prompts
+                # Get available tools and resources
                 tools_list = await client.list_tools()
                 resources_list = await client.list_resources()
-                prompts_list = await client.list_prompts()
 
                 # Prepare tools for Claude in correct format
                 claude_tools = []
@@ -392,7 +401,7 @@ class FastMCPClient:
         """
         Main chat loop with user interaction.
         """
-        print("\n🤖 FastMCP client started. Write 'quit', 'q', 'exit', 'salir' to exit.")
+        print("\n🤖 FastMCP HTTP client started. Write 'quit', 'q', 'exit', 'salir' to exit.")
         print("💬 You can ask questions about GitHub repositories!")
         print("📚 The client can use tools, resources, and prompts from the FastMCP server")
         print()
@@ -446,19 +455,28 @@ async def main():
     Main function that initializes and runs the FastMCP client.
     """
     # Verify command line arguments
-    if len(sys.argv) != 2:
-        print("❌ Usage: python client.py <path_to_fastmcp_server>")
-        print("📝 Example: python client.py ../MCP_github/github_server.py")
+    if len(sys.argv) < 2 or len(sys.argv) > 3:
+        print("❌ Usage: python client.py <http_server_url> [auth_token]")
+        print("📝 Example: python client.py http://localhost:8000/mcp")
+        print("📝 Example with auth: python client.py http://localhost:8000/mcp <your_bearer_token>")
+        print("📝 Note: Now connects to HTTP server instead of executing script")
         sys.exit(1)
 
-    server_script_path = sys.argv[1]
+    server_url = sys.argv[1]
+    auth_token = sys.argv[2] if len(sys.argv) == 3 else None
+
+    # Validate URL format
+    if not server_url.startswith(('http://', 'https://')):
+        print("❌ Error: Server URL must start with http:// or https://")
+        print("📝 Example: python client.py http://localhost:8000")
+        sys.exit(1)
 
     # Create and run client
     client = FastMCPClient()
 
     try:
         # Connect to the server
-        await client.connect_to_server(server_url)
+        await client.connect_to_server(server_url, auth_token)
 
         # List available tools, resources, and prompts after connection
         await client.list_available_tools()

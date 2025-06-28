@@ -46,6 +46,11 @@ class FastMCPClient:
 
         print("✅ Client created successfully")
 
+        # Ping to server to check if it's alive
+        async with self.client as client:
+            response = await client.ping()
+            print(f"🏓 Server ping response: {response}")
+
     async def list_available_tools(self):
         """List available tools in the FastMCP server."""
         try:
@@ -481,7 +486,6 @@ async def main():
         # List available tools, resources, and prompts after connection
         await client.list_available_tools()
         await client.list_available_resources()
-        await client.list_available_prompts()
 
         # Start chat loop
         await client.chat_loop()

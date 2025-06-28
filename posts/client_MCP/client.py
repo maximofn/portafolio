@@ -12,7 +12,7 @@ load_dotenv()
 class FastMCPClient:
     """
     FastMCP client that integrates with Claude to process user queries
-    and use tools exposed by a FastMCP server.
+    and use tools and resources exposed by a FastMCP server.
     """
 
     def __init__(self):
@@ -68,9 +68,53 @@ class FastMCPClient:
         except Exception as e:
             print(f"❌ Error listing tools: {str(e)}")
 
+    async def list_available_resources(self):
+        """List available resources in the FastMCP server."""
+        try:
+            # Get list of resources from the server using FastMCP context
+            async with self.client as client:
+                resources = await client.list_resources()
+
+                if resources:
+                    print(f"\n📚 Available resources ({len(resources)}):")
+                    print("=" * 50)
+
+                    for resource in resources:
+                        print(f"📄 {resource.uri}")
+                        if resource.name:
+                            print(f"   Name: {resource.name}")
+                        if resource.description:
+                            print(f"   Description: {resource.description}")
+                        if resource.mimeType:
+                            print(f"   MIME Type: {resource.mimeType}")
+                        print()
+                else:
+                    print("⚠️  No resources found in the server")
+
+        except Exception as e:
+            print(f"❌ Error listing resources: {str(e)}")
+
+    async def read_resource(self, resource_uri: str):
+        """
+        Read a specific resource from the server.
+
+        Args:
+            resource_uri: URI of the resource to read
+
+        Returns:
+            str: Resource content
+        """
+        try:
+            async with self.client as client:
+                result = await client.read_resource(resource_uri)
+                return result
+        except Exception as e:
+            print(f"❌ Error reading resource {resource_uri}: {str(e)}")
+            return None
+
     async def process_query(self, query: str) -> str:
         """
-        Process a user query, interacting with Claude and FastMCP tools.
+        Process a user query, interacting with Claude and FastMCP tools and resources.
 
         Args:
             query: User query
@@ -81,8 +125,9 @@ class FastMCPClient:
         try:
             # Use FastMCP context for all operations
             async with self.client as client:
-                # Get available tools
+                # Get available tools and resources
                 tools_list = await client.list_tools()
+                resources_list = await client.list_resources()
 
                 # Prepare tools for Claude in correct format
                 claude_tools = []
@@ -93,6 +138,26 @@ class FastMCPClient:
                         "input_schema": tool.inputSchema or {"type": "object", "properties": {}}
                     }
                     claude_tools.append(claude_tool)
+
+                # Add a special tool for reading resources
+                if resources_list:
+                    # Convert URIs to strings to avoid AnyUrl object issues
+                    resource_uris = [str(r.uri) for r in resources_list]
+                    claude_tools.append({
+                        "name": "read_mcp_resource",
+                        "description": "Read a resource from the MCP server. Available resources: " + 
+                                     ", ".join(resource_uris),
+                        "input_schema": {
+                            "type": "object",
+                            "properties": {
+                                "resource_uri": {
+                                    "type": "string",
+                                    "description": "URI of the resource to read"
+                                }
+                            },
+                            "required": ["resource_uri"]
+                        }
+                    })
 
                 # Create initial message for Claude
                 messages = [
@@ -127,10 +192,31 @@ class FastMCPClient:
                         print(f"📝 Arguments: {tool_args}")
 
                         try:
-                            # Execute tool on the FastMCP server
-                            tool_result = await client.call_tool(tool_name, tool_args)
+                            if tool_name == "read_mcp_resource":
+                                # Handle resource reading
+                                resource_uri = tool_args.get("resource_uri")
+                                if resource_uri:
+                                    tool_result = await client.read_resource(resource_uri)
+                                    print(f"📖 Resource read successfully: {resource_uri}")
 
-                            print(f"✅ Tool executed successfully")
+                                    # Better handling of resource result
+                                    if hasattr(tool_result, 'content'):
+                                        # If it's a resource response object, extract content
+                                        if hasattr(tool_result.content, 'text'):
+                                            result_content = tool_result.content.text
+                                        else:
+                                            result_content = str(tool_result.content)
+                                    else:
+                                        # If it's already a string or simple object
+                                        result_content = str(tool_result)
+                                else:
+                                    tool_result = "Error: No resource URI provided"
+                                    result_content = tool_result
+                            else:
+                                # Execute regular tool on the FastMCP server
+                                tool_result = await client.call_tool(tool_name, tool_args)
+                                print(f"✅ Tool executed successfully")
+                                result_content = str(tool_result)
 
                             # Add tool result to the conversation
                             messages.append({
@@ -140,9 +226,6 @@ class FastMCPClient:
 
                             # Format result for Claude
                             if tool_result:
-                                # Convert result to string format for Claude
-                                result_content = str(tool_result)
-
                                 messages.append({
                                     "role": "user",
                                     "content": [{
@@ -192,7 +275,7 @@ class FastMCPClient:
         """
         print("\n🤖 FastMCP client started. Write 'quit', 'q', 'exit', 'salir' to exit.")
         print("💬 You can ask questions about GitHub repositories!")
-        print("📚 The client can use tools from the FastMCP server")
+        print("📚 The client can use tools and resources from the FastMCP server")
         print("-" * 60)
 
         while True:
@@ -249,8 +332,9 @@ async def main():
         # Connect to the server
         await client.connect_to_server(server_script_path)
 
-        # List available tools after connection
+        # List available tools and resources after connection
         await client.list_available_tools()
+        await client.list_available_resources()
 
         # Start chat loop
         await client.chat_loop()

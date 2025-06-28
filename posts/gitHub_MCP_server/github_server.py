@@ -1,4 +1,5 @@
 
+
 import httpx
 from fastmcp import FastMCP, Context
 from github import GITHUB_TOKEN, create_github_headers
@@ -373,7 +374,9 @@ if __name__ == "__main__":
     print("DEBUG: Starting FastMCP GitHub server...")
     print(f"DEBUG: Server name: {mcp.name}")
 
-    # Initialize and run the server
+    # Initialize and run the server, run with uv run client.py http://localhost:8000/mcp
     mcp.run(
-        transport="stdio"
+        transport="streamable-http",
+        host="0.0.0.0",
+        port=8000,
     )

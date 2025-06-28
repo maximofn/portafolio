@@ -21,22 +21,18 @@ class FastMCPClient:
         self.anthropic = Anthropic()
         self.client = None
 
-    async def connect_to_server(self, server_script_path: str):
+    async def connect_to_server(self, server_url: str):
         """
-        Connect to the specified FastMCP server.
+        Connect to the specified FastMCP server via HTTP.
 
         Args:
-            server_script_path: Path to the server script (Python)
+            server_url: URL of the HTTP server (e.g., "http://localhost:8000/mcp")
         """
-        print(f"🔗 Connecting to FastMCP server: {server_script_path}")
+        print(f"🔗 Connecting to FastMCP HTTP server: {server_url}")
 
-        # Determine the server type based on the extension
-        if not server_script_path.endswith('.py'):
-            raise ValueError(f"Unsupported server type. Use .py files. Received: {server_script_path}")
-
-        # Create FastMCP client 
-        self.client = Client(server_script_path)
-        # Note: FastMCP Client automatically infers transport from .py files
+        # Create FastMCP client for HTTP connection using SSE transport
+        self.client = Client(server_url)
+        # Note: FastMCP Client automatically detects HTTP URLs and uses SSE transport
 
         print("✅ Client created successfully")
 
@@ -462,7 +458,7 @@ async def main():
 
     try:
         # Connect to the server
-        await client.connect_to_server(server_script_path)
+        await client.connect_to_server(server_url)
 
         # List available tools, resources, and prompts after connection
         await client.list_available_tools()

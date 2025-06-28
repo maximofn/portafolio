@@ -2,6 +2,7 @@
 import httpx
 from fastmcp import FastMCP, Context
 from github import GITHUB_TOKEN, create_github_headers
+import datetime
 
 USER_ID = 1234567890
 
@@ -246,6 +247,86 @@ def server_info(ctx: Context) -> str:
         "info": "This is the MCP GitHub server development for MaximoFN blog post",
         "requested_id": ctx.request_id
     }
+
+
+@mcp.resource("github://repo/{owner}/{repo_name}", tags={"public"})
+async def repository_info(owner: str, repo_name: str, ctx: Context) -> dict:
+    """
+    Returns detailed information about a GitHub repository.
+
+    Args:
+        owner: The owner of the repository (e.g., 'modelcontextprotocol')
+        repo_name: The name of the repository (e.g., 'python-sdk')
+        ctx: The context of the request
+
+    Returns:
+        dict: Repository information including name, description, stats, etc.
+    """
+    api_url = f"https://api.github.com/repos/{owner}/{repo_name}"
+    ctx.info(f"Fetching repository information from {api_url}...")
+
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(api_url, headers=create_github_headers())
+            response.raise_for_status()
+            repo_data = response.json()
+
+            # Extract relevant repository information
+            repo_info = {
+                "name": repo_data.get("name"),
+                "full_name": repo_data.get("full_name"),
+                "description": repo_data.get("description"),
+                "owner": {
+                    "login": repo_data.get("owner", {}).get("login"),
+                    "type": repo_data.get("owner", {}).get("type")
+                },
+                "html_url": repo_data.get("html_url"),
+                "clone_url": repo_data.get("clone_url"),
+                "ssh_url": repo_data.get("ssh_url"),
+                "language": repo_data.get("language"),
+                "size": repo_data.get("size"),  # Size in KB
+                "stargazers_count": repo_data.get("stargazers_count"),
+                "watchers_count": repo_data.get("watchers_count"),
+                "forks_count": repo_data.get("forks_count"),
+                "open_issues_count": repo_data.get("open_issues_count"),
+                "default_branch": repo_data.get("default_branch"),
+                "created_at": repo_data.get("created_at"),
+                "updated_at": repo_data.get("updated_at"),
+                "pushed_at": repo_data.get("pushed_at"),
+                "is_private": repo_data.get("private"),
+                "is_fork": repo_data.get("fork"),
+                "is_archived": repo_data.get("archived"),
+                "has_issues": repo_data.get("has_issues"),
+                "has_projects": repo_data.get("has_projects"),
+                "has_wiki": repo_data.get("has_wiki"),
+                "license": repo_data.get("license", {}).get("name") if repo_data.get("license") else None,
+                "topics": repo_data.get("topics", [])
+            }
+
+            ctx.info(f"Successfully retrieved information for repository {owner}/{repo_name}")
+            return repo_info
+
+        except httpx.HTTPStatusError as e:
+            error_message = e.response.json().get("message", "No additional message from API.")
+            if e.response.status_code == 404:
+                error_message = f"Repository {owner}/{repo_name} not found or is private."
+            elif e.response.status_code == 403 and GITHUB_TOKEN:
+                error_message += " (Rate limit with token or token lacks permissions?)"
+            elif e.response.status_code == 403 and not GITHUB_TOKEN:
+                error_message += " (Rate limit without token. Consider creating a .env file with GITHUB_TOKEN.)"
+
+            ctx.error(f"GitHub API error: {e.response.status_code}. {error_message}")
+            return {
+                "error": f"GitHub API error: {e.response.status_code}",
+                "message": error_message,
+                "repository": f"{owner}/{repo_name}"
+            }
+        except Exception as e:
+            ctx.error(f"An unexpected error occurred: {str(e)}")
+            return {
+                "error": f"An unexpected error occurred: {str(e)}",
+                "repository": f"{owner}/{repo_name}"
+            }
 
 
 @sub_mcp.tool(tags={"public"})

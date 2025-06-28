@@ -1,13 +1,13 @@
 import httpx
 from typing import Optional
-from fastmcp import FastMCP, Context
+from fastmcp import FastMCP
 from github import GITHUB_TOKEN, create_github_headers
 
 # Create FastMCP server
 mcp = FastMCP("GitHubMCP")
 
 @mcp.tool()
-async def list_repository_issues(owner: str, repo_name: str, ctx: Context) -> list[dict]:
+async def list_repository_issues(owner: str, repo_name: str) -> list[dict]:
     """
     Lists open issues for a given GitHub repository.
 
@@ -21,7 +21,7 @@ async def list_repository_issues(owner: str, repo_name: str, ctx: Context) -> li
     """
     # Limit to first 10 issues to avoid very long responses
     api_url = f"https://api.github.com/repos/{owner}/{repo_name}/issues?state=open&per_page=10"
-    await ctx.info(f"Fetching issues from {api_url}...")
+    print(f"Fetching issues from {api_url}...")
     
     async with httpx.AsyncClient() as client:
         try:
@@ -30,7 +30,7 @@ async def list_repository_issues(owner: str, repo_name: str, ctx: Context) -> li
             issues_data = response.json()
             
             if not issues_data:
-                await ctx.info("No open issues found for this repository.")
+                print("No open issues found for this repository.")
                 return [{"message": "No open issues found for this repository."}]
 
             issues_summary = []
@@ -49,7 +49,7 @@ async def list_repository_issues(owner: str, repo_name: str, ctx: Context) -> li
                     "summary": summary
                 })
             
-            await ctx.info(f"Found {len(issues_summary)} open issues.")
+            print(f"Found {len(issues_summary)} open issues.")
             
             # Add context information
             result = {
@@ -67,13 +67,13 @@ async def list_repository_issues(owner: str, repo_name: str, ctx: Context) -> li
             elif e.response.status_code == 403 and not GITHUB_TOKEN:
                 error_message += " (Rate limit without token. Consider creating a .env file with GITHUB_TOKEN.)"
             
-            await ctx.info(f"GitHub API error: {e.response.status_code}. {error_message}")
+            print(f"GitHub API error: {e.response.status_code}. {error_message}")
             return [{
                 "error": f"GitHub API error: {e.response.status_code}",
                 "message": error_message
             }]
         except Exception as e:
-            await ctx.info(f"An unexpected error occurred: {str(e)}")
+            print(f"An unexpected error occurred: {str(e)}")
             return [{"error": f"An unexpected error occurred: {str(e)}"}]
 
 

@@ -191,5 +191,147 @@ class TestMarkdownUnorderedListToHtml(unittest.TestCase):
         self.assertEqual(markdown_to_html_updated(markdown).strip(), expected_html.strip())
 
 
+class TestMarkdownOrderedListToHtml(unittest.TestCase):
+
+    def test_simple_ordered_list(self):
+        markdown = "1. Item 1\n2. Item 2\n3. Item 3"
+        expected_html = "<ol>\n  <li>Item 1</li>\n  <li>Item 2</li>\n  <li>Item 3</li>\n</ol>"
+        self.assertEqual(markdown_to_html_updated(markdown), expected_html)
+
+    def test_ordered_list_with_different_starting_number(self):
+        markdown = "3. Item A\n4. Item B"
+        # HTML <ol> does not inherently respect arbitrary start numbers from Markdown like "3."
+        # unless the `start` attribute is used on <ol>. The current `markdown_to_html_updated`
+        # function does not add `start` attribute. It will render as a standard list.
+        expected_html = "<ol>\n  <li>Item A</li>\n  <li>Item B</li>\n</ol>"
+        self.assertEqual(markdown_to_html_updated(markdown), expected_html)
+
+    def test_ordered_list_with_non_sequential_numbers(self):
+        markdown = "1. First\n3. Third\n2. Second"
+        # Similar to starting numbers, HTML <ol> renders sequentially by default.
+        expected_html = "<ol>\n  <li>First</li>\n  <li>Third</li>\n  <li>Second</li>\n</ol>"
+        self.assertEqual(markdown_to_html_updated(markdown), expected_html)
+
+    def test_nested_ordered_list(self):
+        markdown = "1. Level 1 Item 1\n  1. Level 2 Item 1\n  2. Level 2 Item 2\n2. Level 1 Item 2"
+        expected_html = "<ol>\n  <li>Level 1 Item 1</li>\n  <ol>\n    <li>Level 2 Item 1</li>\n    <li>Level 2 Item 2</li>\n  </ol>\n  <li>Level 1 Item 2</li>\n</ol>"
+        self.assertEqual(markdown_to_html_updated(markdown), expected_html)
+
+    def test_deeply_nested_ordered_list(self):
+        markdown = "1. L1\n  1. L2\n    1. L3\n      1. L4\n2. L1B"
+        expected_html = "<ol>\n  <li>L1</li>\n  <ol>\n    <li>L2</li>\n    <ol>\n      <li>L3</li>\n      <ol>\n        <li>L4</li>\n      </ol>\n    </ol>\n  </ol>\n  <li>L1B</li>\n</ol>"
+        self.assertEqual(markdown_to_html_updated(markdown), expected_html)
+
+    def test_ordered_list_ending_with_nested_item(self):
+        markdown = "1. item 1\n  1. item 1.1"
+        expected_html = "<ol>\n  <li>item 1</li>\n  <ol>\n    <li>item 1.1</li>\n  </ol>\n</ol>"
+        self.assertEqual(markdown_to_html_updated(markdown), expected_html)
+
+    def test_ordered_list_with_leading_trailing_spaces_in_items(self):
+        markdown = "1.   item 1 with spaces  \n2. item 2  "
+        expected_html = "<ol>\n  <li>item 1 with spaces</li>\n  <li>item 2</li>\n</ol>"
+        self.assertEqual(markdown_to_html_updated(markdown), expected_html)
+
+    def test_ordered_list_starts_with_indentation(self):
+        markdown = "  1. indented item"
+        # `markdown_to_html_updated` behavior for initial indent:
+        # indent_level = 1. list_level_markers[1] = 'ol'.
+        # Output: "  <ol>\n    <li>indented item</li>\n  </ol>"
+        # Then stripped.
+        expected_html = "<ol>\n  <li>indented item</li>\n</ol>"
+        # The current logic of `markdown_to_html_updated` will create an outer <ol> at indent 0
+        # and an inner <ol> at indent 1 if the first item is indented.
+        # "  1. indented item" -> indent_level = 1
+        # html_lines.append("  " * 1 + "<ol>\n") -> "  <ol>\n"
+        # html_lines.append("  " * 2 + "<li>indented item</li>\n") -> "    <li>indented item</li>\n"
+        # close_lists(-1) will add "  </ol>\n"
+        # Result: "  <ol>\n    <li>indented item</li>\n  </ol>"
+        # Stripped: "  <ol>\n    <li>indented item</li>\n  </ol>"
+        # This seems to be a slight deviation from typical Markdown where a root list is assumed.
+        # However, if this is the consistent behavior of the function, the test should match it.
+        # Let's re-verify the expected output for `markdown_to_html_updated`
+        # For "  - indented item" (unordered), the test `test_list_starts_with_indentation` expects:
+        # "<ul>\n  <li>indented item</li>\n</ul>"
+        # This implies that the `markdown_to_html_updated` function, after processing,
+        # should produce a list that, when stripped, looks like a standard non-indented list in HTML.
+        # The current `markdown_to_html_updated` for an indented first line:
+        # indent_level = 1. It adds `<ol>` at indent 1. `  <ol>`. Item at indent 2. `    <li>`. Closes with `  </ol>`.
+        # The `strip()` on the final result `  <ol>...</ol>` would remove leading spaces from the first line.
+        # So, `  <ol>\n    <li>indented item</li>\n  </ol>` becomes `<ol>\n    <li>indented item</li>\n  </ol>`
+        # This matches the pattern of other tests where the outer list tag has no indent.
+        self.assertEqual(markdown_to_html_updated(markdown).strip(), expected_html.strip())
+
+
+class TestMixedMarkdownListsToHtml(unittest.TestCase):
+
+    def test_mixed_list_simple(self):
+        markdown = "- Unordered 1\n1. Ordered 1\n- Unordered 2\n2. Ordered 2"
+        expected_html = "<ul>\n  <li>Unordered 1</li>\n</ul>\n<ol>\n  <li>Ordered 1</li>\n</ol>\n<ul>\n  <li>Unordered 2</li>\n</ul>\n<ol>\n  <li>Ordered 2</li>\n</ol>"
+        self.assertEqual(markdown_to_html_updated(markdown), expected_html)
+
+    def test_mixed_list_with_nesting(self):
+        markdown = (
+            "1. Ordered L1 A\n"
+            "  - Unordered L2 A.1\n"
+            "  - Unordered L2 A.2\n"
+            "2. Ordered L1 B\n"
+            "  1. Ordered L2 B.1\n"
+            "    * Unordered L3 B.1.a\n"
+            "  2. Ordered L2 B.2"
+        )
+        expected_html = (
+            "<ol>\n"
+            "  <li>Ordered L1 A</li>\n"
+            "  <ul>\n"
+            "    <li>Unordered L2 A.1</li>\n"
+            "    <li>Unordered L2 A.2</li>\n"
+            "  </ul>\n"
+            "  <li>Ordered L1 B</li>\n"
+            "  <ol>\n"
+            "    <li>Ordered L2 B.1</li>\n"
+            "    <ul>\n"
+            "      <li>Unordered L3 B.1.a</li>\n"
+            "    </ul>\n"
+            "    <li>Ordered L2 B.2</li>\n"
+            "  </ol>\n"
+            "</ol>"
+        )
+        self.assertEqual(markdown_to_html_updated(markdown), expected_html)
+
+    def test_list_interspersed_with_text(self):
+        markdown = "Paragraph 1.\n\n1. Item 1\n2. Item 2\n\nAnother paragraph.\n\n- Unordered A\n- Unordered B"
+        expected_html = "<p>Paragraph 1.</p>\n<ol>\n  <li>Item 1</li>\n  <li>Item 2</li>\n</ol>\n<p>Another paragraph.</p>\n<ul>\n  <li>Unordered A</li>\n  <li>Unordered B</li>\n</ul>"
+        self.assertEqual(markdown_to_html_updated(markdown), expected_html)
+
+    def test_complex_nesting_and_switching(self):
+        markdown = (
+            "- U1\n"
+            "  1. O2_A\n"
+            "    - U3_A1\n"
+            "    - U3_A2\n"
+            "  2. O2_B\n"
+            "- U1_Next\n"
+            "1. O1_Separate"
+        )
+        expected_html = (
+            "<ul>\n"
+            "  <li>U1</li>\n"
+            "  <ol>\n"
+            "    <li>O2_A</li>\n"
+            "    <ul>\n"
+            "      <li>U3_A1</li>\n"
+            "      <li>U3_A2</li>\n"
+            "    </ul>\n"
+            "    <li>O2_B</li>\n"
+            "  </ol>\n"
+            "  <li>U1_Next</li>\n"
+            "</ul>\n"
+            "<ol>\n"
+            "  <li>O1_Separate</li>\n"
+            "</ol>"
+        )
+        self.assertEqual(markdown_to_html_updated(markdown), expected_html)
+
+
 if __name__ == '__main__':
     unittest.main()

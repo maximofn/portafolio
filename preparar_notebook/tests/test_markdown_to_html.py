@@ -9,7 +9,7 @@ from pathlib import Path # Added from test_markdown_code_to_html.py
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) # From test_markdown_code_to_html.py, slightly different but achieves similar goal
 
-from generic_markdown_to_specific_markdowns import generic_markdown_to_list_specific_markdowns
+from src.markdown_to_html.generic_markdown_to_specific_markdowns import generic_markdown_to_list_specific_markdowns
 from src.markdown_to_html.markdown_code_to_html_converter import markdown_code_to_html
 from src.markdown_to_html.markdown_image_to_html import markdown_image_to_html
 from src.markdown_to_html.markdown_link_to_html import markdown_to_html_external_link, markdown_to_html_internal_link

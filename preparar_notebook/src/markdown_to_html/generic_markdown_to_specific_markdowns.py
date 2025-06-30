@@ -36,7 +36,8 @@ def generic_markdown_to_list_specific_markdowns(markdown_content: str) -> list[s
         code_match = re.match(code_block_regex, remaining_content, re.MULTILINE)
         if code_match:
             block_content = code_match.group(0)
-            blocks.append(block_content) # Code blocks are not link-transformed
+            block_type = "code"
+            blocks.append({block_type: block_content}) # Code blocks are not link-transformed
             remaining_content = remaining_content[len(block_content):].lstrip('\n')
             continue
 
@@ -91,7 +92,8 @@ def generic_markdown_to_list_specific_markdowns(markdown_content: str) -> list[s
 
             if full_list_content:
                 full_list_content = full_list_content.rstrip('\n') + '\n' # Ensure single trailing newline
-                blocks.append(transform_links_in_text(full_list_content))
+                list_type = "list"
+                blocks.append({list_type: transform_links_in_text(full_list_content)})
                 remaining_content = remaining_content[len(full_list_content):].lstrip('\n')
                 continue
 
@@ -120,12 +122,27 @@ def generic_markdown_to_list_specific_markdowns(markdown_content: str) -> list[s
                 if full_table_content.endswith('\n'): # Check if the original raw block ended with a newline
                     processed_table_content += '\n'   # If so, add a single newline back.
 
-                blocks.append(transform_links_in_text(processed_table_content))
+                table_type = "table"
+                blocks.append({table_type: transform_links_in_text(processed_table_content)})
                 # Consume the length of the original full_table_content from remaining_content
                 remaining_content = remaining_content[len(full_table_content):].lstrip('\n')
                 continue
 
-        # 4. If none of the above, it's a text/paragraph block.
+        # 4. Try to match link block
+        if re.match(r'\[.*\]\(.*\)', first_line_of_remaining):
+            link_type = "link"
+            blocks.append({link_type: transform_links_in_text(first_line_of_remaining)})
+            remaining_content = remaining_content[len(first_line_of_remaining):].lstrip('\n')
+            continue
+
+        # 5. Try to match image block
+        if re.match(r'!\[.*\]\(.*\)', first_line_of_remaining):
+            image_type = "image"
+            blocks.append({image_type: transform_links_in_text(first_line_of_remaining)})
+            remaining_content = remaining_content[len(first_line_of_remaining):].lstrip('\n')
+            continue
+
+        # 6. If none of the above, it's a text/paragraph block.
         next_block_boundary = len(remaining_content)
         double_newline_match = re.search(r'\n\s*\n', remaining_content)
         if double_newline_match:
@@ -160,7 +177,8 @@ def generic_markdown_to_list_specific_markdowns(markdown_content: str) -> list[s
             current_block_text = remaining_content[:next_block_boundary].strip()
 
         if current_block_text:
-            blocks.append(transform_links_in_text(current_block_text))
+            text_type = "text"
+            blocks.append({text_type: transform_links_in_text(current_block_text)})
 
         remaining_content = remaining_content[next_block_boundary:].lstrip('\n')
 

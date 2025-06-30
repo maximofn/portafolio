@@ -9,6 +9,7 @@ import requests
 from io import BytesIO
 from img_base64 import base64_to_webp
 import re
+from markdown_to_html.markdown_to_html import markdown_to_html_convert
 
 CONVERT_TO_HTML_WITH_NBCONVERT = False
 
@@ -297,8 +298,6 @@ def get_list_of_contents(xml_file_path: pathlib.Path) -> list[dict]:
             # Get the content between the start and end character positions
             xml_content_section_lines = xml_content[xml_start_content_char:xml_end_content_char].split("\n")
 
-            print(xml_content_section_lines)
-
             # Convert the content of a list of dictionaries
             num_lines_content = len(xml_content_section_lines)
             for line_number in range(num_lines_content):
@@ -395,8 +394,8 @@ def convert_to_html(notebook_path, metadata, notebook_title):
     notebook_name_pt = notebook_name + "_" + PORTUGUESE + notebook_extension
     notebook_paths = [notebook_path, path/NOTEBOOKS_TRANSLATED/notebook_name_en, path/NOTEBOOKS_TRANSLATED/notebook_name_pt]
     astro_src_pages_list = [ASTRO_SRC_PAGES, ASTRO_SRC_PAGES_EN, ASTRO_SRC_PAGES_PT]
-    # title_es, title_en, title_pt, end_url, description_es, description_en, description_pt, \
-    # keywords_es, keywords_en, keywords_pt, image, witdh, height, image_extension, date
+
+    # Get metadata
     tittles_list = [metadata[0], metadata[1], metadata[2]]
     end_url = metadata[3]
     descriptions_list = [metadata[4], metadata[5], metadata[6]]
@@ -419,6 +418,9 @@ def convert_to_html(notebook_path, metadata, notebook_title):
                     os.system(f"jupyter nbconvert --to html --template posts_template {notebook}")
             else:
                 print(f"Converting {notebook} to html...")
+
+                # Convert the markdown content to html
+                markdown_to_html_convert(list_of_contents)
         except Exception as e:
             print(f"Error: {e}")
             print(f"notebook: {notebook}")

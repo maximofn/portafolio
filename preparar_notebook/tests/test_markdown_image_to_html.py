@@ -1,5 +1,5 @@
 import unittest
-from preparar_notebook.src.markdown_image_to_html import markdown_image_to_html
+from src.markdown_image_to_html import markdown_image_to_html
 
 class TestMarkdownImageToHtml(unittest.TestCase):
 

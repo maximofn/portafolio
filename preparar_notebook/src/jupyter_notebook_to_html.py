@@ -8,6 +8,7 @@ from PIL import Image
 import requests
 from io import BytesIO
 from img_base64 import base64_to_webp
+import re
 
 CONVERT_TO_HTML_WITH_NBCONVERT = False
 
@@ -272,8 +273,113 @@ def add_witdh_and_height_to_image(html_content):
         content_html += f"{line}\n"
     return content_html
 
+def get_list_of_contents(xml_file_path: pathlib.Path) -> list[dict]:
+    """
+    Parse the XML file and return a list of contents maintaining the sequential order
+    of markdown cells, code cells, and output cells as they appear in the notebook.
+    
+    Args:
+        xml_file_path: Path to the XML file to parse
+        
+    Returns:
+        list[dict]: List of dictionaries where each dict contains one cell type and content
+    """
+    list_of_contents = []
+    
+    try:
+        with open(xml_file_path, 'r', encoding='utf-8') as xml_file:
+            xml_content = xml_file.read()
+            
+            # Find the start and end of the content between <notebook> and </notebook>
+            xml_start_content_char = re.search(r'<notebook>', xml_content).start() + len("<notebook>") + len("\n")
+            xml_end_content_char = re.search(r'</notebook>', xml_content).end() - len("</notebook>") - len("\n")
+            
+            # Get the content between the start and end character positions
+            xml_content_section_lines = xml_content[xml_start_content_char:xml_end_content_char].split("\n")
+
+            print(xml_content_section_lines)
+
+            # Convert the content of a list of dictionaries
+            num_lines_content = len(xml_content_section_lines)
+            for line_number in range(num_lines_content):
+                # Get line content
+                line = xml_content_section_lines[line_number]
+
+                # Initialize start and end of item
+                start_item_list_line = None
+                end_item_list_line = None
+                
+                # Check if line is start of a new item
+                if "<markdown>" in line or "<input_code>" in line or "<output_code>" in line:
+                    start_item_list_line = line_number
+                    if "<markdown>" in line:
+                        item_type = "markdown"
+                    elif "<input_code>" in line:
+                        item_type = "input_code"
+                    elif "<output_code>" in line:
+                        item_type = "output_code"
+                    else:
+                        print(f"Error: {line} is not a valid item type")
+                        exit(1)
+                    
+                    # Find the end of the item
+                    for line_number_2 in range(start_item_list_line, num_lines_content):
+                        if item_type == "markdown":
+                            if "</markdown>" in xml_content_section_lines[line_number_2]:
+                                end_item_list_line = line_number_2
+                                break
+                        elif item_type == "input_code":
+                            if "</input_code>" in xml_content_section_lines[line_number_2]:
+                                end_item_list_line = line_number_2
+                                break
+                        elif item_type == "output_code":
+                            if "</output_code>" in xml_content_section_lines[line_number_2]:
+                                end_item_list_line = line_number_2
+                                break
+                        else:
+                            print(f"Error: {line} is not a valid item type")
+                            exit(1)
+                    
+                    # Add the item to the list of contents
+                    if start_item_list_line is not None and end_item_list_line is not None:
+                        # Get list of lines of the item
+                        item_list = xml_content_section_lines[start_item_list_line:min(end_item_list_line+1, num_lines_content)]
+                        # Join the lines of the item
+                        item_content = "\n".join(item_list)
+                        # Get position on start and end of the type of the item
+                        if item_type == "markdown":
+                            start_item_type_position = item_content.find("<markdown>") + len("<markdown>")
+                            end_item_type_position = item_content.find("</markdown>")
+                        elif item_type == "input_code":
+                            start_item_type_position = item_content.find("<input_code>") + len("<input_code>")
+                            end_item_type_position = item_content.find("</input_code>")
+                        elif item_type == "output_code":
+                            start_item_type_position = item_content.find("<output_code>") + len("<output_code>")
+                            end_item_type_position = item_content.find("</output_code>")
+                        else:
+                            print(f"Error: {item_content} is not a valid item type")
+                            exit(1)
+                        # Get the item content without the type
+                        item_content = item_content[start_item_type_position:end_item_type_position]
+                        # Create a dictionary with the item type and content
+                        item_dict = {item_type: item_content}
+                        # Add the item to the list of contents
+                        list_of_contents.append(item_dict)
+                
+    except FileNotFoundError:
+        print(f"Error: XML file not found at {xml_file_path}")
+    except Exception as e:
+        print(f"Error parsing XML file: {e}")
+    
+    return list_of_contents
+
 def convert_to_html(notebook_path, metadata, notebook_title):
     global webp_img_counter
+
+    # Get list of contents
+    xml_file = notebook_path.with_suffix(".xml")    # PosixPath('../posts/notebook_name.xml')
+    xml_file_path = xml_file.parent / "xml_files" / xml_file.name    # xml_file_path = PosixPath('../posts/xml_files/notebook_name.xml')
+    list_of_contents = get_list_of_contents(xml_file_path)
 
     # Get path, name and extension of the notebook
     notebook_path = pathlib.Path(notebook_path)

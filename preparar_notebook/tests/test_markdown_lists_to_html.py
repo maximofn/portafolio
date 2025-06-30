@@ -1,5 +1,9 @@
+import os
 import unittest
-from src.markdown_lists_to_html import markdown_to_html_updated # Using the refined function
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from src.markdown_to_html.markdown_lists_to_html import markdown_to_html_updated # Using the refined function
 
 class TestMarkdownUnorderedListToHtml(unittest.TestCase):
 

@@ -1,5 +1,9 @@
+import os
 import unittest
-from src.markdown_table_to_html import markdown_table_to_html
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from src.markdown_to_html.markdown_table_to_html import markdown_table_to_html
 
 class TestMarkdownTableToHtml(unittest.TestCase):
 

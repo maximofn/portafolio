@@ -1,5 +1,9 @@
+import os
 import unittest
-from src.markdown_link_to_html import markdown_to_html_external_link, markdown_to_html_internal_link
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from src.markdown_to_html.markdown_link_to_html import markdown_to_html_external_link, markdown_to_html_internal_link
 
 class TestMarkdownLinkToHtml(unittest.TestCase):
 

@@ -8,7 +8,7 @@ from pathlib import Path
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from markdown_to_html.markdown_code_to_html_converter import markdown_code_to_html
+from src.markdown_to_html.markdown_code_to_html_converter import markdown_code_to_html
 
 class TestMarkdownCodeToHtml(unittest.TestCase):
     def setUp(self):

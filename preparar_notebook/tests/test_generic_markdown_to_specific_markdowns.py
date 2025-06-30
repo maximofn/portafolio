@@ -4,7 +4,7 @@ import unittest
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from markdown_to_html.generic_markdown_to_specific_markdowns import generic_markdown_to_list_specific_markdowns
+from src.markdown_to_html.generic_markdown_to_specific_markdowns import generic_markdown_to_list_specific_markdowns
 
 class TestMarkdownCodeToHtml(unittest.TestCase):
     def setUp(self):

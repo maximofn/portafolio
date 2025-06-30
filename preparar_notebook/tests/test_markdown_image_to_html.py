@@ -3,7 +3,7 @@ import unittest
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from markdown_to_html.markdown_image_to_html import markdown_image_to_html
+from src.markdown_to_html.markdown_image_to_html import markdown_image_to_html
 
 class TestMarkdownImageToHtml(unittest.TestCase):
 

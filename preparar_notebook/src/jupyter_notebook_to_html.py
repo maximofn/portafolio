@@ -9,7 +9,7 @@ import requests
 from io import BytesIO
 from img_base64 import base64_to_webp
 import re
-from markdown_to_html.markdown_to_html import markdown_to_html_convert
+from markdown_to_html.markdown_to_html import markdown_to_html
 
 CONVERT_TO_HTML_WITH_NBCONVERT = False
 
@@ -420,7 +420,7 @@ def convert_to_html(notebook_path, metadata, notebook_title):
                 print(f"Converting {notebook} to html...")
 
                 # Convert the markdown content to html
-                markdown_to_html_convert(list_of_contents)
+                markdown_to_html(list_of_contents)
         except Exception as e:
             print(f"Error: {e}")
             print(f"notebook: {notebook}")

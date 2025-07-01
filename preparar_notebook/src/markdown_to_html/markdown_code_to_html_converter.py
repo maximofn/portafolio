@@ -18,12 +18,38 @@ def markdown_code_to_html(markdown_content: str) -> str:
     match = re.search(pattern, markdown_content, re.DOTALL)
 
     if match:
-        # language = match.group(1) # Language specifier, if present
+        language = match.group(1) # Language specifier, if present
         code_content = match.group(2)
 
-        # Escape HTML characters, then specifically replace &#x27; with &#39; for test compatibility
-        escaped_code = html.escape(code_content).replace('&#x27;', '&#39;')
+        # Escape HTML characters, but keep double quotes as they are for test compatibility.
+        # html.escape converts ", ', <, >, &. We want to keep " as is.
+        # First, escape everything except double quotes.
+        # A simple approach: replace " with a placeholder, escape, then restore ".
+        # This is a bit hacky. A more robust way would be to manually escape <, >, & and ' if needed.
 
-        return f"<pre><code>{escaped_code}\n</code></pre>\n"
+        # The tests expect ' to be &#39; and " to be ".
+        # html.escape by default:
+        # & -> &amp;
+        # < -> &lt;
+        # > -> &gt;
+        # " -> &quot;
+        # ' -> &#x27; (or &#39; depending on Python version/flags)
+
+        # Let's escape manually to match test requirements precisely.
+        # Test `test_hello_world_without_space` in `test_markdown_to_html.py` expects:
+        # `print('hello world')` -> `print(&#39;hello world&#39;)`
+        # This means ' should be escaped to &#39;
+        # And " in `print("Hello, World!")` (from TestMarkdownToHtml) should remain "
+
+        processed_code = code_content.replace('&', '&amp;') # Must be first
+        processed_code = processed_code.replace('<', '&lt;')
+        processed_code = processed_code.replace('>', '&gt;')
+        processed_code = processed_code.replace("'", '&#39;')
+        # Do not replace "
+
+        lang_class = f' class="language-{language}"' if language else ''
+
+        # Return without the final trailing newline, let the main assembler handle newlines between blocks.
+        return f"<pre><code{lang_class}>{processed_code}\n</code></pre>"
     else:
         return markdown_content

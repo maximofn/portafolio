@@ -15,6 +15,7 @@ from src.markdown_to_html.markdown_image_to_html import markdown_image_to_html
 from src.markdown_to_html.markdown_link_to_html import markdown_to_html_external_link, markdown_to_html_internal_link
 from src.markdown_to_html.markdown_lists_to_html import markdown_to_html_updated # Using the refined function
 from src.markdown_to_html.markdown_table_to_html import markdown_table_to_html
+from src.markdown_to_html.markdown_to_html import markdown_to_html
 
 class TestGenericMarkdownToSpecificMarkdowns(unittest.TestCase): # Renamed from TestMarkdownCodeToHtml to avoid conflict
     def setUp(self):
@@ -435,7 +436,6 @@ class TestMarkdownUnorderedListToHtml(unittest.TestCase):
         expected_html = "<ul>\n  <li>indented item</li>\n</ul>"
         self.assertEqual(markdown_to_html_updated(markdown).strip(), expected_html.strip())
 
-
 class TestMarkdownOrderedListToHtml(unittest.TestCase):
 
     def test_simple_ordered_list(self):
@@ -477,7 +477,6 @@ class TestMarkdownOrderedListToHtml(unittest.TestCase):
         markdown = "  1. indented item"
         expected_html = "<ol>\n  <li>indented item</li>\n</ol>"
         self.assertEqual(markdown_to_html_updated(markdown).strip(), expected_html.strip())
-
 
 class TestMixedMarkdownListsToHtml(unittest.TestCase):
 
@@ -838,6 +837,188 @@ Val 3   | Val 4 |
   </tbody>
 </table>"""
         self.assertEqual(markdown_table_to_html(markdown).strip(), expected_html.strip())
+
+class TestMarkdownToHtml(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        pass
+
+    def test_markdown_to_html_with_text(self):
+        markdown = """
+# Hello World
+
+This is a test of the markdown to html converter.
+"""
+        expected_html = """
+<h1>Hello World</h1>
+
+<p>This is a test of the markdown to html converter.</p>
+"""
+        self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
+    
+    def test_markdown_to_html_with_code(self):
+        markdown = """
+```python
+print("Hello, World!")
+```
+"""
+        expected_html = """
+<pre><code class="language-python">print("Hello, World!")
+</code></pre>
+"""
+        self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_with_code_and_text(self):
+        markdown = """
+# Hello World
+
+This is a test of the markdown to html converter.
+
+```python
+print("Hello, World!")
+```
+"""
+        expected_html = """
+<h1>Hello World</h1>
+
+<p>This is a test of the markdown to html converter.</p>
+
+<pre><code class="language-python">print("Hello, World!")
+</code></pre>
+"""
+        self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_with_code_and_text_and_table(self):
+        markdown = """
+# Hello World
+
+This is a test of the markdown to html converter.
+
+```python
+print("Hello, World!")
+```
+
+| Header 1 | Header 2 |
+| -------- | -------- |
+| Data 1   | Data 2   |
+"""
+        expected_html = """
+<h1>Hello World</h1>
+
+<p>This is a test of the markdown to html converter.</p>
+
+<pre><code class="language-python">print("Hello, World!")
+</code></pre>
+
+<table>
+  <thead>
+    <tr>
+      <th>Header 1</th>
+      <th>Header 2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Data 1</td>
+      <td>Data 2</td>
+    </tr>
+  </tbody>
+</table>
+"""
+        self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_with_code_and_text_and_table_and_image(self):
+        markdown = """
+# Hello World
+
+This is a test of the markdown to html converter.
+
+```python
+print("Hello, World!")
+```
+
+| Header 1 | Header 2 |
+| -------- | -------- |
+| Data 1   | Data 2   |
+
+![Image](https://example.com/image.png)
+"""
+        expected_html = """
+<h1>Hello World</h1>
+
+<p>This is a test of the markdown to html converter.</p>
+
+<pre><code class="language-python">print("Hello, World!")
+</code></pre>
+
+<table>
+  <thead>
+    <tr>
+      <th>Header 1</th>
+      <th>Header 2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Data 1</td>
+      <td>Data 2</td>
+    </tr>
+  </tbody>
+</table>
+
+<img src="https://example.com/image.png" alt="Image">
+"""
+        self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_with_code_and_text_and_table_and_image_and_link(self):
+
+        markdown = """
+# Hello World
+
+This is a test of the markdown to html converter.
+
+```python
+print("Hello, World!")
+```
+
+| Header 1 | Header 2 |
+| -------- | -------- |
+| Data 1   | Data 2   |
+
+![Image](https://example.com/image.png)
+
+[Link](https://example.com)
+"""
+        expected_html = """
+<h1>Hello World</h1>
+
+<p>This is a test of the markdown to html converter.</p>
+
+<pre><code class="language-python">print("Hello, World!")
+</code></pre>
+
+<table>
+  <thead>
+    <tr>
+      <th>Header 1</th>
+      <th>Header 2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Data 1</td>
+      <td>Data 2</td>
+    </tr>
+  </tbody>
+</table>
+
+<img src="https://example.com/image.png" alt="Image">
+
+<a href="https://example.com">Link</a>
+"""
+        self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
 
 if __name__ == '__main__':
     # It's good practice to ensure that only one unittest.main() call remains,

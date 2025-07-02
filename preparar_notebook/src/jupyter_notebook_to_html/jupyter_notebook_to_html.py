@@ -7,6 +7,11 @@ from .markdown_link_to_html import markdown_to_html_external_link, markdown_to_h
 from .markdown_lists_to_html import markdown_to_html_updated as convert_list_to_html
 from .markdown_table_to_html import markdown_table_to_html as convert_table_to_html
 
+# Add Pygments imports for syntax highlighting
+from pygments import highlight
+from pygments.lexers import PythonLexer
+from pygments.formatters import HtmlFormatter
+
 def _remove_accents(text: str) -> str:
     """
     Removes accents from text using Unicode normalization.
@@ -98,6 +103,36 @@ def _process_text_block(text_content: str) -> str:
 
     return "\n".join(processed_lines)
 
+def input_code_to_html(code_content: str) -> str:
+    """
+    Converts input code to HTML with syntax highlighting using Pygments.
+    
+    Args:
+        code_content: The Python code string to highlight.
+        
+    Returns:
+        HTML string with the code highlighted and wrapped in appropriate containers.
+    """
+    # Create the Pygments lexer and formatter
+    lexer = PythonLexer()
+    # Configure formatter to generate HTML without line numbers and with specific CSS classes
+    formatter = HtmlFormatter(
+        noclasses=False,  # Use CSS classes for styling
+        cssclass="highlight hl-ipython3",  # CSS class for the wrapper div
+        nowrap=False,  # Include the wrapper div
+        linenos=False  # No line numbers
+    )
+    
+    # Generate the highlighted HTML
+    highlighted_code = highlight(code_content, lexer, formatter)
+    
+    # We need to wrap this in the specific structure expected by the test
+    html_output = f'''<section class="section-block-code-cell-">
+<div class="input-code">
+{highlighted_code}</div>
+</section>'''
+    
+    return html_output
 
 def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_contents_in_xml_format):
     """
@@ -172,14 +207,8 @@ def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_con
 
         elif "input_code" in item:
             code_content = item["input_code"]
-            # Assuming input_code should also be wrapped like markdown code blocks
-            # The markdown_code_to_html_converter.py expects ```python ... ``` format.
-            # We might need a simpler wrapper or adapt. For now, let's assume raw code.
-            # The tests don't explicitly cover 'input_code' or 'output_code' blocks directly
-            # in TestMarkdownToHtml, but good practice to handle them.
-            # Let's wrap in simple pre/code tags.
-            escaped_code = code_content.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-            html_output_parts.append(f"<pre><code>{escaped_code}</code></pre>")
+            # Use the new input_code_to_html function for proper syntax highlighting
+            html_output_parts.append(input_code_to_html(code_content))
         
         elif "output_code" in item:
             code_content = item["output_code"]

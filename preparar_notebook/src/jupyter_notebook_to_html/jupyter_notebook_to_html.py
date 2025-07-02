@@ -6,6 +6,7 @@ from .markdown_image_to_html import markdown_image_to_html as convert_image_to_h
 from .markdown_link_to_html import markdown_to_html_external_link, markdown_to_html_internal_link
 from .markdown_lists_to_html import markdown_to_html_updated as convert_list_to_html
 from .markdown_table_to_html import markdown_table_to_html as convert_table_to_html
+import html
 
 # Add Pygments imports for syntax highlighting
 from pygments import highlight
@@ -146,7 +147,6 @@ def output_code_to_html(output_content: str) -> str:
     """
     # Output code doesn't need syntax highlighting, just proper HTML structure
     # Escape HTML characters in the output content
-    import html
     escaped_content = html.escape(output_content)
     
     # We need to wrap this in the specific structure expected by Jupyter outputs
@@ -184,7 +184,8 @@ def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_con
 
     for item in list_of_contents:
         if "markdown" in item:
-            markdown_content = item["markdown"]
+            # Unescape HTML entities to correctly process raw HTML mixed with markdown.
+            markdown_content = html.unescape(item["markdown"])
             # Break down the generic markdown into specific parts
             specific_markdowns = generic_markdown_to_list_specific_markdowns(markdown_content)
 

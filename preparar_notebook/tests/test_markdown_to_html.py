@@ -1054,10 +1054,30 @@ print("Hello, World!")
 </section>'''
         self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
     
-    def link_to_external_url(self):
+    def test_link_to_external_url(self):
         markdown = "[Website](https://openai.com/research/whisper)"
         expected_html = '''<section class="section-block-markdown-cell">
 <p><a href="https://openai.com/research/whisper">Website</a></p>
+</section>'''
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+
+    def test_iframe_raw(self):
+        markdown = """Cargamos el audio de este anuncio antiguo (de 1987) de Micro Machines
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/zLP6oT3uqV8" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>"""
+        expected_html = '''<section class="section-block-markdown-cell">
+<p>Cargamos el audio de este anuncio antiguo (de 1987) de Micro Machines</p>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/zLP6oT3uqV8" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+</section>'''
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+    
+    def test_iframe_converted(self):
+        markdown = '''Cargamos el audio de este anuncio antiguo (de 1987) de Micro Machines
+
+&lt;iframe width="560" height="315" src="https://www.youtube.com/embed/zLP6oT3uqV8" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen&gt;&lt;/iframe&gt;'''
+        expected_html = '''<section class="section-block-markdown-cell">
+<p>Cargamos el audio de este anuncio antiguo (de 1987) de Micro Machines</p>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/zLP6oT3uqV8" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 </section>'''
         self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
 

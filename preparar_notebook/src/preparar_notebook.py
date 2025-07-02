@@ -4,7 +4,7 @@ from get_notebook_metadata import get_notebook_metadata, check_if_notebook_metad
 from corrections_jupyter_notebook import ortografic_corrections_jupyter_notebook
 from translate_jupyter_notebooks import translate_jupyter_notebook
 from error_codes import QUOTA_EXCEEDED_ERROR
-from jupyter_notebook_to_html import convert_to_html
+from convert_jupyter_notebook_to_html import convert_jupyter_notebook_to_html
 from jupyter_notebook_to_xml import convert_notebook_to_xml
 from add_page_to_its_json_file import add_page_to_its_json_file_from_metadata
 from add_page_to_its_sitemap import add_page_to_its_sitemap_from_metadata
@@ -91,12 +91,12 @@ if __name__ == "__main__":
         if yes_convert_to_html:
             print("\nConverting to HTML")
             notebook_title = notebook_metadata[3]
-            convert_to_html(notebook_path, notebook_metadata, notebook_title)
+            convert_jupyter_notebook_to_html(notebook_path, notebook_metadata, notebook_title)
         else:
             if ask_for_something("\nDo you want to convert the notebook to html? (y/n)", ['y', 'yes'], ['n', 'no']):
                 print("\nConverting to HTML")
                 notebook_title = notebook_metadata[3]
-                convert_to_html(notebook_path, notebook_metadata, notebook_title)
+                convert_jupyter_notebook_to_html(notebook_path, notebook_metadata, notebook_title)
 
     # Add to json
     if not no_add_to_json:

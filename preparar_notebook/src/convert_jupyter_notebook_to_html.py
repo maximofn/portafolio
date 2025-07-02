@@ -9,7 +9,7 @@ import requests
 from io import BytesIO
 from img_base64 import base64_to_webp
 import re
-from markdown_to_html.markdown_to_html import markdown_to_html
+from jupyter_notebook_to_html.jupyter_notebook_to_html import jupyter_notebook_contents_in_xml_format_to_html
 
 CONVERT_TO_HTML_WITH_NBCONVERT = False
 
@@ -372,13 +372,13 @@ def get_list_of_contents(xml_file_path: pathlib.Path) -> list[dict]:
     
     return list_of_contents
 
-def convert_to_html(notebook_path, metadata, notebook_title):
+def convert_jupyter_notebook_to_html(notebook_path, metadata, notebook_title):
     global webp_img_counter
 
     # Get list of contents
     xml_file = notebook_path.with_suffix(".xml")    # PosixPath('../posts/notebook_name.xml')
     xml_file_path = xml_file.parent / "xml_files" / xml_file.name    # xml_file_path = PosixPath('../posts/xml_files/notebook_name.xml')
-    list_of_contents = get_list_of_contents(xml_file_path)
+    list_of_jupyter_notebook_contents_in_xml_format = get_list_of_contents(xml_file_path)
 
     # Get path, name and extension of the notebook
     notebook_path = pathlib.Path(notebook_path)
@@ -420,7 +420,7 @@ def convert_to_html(notebook_path, metadata, notebook_title):
                 print(f"Converting {notebook} to html...")
 
                 # Convert the markdown content to html
-                html_content = markdown_to_html(list_of_contents)
+                html_content = jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_contents_in_xml_format)
 
                 # Save the html content to the html file
                 with open(notebook.with_suffix('.html'), 'w', encoding='utf-8') as html_file:

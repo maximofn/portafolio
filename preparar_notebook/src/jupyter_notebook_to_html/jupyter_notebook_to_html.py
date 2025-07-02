@@ -99,7 +99,7 @@ def _process_text_block(text_content: str) -> str:
     return "\n".join(processed_lines)
 
 
-def markdown_to_html(content_list_or_markdown_string):
+def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_contents_in_xml_format):
     """
     Converts a list of content blocks or a single markdown string to HTML.
     Each content block is a dictionary with a type (e.g., "markdown", "input_code")
@@ -110,10 +110,10 @@ def markdown_to_html(content_list_or_markdown_string):
     # If the input is a single string, treat it as a single "markdown" block.
     # This is to align with the test cases like `test_markdown_to_html_with_text`
     # which pass a raw markdown string directly.
-    if isinstance(content_list_or_markdown_string, str):
-        list_of_contents = [{"markdown": content_list_or_markdown_string}]
-    elif isinstance(content_list_or_markdown_string, list):
-        list_of_contents = content_list_or_markdown_string
+    if isinstance(list_of_jupyter_notebook_contents_in_xml_format, str):
+        list_of_contents = [{"markdown": list_of_jupyter_notebook_contents_in_xml_format}]
+    elif isinstance(list_of_jupyter_notebook_contents_in_xml_format, list):
+        list_of_contents = list_of_jupyter_notebook_contents_in_xml_format
     else:
         raise TypeError("Input must be a markdown string or a list of content blocks.")
 
@@ -216,7 +216,7 @@ print("hello")
 
 ![Alt Text](image.png)
 """
-    html_result = markdown_to_html(sample_markdown_string)
+    html_result = jupyter_notebook_contents_in_xml_format_to_html(sample_markdown_string)
     print(html_result)
 
     sample_content_list = [
@@ -225,6 +225,6 @@ print("hello")
         {"markdown": "Another markdown block with a table:\n| A | B |\n|---|---|\n| 1 | 2 |"},
         {"output_code": "Output from code"}
     ]
-    html_result_list = markdown_to_html(sample_content_list)
+    html_result_list = jupyter_notebook_contents_in_xml_format_to_html(sample_content_list)
     print("\n--- From List ---\n")
     print(html_result_list)

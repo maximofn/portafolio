@@ -5,7 +5,7 @@ import sys
 import os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
-from jupyter_notebook_to_html import add_index_html, add_content_html, format_anchor_links, format_images, replace_braces, img_base64_to_webp, add_witdh_and_height_to_image, convert_to_html
+from convert_jupyter_notebook_to_html import add_index_html, add_content_html, format_anchor_links, format_images, replace_braces, img_base64_to_webp, add_witdh_and_height_to_image, convert_jupyter_notebook_to_html
 
 class Test_jupyter_notebook_to_html(unittest.TestCase):
     def setUp(self):

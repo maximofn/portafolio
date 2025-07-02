@@ -1,21 +1,16 @@
 import os
 import unittest
 import sys
-import json # Added from test_markdown_code_to_html.py
-import shutil # Added from test_markdown_code_to_html.py
-import tempfile # Added from test_markdown_code_to_html.py
-from pathlib import Path # Added from test_markdown_code_to_html.py
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) # From test_markdown_code_to_html.py, slightly different but achieves similar goal
 
-from src.markdown_to_html.generic_markdown_to_specific_markdowns import generic_markdown_to_list_specific_markdowns
-from src.markdown_to_html.markdown_code_to_html_converter import markdown_code_to_html
-from src.markdown_to_html.markdown_image_to_html import markdown_image_to_html
-from src.markdown_to_html.markdown_link_to_html import markdown_to_html_external_link, markdown_to_html_internal_link
-from src.markdown_to_html.markdown_lists_to_html import markdown_to_html_updated # Using the refined function
-from src.markdown_to_html.markdown_table_to_html import markdown_table_to_html
-from src.markdown_to_html.markdown_to_html import markdown_to_html
+from src.jupyter_notebook_to_html.generic_markdown_to_specific_markdowns import generic_markdown_to_list_specific_markdowns
+from src.jupyter_notebook_to_html.markdown_code_to_html_converter import markdown_code_to_html
+from src.jupyter_notebook_to_html.markdown_image_to_html import markdown_image_to_html
+from src.jupyter_notebook_to_html.markdown_link_to_html import markdown_to_html_external_link, markdown_to_html_internal_link
+from src.jupyter_notebook_to_html.markdown_lists_to_html import markdown_to_html_updated # Using the refined function
+from src.jupyter_notebook_to_html.markdown_table_to_html import markdown_table_to_html
+from src.jupyter_notebook_to_html.jupyter_notebook_to_html import jupyter_notebook_contents_in_xml_format_to_html
 
 class TestGenericMarkdownToSpecificMarkdowns(unittest.TestCase): # Renamed from TestMarkdownCodeToHtml to avoid conflict
     def setUp(self):
@@ -859,7 +854,7 @@ This is a test of the markdown to html converter.
 <p>This is a test of the markdown to html converter.</p>
 </section>
 """
-        self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
     
     def test_markdown_to_html_with_code(self):
         markdown = """
@@ -873,7 +868,7 @@ print("Hello, World!")
 </code></pre>
 </section>
 """
-        self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
 
     def test_markdown_to_html_with_code_and_text(self):
         markdown = """
@@ -893,7 +888,7 @@ print("Hello, World!")
 </code></pre>
 </section>
 """
-        self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
 
     def test_markdown_to_html_with_code_and_text_and_table(self):
         markdown = """
@@ -931,7 +926,7 @@ print("Hello, World!")
 </table>
 </section>
 """
-        self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
 
     def test_markdown_to_html_with_code_and_text_and_table_and_image(self):
         markdown = """
@@ -972,7 +967,7 @@ print("Hello, World!")
 <img src="https://example.com/image.png" alt="Image">
 </section>
 """
-        self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
 
     def test_markdown_to_html_with_code_and_text_and_table_and_image_and_link(self):
 
@@ -1017,7 +1012,7 @@ print("Hello, World!")
 <p><a href="https://example.com">Link</a></p>
 </section>
 """
-        self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
 
     def test_markdown_to_html_with_text_and_link(self):
         markdown = """`Whisper` es un sistema de reconocimiento automático de voz (automatic speech recognition (ASR)) entrenado en 680.000 horas de datos supervisados ​​multilingües y multitarea recopilados de la web. El uso de un conjunto de datos tan grande y diverso conduce a una mayor solidez ante los acentos, el ruido de fondo y el lenguaje técnico. Además, permite la transcripción en varios idiomas, así como la traducción de esos idiomas al inglés
@@ -1036,35 +1031,35 @@ print("Hello, World!")
 <p><a href="https://github.com/openai/whisper">GitHub</a></p>
 <p><a href="https://github.com/openai/whisper/blob/main/model-card.md">Model card</a></p>
 </section>'''
-        self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
 
     def test_h1_whisper(self):
         markdown = "# Whisper"
         expected_html = '''<section class="section-block-markdown-cell">
 <h1 id="Whisper">Whisper<a class="anchor-link" href="#Whisper">¶</a></h1>
 </section>'''
-        self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
     
     def test_h2_introduccion(self):
         markdown = "## Introducción"
         expected_html = '''<section class="section-block-markdown-cell">
 <h2 id="Introduccion">Introducción<a class="anchor-link" href="#Introduccion">¶</a></h2>
 </section>'''
-        self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
     
     def text_with_code_inline(self):
         markdown = "`Whisper` es un sistema de reconocimiento automático de voz (automatic speech recognition (ASR)) entrenado en 680.000 horas de datos supervisados ​​multilingües y multitarea recopilados de la web. El uso de un conjunto de datos tan grande y diverso conduce a una mayor solidez ante los acentos, el ruido de fondo y el lenguaje técnico. Además, permite la transcripción en varios idiomas, así como la traducción de esos idiomas al inglés"
         expected_html = '''<section class="section-block-markdown-cell">
 <p><code>Whisper</code> es un sistema de reconocimiento automático de voz (automatic speech recognition (ASR)) entrenado en 680.000 horas de datos supervisados ​​multilingües y multitarea recopilados de la web. El uso de un conjunto de datos tan grande y diverso conduce a una mayor solidez ante los acentos, el ruido de fondo y el lenguaje técnico. Además, permite la transcripción en varios idiomas, así como la traducción de esos idiomas al inglés</p>
 </section>'''
-        self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
     
     def link_to_external_url(self):
         markdown = "[Website](https://openai.com/research/whisper)"
         expected_html = '''<section class="section-block-markdown-cell">
 <p><a href="https://openai.com/research/whisper">Website</a></p>
 </section>'''
-        self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
 
 if __name__ == '__main__':
     # It's good practice to ensure that only one unittest.main() call remains,

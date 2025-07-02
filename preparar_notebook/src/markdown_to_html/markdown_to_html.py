@@ -1,4 +1,5 @@
 import re
+import unicodedata
 from .generic_markdown_to_specific_markdowns import generic_markdown_to_list_specific_markdowns
 from .markdown_code_to_html_converter import markdown_code_to_html as convert_code_to_html
 from .markdown_image_to_html import markdown_image_to_html as convert_image_to_html
@@ -6,42 +7,94 @@ from .markdown_link_to_html import markdown_to_html_external_link, markdown_to_h
 from .markdown_lists_to_html import markdown_to_html_updated as convert_list_to_html
 from .markdown_table_to_html import markdown_table_to_html as convert_table_to_html
 
+def _remove_accents(text: str) -> str:
+    """
+    Removes accents from text using Unicode normalization.
+    """
+    # Normalize to NFD (decomposed form) and filter out accent marks
+    nfd = unicodedata.normalize('NFD', text)
+    return ''.join(char for char in nfd if unicodedata.category(char) != 'Mn')
+
+def _process_inline_code(text: str) -> str:
+    """
+    Processes inline code (text between single backticks) in a text string.
+    Converts `code` to <code>code</code>.
+    """
+    # Pattern to match inline code: `text`
+    # Use non-greedy matching to handle multiple inline code blocks in one line
+    pattern = r'`([^`]+)`'
+    
+    def replace_inline_code(match):
+        code_content = match.group(1)
+        return f'<code>{code_content}</code>'
+    
+    return re.sub(pattern, replace_inline_code, text)
+
+def _process_inline_links(text: str) -> str:
+    """
+    Processes inline links in a text string.
+    Converts [text](url) to appropriate HTML link tags.
+    """
+    # First process external links (http:// or https://)
+    external_pattern = r'\[([^\]]*)\]\((https?://[^\)]+)\)'
+    def replace_external_link(match):
+        link_text = match.group(1)
+        link_url = match.group(2)
+        return f'<a href="{link_url}">{link_text}</a>'
+    text = re.sub(external_pattern, replace_external_link, text)
+    
+    # Then process internal links (starting with /)
+    internal_pattern = r'\[([^\]]*)\]\((/[^\)]*)\)'
+    def replace_internal_link(match):
+        link_text = match.group(1)
+        link_url = match.group(2)
+        return f'<a href="{link_url}">{link_text}</a>'
+    text = re.sub(internal_pattern, replace_internal_link, text)
+    
+    return text
+
 def _process_text_block(text_content: str) -> str:
     """
     Processes a 'text' block, converting Markdown headers and paragraphs to HTML.
     """
-    html_lines = []
-    # Split by newlines but be careful about consecutive newlines (paragraphs)
-    # For simplicity, let's process line by line for now.
-    # A more robust approach might involve splitting by '\n\n' for paragraphs
-    # and then processing each paragraph.
-
-    # Handle headers (H1 to H6)
-    # Order matters: H6 before H1 to avoid partial matches like H1 matching ##
-    text_content = re.sub(r"^\s*###### (.*)", r"<h6>\1</h6>", text_content, flags=re.MULTILINE)
-    text_content = re.sub(r"^\s*##### (.*)", r"<h5>\1</h5>", text_content, flags=re.MULTILINE)
-    text_content = re.sub(r"^\s*#### (.*)", r"<h4>\1</h4>", text_content, flags=re.MULTILINE)
-    text_content = re.sub(r"^\s*### (.*)", r"<h3>\1</h3>", text_content, flags=re.MULTILINE)
-    text_content = re.sub(r"^\s*## (.*)", r"<h2>\1</h2>", text_content, flags=re.MULTILINE)
-    text_content = re.sub(r"^\s*# (.*)", r"<h1>\1</h1>", text_content, flags=re.MULTILINE)
+    def create_header_with_anchor(level: int, title: str) -> str:
+        """Creates an HTML header with ID and anchor link."""
+        # Use the original title for display (with accents)
+        corrected_title = title.strip()
+        
+        # Create ID without accents (normalize for URL-friendly IDs)
+        header_id = _remove_accents(title.strip())
+        
+        # Create the header with anchor link
+        return f'<h{level} id="{header_id}">{corrected_title}<a class="anchor-link" href="#{header_id}">¶</a></h{level}>'
+    
+    # Handle headers (H1 to H6) with anchor links
+    # Order matters: H6 before H1 to avoid partial matches
+    text_content = re.sub(r"^\s*###### (.*)", lambda m: create_header_with_anchor(6, m.group(1)), text_content, flags=re.MULTILINE)
+    text_content = re.sub(r"^\s*##### (.*)", lambda m: create_header_with_anchor(5, m.group(1)), text_content, flags=re.MULTILINE)
+    text_content = re.sub(r"^\s*#### (.*)", lambda m: create_header_with_anchor(4, m.group(1)), text_content, flags=re.MULTILINE)
+    text_content = re.sub(r"^\s*### (.*)", lambda m: create_header_with_anchor(3, m.group(1)), text_content, flags=re.MULTILINE)
+    text_content = re.sub(r"^\s*## (.*)", lambda m: create_header_with_anchor(2, m.group(1)), text_content, flags=re.MULTILINE)
+    text_content = re.sub(r"^\s*# (.*)", lambda m: create_header_with_anchor(1, m.group(1)), text_content, flags=re.MULTILINE)
 
     # Wrap remaining lines that are not headers in <p> tags
     # This is a simplified approach. True paragraph handling is more complex.
-    # It should group consecutive non-header, non-list, etc., lines into single <p> tags.
     processed_lines = []
     for line in text_content.split('\n'):
         if line.strip() == "":
             continue # Skip empty lines for now, though they might signify paragraph breaks
-        if re.match(r"<h[1-6]>.*</h[1-6]>", line.strip()):
+        if re.match(r"<h[1-6].*</h[1-6]>", line.strip()):
             processed_lines.append(line.strip())
         else:
             # Avoid wrapping already wrapped content or things that shouldn't be wrapped
             # This is a basic check.
             if not line.strip().startswith("<"): # Simplistic check
-                processed_lines.append(f"<p>{line.strip()}</p>")
+                # Process inline code and links before wrapping in <p> tags
+                processed_line = _process_inline_code(line.strip())
+                processed_line = _process_inline_links(processed_line)
+                processed_lines.append(f"<p>{processed_line}</p>")
             else: # Already some HTML, or other structure
                  processed_lines.append(line.strip())
-
 
     return "\n".join(processed_lines)
 
@@ -79,7 +132,7 @@ def markdown_to_html(content_list_or_markdown_string):
                     # that need further processing for headers, paragraphs etc.
                     html_output_parts.append(_process_text_block(block_content))
                 elif block_type == "code":
-                    html_output_parts.append(convert_code_to_html(block_content))
+                    html_output_parts.append(convert_code_to_html(block_content, include_language_class=True))
                 elif block_type == "table":
                     html_output_parts.append(convert_table_to_html(block_content))
                 elif block_type == "list":
@@ -91,9 +144,11 @@ def markdown_to_html(content_list_or_markdown_string):
                     # Current generic_markdown_to_specific_markdowns transforms known internal links.
                     # We can check the pattern.
                     if re.match(r"\[.*\]\((https?://.*)\)", block_content):
-                        html_output_parts.append(markdown_to_html_external_link(block_content))
+                        link_html = markdown_to_html_external_link(block_content)
+                        html_output_parts.append(f"<p>{link_html}</p>")
                     elif re.match(r"\[.*\]\((/.*)\)", block_content): # Matches /path type links
-                        html_output_parts.append(markdown_to_html_internal_link(block_content))
+                        link_html = markdown_to_html_internal_link(block_content)
+                        html_output_parts.append(f"<p>{link_html}</p>")
                     else:
                         # Fallback or unhandled link type, pass as is or wrap in <p>?
                         # For now, pass as is, which _process_text_block might wrap in <p> if it was part of text

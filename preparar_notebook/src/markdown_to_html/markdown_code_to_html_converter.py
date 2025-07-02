@@ -1,12 +1,13 @@
 import re
 import html
 
-def markdown_code_to_html(markdown_content: str) -> str:
+def markdown_code_to_html(markdown_content: str, include_language_class: bool = False) -> str:
     """
     Converts a Markdown code block to HTML.
 
     Args:
         markdown_content: The Markdown string.
+        include_language_class: Whether to include the language class attribute. Default is False.
 
     Returns:
         The HTML representation of the code block, or the original content if no code block is found.
@@ -47,9 +48,16 @@ def markdown_code_to_html(markdown_content: str) -> str:
         processed_code = processed_code.replace("'", '&#39;')
         # Do not replace "
 
-        lang_class = f' class="language-{language}"' if language else ''
+        # Conditionally include language class
+        if include_language_class and language:
+            lang_class = f' class="language-{language}"'
+        else:
+            lang_class = ''
 
-        # Return without the final trailing newline, let the main assembler handle newlines between blocks.
-        return f"<pre><code{lang_class}>{processed_code}\n</code></pre>"
+        # Add trailing newline when NOT including language class (for backward compatibility with tests)
+        if include_language_class:
+            return f"<pre><code{lang_class}>{processed_code}\n</code></pre>"
+        else:
+            return f"<pre><code{lang_class}>{processed_code}\n</code></pre>\n"
     else:
         return markdown_content

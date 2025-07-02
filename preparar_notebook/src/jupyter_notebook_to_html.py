@@ -420,7 +420,12 @@ def convert_to_html(notebook_path, metadata, notebook_title):
                 print(f"Converting {notebook} to html...")
 
                 # Convert the markdown content to html
-                markdown_to_html(list_of_contents)
+                html_content = markdown_to_html(list_of_contents)
+
+                # Save the html content to the html file
+                with open(notebook.with_suffix('.html'), 'w', encoding='utf-8') as html_file:
+                    html_file.write(html_content)
+
         except Exception as e:
             print(f"Error: {e}")
             print(f"notebook: {notebook}")

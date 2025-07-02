@@ -143,12 +143,14 @@ class TestMarkdownCodeToHtml(unittest.TestCase):
     def test_hello_world_without_space(self):
         markdown_content = "```python\nprint('hello world')\n```"
         html = markdown_code_to_html(markdown_content)
-        self.assertEqual(html, '<pre><code>print(&#39;hello world&#39;)\n</code></pre>\n')
+        expected_html = '<pre><code>print(&#39;hello world&#39;)\n</code></pre>\n'
+        self.assertEqual(html, expected_html)
 
     def test_hello_world_with_space(self):
         markdown_content = "``` python\nprint('hello world')\n```"
         html = markdown_code_to_html(markdown_content)
-        self.assertEqual(html, '<pre><code>print(&#39;hello world&#39;)\n</code></pre>\n')
+        expected_html = '<pre><code>print(&#39;hello world&#39;)\n</code></pre>\n'
+        self.assertEqual(html, expected_html)
 
 class TestMarkdownImageToHtml(unittest.TestCase):
 
@@ -852,7 +854,7 @@ class TestMarkdownToHtml(unittest.TestCase):
 This is a test of the markdown to html converter.
 """
         expected_html = """
-<h1>Hello World</h1>
+<h1 id="Hello World">Hello World<a class="anchor-link" href="#Hello World">¶</a></h1>
 
 <p>This is a test of the markdown to html converter.</p>
 """
@@ -881,7 +883,7 @@ print("Hello, World!")
 ```
 """
         expected_html = """
-<h1>Hello World</h1>
+<h1 id="Hello World">Hello World<a class="anchor-link" href="#Hello World">¶</a></h1>
 
 <p>This is a test of the markdown to html converter.</p>
 
@@ -905,7 +907,7 @@ print("Hello, World!")
 | Data 1   | Data 2   |
 """
         expected_html = """
-<h1>Hello World</h1>
+<h1 id="Hello World">Hello World<a class="anchor-link" href="#Hello World">¶</a></h1>
 
 <p>This is a test of the markdown to html converter.</p>
 
@@ -946,7 +948,7 @@ print("Hello, World!")
 ![Image](https://example.com/image.png)
 """
         expected_html = """
-<h1>Hello World</h1>
+<h1 id="Hello World">Hello World<a class="anchor-link" href="#Hello World">¶</a></h1>
 
 <p>This is a test of the markdown to html converter.</p>
 
@@ -992,7 +994,7 @@ print("Hello, World!")
 [Link](https://example.com)
 """
         expected_html = """
-<h1>Hello World</h1>
+<h1 id="Hello World">Hello World<a class="anchor-link" href="#Hello World">¶</a></h1>
 
 <p>This is a test of the markdown to html converter.</p>
 
@@ -1016,8 +1018,28 @@ print("Hello, World!")
 
 <img src="https://example.com/image.png" alt="Image">
 
-<a href="https://example.com">Link</a>
+<p><a href="https://example.com">Link</a></p>
 """
+        self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
+
+    def test_h1_whisper(self):
+        markdown = "# Whisper"
+        expected_html = '<h1 id="Whisper">Whisper<a class="anchor-link" href="#Whisper">¶</a></h1>'
+        self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
+    
+    def test_h2_introduccion(self):
+        markdown = "## Introducción"
+        expected_html = '<h2 id="Introduccion">Introducción<a class="anchor-link" href="#Introduccion">¶</a></h2>'
+        self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
+    
+    def text_with_code_inline(self):
+        markdown = "`Whisper` es un sistema de reconocimiento automático de voz (automatic speech recognition (ASR)) entrenado en 680.000 horas de datos supervisados ​​multilingües y multitarea recopilados de la web. El uso de un conjunto de datos tan grande y diverso conduce a una mayor solidez ante los acentos, el ruido de fondo y el lenguaje técnico. Además, permite la transcripción en varios idiomas, así como la traducción de esos idiomas al inglés"
+        expected_html = '<p><code>Whisper</code> es un sistema de reconocimiento automático de voz (automatic speech recognition (ASR)) entrenado en 680.000 horas de datos supervisados ​​multilingües y multitarea recopilados de la web. El uso de un conjunto de datos tan grande y diverso conduce a una mayor solidez ante los acentos, el ruido de fondo y el lenguaje técnico. Además, permite la transcripción en varios idiomas, así como la traducción de esos idiomas al inglés</p>'
+        self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
+    
+    def link_to_external_url(self):
+        markdown = "[Website](https://openai.com/research/whisper)"
+        expected_html = '<p><a href="https://openai.com/research/whisper">Website</a></p>'
         self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
 
 if __name__ == '__main__':

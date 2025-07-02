@@ -123,6 +123,9 @@ def markdown_to_html(content_list_or_markdown_string):
             # Break down the generic markdown into specific parts
             specific_markdowns = generic_markdown_to_list_specific_markdowns(markdown_content)
 
+            # Wrap the specific markdown blocks in a section
+            html_output_parts.append(f'<section class="section-block-markdown-cell">')
+
             for specific_block in specific_markdowns:
                 block_type, block_content = list(specific_block.items())[0]
 
@@ -163,6 +166,9 @@ def markdown_to_html(content_list_or_markdown_string):
                 else:
                     # Unknown specific markdown type, treat as text for now
                     html_output_parts.append(_process_text_block(block_content))
+            
+            # Close the section
+            html_output_parts.append(f"</section>")
 
         elif "input_code" in item:
             code_content = item["input_code"]
@@ -174,16 +180,23 @@ def markdown_to_html(content_list_or_markdown_string):
             # Let's wrap in simple pre/code tags.
             escaped_code = code_content.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
             html_output_parts.append(f"<pre><code>{escaped_code}</code></pre>")
+        
         elif "output_code" in item:
             code_content = item["output_code"]
             escaped_code = code_content.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
             html_output_parts.append(f"<pre><code>{escaped_code}</code></pre>")
+        
         # else:
             # Potentially other types of content blocks if the structure evolves.
 
-    # Join parts. The tests expect results to be .strip()'ed.
-    # Newlines between major blocks are common in HTML for readability.
-    return "\n\n".join(filter(None, html_output_parts)).strip()
+    # Join parts and wrap in section element as expected by tests
+    html_content = "\n".join(filter(None, html_output_parts)).strip()
+    
+    # Wrap everything in a section element as expected by the tests
+    if html_content:
+        return html_content
+    else:
+        return ""
 
 # Example usage (optional, for testing)
 if __name__ == '__main__':

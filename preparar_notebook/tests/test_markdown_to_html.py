@@ -854,9 +854,10 @@ class TestMarkdownToHtml(unittest.TestCase):
 This is a test of the markdown to html converter.
 """
         expected_html = """
+<section class="section-block-markdown-cell">
 <h1 id="Hello World">Hello World<a class="anchor-link" href="#Hello World">¶</a></h1>
-
 <p>This is a test of the markdown to html converter.</p>
+</section>
 """
         self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
     
@@ -867,8 +868,10 @@ print("Hello, World!")
 ```
 """
         expected_html = """
+<section class="section-block-markdown-cell">
 <pre><code class="language-python">print("Hello, World!")
 </code></pre>
+</section>
 """
         self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
 
@@ -883,12 +886,12 @@ print("Hello, World!")
 ```
 """
         expected_html = """
+<section class="section-block-markdown-cell">
 <h1 id="Hello World">Hello World<a class="anchor-link" href="#Hello World">¶</a></h1>
-
 <p>This is a test of the markdown to html converter.</p>
-
 <pre><code class="language-python">print("Hello, World!")
 </code></pre>
+</section>
 """
         self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
 
@@ -907,13 +910,11 @@ print("Hello, World!")
 | Data 1   | Data 2   |
 """
         expected_html = """
+<section class="section-block-markdown-cell">
 <h1 id="Hello World">Hello World<a class="anchor-link" href="#Hello World">¶</a></h1>
-
 <p>This is a test of the markdown to html converter.</p>
-
 <pre><code class="language-python">print("Hello, World!")
 </code></pre>
-
 <table>
   <thead>
     <tr>
@@ -928,6 +929,7 @@ print("Hello, World!")
     </tr>
   </tbody>
 </table>
+</section>
 """
         self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
 
@@ -948,13 +950,11 @@ print("Hello, World!")
 ![Image](https://example.com/image.png)
 """
         expected_html = """
+<section class="section-block-markdown-cell">
 <h1 id="Hello World">Hello World<a class="anchor-link" href="#Hello World">¶</a></h1>
-
 <p>This is a test of the markdown to html converter.</p>
-
 <pre><code class="language-python">print("Hello, World!")
 </code></pre>
-
 <table>
   <thead>
     <tr>
@@ -969,8 +969,8 @@ print("Hello, World!")
     </tr>
   </tbody>
 </table>
-
 <img src="https://example.com/image.png" alt="Image">
+</section>
 """
         self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
 
@@ -994,13 +994,11 @@ print("Hello, World!")
 [Link](https://example.com)
 """
         expected_html = """
+<section class="section-block-markdown-cell">
 <h1 id="Hello World">Hello World<a class="anchor-link" href="#Hello World">¶</a></h1>
-
 <p>This is a test of the markdown to html converter.</p>
-
 <pre><code class="language-python">print("Hello, World!")
 </code></pre>
-
 <table>
   <thead>
     <tr>
@@ -1015,31 +1013,57 @@ print("Hello, World!")
     </tr>
   </tbody>
 </table>
-
 <img src="https://example.com/image.png" alt="Image">
-
 <p><a href="https://example.com">Link</a></p>
+</section>
 """
+        self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_with_text_and_link(self):
+        markdown = """`Whisper` es un sistema de reconocimiento automático de voz (automatic speech recognition (ASR)) entrenado en 680.000 horas de datos supervisados ​​multilingües y multitarea recopilados de la web. El uso de un conjunto de datos tan grande y diverso conduce a una mayor solidez ante los acentos, el ruido de fondo y el lenguaje técnico. Además, permite la transcripción en varios idiomas, así como la traducción de esos idiomas al inglés
+
+[Website](https://openai.com/research/whisper)
+
+[Paper](https://cdn.openai.com/papers/whisper.pdf)
+
+[GitHub](https://github.com/openai/whisper)
+
+[Model card](https://github.com/openai/whisper/blob/main/model-card.md)"""
+        expected_html = '''<section class="section-block-markdown-cell">
+<p><code>Whisper</code> es un sistema de reconocimiento automático de voz (automatic speech recognition (ASR)) entrenado en 680.000 horas de datos supervisados ​​multilingües y multitarea recopilados de la web. El uso de un conjunto de datos tan grande y diverso conduce a una mayor solidez ante los acentos, el ruido de fondo y el lenguaje técnico. Además, permite la transcripción en varios idiomas, así como la traducción de esos idiomas al inglés</p>
+<p><a href="https://openai.com/research/whisper">Website</a></p>
+<p><a href="https://cdn.openai.com/papers/whisper.pdf">Paper</a></p>
+<p><a href="https://github.com/openai/whisper">GitHub</a></p>
+<p><a href="https://github.com/openai/whisper/blob/main/model-card.md">Model card</a></p>
+</section>'''
         self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
 
     def test_h1_whisper(self):
         markdown = "# Whisper"
-        expected_html = '<h1 id="Whisper">Whisper<a class="anchor-link" href="#Whisper">¶</a></h1>'
+        expected_html = '''<section class="section-block-markdown-cell">
+<h1 id="Whisper">Whisper<a class="anchor-link" href="#Whisper">¶</a></h1>
+</section>'''
         self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
     
     def test_h2_introduccion(self):
         markdown = "## Introducción"
-        expected_html = '<h2 id="Introduccion">Introducción<a class="anchor-link" href="#Introduccion">¶</a></h2>'
+        expected_html = '''<section class="section-block-markdown-cell">
+<h2 id="Introduccion">Introducción<a class="anchor-link" href="#Introduccion">¶</a></h2>
+</section>'''
         self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
     
     def text_with_code_inline(self):
         markdown = "`Whisper` es un sistema de reconocimiento automático de voz (automatic speech recognition (ASR)) entrenado en 680.000 horas de datos supervisados ​​multilingües y multitarea recopilados de la web. El uso de un conjunto de datos tan grande y diverso conduce a una mayor solidez ante los acentos, el ruido de fondo y el lenguaje técnico. Además, permite la transcripción en varios idiomas, así como la traducción de esos idiomas al inglés"
-        expected_html = '<p><code>Whisper</code> es un sistema de reconocimiento automático de voz (automatic speech recognition (ASR)) entrenado en 680.000 horas de datos supervisados ​​multilingües y multitarea recopilados de la web. El uso de un conjunto de datos tan grande y diverso conduce a una mayor solidez ante los acentos, el ruido de fondo y el lenguaje técnico. Además, permite la transcripción en varios idiomas, así como la traducción de esos idiomas al inglés</p>'
+        expected_html = '''<section class="section-block-markdown-cell">
+<p><code>Whisper</code> es un sistema de reconocimiento automático de voz (automatic speech recognition (ASR)) entrenado en 680.000 horas de datos supervisados ​​multilingües y multitarea recopilados de la web. El uso de un conjunto de datos tan grande y diverso conduce a una mayor solidez ante los acentos, el ruido de fondo y el lenguaje técnico. Además, permite la transcripción en varios idiomas, así como la traducción de esos idiomas al inglés</p>
+</section>'''
         self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
     
     def link_to_external_url(self):
         markdown = "[Website](https://openai.com/research/whisper)"
-        expected_html = '<p><a href="https://openai.com/research/whisper">Website</a></p>'
+        expected_html = '''<section class="section-block-markdown-cell">
+<p><a href="https://openai.com/research/whisper">Website</a></p>
+</section>'''
         self.assertEqual(markdown_to_html(markdown).strip(), expected_html.strip())
 
 if __name__ == '__main__':

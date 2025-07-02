@@ -134,6 +134,36 @@ def input_code_to_html(code_content: str) -> str:
     
     return html_output
 
+def output_code_to_html(output_content: str) -> str:
+    """
+    Converts output code to HTML with the appropriate Jupyter output structure.
+    
+    Args:
+        output_content: The output text string to display.
+        
+    Returns:
+        HTML string with the output wrapped in appropriate Jupyter output containers.
+    """
+    # Output code doesn't need syntax highlighting, just proper HTML structure
+    # Escape HTML characters in the output content
+    import html
+    escaped_content = html.escape(output_content)
+    
+    # We need to wrap this in the specific structure expected by Jupyter outputs
+    html_output = f'''<section class="section-block-code-cell-">
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>{escaped_content}
+</pre>
+</div>
+</div>
+</div>
+</section>'''
+    
+    return html_output
+
 def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_contents_in_xml_format):
     """
     Converts a list of content blocks or a single markdown string to HTML.
@@ -212,8 +242,8 @@ def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_con
         
         elif "output_code" in item:
             code_content = item["output_code"]
-            escaped_code = code_content.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-            html_output_parts.append(f"<pre><code>{escaped_code}</code></pre>")
+            # Use the new output_code_to_html function for proper output structure
+            html_output_parts.append(output_code_to_html(code_content))
         
         # else:
             # Potentially other types of content blocks if the structure evolves.

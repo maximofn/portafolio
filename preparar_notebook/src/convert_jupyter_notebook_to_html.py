@@ -409,6 +409,11 @@ def convert_jupyter_notebook_to_html(notebook_path, metadata, notebook_title):
     for notebook_number, notebook in enumerate(notebook_paths):
         language = LANGUAJES_DICT[LANGUAGES[notebook_number]].upper()
 
+        # Define the destiny path and name of the html file
+        destiny_path = path / HTML_FILES
+        destiny_name = notebook.stem + ".html"
+        full_destiny_path = destiny_path / destiny_name
+
         # Choose the appropriate command based on the operating system
         try:
             if CONVERT_TO_HTML_WITH_NBCONVERT:
@@ -423,7 +428,7 @@ def convert_jupyter_notebook_to_html(notebook_path, metadata, notebook_title):
                 html_content = jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_contents_in_xml_format)
 
                 # Save the html content to the html file
-                with open(notebook.with_suffix('.html'), 'w', encoding='utf-8') as html_file:
+                with open(full_destiny_path, 'w', encoding='utf-8') as html_file:
                     html_file.write(html_content)
 
         except Exception as e:
@@ -431,15 +436,10 @@ def convert_jupyter_notebook_to_html(notebook_path, metadata, notebook_title):
             print(f"notebook: {notebook}")
             exit(1)
 
-        # Move the generated html file to the destination path
-        destiny_path = path / HTML_FILES
-        destiny_name = notebook.stem + ".html"
-        full_destiny_path = destiny_path / destiny_name
+        # Move the generated html file to the destination path if CONVERT_TO_HTML_WITH_NBCONVERT is True
         try:
             if CONVERT_TO_HTML_WITH_NBCONVERT: 
                 os.system(f"mv {notebook.with_suffix('.html')} {full_destiny_path}")
-            else:
-                pass
         except Exception as e:
             print(f"Error: {e}")
             print(f"notebook: {notebook}")

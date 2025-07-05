@@ -1,23 +1,13 @@
 import argparse
+import re
 
 REPLACE = True
 STOP_COUNTER = False
 
-start_input_code_block = """      <CodeBlockInputCell
-        text={["""
-start_output_code_block = """      <CodeBlockOutputCell
-        text={["""
-end_input_code_block = """        ]}
-        languaje='python'
-      ></CodeBlockInputCell>"""
-end_output_code_block = """        ]}
-        languaje='python'
-      ></CodeBlockOutputCell>"""
-
 def remove_empty_lines(lines):
     lines_removed = False
     for number_reversed_line, line in enumerate(list(reversed(lines))):
-        if '></CodeBlockOutputCell>' in line:
+        if '></CodeBlockOutputCell>' in line or '></CodeBlockInputCell>' in line:
             start_line = len(lines) - number_reversed_line - 1
             end_line = None
             # print(f"\nstart_line: {start_line} of {len(lines)}, line({start_line}): {lines[start_line]}")
@@ -52,174 +42,152 @@ def remove_blank_spaces_at_the_beginning_of_code_lines(content):
             content[i] = '\n'.join(code_lines)
     return content
 
-def format_code_blocks(content):
+def format_input_code_block(section_content: str) -> str | None:
+    """
+    Formats input code blocks from HTML section content to CodeBlockInputCell format.
+    Returns None if the section is not an input code block.
+
+    Args:
+        section_content (str): The content of the section to format.
+
+    Returns:
+        str | None: The formatted code block or None if the section is not an input code block.
+    """
+    # Check if this is NOT a code cell (markdown cells should return None)
+    if 'section-block-markdown-cell' in section_content:
+        return None
+    
+    # Check if this is an input code block
+    if 'section-block-code-cell-' not in section_content or 'input-code' not in section_content:
+        return None
+    
+    # Extract code content from <pre> tags
+    pre_pattern = r'<pre[^>]*>(.*?)</pre>'
+    pre_match = re.search(pre_pattern, section_content, re.DOTALL)
+    
+    if not pre_match:
+        return None
+    
+    pre_content = pre_match.group(1)
+    
+    # Split into lines and clean up
+    lines = pre_content.split('\n')
+    code_lines = []
+    
+    for line in lines:
+        # Remove leading and trailing whitespace, but preserve internal structure
+        line = line.strip()
+        if line:  # Only add non-empty lines
+            # Don't escape quotes - keep them as they are in the original HTML
+            code_lines.append(f"      '{line}',")
+    
+    # Build the formatted output with exact format matching the tests
+    result = "      <CodeBlockInputCell\n"
+    result += "        text={[\n"
+    result += "\n".join(code_lines) + "\n"
+    result += "        ]}\n"
+    result += "        languaje='python'\n"
+    result += "      ></CodeBlockInputCell>"
+    
+    return result
+
+def format_output_code_block(section_content: str) -> str | None:
+    """
+    Formats output code blocks from HTML section content to CodeBlockOutputCell format.
+    Returns None if the section is not an output code block.
+
+    Args:
+        section_content (str): The content of the section to format.
+
+    Returns:
+        str | None: The formatted code block or None if the section is not an output code block.
+    """
+    # Check if this is NOT a code cell (markdown cells should return None)
+    if 'section-block-markdown-cell' in section_content:
+        return None
+    
+    # Check if this is an output code block
+    if 'section-block-code-cell-' not in section_content or 'output-wrapper' not in section_content:
+        return None
+    
+    # Extract content from <pre> tags in output sections
+    pre_pattern = r'<pre[^>]*>(.*?)</pre>'
+    pre_match = re.search(pre_pattern, section_content, re.DOTALL)
+    
+    if not pre_match:
+        return None
+    
+    pre_content = pre_match.group(1)
+    
+    # Split into lines and clean up
+    lines = pre_content.split('\n')
+    code_lines = []
+    
+    for line in lines:
+        # Remove leading and trailing whitespace
+        line = line.strip()
+        if line:  # Only add non-empty lines
+            # For output, we need to handle HTML entities and special formatting
+            code_lines.append(f"          '{line}',")
+    
+    # Build the formatted output with exact format matching the tests
+    result = "      <CodeBlockOutputCell\n"
+    result += "        text={[\n"
+    result += "\n".join(code_lines) + "\n"
+    result += "        ]}\n"
+    result += "        languaje='python'\n"
+    result += "      ></CodeBlockOutputCell>"
+    
+    return result
+
+def format_code_blocks(content: str) -> str:
+    """
+    Formats code blocks in a html file.
+
+    Args:
+        content (str): The content of the html file.
+
+    Returns:
+        str: The formatted html file.
+    """
+
     # Get all lines
     lines = content.split('\n')
 
     # Iterate for each line
-    input_cell_code = []
-    output_cell_code = []
-    if STOP_COUNTER: cont = 0
+    num_lines = len(lines)
     for i, line in enumerate(lines):
-        # Check if the line contains '<section class="section-block-code-cell-">'
-        if '<section class="section-block-code-cell-">' in line:
-            # Check if the next line contains '<div class="input-code">'
-            if '<div class="input-code">' in lines[i+1]:
-                # Check if the next line contains '<div class="highlight hl-ipython3">'
-                if '<div class="highlight hl-ipython3">' in lines[i+2]:
-                    # Clear the code list
-                    input_cell_code = []
-                    output_cell_code = []
-                    # Check if the next line starts with '<pre>'
-                    if lines[i+3].startswith('<pre>'):
-                        # Add the rest of the line to the code list
-                        code_to_append = lines[i+3][5:]
-                        code_to_append = code_to_append.replace("'", "\\'")
-                        code_to_append = code_to_append.replace("\\n", "\\\\n")
-                        code_to_append = "    '" + code_to_append + "',"
-                        input_cell_code.append(code_to_append)
-                        #  While next lines don't start '</pre>', add them to the code list
-                        j = i+4
-                        while not '</pre>' in lines[j]:
-                            code_to_append = lines[j]
-                            code_to_append = code_to_append.replace("'", "\\'")
-                            code_to_append = code_to_append.replace("\\n", "\\\\n")
-                            code_to_append = "    '" + code_to_append + "',"
-                            input_cell_code.append(code_to_append)
-                            j += 1
-                        # Check if the line j+1 contains '</div>'
-                        if '</div>' in lines[j+1]:
-                            # Check if the line j+2 contains '<div class="output-wrapper">'
-                            if '<div class="output-wrapper">' in lines[j+2]:
-                                # Check if the next line contains '<div class="output-area">'
-                                if '<div class="output-area">' in lines[j+3]:
-                                    # Check if the next line contains '<div class="prompt'
-                                    # if '<div class="prompt' in lines[j+4]:
-                                    if 'prompt' in lines[j+4]:
-                                        # Check if the next line contains '<div class="output'
-                                        # if '<div class="output' in lines[j+5]:
-                                        if 'output' in lines[j+5]:
-                                            # Check if the next line starts with '<pre>'
-                                            if '<pre>' in lines[j+6]:
-                                                # Add the rest of the line to the code list
-                                                code_to_append = lines[j+6][5:]
-                                                code_to_append = code_to_append.replace("'", "\\'")
-                                                code_to_append = "    '" + code_to_append + "',"
-                                                output_cell_code.append(code_to_append)
+        section_start_line = None
+        section_end_line = None
+        section_content = ""
+        input_code_block = None
+        output_code_block = None
+        # Check if the line contains '<section>'
+        if '<section' in line:
+            # Look for '</section>'
+            for j in range(i+1, num_lines):
+                if '</section>' in lines[j]:
+                    section_start_line = i
+                    section_end_line = j
+                    break
+            # Get the content of the section
+            if section_start_line and section_end_line:
+                for k in range(section_start_line, section_end_line+1):
+                    section_content += lines[k] + '\n'
+                    section_content
+                input_code_block = format_input_code_block(section_content)
+                output_code_block = format_output_code_block(section_content)
 
-                                                # If this line contains '</pre>', remove to de code list
-                                                if '</pre>' in lines[j+6]:
-                                                    k = j+6
-                                                    output_cell_code[0] = output_cell_code[0].replace("</pre>", "").replace(" <pre>", "")
-                                                else: # If this line not contains '</pre>', add the next lines to the code list
-                                                    #  While next lines don't start '</pre>', add them to the code list
-                                                    k = j+7
-                                                    while not lines[k].startswith('</pre>'):
-                                                        if lines[k].endswith('</pre>'):
-                                                            code_to_append = lines[k][:-6]
-                                                            end_while = True
-                                                        else:
-                                                            code_to_append = lines[k]
-                                                            end_while = False
-                                                        code_to_append = code_to_append.replace("'", "\\'")
-                                                        code_to_append = "    '" + code_to_append + "',"
-                                                        output_cell_code.append(code_to_append)
-                                                        if end_while:
-                                                            break
-                                                        k += 1
-                                                # Check if the lines k+1, k+2, k+3 contains '</div>'
-                                                if ('</div>' in lines[k+1]) and ('</div>' in lines[k+2]) and ('</div>' in lines[k+3]):
+        # Replace the section with the formatted section
+        if input_code_block:
+            lines[section_start_line] = input_code_block
+        if output_code_block:
+            lines[section_start_line] = output_code_block
 
-                                                    # Insert the formatted code blockbefore the line 0
-                                                    line_i = lines[i]
-                                                    lines[i] = start_input_code_block
-                                                    start_position_character = None
-                                                    end_position_character = None
-                                                    for pos in range(len(input_cell_code)):
-                                                        # Get position of first ' character
-                                                        for char_pos, char in enumerate(input_cell_code[pos]):
-                                                            if char == "'":
-                                                                start_position_character = char_pos
-                                                                break
-                                                        # Get position of last , character
-                                                        for char_pos, char in enumerate(input_cell_code[pos][::-1]):
-                                                            if char == ",":
-                                                                end_position_character = len(input_cell_code[pos]) - char_pos
-                                                                break
-                                                        if start_position_character is not None and end_position_character is not None:
-                                                            input_cell_code[pos] = input_cell_code[pos][start_position_character:end_position_character]
-                                                        else:
-                                                            print(f"start_position_character: {start_position_character}, end_position_character: {end_position_character}")
-                                                        # Remove the first 6 spaces from pos+1 to the end
-                                                        if pos > 0:
-                                                            if len(input_cell_code[pos]) > 6:
-                                                                input_cell_code[pos] = input_cell_code[pos][0] + input_cell_code[pos][7:]
-                                                            else:
-                                                                print(f"input_cell_code[pos] has less than 6 characters: {input_cell_code[pos]}")
-                                                                print(f"pos: {pos}")
-                                                                exit(1)
-                                                        # TODO revisar si usar esto solo para el post de python o para todos
-                                                        input_cell_code[pos] = input_cell_code[pos].replace(">\\\"<", ">\\\\\"<")
-                                                        input_cell_code[pos] = input_cell_code[pos].replace(">\\\\\'<", ">\\\\\\\'<")
-                                                        input_cell_code[pos] = input_cell_code[pos].replace(">\\\\<", ">\\\\\\\\<")
-                                                        input_cell_code[pos] = input_cell_code[pos].replace(">\\n<", ">\\\\n<")
-                                                        input_cell_code[pos] = input_cell_code[pos].replace(">\\r<", ">\\\\r<")
-                                                        input_cell_code[pos] = input_cell_code[pos].replace(">\\t<", ">\\\\t<")
-                                                        input_cell_code[pos] = input_cell_code[pos].replace(">\\b<", ">\\\\b<")
-                                                        input_cell_code[pos] = input_cell_code[pos].replace(">\\115\\141\\170\\151\\155\\157\\106\\116<", ">\\\\115\\\\141\\\\170\\\\151\\\\155\\\\157\\\\106\\\\116<")
-                                                        input_cell_code[pos] = input_cell_code[pos].replace(">\\x4d\\x61\\x78\\x69\\x6d\\x6f\\x46\\x4e<", ">\\\\x4d\\\\x61\\\\x78\\\\x69\\\\x6d\\\\x6f\\\\x46\\\\x4e<")
-                                                        lines[i] = lines[i] + '\n          ' + input_cell_code[pos]
-                                                    lines[i] = lines[i] + '\n' + end_input_code_block
-                                                    lines[i] = lines[i] + '\n' + start_output_code_block
-                                                    for pos in range(len(output_cell_code)):
-                                                        # Get position of first ' character
-                                                        for char_pos, char in enumerate(output_cell_code[pos]):
-                                                            if char == "'":
-                                                                start_position_character = char_pos
-                                                                break
-                                                        # Get position of last , character
-                                                        for char_pos, char in enumerate(output_cell_code[pos][::-1]):
-                                                            if char == ",":
-                                                                end_position_character = len(output_cell_code[pos]) - char_pos
-                                                                break
-                                                        output_cell_code[pos] = output_cell_code[pos][start_position_character:end_position_character]
-                                                        # Remove the first 6 spaces from pos+1 to the end
-                                                        if pos > 0:
-                                                            output_cell_code[pos] = output_cell_code[pos][0] + output_cell_code[pos][7:]
-                                                        output_cell_code[pos] = output_cell_code[pos].replace("</pre>", "").replace(" <pre>", "")
-                                                        # TODO revisar si usar esto solo para el post de python o para todos
-                                                        output_cell_code[pos] = output_cell_code[pos].replace("\\MaximoFN\\", "\\\\MaximoFN\\\\")
-                                                        # Check if the line contains only comments
-                                                        if not (output_cell_code[pos][0]=="'" and output_cell_code[pos][1]=="'"):
-                                                            lines[i] = lines[i] + '\n          ' + output_cell_code[pos]
-                                                    lines[i] = lines[i] + '\n' + end_output_code_block
-
-                                                    if REPLACE:
-                                                        for pos in range(i+1, k+5):
-                                                            lines[pos] = ''
-                                                    else:
-                                                        lines[i] = lines[i] + '\n' + line_i
-
-                                                    # Clear the code list
-                                                    input_cell_code = []
-                                                    output_cell_code = []
-                                                    if STOP_COUNTER:
-                                                        if cont == 1:
-                                                            break
-                                                        cont += 1
-                            else:
-                                # Insert the formatted code blockbefore the line 0
-                                line_i = lines[i]
-                                lines[i] = start_input_code_block
-                                for pos in range(len(input_cell_code)):
-                                    lines[i] = lines[i] + '\n  ' + input_cell_code[pos]
-                                lines[i] = lines[i] + '\n' + end_input_code_block
-                                
-                                if REPLACE:
-                                    for pos in range(i+1, j+3):
-                                        lines[pos] = ''
-                                else:
-                                    lines[i] = lines[i] + '\n' + line_i
+        # Change the rest of the lines to be empty
+        if input_code_block or output_code_block:
+            for k in range(section_start_line+1, section_end_line+1):
+                lines[k] = ''
     
     # Remove empty lines
     need_remove_empty_lines = True

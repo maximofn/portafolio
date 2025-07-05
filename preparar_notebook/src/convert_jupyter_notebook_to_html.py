@@ -437,13 +437,13 @@ def convert_jupyter_notebook_to_html(notebook_path, metadata, notebook_title):
             exit(1)
 
         # Move the generated html file to the destination path if CONVERT_TO_HTML_WITH_NBCONVERT is True
-        try:
-            if CONVERT_TO_HTML_WITH_NBCONVERT: 
+        if CONVERT_TO_HTML_WITH_NBCONVERT: 
+            try:
                 os.system(f"mv {notebook.with_suffix('.html')} {full_destiny_path}")
-        except Exception as e:
-            print(f"Error: {e}")
-            print(f"notebook: {notebook}")
-            exit(1)
+            except Exception as e:
+                print(f"Error: {e}")
+                print(f"notebook: {notebook}")
+                exit(1)
     
         # Find for new classes in the generated html files
         print(f"\tChecking for new classes for {language}...", end=" ")
@@ -511,8 +511,15 @@ const closing_brace = '{closing_brace}';
 </PostLayout>
 """
 
-        with open(full_destiny_path, 'r') as html_file:
-            html_content = html_file.read()
+        if CONVERT_TO_HTML_WITH_NBCONVERT:
+            try:
+                with open(full_destiny_path, 'r') as html_file:
+                    html_content = html_file.read()
+            except Exception as e:
+                print(f"Error: {e}")
+                print(f"full_destiny_path: {full_destiny_path}")
+                exit(1)
+
         index_html = add_index_html(html_content)
         html_content = html_content.replace('<img', '<img onerror="this.parentNode.removeChild(this)"')
         content_html = add_content_html(html_content)

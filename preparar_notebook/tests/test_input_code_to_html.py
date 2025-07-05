@@ -33,6 +33,17 @@ class TestInputCodeToHtml(unittest.TestCase):
 </section>'''
         html = input_code_to_html(input_code)
         self.assertEqual(html, expected_html)
+    
+    def test_multiple_lines_bash_code(self):
+        input_code = "'!sudo apt update &amp;&amp; sudo apt install ffmpeg'"
+        expected_html = '''<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="s1">&#39;!sudo apt update &amp;amp;&amp;amp; sudo apt install ffmpeg&#39;</span>
+</pre></div>
+</div>
+</section>'''
+        html = input_code_to_html(input_code)
+        self.assertEqual(html, expected_html)
 
 if __name__ == '__main__':
     # It's good practice to ensure that only one unittest.main() call remains,

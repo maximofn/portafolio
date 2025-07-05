@@ -6,7 +6,8 @@ def generic_markdown_to_list_specific_markdowns(markdown_content: str) -> list[s
 
     # Regex for different markdown blocks
     # Code block: ```lang\ncode\n```. The block itself does not end with a newline after ``` in the list.
-    code_block_regex = r'^```(?:[a-zA-Z0-9_.-]*)?\n[\s\S]*?^```' # Matched block ends with ```
+    # Allow spaces after initial backticks but normalize them in the result
+    code_block_regex = r'^```\s*([a-zA-Z0-9_.-]*)?\n[\s\S]*?^```' # Matched block ends with ```
 
     # List item line regex (used iteratively)
     # Starts with marker or is indented continuation.
@@ -36,9 +37,19 @@ def generic_markdown_to_list_specific_markdowns(markdown_content: str) -> list[s
         code_match = re.match(code_block_regex, remaining_content, re.MULTILINE)
         if code_match:
             block_content = code_match.group(0)
+            # Normalize the code block by removing extra spaces after initial backticks
+            # Extract the language identifier and normalize it
+            language_match = re.match(r'^```\s*([a-zA-Z0-9_.-]*)?\n', block_content)
+            if language_match:
+                language = language_match.group(1) or ""
+                # Rebuild the block with normalized format
+                code_lines = block_content.split('\n')[1:-1]  # Remove first and last lines (``` lines)
+                normalized_content = f"```{language}\n" + '\n'.join(code_lines) + "\n```"
+                block_content = normalized_content
+            
             block_type = "code"
             blocks.append({block_type: block_content}) # Code blocks are not link-transformed
-            remaining_content = remaining_content[len(block_content):].lstrip('\n')
+            remaining_content = remaining_content[len(code_match.group(0)):].lstrip('\n')
             continue
 
         # 2. Try to match List Block

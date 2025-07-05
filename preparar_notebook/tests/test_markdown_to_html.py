@@ -143,13 +143,23 @@ class TestMarkdownCodeToHtml(unittest.TestCase):
     def test_hello_world_without_space(self):
         markdown_content = "```python\nprint('hello world')\n```"
         html = markdown_code_to_html(markdown_content)
-        expected_html = '<div class=\'highlight\'><code>print(&#39;hello world&#39;)\n</code></div>\n'
+        expected_html = '<div class=\'highlight\'><pre><code>print(&#39;hello world&#39;)\n</code></pre></div>\n'
         self.assertEqual(html, expected_html)
 
     def test_hello_world_with_space(self):
         markdown_content = "``` python\nprint('hello world')\n```"
         html = markdown_code_to_html(markdown_content)
-        expected_html = '<div class=\'highlight\'><code>print(&#39;hello world&#39;)\n</code></div>\n'
+        expected_html = '<div class=\'highlight\'><pre><code>print(&#39;hello world&#39;)\n</code></pre></div>\n'
+        self.assertEqual(html, expected_html)
+
+    def test_two_lines_bash_code(self):
+        markdown_content = '```bash\nsudo apt update\nsudo apt install fail2ban\n```'
+        html = markdown_code_to_html(markdown_content)
+        expected_html = '''<section class="section-block-markdown-cell">
+      <p>La instalación es muy sencilla, solo tenemos que hacer</p>
+      <div class='highlight'><pre><code class="language-bash">sudo apt update<br>sudo apt install fail2ban
+      </code></pre></div>
+      </section>'''
         self.assertEqual(html, expected_html)
 
 class TestMarkdownImageToHtml(unittest.TestCase):
@@ -869,8 +879,8 @@ print("Hello, World!")
 """
         expected_html = """
 <section class="section-block-markdown-cell">
-<div class='highlight'><code class="language-python">print("Hello, World!")
-</code></div>
+<div class='highlight'><pre><code class="language-python">print("Hello, World!")
+</code></pre></div>
 </section>
 """
         self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
@@ -889,8 +899,8 @@ print("Hello, World!")
 <section class="section-block-markdown-cell">
 <h1 id="Hello World">Hello World<a class="anchor-link" href="#Hello World">¶</a></h1>
 <p>This is a test of the markdown to html converter.</p>
-<div class='highlight'><code class="language-python">print("Hello, World!")
-</code></div>
+<div class='highlight'><pre><code class="language-python">print("Hello, World!")
+</code></pre></div>
 </section>
 """
         self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
@@ -913,8 +923,8 @@ print("Hello, World!")
 <section class="section-block-markdown-cell">
 <h1 id="Hello World">Hello World<a class="anchor-link" href="#Hello World">¶</a></h1>
 <p>This is a test of the markdown to html converter.</p>
-<div class='highlight'><code class="language-python">print("Hello, World!")
-</code></div>
+<div class='highlight'><pre><code class="language-python">print("Hello, World!")
+</code></pre></div>
 <table>
   <thead>
     <tr>
@@ -953,8 +963,8 @@ print("Hello, World!")
 <section class="section-block-markdown-cell">
 <h1 id="Hello World">Hello World<a class="anchor-link" href="#Hello World">¶</a></h1>
 <p>This is a test of the markdown to html converter.</p>
-<div class='highlight'><code class="language-python">print("Hello, World!")
-</code></div>
+<div class='highlight'><pre><code class="language-python">print("Hello, World!")
+</code></pre></div>
 <table>
   <thead>
     <tr>
@@ -997,8 +1007,8 @@ print("Hello, World!")
 <section class="section-block-markdown-cell">
 <h1 id="Hello World">Hello World<a class="anchor-link" href="#Hello World">¶</a></h1>
 <p>This is a test of the markdown to html converter.</p>
-<div class='highlight'><code class="language-python">print("Hello, World!")
-</code></div>
+<div class='highlight'><pre><code class="language-python">print("Hello, World!")
+</code></pre></div>
 <table>
   <thead>
     <tr>

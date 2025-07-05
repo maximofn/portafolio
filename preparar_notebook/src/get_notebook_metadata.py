@@ -61,6 +61,7 @@ def get_notebook_metadata(notebook_path):
     keywords_en = None
     keywords_pt = None
     image = None
+    image_hover_path = None
     witdh = None
     height = None
     image_extension = None

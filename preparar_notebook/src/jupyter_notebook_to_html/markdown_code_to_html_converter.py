@@ -56,8 +56,8 @@ def markdown_code_to_html(markdown_content: str, include_language_class: bool = 
 
         # Add trailing newline when NOT including language class (for backward compatibility with tests)
         if include_language_class:
-            return f"<pre><code{lang_class}>{processed_code}\n</code></pre>"
+            return f"<div class='highlight'><code{lang_class}>{processed_code}\n</code></div>"
         else:
-            return f"<pre><code{lang_class}>{processed_code}\n</code></pre>\n"
+            return f"<div class='highlight'><code{lang_class}>{processed_code}\n</code></div>\n"
     else:
         return markdown_content

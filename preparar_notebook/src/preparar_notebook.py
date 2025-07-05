@@ -107,13 +107,3 @@ if __name__ == "__main__":
             if ask_for_something("\nDo you want to add the astro metadata to the json file? (y/n)", ['y', 'yes'], ['n', 'no']):
                 print("\nAdding to json")
                 add_page_to_its_json_file_from_metadata(notebook_metadata, notebook_path)
-
-    # Add to sitemap
-    if not no_add_to_sitemap:
-        if yes_add_to_sitemap:
-            print("\nAdding to sitemap")
-            add_page_to_its_sitemap_from_metadata(notebook_metadata, notebook_path)
-        else:
-            if ask_for_something("\nDo you want to add the astro metadata to the sitemap file? (y/n)", ['y', 'yes'], ['n', 'no']):
-                print("\nAdding to sitemap")
-                add_page_to_its_sitemap_from_metadata(notebook_metadata, notebook_path)

@@ -9,7 +9,7 @@ from convert_jupyter_notebook_to_html import add_index_html, add_content_html, f
 
 class Test_jupyter_notebook_to_html(unittest.TestCase):
     def setUp(self):
-        self.html_file = "preparar_notebook/tests/test_jupyter_notebook_to_html.html"
+        self.html_file = "tests/test_jupyter_notebook_to_html.html"
         with open(self.html_file, "r") as file:
             self.html_content = file.read()
         self.open_brace = "{"
@@ -19,7 +19,7 @@ class Test_jupyter_notebook_to_html(unittest.TestCase):
     
     def test_add_index_html(self):
         index_html = add_index_html(self.html_content)
-        with open("preparar_notebook/tests/test_jupyter_notebook_to_html_index.html", "r") as file:
+        with open("tests/test_jupyter_notebook_to_html_index.html", "r") as file:
             true_index_html = file.read()
 
         # split the html content in lines
@@ -30,7 +30,7 @@ class Test_jupyter_notebook_to_html(unittest.TestCase):
 
     def test_add_content_html(self):
         content_html = add_content_html(self.html_content)
-        with open("preparar_notebook/tests/test_jupyter_notebook_to_html_content.html", "r") as file:
+        with open("tests/test_jupyter_notebook_to_html_content.html", "r") as file:
             true_content_html = file.read()
 
         # split the html content in lines

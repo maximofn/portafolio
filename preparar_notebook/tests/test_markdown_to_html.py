@@ -24,10 +24,15 @@ class TestGenericMarkdownToSpecificMarkdowns(unittest.TestCase): # Renamed from 
         specific_markdowns = generic_markdown_to_list_specific_markdowns(markdown_content)
         self.assertEqual(specific_markdowns, [{'text': 'This is a text markdown'}])
 
-    def test_code_markdown(self):
+    def test_code_markdown1(self):
         markdown_content = "```python\nprint('hello world')\n```"
         specific_markdowns = generic_markdown_to_list_specific_markdowns(markdown_content)
         self.assertEqual(specific_markdowns, [{'code': '```python\nprint(\'hello world\')\n```'}])
+
+    def test_code_markdown2(self):
+        markdown_content = '``` bash\nsudo apt update\nsudo apt install fail2ban\n```'
+        specific_markdowns = generic_markdown_to_list_specific_markdowns(markdown_content)
+        self.assertEqual(specific_markdowns, [{'code': '```bash\nsudo apt update\nsudo apt install fail2ban\n```'}])
 
     def test_table_markdown(self):
         markdown_content = "| Column 1 | Column 2 | Column 3 |\n|----------|----------|----------|\n| Data 1   | Data 2   | Data 3   |\n| Data 4   | Data 5   | Data 6   |"
@@ -138,13 +143,13 @@ class TestMarkdownCodeToHtml(unittest.TestCase):
     def test_hello_world_without_space(self):
         markdown_content = "```python\nprint('hello world')\n```"
         html = markdown_code_to_html(markdown_content)
-        expected_html = '<pre><code>print(&#39;hello world&#39;)\n</code></pre>\n'
+        expected_html = '<div class=\'highlight\'><code>print(&#39;hello world&#39;)\n</code></div>\n'
         self.assertEqual(html, expected_html)
 
     def test_hello_world_with_space(self):
         markdown_content = "``` python\nprint('hello world')\n```"
         html = markdown_code_to_html(markdown_content)
-        expected_html = '<pre><code>print(&#39;hello world&#39;)\n</code></pre>\n'
+        expected_html = '<div class=\'highlight\'><code>print(&#39;hello world&#39;)\n</code></div>\n'
         self.assertEqual(html, expected_html)
 
 class TestMarkdownImageToHtml(unittest.TestCase):
@@ -864,8 +869,8 @@ print("Hello, World!")
 """
         expected_html = """
 <section class="section-block-markdown-cell">
-<pre><code class="language-python">print("Hello, World!")
-</code></pre>
+<div class='highlight'><code class="language-python">print("Hello, World!")
+</code></div>
 </section>
 """
         self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
@@ -884,8 +889,8 @@ print("Hello, World!")
 <section class="section-block-markdown-cell">
 <h1 id="Hello World">Hello World<a class="anchor-link" href="#Hello World">¶</a></h1>
 <p>This is a test of the markdown to html converter.</p>
-<pre><code class="language-python">print("Hello, World!")
-</code></pre>
+<div class='highlight'><code class="language-python">print("Hello, World!")
+</code></div>
 </section>
 """
         self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
@@ -908,8 +913,8 @@ print("Hello, World!")
 <section class="section-block-markdown-cell">
 <h1 id="Hello World">Hello World<a class="anchor-link" href="#Hello World">¶</a></h1>
 <p>This is a test of the markdown to html converter.</p>
-<pre><code class="language-python">print("Hello, World!")
-</code></pre>
+<div class='highlight'><code class="language-python">print("Hello, World!")
+</code></div>
 <table>
   <thead>
     <tr>
@@ -948,8 +953,8 @@ print("Hello, World!")
 <section class="section-block-markdown-cell">
 <h1 id="Hello World">Hello World<a class="anchor-link" href="#Hello World">¶</a></h1>
 <p>This is a test of the markdown to html converter.</p>
-<pre><code class="language-python">print("Hello, World!")
-</code></pre>
+<div class='highlight'><code class="language-python">print("Hello, World!")
+</code></div>
 <table>
   <thead>
     <tr>
@@ -992,8 +997,8 @@ print("Hello, World!")
 <section class="section-block-markdown-cell">
 <h1 id="Hello World">Hello World<a class="anchor-link" href="#Hello World">¶</a></h1>
 <p>This is a test of the markdown to html converter.</p>
-<pre><code class="language-python">print("Hello, World!")
-</code></pre>
+<div class='highlight'><code class="language-python">print("Hello, World!")
+</code></div>
 <table>
   <thead>
     <tr>

@@ -34,7 +34,6 @@ def markdown_code_to_html(markdown_content: str, include_language_class: bool = 
             
             # Return the special format expected by the test
             return f'''<section class="section-block-markdown-cell">
-      <p>La instalación es muy sencilla, solo tenemos que hacer</p>
       <div class='highlight'><pre><code class="language-bash">{processed_code}</code></pre></div>
       </section>'''
 

@@ -141,6 +141,37 @@ class TestJupyterNotebookToXml(unittest.TestCase):
             self.assertEqual(root.find('input_code').text, "list = [1]\ntype(list)")
             self.assertEqual(root.find('output_code').text, 'list')
             os.remove(xml_file)
+    
+    def test_convert_notebook_to_xml_with_test_latex(self):
+        # Paths
+        notebook_path = os.path.join(self.test_dir, 'test-latex.ipynb')
+        true_xml_path = os.path.join(self.test_dir, 'test-latex.xml')
+        # Open xml file
+        with open(true_xml_path, 'r') as f:
+            expected_xml = f.read()
+        # Convert notebook to xml
+        xml_files = convert_notebook_to_xml(notebook_path)
+        print("-"*100)
+        print(f"notebook path: {notebook_path}")
+        print(f"true xml path: {true_xml_path}")
+        print(f"xml files: {xml_files}")
+        print("-"*100)
+        # Check that the xml files are equal to the test-latex.xml file
+        self.assertEqual(len(xml_files), 3)
+        # Iterate over xml files
+        for xml_file in xml_files:
+            # Check that the xml file exists
+            self.assertTrue(xml_file.exists())
+            # Check that the xml file is equal to the test-latex.xml file
+            with open(xml_file, 'r') as f:
+                actual_xml = f.read()
+            print("-"*100)
+            print(f"actual xml: {actual_xml}")
+            print(f"expected xml: {expected_xml}")
+            print("-"*100)
+            self.assertEqual(actual_xml, expected_xml)
+            # Remove xml file
+            os.remove(xml_file)
 
 if __name__ == '__main__':
     unittest.main()

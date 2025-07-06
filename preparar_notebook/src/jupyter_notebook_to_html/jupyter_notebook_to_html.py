@@ -36,6 +36,324 @@ def _process_inline_code(text: str) -> str:
     
     return re.sub(pattern, replace_inline_code, text)
 
+def _process_inline_math(text: str) -> str:
+    """
+    Processes inline math (text between single dollar signs) in a text string.
+    Converts $math$ to <span class="math-inline">math</span> and converts LaTeX symbols to HTML entities.
+    """
+    # Pattern to match inline math: $text$
+    # Use non-greedy matching to handle multiple inline math blocks in one line
+    pattern = r'\$([^$]+)\$'
+    
+    def replace_inline_math(match):
+        math_content = match.group(1)
+        # Convert LaTeX symbols to HTML entities
+        math_content = _convert_latex_symbols_to_html(math_content)
+        return f'<span class="math-inline">{math_content}</span>'
+    
+    return re.sub(pattern, replace_inline_math, text)
+
+def _convert_latex_symbols_to_html(text: str) -> str:
+    """
+    Converts LaTeX mathematical symbols to HTML entities.
+    
+    Args:
+        text: LaTeX text containing mathematical symbols
+        
+    Returns:
+        HTML text with LaTeX symbols converted to HTML entities
+    """
+    def replace_sqrt_with_balanced_braces(text: str) -> str:
+        """
+        Replaces \sqrt{...} with &radic;(...) handling nested braces correctly.
+        """
+        result = []
+        i = 0
+        while i < len(text):
+            if text[i:].startswith(r'\sqrt{'):
+                # Found \sqrt{, now find the matching closing brace
+                start_pos = i + 6  # Position after '\sqrt{'
+                brace_count = 1
+                j = start_pos
+                
+                while j < len(text) and brace_count > 0:
+                    if text[j] == '{':
+                        brace_count += 1
+                    elif text[j] == '}':
+                        brace_count -= 1
+                    j += 1
+                
+                if brace_count == 0:
+                    # Found matching closing brace
+                    content = text[start_pos:j-1]  # Content between braces
+                    result.append(f'&radic;({content})')
+                    i = j
+                else:
+                    # No matching closing brace found, keep original
+                    result.append(text[i])
+                    i += 1
+            else:
+                result.append(text[i])
+                i += 1
+        
+        return ''.join(result)
+    
+    def replace_superscripts_with_html(text: str) -> str:
+        """
+        Replaces ^{...} and ^n with <sup>...</sup> handling nested expressions correctly.
+        Supports both ^{complex_expression} and ^single_character formats.
+        """
+        result = []
+        i = 0
+        while i < len(text):
+            if i < len(text) - 1 and text[i] == '^':
+                if i + 1 < len(text) and text[i + 1] == '{':
+                    # Found ^{, now find the matching closing brace
+                    start_pos = i + 2  # Position after '^{'
+                    brace_count = 1
+                    j = start_pos
+                    
+                    while j < len(text) and brace_count > 0:
+                        if text[j] == '{':
+                            brace_count += 1
+                        elif text[j] == '}':
+                            brace_count -= 1
+                        j += 1
+                    
+                    if brace_count == 0:
+                        # Found matching closing brace
+                        content = text[start_pos:j-1]  # Content between braces
+                        # Recursively process the content in case there are nested superscripts
+                        processed_content = replace_superscripts_with_html(content)
+                        result.append(f'<sup>{processed_content}</sup>')
+                        i = j
+                    else:
+                        # No matching closing brace found, keep original
+                        result.append(text[i])
+                        i += 1
+                elif i + 1 < len(text) and (text[i + 1].isalnum() or text[i + 1] in '-+'):
+                    # Found ^n format (single character or number, including negative)
+                    start_pos = i + 1
+                    j = start_pos
+                    
+                    # Handle negative sign
+                    if text[j] == '-' or text[j] == '+':
+                        j += 1
+                    
+                    # Collect consecutive alphanumeric characters
+                    while j < len(text) and text[j].isalnum():
+                        j += 1
+                    
+                    if j > start_pos:
+                        content = text[start_pos:j]
+                        result.append(f'<sup>{content}</sup>')
+                        i = j
+                    else:
+                        # No valid superscript content found
+                        result.append(text[i])
+                        i += 1
+                else:
+                    # ^ not followed by { or alphanumeric, keep original
+                    result.append(text[i])
+                    i += 1
+            else:
+                result.append(text[i])
+                i += 1
+        
+        return ''.join(result)
+
+    # First handle \sqrt{} with balanced braces
+    text = replace_sqrt_with_balanced_braces(text)
+    
+    # Then handle superscripts ^{...} and ^n
+    text = replace_superscripts_with_html(text)
+    
+    def replace_subscripts_with_html(text: str) -> str:
+        """
+        Replaces _{...} and _n with <sub>...</sub> handling nested expressions correctly.
+        Supports both _{complex_expression} and _single_character formats.
+        """
+        result = []
+        i = 0
+        while i < len(text):
+            if i < len(text) - 1 and text[i] == '_':
+                if i + 1 < len(text) and text[i + 1] == '{':
+                    # Found _{, now find the matching closing brace
+                    start_pos = i + 2  # Position after '_{'
+                    brace_count = 1
+                    j = start_pos
+                    
+                    while j < len(text) and brace_count > 0:
+                        if text[j] == '{':
+                            brace_count += 1
+                        elif text[j] == '}':
+                            brace_count -= 1
+                        j += 1
+                    
+                    if brace_count == 0:
+                        # Found matching closing brace
+                        content = text[start_pos:j-1]  # Content between braces
+                        # Recursively process the content in case there are nested subscripts
+                        processed_content = replace_subscripts_with_html(content)
+                        result.append(f'<sub>{processed_content}</sub>')
+                        i = j
+                    else:
+                        # No matching closing brace found, keep original
+                        result.append(text[i])
+                        i += 1
+                elif i + 1 < len(text) and (text[i + 1].isalnum() or text[i + 1] in '-+'):
+                    # Found _n format (single character or number, including negative)
+                    start_pos = i + 1
+                    j = start_pos
+                    
+                    # Handle negative sign
+                    if text[j] == '-' or text[j] == '+':
+                        j += 1
+                    
+                    # Collect consecutive alphanumeric characters
+                    while j < len(text) and text[j].isalnum():
+                        j += 1
+                    
+                    if j > start_pos:
+                        content = text[start_pos:j]
+                        result.append(f'<sub>{content}</sub>')
+                        i = j
+                    else:
+                        # No valid subscript content found
+                        result.append(text[i])
+                        i += 1
+                else:
+                    # _ not followed by { or alphanumeric, keep original
+                    result.append(text[i])
+                    i += 1
+            else:
+                result.append(text[i])
+                i += 1
+        
+        return ''.join(result)
+
+    # Then handle subscripts _{...} and _n
+    text = replace_subscripts_with_html(text)
+    
+    def replace_fractions_with_html(text: str) -> str:
+        """
+        Replaces \\frac{numerator}{denominator} with HTML fraction structure.
+        """
+        result = []
+        i = 0
+        while i < len(text):
+            if text[i:].startswith(r'\frac{'):
+                # Found \frac{, now find the numerator and denominator
+                start_pos = i + 6  # Position after '\frac{'
+                brace_count = 1
+                j = start_pos
+                
+                # Find the end of the numerator
+                while j < len(text) and brace_count > 0:
+                    if text[j] == '{':
+                        brace_count += 1
+                    elif text[j] == '}':
+                        brace_count -= 1
+                    j += 1
+                
+                if brace_count == 0 and j < len(text) and text[j] == '{':
+                    # Found numerator, now find denominator
+                    numerator = text[start_pos:j-1]
+                    
+                    # Start finding denominator
+                    denom_start = j + 1  # Position after second '{'
+                    brace_count = 1
+                    k = denom_start
+                    
+                    while k < len(text) and brace_count > 0:
+                        if text[k] == '{':
+                            brace_count += 1
+                        elif text[k] == '}':
+                            brace_count -= 1
+                        k += 1
+                    
+                    if brace_count == 0:
+                        # Found complete fraction
+                        denominator = text[denom_start:k-1]
+                        
+                        # Recursively process numerator and denominator for nested expressions
+                        processed_numerator = _convert_latex_symbols_to_html(numerator)
+                        processed_denominator = _convert_latex_symbols_to_html(denominator)
+                        
+                        fraction_html = f'<span class="math-fraction"><span class="math-fraction-numerator">{processed_numerator}</span><span class="math-fraction-denominator">{processed_denominator}</span></span>'
+                        result.append(fraction_html)
+                        i = k
+                    else:
+                        # No matching closing brace for denominator
+                        result.append(text[i])
+                        i += 1
+                else:
+                    # No denominator found or malformed fraction
+                    result.append(text[i])
+                    i += 1
+            else:
+                result.append(text[i])
+                i += 1
+        
+        return ''.join(result)
+    
+    # Handle fractions \\frac{numerator}{denominator}
+    text = replace_fractions_with_html(text)
+    
+    # Dictionary mapping other LaTeX symbols to HTML entities
+    latex_to_html = {
+        r'\\cdots': r'···',                     # Centered dots: \cdots -> ···
+        r'\\cdot': r'·',                        # Centered dot: \cdot -> ·
+        r'\\sum': r'&sum;',                     # Summation: \sum -> ∑
+        r'\\prod': r'&prod;',                   # Product: \prod -> ∏
+        r'\\int': r'&int;',                     # Integral: \int -> ∫
+        r'\\alpha': r'&alpha;',                 # Alpha: \alpha -> α
+        r'\\beta': r'&beta;',                   # Beta: \beta -> β
+        r'\\gamma': r'&gamma;',                 # Gamma: \gamma -> γ
+        r'\\delta': r'&delta;',                 # Delta: \delta -> δ
+        r'\\epsilon': r'&epsilon;',             # Epsilon: \epsilon -> ε
+        r'\\theta': r'&theta;',                 # Theta: \theta -> θ
+        r'\\lambda': r'&lambda;',               # Lambda: \lambda -> λ
+        r'\\mu': r'&mu;',                       # Mu: \mu -> μ
+        r'\\pi': r'&pi;',                       # Pi: \pi -> π
+        r'\\sigma': r'&sigma;',                 # Sigma: \sigma -> σ
+        r'\\tau': r'&tau;',                     # Tau: \tau -> τ
+        r'\\phi': r'&phi;',                     # Phi: \phi -> φ
+        r'\\omega': r'&omega;',                 # Omega: \omega -> ω
+        r'\\infty': r'&infin;',                 # Infinity: \infty -> ∞
+        r'\\pm': r'&plusmn;',                   # Plus-minus: \pm -> ±
+        r'\\times': r'&times;',                 # Multiplication: \times -> ×
+        r'\\div': r'&divide;',                  # Division: \div -> ÷
+        r'\\le': r'&le;',                       # Less than or equal: \le -> ≤
+        r'\\ge': r'&ge;',                       # Greater than or equal: \ge -> ≥
+        r'\\ne': r'&ne;',                       # Not equal: \ne -> ≠
+        r'\\approx': r'&asymp;',                # Approximately equal: \approx -> ≈
+    }
+    
+    # Apply all other replacements
+    for latex_pattern, html_replacement in latex_to_html.items():
+        text = re.sub(latex_pattern, html_replacement, text)
+    
+    return text
+
+def _process_block_math(text: str) -> str:
+    """
+    Processes block math (text between double dollar signs) in a text string.
+    Converts $$math$$ to <span class="math-display">math</span> and converts LaTeX symbols to HTML entities.
+    """
+    # Pattern to match block math: $$text$$
+    # Use non-greedy matching to handle multiple block math expressions
+    # The pattern captures everything between $$ and $$ including special characters
+    pattern = r'\$\$(.*?)\$\$'
+    
+    def replace_block_math(match):
+        math_content = match.group(1)
+        # Convert LaTeX symbols to HTML entities
+        math_content = _convert_latex_symbols_to_html(math_content)
+        return f'<span class="math-display">{math_content}</span>'
+    
+    return re.sub(pattern, replace_block_math, text, flags=re.DOTALL)
+
 def _process_inline_links(text: str) -> str:
     """
     Processes inline links in a text string.
@@ -74,6 +392,10 @@ def _process_text_block(text_content: str) -> str:
         # Create the header with anchor link
         return f'<h{level} id="{header_id}">{corrected_title}<a class="anchor-link" href="#{header_id}">¶</a></h{level}>'
     
+    # First, process block math expressions across the entire text
+    # This needs to happen before splitting into lines
+    text_content = _process_block_math(text_content)
+    
     # Handle headers (H1 to H6) with anchor links
     # Order matters: H6 before H1 to avoid partial matches
     text_content = re.sub(r"^\s*###### (.*)", lambda m: create_header_with_anchor(6, m.group(1)), text_content, flags=re.MULTILINE)
@@ -83,26 +405,114 @@ def _process_text_block(text_content: str) -> str:
     text_content = re.sub(r"^\s*## (.*)", lambda m: create_header_with_anchor(2, m.group(1)), text_content, flags=re.MULTILINE)
     text_content = re.sub(r"^\s*# (.*)", lambda m: create_header_with_anchor(1, m.group(1)), text_content, flags=re.MULTILINE)
 
-    # Wrap remaining lines that are not headers in <p> tags
-    # This is a simplified approach. True paragraph handling is more complex.
+    # Now handle math display blocks that span multiple lines
+    # We need to process the entire span as one unit and wrap it in <p> tags
+    # Use a more specific pattern that handles nested spans correctly
+    def find_math_display_blocks(text):
+        """Find complete math-display blocks with proper nesting handling"""
+        results = []
+        start_pattern = r'<span class="math-display">'
+        end_pattern = r'</span>'
+        
+        start_pos = 0
+        while True:
+            start_match = re.search(start_pattern, text[start_pos:])
+            if not start_match:
+                break
+            
+            # Found start of math-display
+            actual_start = start_pos + start_match.start()
+            content_start = start_pos + start_match.end()
+            
+            # Now find the matching closing </span>
+            span_count = 1
+            pos = content_start
+            while pos < len(text) and span_count > 0:
+                span_open = text.find('<span', pos)
+                span_close = text.find('</span>', pos)
+                
+                if span_close == -1:
+                    break
+                
+                if span_open != -1 and span_open < span_close:
+                    span_count += 1
+                    pos = span_open + 5
+                else:
+                    span_count -= 1
+                    if span_count == 0:
+                        # Found the matching closing tag
+                        content = text[content_start:span_close]
+                        full_match = text[actual_start:span_close + 7]  # +7 for '</span>'
+                        results.append((full_match, content, actual_start, span_close + 7))
+                        break
+                    pos = span_close + 7
+            
+            start_pos = span_close + 7 if span_count == 0 else len(text)
+        
+        return results
+    
+    # Process math display blocks
+    math_blocks = find_math_display_blocks(text_content)
+    for full_match, content, start, end in reversed(math_blocks):  # Reverse to maintain positions
+        # Replace any newlines in math content with spaces to keep it on one line
+        processed_content = re.sub(r'\s+', ' ', content.strip())
+        replacement = f'<p><span class="math-display">{processed_content}</span></p>'
+        text_content = text_content[:start] + replacement + text_content[end:]
+
+    
+    # Check if the content contains complete math display blocks
+    # If so, don't process line by line to avoid breaking HTML structure
+    if text_content.strip().startswith('<p><span class="math-display">') and text_content.strip().endswith('</span></p>'):
+        # The content is already a complete math display block
+        # Just return it as is to avoid breaking the HTML structure
+        return text_content.strip()
+    
+    # Check for mixed content with math display blocks
+    # Remove extra <p> tags that might be wrapping math display blocks
+    text_content = re.sub(r'<p>(<p><span class="math-display">.*?</span></p>)</p>', r'\1', text_content, flags=re.DOTALL)
+    
+    # Now process the remaining content line by line
     processed_lines = []
     for line in text_content.split('\n'):
         if line.strip() == "":
             continue # Skip empty lines for now, though they might signify paragraph breaks
         if re.match(r"<h[1-6].*</h[1-6]>", line.strip()):
             processed_lines.append(line.strip())
+        elif re.match(r'<p><span class="math-display">', line.strip()):
+            # Math display blocks are already processed and wrapped in <p> tags
+            # Check if this line contains the complete math display block
+            if '</span></p>' in line.strip():
+                # Complete math display block in one line
+                processed_lines.append(line.strip())
+            else:
+                # Multi-line math display block, collect all lines until closing tag
+                math_lines = [line.strip()]
+                # This is a simplified approach - in a real implementation you'd want
+                # more robust HTML parsing
+                processed_lines.append(line.strip())
         else:
             # Avoid wrapping already wrapped content or things that shouldn't be wrapped
             # This is a basic check.
             if not line.strip().startswith("<"): # Simplistic check
-                # Process inline code and links before wrapping in <p> tags
                 processed_line = _process_inline_code(line.strip())
+                processed_line = _process_inline_math(processed_line)
                 processed_line = _process_inline_links(processed_line)
                 processed_lines.append(f"<p>{processed_line}</p>")
             else: # Already some HTML, or other structure
                  processed_lines.append(line.strip())
 
-    return "\n".join(processed_lines)
+    result = "\n".join(processed_lines)
+    
+    # Final cleanup: remove nested <p> tags around math display blocks
+    # Pattern to match text ending with colon followed by nested math display
+    result = re.sub(r'<p>(.*?): <p><span class="math-display">(.*?)</span></p></p>', 
+                   r'<p>\1: <span class="math-display">\2</span></p>', result, flags=re.DOTALL)
+    
+    # Also handle the case where there's no text before the math display
+    result = re.sub(r'<p><p><span class="math-display">(.*?)</span></p></p>', 
+                   r'<p><span class="math-display">\1</span></p>', result, flags=re.DOTALL)
+    
+    return result
 
 def input_code_to_html(code_content: str) -> str:
     """

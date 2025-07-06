@@ -68,6 +68,11 @@ clases = [
     'nx',
     'gh',
     'ge',
+    'math-inline',
+    'math-display',
+    'math-fraction',
+    'math-fraction-numerator',
+    'math-fraction-denominator',
 ]
 
 def check_for_new_classes(path_file):

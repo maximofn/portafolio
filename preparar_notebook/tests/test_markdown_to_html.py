@@ -156,7 +156,6 @@ class TestMarkdownCodeToHtml(unittest.TestCase):
         markdown_content = '```bash\nsudo apt update\nsudo apt install fail2ban\n```'
         html = markdown_code_to_html(markdown_content)
         expected_html = '''<section class="section-block-markdown-cell">
-      <p>La instalación es muy sencilla, solo tenemos que hacer</p>
       <div class='highlight'><pre><code class="language-bash">sudo apt update<br>sudo apt install fail2ban</code></pre></div>
       </section>'''
         self.assertEqual(html, expected_html)
@@ -870,6 +869,51 @@ This is a test of the markdown to html converter.
 """
         self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
     
+    def test_markdown_to_html_with_inline_latex(self):
+        markdown = 'La distancia euclídea entre dos puntos $p$ y $q$ se calcula como:'
+        expected_html = """
+<section class="section-block-markdown-cell">
+<p>La distancia euclídea entre dos puntos <span class="math-inline">p</span> y <span class="math-inline">q</span> se calcula como:</p>
+</section>
+"""
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+    
+    def test_markdown_to_html_latex_block(self):
+        markdown = '$$\nd(p,q) = \\sqrt{(p_1 - q_1)^2 + (p_2 - q_2)^2 + \\cdots + (p_n - q_n)^2} = \\sqrt{\\sum_{i=1}^n (p_i - q_i)^2}\n$$'
+        expected_html = """
+<section class="section-block-markdown-cell">
+<p><span class="math-display">d(p,q) = &radic;((p<sub>1</sub> - q<sub>1</sub>)<sup>2</sup> + (p<sub>2</sub> - q<sub>2</sub>)<sup>2</sup> + ··· + (p<sub>n</sub> - q<sub>n</sub>)<sup>2</sup>) = &radic;(&sum;<sub>i=1</sub><sup>n</sup> (p<sub>i</sub> - q<sub>i</sub>)<sup>2</sup>)</span></p>
+</section>
+"""
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_latex_block_with_fractions(self):
+        markdown = '$$\nsimilitud(U,V) = \\frac{U \\cdot V}{\\|U\\| \\|V\\|}\n$$'
+        expected_html = """
+<section class="section-block-markdown-cell">
+<p><span class="math-display">similitud(U,V) = <span class="math-fraction"><span class="math-fraction-numerator">U · V</span><span class="math-fraction-denominator">\\|U\\| \\|V\\|</span></span></span></p>
+</section>
+"""
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+    
+    def test_markdown_to_html_latex_superscripts(self):
+        markdown = '$$E = mc^2, x^{235}, a^{n+1}, e^{-x^2}$$'
+        expected_html = """
+<section class="section-block-markdown-cell">
+<p><span class="math-display">E = mc<sup>2</sup>, x<sup>235</sup>, a<sup>n+1</sup>, e<sup>-x<sup>2</sup></sup></span></p>
+</section>
+"""
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_latex_subscripts(self):
+        markdown = '$$x_1, a_{123}, b_{n+1}, c_{i,j}$$'
+        expected_html = """
+<section class="section-block-markdown-cell">
+<p><span class="math-display">x<sub>1</sub>, a<sub>123</sub>, b<sub>n+1</sub>, c<sub>i,j</sub></span></p>
+</section>
+"""
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+    
     def test_markdown_to_html_with_code(self):
         markdown = """
 ```python
@@ -1093,6 +1137,175 @@ print("Hello, World!")
 <p>Cargamos el audio de este anuncio antiguo (de 1987) de Micro Machines</p>
 <iframe width="560" height="315" src="https://www.youtube.com/embed/zLP6oT3uqV8" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 </section>'''
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_latex_mixed_inline_and_display(self):
+        markdown = 'La ecuación $E = mc^2$ es famosa. También tenemos: $$F = ma$$'
+        expected_html = """
+<section class="section-block-markdown-cell">
+<p>La ecuación <span class="math-inline">E = mc<sup>2</sup></span> es famosa. También tenemos: <span class="math-display">F = ma</span></p>
+</section>
+"""
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_latex_fractions(self):
+        markdown = '$$\\frac{a}{b} = \\frac{c}{d}$$'
+        expected_html = """
+<section class="section-block-markdown-cell">
+<p><span class="math-display"><span class="math-fraction"><span class="math-fraction-numerator">a</span><span class="math-fraction-denominator">b</span></span> = <span class="math-fraction"><span class="math-fraction-numerator">c</span><span class="math-fraction-denominator">d</span></span></span></p>
+</section>
+"""
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_latex_nested_fractions(self):
+        markdown = '$$\\frac{\\frac{a}{b}}{\\frac{c}{d}} = \\frac{ad}{bc}$$'
+        expected_html = """
+<section class="section-block-markdown-cell">
+<p><span class="math-display"><span class="math-fraction"><span class="math-fraction-numerator"><span class="math-fraction"><span class="math-fraction-numerator">a</span><span class="math-fraction-denominator">b</span></span></span><span class="math-fraction-denominator"><span class="math-fraction"><span class="math-fraction-numerator">c</span><span class="math-fraction-denominator">d</span></span></span></span> = <span class="math-fraction"><span class="math-fraction-numerator">ad</span><span class="math-fraction-denominator">bc</span></span></span></p>
+</section>
+"""
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_latex_fraction_with_superscripts(self):
+        markdown = '$$\\frac{x^2 + 1}{x^3 - 1}$$'
+        expected_html = """
+<section class="section-block-markdown-cell">
+<p><span class="math-display"><span class="math-fraction"><span class="math-fraction-numerator">x<sup>2</sup> + 1</span><span class="math-fraction-denominator">x<sup>3</sup> - 1</span></span></span></p>
+</section>
+"""
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_latex_inline_fraction(self):
+        markdown = 'La derivada de $\\frac{x^2}{2}$ es $x$.'
+        expected_html = """
+<section class="section-block-markdown-cell">
+<p>La derivada de <span class="math-inline"><span class="math-fraction"><span class="math-fraction-numerator">x<sup>2</sup></span><span class="math-fraction-denominator">2</span></span></span> es <span class="math-inline">x</span>.</p>
+</section>
+"""
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_latex_complex_expression(self):
+        markdown = '$$\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}$$'
+        expected_html = """
+<section class="section-block-markdown-cell">
+<p><span class="math-display">&int;<sub>-&infin;</sub><sup>&infin;</sup> e<sup>-x<sup>2</sup></sup> dx = &radic;(&pi;)</span></p>
+</section>
+"""
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_latex_matrix_notation(self):
+        markdown = '$$\\begin{matrix} a & b \\\\ c & d \\end{matrix}$$'
+        expected_html = """
+<section class="section-block-markdown-cell">
+<p><span class="math-display">\\begin{matrix} a & b \\\\ c & d \\end{matrix}</span></p>
+</section>
+"""
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_latex_inline_with_subscripts_superscripts(self):
+        markdown = 'La variable $x_i^2$ representa el cuadrado del elemento $i$-ésimo.'
+        expected_html = """
+<section class="section-block-markdown-cell">
+<p>La variable <span class="math-inline">x<sub>i</sub><sup>2</sup></span> representa el cuadrado del elemento <span class="math-inline">i</span>-ésimo.</p>
+</section>
+"""
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_latex_multiple_display_equations(self):
+        markdown = '''Primera ecuación:
+$$a^2 + b^2 = c^2$$
+
+Segunda ecuación:
+$$E = mc^2$$'''
+        expected_html = """
+<section class="section-block-markdown-cell">
+<p>Primera ecuación:</p>
+<p><span class="math-display">a<sup>2</sup> + b<sup>2</sup> = c<sup>2</sup></span></p>
+<p>Segunda ecuación:</p>
+<p><span class="math-display">E = mc<sup>2</sup></span></p>
+</section>
+"""
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_latex_greek_letters(self):
+        markdown = '$$\\alpha + \\beta = \\gamma, \\Delta = \\pi r^2$$'
+        expected_html = """
+<section class="section-block-markdown-cell">
+<p><span class="math-display">&alpha; + &beta; = &gamma;, \\Delta = &pi; r<sup>2</sup></span></p>
+</section>
+"""
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_latex_summation_notation(self):
+        markdown = '$$\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}$$'
+        expected_html = """
+<section class="section-block-markdown-cell">
+<p><span class="math-display">&sum;<sub>i=1</sub><sup>n</sup> i = <span class="math-fraction"><span class="math-fraction-numerator">n(n+1)</span><span class="math-fraction-denominator">2</span></span></span></p>
+</section>
+"""
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_latex_inline_in_paragraph(self):
+        markdown = 'En física, la ecuación $E = mc^2$ relaciona la energía con la masa. También sabemos que $F = ma$ es la segunda ley de Newton.'
+        expected_html = """
+<section class="section-block-markdown-cell">
+<p>En física, la ecuación <span class="math-inline">E = mc<sup>2</sup></span> relaciona la energía con la masa. También sabemos que <span class="math-inline">F = ma</span> es la segunda ley de Newton.</p>
+</section>
+"""
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_latex_nested_superscripts(self):
+        markdown = '$$e^{-x^{2}}$$'
+        expected_html = """
+<section class="section-block-markdown-cell">
+<p><span class="math-display">e<sup>-x<sup>2</sup></sup></span></p>
+</section>
+"""
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_latex_complex_subscripts(self):
+        markdown = '$$x_{i,j}^{(k)} = a_{i+j}$$'
+        expected_html = """
+<section class="section-block-markdown-cell">
+<p><span class="math-display">x<sub>i,j</sub><sup>(k)</sup> = a<sub>i+j</sub></span></p>
+</section>
+"""
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_latex_integral_with_limits(self):
+        markdown = '$$\\int_0^1 x^2 dx = \\frac{1}{3}$$'
+        expected_html = """
+<section class="section-block-markdown-cell">
+<p><span class="math-display">&int;<sub>0</sub><sup>1</sup> x<sup>2</sup> dx = <span class="math-fraction"><span class="math-fraction-numerator">1</span><span class="math-fraction-denominator">3</span></span></span></p>
+</section>
+"""
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_latex_mathematical_operators(self):
+        markdown = '$$\\pm \\mp \\times \\div \\cdot \\ast$$'
+        expected_html = """
+<section class="section-block-markdown-cell">
+<p><span class="math-display">&plusmn; \\mp &times; &divide; · \\ast</span></p>
+</section>
+"""
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_latex_empty_inline(self):
+        markdown = 'Texto con matemáticas vacías $$ y más texto.'
+        expected_html = """
+<section class="section-block-markdown-cell">
+<p>Texto con matemáticas vacías $$ y más texto.</p>
+</section>
+"""
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_latex_inline_with_text_around(self):
+        markdown = 'Antes $x = 5$ después'
+        expected_html = """
+<section class="section-block-markdown-cell">
+<p>Antes <span class="math-inline">x = 5</span> después</p>
+</section>
+"""
         self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
 
 if __name__ == '__main__':

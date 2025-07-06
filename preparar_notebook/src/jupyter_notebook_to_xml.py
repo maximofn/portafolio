@@ -25,6 +25,8 @@ def notebook_to_xml_tree(notebook_path):
         cell_type = cell.get('cell_type')
         if cell_type == 'markdown':
             md = ''.join(cell.get('source', []))
+            # Duplicate backslashes followed by pipe characters for LaTeX compatibility
+            md = md.replace('\\|', '||')
             elem = ET.SubElement(root, 'markdown')
             elem.text = md
         elif cell_type == 'code':

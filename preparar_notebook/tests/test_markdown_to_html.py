@@ -157,8 +157,7 @@ class TestMarkdownCodeToHtml(unittest.TestCase):
         html = markdown_code_to_html(markdown_content)
         expected_html = '''<section class="section-block-markdown-cell">
       <p>La instalación es muy sencilla, solo tenemos que hacer</p>
-      <div class='highlight'><pre><code class="language-bash">sudo apt update<br>sudo apt install fail2ban
-      </code></pre></div>
+      <div class='highlight'><pre><code class="language-bash">sudo apt update<br>sudo apt install fail2ban</code></pre></div>
       </section>'''
         self.assertEqual(html, expected_html)
 

@@ -1,0 +1,67 @@
+<?xml version='1.0' encoding='utf-8'?>
+<notebook>
+  <markdown># Hugging Face Inference Providers</markdown>
+  <markdown>Está claro que el mayor hub de modelos de inteligencia artificial es Hugging Face. Y ahora están dando la posibilidad de hacer inferencia de alguno de sus modelos en proveedores de GPUs serverless</markdown>
+  <markdown>Uno de esos modelos es [Wan-AI/Wan2.1-T2V-14B](https://huggingface.co/Wan-AI/Wan2.1-T2V-14B) que a día de escribir este post es el mejor modelo de generación de vídeo open source, como se puede ver en la [Artificial Analysis Video Generation Arena Leaderboard](https://artificialanalysis.ai/text-to-video/arena?tab=Leaderboard)
+
+![video generation arena leaderboard](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/Video-arena-leaderboard-wan21.webp)</markdown>
+  <markdown>Si nos fijamos en su [modelcard](https://huggingface.co/Wan-AI/Wan2.1-T2V-14B) podemos ver a la derecha un botón que pone `Replicate`.
+
+![Wan2.1-T2V-14B modelcard](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/Wan2.1-T2V-14B.webp)</markdown>
+  <markdown>## Inference providers</markdown>
+  <markdown>Si vamos a la página de configuración de los [Inference providers](https://huggingface.co/settings/inference-providers) veremos algo como esto
+
+![Inference Providers](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/Inference%20Providers.webp)
+
+Dónde podemos darle al botón con una llave para introducir la API KEY del proveedor que queramos usar, o dejar seleccionado el camino con dos puntos. Si hacemos la primera opción será el proveedor el que nos cobre por la inferencia, mientras que en el segundo será Hugging Face quien nos cobre la inferencia. Así que haz lo que mejor te convenga</markdown>
+  <markdown>## Inferencia con Replicate</markdown>
+  <markdown>En mi caso he obtenido una API KEY de Replicate y la he introducido en un archivo llamado `.env` que es donde guardaré las API KEYs y que no debes subir a GitHub, GitLab o el repositorio de tu proyecto.
+
+El `.env` tiene que tener este formato
+
+``` python
+HUGGINGFACE_TOKEN_INFERENCE_PROVIDERS="hf_aL...AY"
+REPLICATE_API_KEY="r8_Sh...UD"
+```
+
+Donde `HUGGINGFACE_TOKEN_INFERENCE_PROVIDERS` es un token que tienes que obtener desde [Hugging Face](https://huggingface.co/settings/tokens) y `REPLICATE_API_KEY` es la API KEY de Replicate que puedes obtener desde [Replicate](https://replicate.com/account/api-tokens).</markdown>
+  <markdown>### Lectura de las API KEYs</markdown>
+  <markdown>Lo primero que tenemos que hacer es leer las API KEYs desde el archivo `.env`</markdown>
+  <input_code>import os
+import dotenv
+dotenv.load_dotenv()
+
+REPLICATE_API_KEY = os.getenv("REPLICATE_API_KEY")
+HUGGINGFACE_TOKEN_INFERENCE_PROVIDERS = os.getenv("HUGGINGFACE_TOKEN_INFERENCE_PROVIDERS")</input_code>
+  <markdown>### Logging en el hub de Hugging Face</markdown>
+  <markdown>Para poder usar el modelo de Wan-AI/Wan2.1-T2V-14B, como está en el hub de Hugging Face, necesitamos loguearnos.</markdown>
+  <input_code>from huggingface_hub import login
+login(HUGGINGFACE_TOKEN_INFERENCE_PROVIDERS)</input_code>
+  <markdown>### Cliente de Inferencia</markdown>
+  <markdown>Ahora creamos un cliente de inferencia, tenemos que especificar el proveedor, la API KEY y en este caso, además, vamos a establecer un tiempo de `timeout` de 1000 segundos, porque por defecto es de 60 segundos y el modelo tarda bastante en generar el vídeo.</markdown>
+  <input_code>from huggingface_hub import InferenceClient
+
+client = InferenceClient(
+	provider="replicate",
+	api_key=REPLICATE_API_KEY,
+	timeout=1000
+)</input_code>
+  <markdown>### Generación del vídeo</markdown>
+  <markdown>Ya tenemos todo para generar nuestro video. Usamos el método `text_to_video` del cliente, le pasamos el prompt y le decimos qué modelo del hub queremos usar, si no usará el que está por defecto.</markdown>
+  <input_code>video = client.text_to_video(
+	"Funky dancer, dancing in a rehearsal room. She wears long hair that moves to the rhythm of her dance.",
+	model="Wan-AI/Wan2.1-T2V-14B",
+)</input_code>
+  <markdown>### Guardando el vídeo</markdown>
+  <markdown>Por último guardamos el video, que es de tipo `bytes`, en un fichero en nuestro disco</markdown>
+  <input_code>output_path = "output_video.mp4"
+with open(output_path, "wb") as f:
+    f.write(video)
+print(f"Video saved to: {output_path}")</input_code>
+  <output_code>Video saved to: output_video.mp4
+</output_code>
+  <markdown>## Video generado</markdown>
+  <markdown>Este es el video generado por el modelo
+
+&lt;video src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/wan2_1_video.webm" controls&gt;&lt;/video&gt;</markdown>
+</notebook>

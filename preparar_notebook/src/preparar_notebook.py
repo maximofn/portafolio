@@ -85,6 +85,8 @@ if __name__ == "__main__":
         else:
             if ask_for_something("\nDo you want to convert the notebook to xml? (y/n)", ['y', 'yes'], ['n', 'no']):
                 print("Converting to XML")
+                # Convert to XML
+                convert_notebook_to_xml(notebook_path)
     
     # Convert to HTML
     if not no_convert_to_html:

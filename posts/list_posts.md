@@ -1,8 +1,8 @@
    * -rw-r--r--@   1 macm1  staff      3597 29 ene 17:29 2024-03-16-git-sim.ipynb
    * -rw-r--r--@   1 macm1  staff      4196 29 ene 17:29 2023-09-16-Fail2ban.ipynb
    * -rw-r--r--@   1 macm1  staff      5692 29 ene 17:29 2023-09-15-Caffeine.ipynb
- * -rw-r--r--@   1 macm1  staff      7080 29 ene 17:29 2023-12-18-Medida-de-similitud-entre-embeddings.ipynb
-   * -rw-r--r--@   1 macm1  staff      8838 29 ene 17:29 2023-03-19-whisper.ipynb~
+   * -rw-r--r--@   1 macm1  staff      7080 29 ene 17:29 2023-12-18-Medida-de-similitud-entre-embeddings.ipynb
+   * -rw-r--r--@   1 macm1  staff      8838 29 ene 17:29 2023-03-19-whisper.ipynb
  * -rw-r--r--@   1 macm1  staff      9274  8 mar 12:55 2025-03-06-InferenceProviders-Wan21.ipynb
  * -rw-r--r--@   1 macm1  staff      9344 24 feb 08:17 2025-02-24-Langchain-Text-classify.ipynb
  * -rw-r--r--@   1 macm1  staff     11734 29 ene 17:29 2023-12-08-tokens.ipynb

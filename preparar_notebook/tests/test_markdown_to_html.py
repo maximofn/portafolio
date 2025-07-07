@@ -500,6 +500,11 @@ class TestMarkdownOrderedListToHtml(unittest.TestCase):
         markdown = "  1. indented item"
         expected_html = "<ol>\n  <li>indented item</li>\n</ol>"
         self.assertEqual(markdown_to_html_updated(markdown).strip(), expected_html.strip())
+      
+    def test_ordered_list_with_inline_code(self):
+        markdown = ' 1. `Flash Attention`: Esta es una implementación de la `attention` que utiliza `sparse` para reducir la complejidad computacional. La atención es una de las operaciones más costosas en los modelos de transformers, y `Flash Attention` la hace más eficiente.\n 2. `Memory-Efficient Attention`: Esta es otra implementación de la atención que utiliza la función `scaled_dot_product_attention` de PyTorch. Esta función es más eficiente en términos de memoria que la implementación estándar de la atención en PyTorch.\n'
+        expected_html = '<ol>\n  <li><code>Flash Attention</code>: Esta es una implementación de la <code>attention</code> que utiliza <code>sparse</code> para reducir la complejidad computacional. La atención es una de las operaciones más costosas en los modelos de transformers, y <code>Flash Attention</code> la hace más eficiente.</li>\n  <li><code>Memory-Efficient Attention</code>: Esta es otra implementación de la atención que utiliza la función <code>scaled_dot_product_attention</code> de PyTorch. Esta función es más eficiente en términos de memoria que la implementación estándar de la atención en PyTorch.</li>\n</ol>'
+        self.assertEqual(markdown_to_html_updated(markdown), expected_html)
 
 class TestMixedMarkdownListsToHtml(unittest.TestCase):
 
@@ -694,6 +699,52 @@ class TestMarkdownTableToHtml(unittest.TestCase):
 </table>"""
         self.assertEqual(markdown_table_to_html(markdown).strip(), expected_html.strip())
 
+    def test_table_with_inline_code(self):
+        markdown = '|Accelerator\t|Installation|\n|---|---|\n|ONNX Runtime\t|`pip install --upgrade --upgrade-strategy eager optimum[onnxruntime]`|\n|Intel Neural Compressor\t|`pip install --upgrade --upgrade-strategy eager optimum[neural-compressor]`|\n|OpenVINO\t|`pip install --upgrade --upgrade-strategy eager optimum[openvino]`|\n|NVIDIA TensorRT-LLM\t|`docker run -it --gpus all --ipc host huggingface/optimum-nvidia`|\n|AMD Instinct GPUs and Ryzen AI NPU\t|`pip install --upgrade --upgrade-strategy eager optimum[amd]`|\n|AWS Trainum & Inferentia\t|`pip install --upgrade --upgrade-strategy eager optimum[neuronx]`|\n|Habana Gaudi Processor (HPU)\t|`pip install --upgrade --upgrade-strategy eager optimum[habana]`|\n|FuriosaAI\t|`pip install --upgrade --upgrade-strategy eager optimum[furiosa]`|\n'
+        expected_html = '''<table>
+  <thead>
+    <tr>
+      <th>Accelerator</th>
+      <th>Installation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>ONNX Runtime</td>
+      <td><code>pip install --upgrade --upgrade-strategy eager optimum[onnxruntime]</code></td>
+    </tr>
+    <tr>
+      <td>Intel Neural Compressor</td>
+      <td><code>pip install --upgrade --upgrade-strategy eager optimum[neural-compressor]</code></td>
+    </tr>
+    <tr>
+      <td>OpenVINO</td>
+      <td><code>pip install --upgrade --upgrade-strategy eager optimum[openvino]</code></td>
+    </tr>
+    <tr>
+      <td>NVIDIA TensorRT-LLM</td>
+      <td><code>docker run -it --gpus all --ipc host huggingface/optimum-nvidia</code></td>
+    </tr>
+    <tr>
+      <td>AMD Instinct GPUs and Ryzen AI NPU</td>
+      <td><code>pip install --upgrade --upgrade-strategy eager optimum[amd]</code></td>
+    </tr>
+    <tr>
+      <td>AWS Trainum & Inferentia</td>
+      <td><code>pip install --upgrade --upgrade-strategy eager optimum[neuronx]</code></td>
+    </tr>
+    <tr>
+      <td>Habana Gaudi Processor (HPU)</td>
+      <td><code>pip install --upgrade --upgrade-strategy eager optimum[habana]</code></td>
+    </tr>
+    <tr>
+      <td>FuriosaAI</td>
+      <td><code>pip install --upgrade --upgrade-strategy eager optimum[furiosa]</code></td>
+    </tr>
+  </tbody>
+</table>'''
+        self.assertEqual(markdown_table_to_html(markdown).strip(), expected_html.strip())
+    
     def test_single_row_table(self):
         markdown = """
 | Header |
@@ -754,7 +805,6 @@ class TestMarkdownTableToHtml(unittest.TestCase):
   </tbody>
 </table>"""
         self.assertEqual(markdown_table_to_html(markdown).strip(), expected_html.strip())
-
 
     def test_table_no_leading_trailing_pipes_in_header(self):
         markdown = """

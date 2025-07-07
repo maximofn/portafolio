@@ -613,10 +613,45 @@ def output_code_to_html(output_content: str) -> str:
     is_execute_result = (processed_content.startswith("'") and processed_content.endswith("'")) or \
                         (processed_content.startswith('"') and processed_content.endswith('"'))
 
+    def convert_spaces_to_html_entities(content: str) -> str:
+        """
+        Converts only indentation spaces (groups of 2+ spaces) to HTML entities.
+        Single spaces at the beginning of lines are preserved as normal spaces.
+        
+        Args:
+            content: The content to process
+        """
+        # Always escape HTML characters for proper display
+        escaped_content = html.escape(content, quote=True)
+        # Also escape curly braces which are not escaped by html.escape()
+        escaped_content = escaped_content.replace('{', '&#x7B;').replace('}', '&#x7D;')
+        
+        lines = escaped_content.split('\n')
+        processed_lines = []
+        
+        for line in lines:
+            # Count leading spaces
+            leading_space_count = 0
+            while leading_space_count < len(line) and line[leading_space_count] == ' ':
+                leading_space_count += 1
+            
+            # Only convert groups of 2 or more spaces to HTML entities
+            if leading_space_count >= 2:
+                # Convert all leading spaces to HTML entities
+                leading_spaces = '&#x20;' * leading_space_count
+                rest_of_line = line[leading_space_count:]
+                processed_lines.append(leading_spaces + rest_of_line)
+            else:
+                # Keep single spaces or no spaces as is
+                processed_lines.append(line)
+        
+        return '\n'.join(processed_lines)
+
     if is_execute_result:
         # Handle 'execute_result' (e.g., the value of a variable).
         # It has a different HTML structure, including an 'Out[]' prompt.
-        escaped_content = html.escape(processed_content)
+        # Execute results should have full HTML escaping
+        escaped_content = convert_spaces_to_html_entities(processed_content)
 
         # NOTE: The execution count (like '10' in 'Out[10]:') is not available
         # from output_content alone. We use a generic prompt. The test is
@@ -635,7 +670,8 @@ def output_code_to_html(output_content: str) -> str:
 </section>'''
     else:
         # Handle 'stream' output (e.g., from a print() statement).
-        escaped_content = html.escape(processed_content)
+        # Stream outputs now also properly escape HTML characters for correct display
+        escaped_content = convert_spaces_to_html_entities(processed_content)
         
         html_output = f'''<section class="section-block-code-cell-">
 <div class="output-wrapper">

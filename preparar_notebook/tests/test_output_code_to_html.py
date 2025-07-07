@@ -56,6 +56,41 @@ class TestOutputCodeToHtml(unittest.TestCase):
 </div>
 </section>'''
         self.assertEqual(output_code_to_html(output_code), expected_html)
+    
+    def test_output_code_with_multiple_lines_and_indentation(self):
+        output_code = "[{'score': 0.05116177722811699,\n  'token': 8422,\n  'token_str': 'stanford',\n  'sequence': 'i am a student at stanford university.'},\n {'score': 0.04033993184566498,\n  'token': 5765,\n  'token_str': 'harvard',\n  'sequence': 'i am a student at harvard university.'},\n {'score': 0.03990468755364418,\n  'token': 7996,\n  'token_str': 'yale',\n  'sequence': 'i am a student at yale university.'},\n {'score': 0.0361952930688858,\n  'token': 10921,\n  'token_str': 'cornell',\n  'sequence': 'i am a student at cornell university.'},\n {'score': 0.03303057327866554,\n  'token': 9173,\n  'token_str': 'princeton',\n  'sequence': 'i am a student at princeton university.'}]"
+        expected_html = '''<section class="section-block-code-cell-">
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>[&#x7B;&#x27;score&#x27;: 0.05116177722811699,
+&#x20;&#x20;&#x27;token&#x27;: 8422,
+&#x20;&#x20;&#x27;token_str&#x27;: &#x27;stanford&#x27;,
+&#x20;&#x20;&#x27;sequence&#x27;: &#x27;i am a student at stanford university.&#x27;&#x7D;,
+ &#x7B;&#x27;score&#x27;: 0.04033993184566498,
+&#x20;&#x20;&#x27;token&#x27;: 5765,
+&#x20;&#x20;&#x27;token_str&#x27;: &#x27;harvard&#x27;,
+&#x20;&#x20;&#x27;sequence&#x27;: &#x27;i am a student at harvard university.&#x27;&#x7D;,
+ &#x7B;&#x27;score&#x27;: 0.03990468755364418,
+&#x20;&#x20;&#x27;token&#x27;: 7996,
+&#x20;&#x20;&#x27;token_str&#x27;: &#x27;yale&#x27;,
+&#x20;&#x20;&#x27;sequence&#x27;: &#x27;i am a student at yale university.&#x27;&#x7D;,
+ &#x7B;&#x27;score&#x27;: 0.0361952930688858,
+&#x20;&#x20;&#x27;token&#x27;: 10921,
+&#x20;&#x20;&#x27;token_str&#x27;: &#x27;cornell&#x27;,
+&#x20;&#x20;&#x27;sequence&#x27;: &#x27;i am a student at cornell university.&#x27;&#x7D;,
+ &#x7B;&#x27;score&#x27;: 0.03303057327866554,
+&#x20;&#x20;&#x27;token&#x27;: 9173,
+&#x20;&#x20;&#x27;token_str&#x27;: &#x27;princeton&#x27;,
+&#x20;&#x20;&#x27;sequence&#x27;: &#x27;i am a student at princeton university.&#x27;&#x7D;]
+</pre>
+</div>
+</div>
+</div>
+</section>'''
+        html_output = output_code_to_html(output_code)
+        self.assertEqual(html_output, expected_html)
 
 if __name__ == '__main__':
     # It's good practice to ensure that only one unittest.main() call remains,

@@ -2,18 +2,21 @@ import re
 
 def process_links_in_text(text):
     """
-    Processes both internal and external markdown links in a text string.
+    Processes both internal and external markdown links and inline code in a text string.
     
     Args:
-        text: Text that may contain markdown links
+        text: Text that may contain markdown links and inline code
         
     Returns:
-        Text with markdown links converted to HTML
+        Text with markdown links and inline code converted to HTML
     """
-    # First process external links (https:// or http://)
+    # First process inline code (backticks)
+    text = re.sub(r'`([^`]+)`', r'<code>\1</code>', text)
+    
+    # Then process external links (https:// or http://)
     text = re.sub(r'\[(.*?)\]\((https?://.*?)\)', r'<a href="\2">\1</a>', text)
     
-    # Then process internal links (starting with /)
+    # Finally process internal links (starting with /)
     text = re.sub(r'\[(.*?)\]\((/.*?)\)', r'<a href="\2">\1</a>', text)
     
     return text

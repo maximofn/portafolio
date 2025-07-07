@@ -25,6 +25,27 @@ def markdown_table_to_html(markdown_table_string):
             line_str = line_str[:-1]
         return [cell.strip() for cell in re.split(r'\s*\|\s*', line_str)]
 
+    # Helper to convert inline code in cell content
+    def process_inline_code(cell_content):
+        """Convert inline code (`code`) to HTML format only for command-like code"""
+        # Pattern to match text between backticks
+        pattern = r'`([^`]+)`'
+        
+        def replace_code(match):
+            code_content = match.group(1)
+            # Only convert to HTML if it looks like a command (contains spaces and command keywords)
+            command_keywords = ['pip', 'docker', 'apt', 'npm', 'yarn', 'conda', 'git', 'sudo', 'curl', 'wget']
+            has_spaces = ' ' in code_content
+            has_command_keyword = any(keyword in code_content.lower() for keyword in command_keywords)
+            
+            if has_spaces and has_command_keyword:
+                return f'<code>{code_content}</code>'
+            else:
+                # Return original markdown for simple code
+                return f'`{code_content}`'
+        
+        return re.sub(pattern, replace_code, cell_content)
+
     header_line = lines[0]
     separator_line = lines[1]
     data_lines = lines[2:]
@@ -61,7 +82,9 @@ def markdown_table_to_html(markdown_table_string):
     html_table += "  <thead>\n    <tr>\n"
     for i, header in enumerate(headers):
         align_attr = f' style="text-align: {alignments[i]};"' if alignments[i] != 'left' else ''
-        html_table += f'      <th{align_attr}>{header}</th>\n'
+        # Process inline code in headers too
+        processed_header = process_inline_code(header)
+        html_table += f'      <th{align_attr}>{processed_header}</th>\n'
     html_table += "    </tr>\n  </thead>\n"
 
     # Build table body
@@ -77,8 +100,11 @@ def markdown_table_to_html(markdown_table_string):
             if i < len(current_row_cells):
                 cell_content = current_row_cells[i]
 
+            # Process inline code in cell content
+            processed_cell_content = process_inline_code(cell_content)
+
             align_attr = f' style="text-align: {alignments[i]};"' if alignments[i] != 'left' else ''
-            html_table += f'      <td{align_attr}>{cell_content}</td>\n'
+            html_table += f'      <td{align_attr}>{processed_cell_content}</td>\n'
         html_table += "    </tr>\n"
     html_table += "  </tbody>\n"
     html_table += "</table>"

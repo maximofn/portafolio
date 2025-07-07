@@ -1,0 +1,178 @@
+<?xml version='1.0' encoding='utf-8'?>
+<notebook>
+  <markdown># Hugging Face Optimun</markdown>
+  <markdown>`Optimun` es una extensión de la librería [Transformers](https://maximofn.com/hugging-face-transformers/) que proporciona un conjunto de herramientas de optimización del rendimiento para entrenar y para la inferencia de modelos, en hardware específico, con la máxima eficiencia.
+
+El ecosistema de IA evoluciona rápidamente y cada día surge más hardware especializado junto con sus propias optimizaciones. Por tanto, `Optimum` permite a los usuarios utilizar eficientemente cualquiera de este HW con la misma facilidad que [Transformers](https://maximofn.com/hugging-face-transformers/).</markdown>
+  <markdown>`Optimun` permite la optimización para las siguientes plataformas HW:
+
+ * Nvidia
+ * AMD
+ * Intel
+ * AWS
+ * TPU
+ * Habana
+ * FuriosaAI
+
+Además, ofrece aceleración para las siguientes integraciones open source
+
+ * ONNX runtime
+ * Exporters: Exportar modelos Pytorch o TensorFlow a diferentes formatos como ONNX o TFLite
+ * BetterTransformer
+ * Torch FX</markdown>
+  <markdown>## Instalación</markdown>
+  <markdown>Para instalar `Optimun` simplemente ejecuta:
+
+```bash
+pip install optimum
+```
+
+Pero si se quiere instalar con soporte para todas las plataformas HW, se puede hacer así
+
+|Accelerator	|Installation|
+|---|---|
+|ONNX Runtime	|`pip install --upgrade --upgrade-strategy eager optimum[onnxruntime]`|
+|Intel Neural Compressor	|`pip install --upgrade --upgrade-strategy eager optimum[neural-compressor]`|
+|OpenVINO	|`pip install --upgrade --upgrade-strategy eager optimum[openvino]`|
+|NVIDIA TensorRT-LLM	|`docker run -it --gpus all --ipc host huggingface/optimum-nvidia`|
+|AMD Instinct GPUs and Ryzen AI NPU	|`pip install --upgrade --upgrade-strategy eager optimum[amd]`|
+|AWS Trainum &amp; Inferentia	|`pip install --upgrade --upgrade-strategy eager optimum[neuronx]`|
+|Habana Gaudi Processor (HPU)	|`pip install --upgrade --upgrade-strategy eager optimum[habana]`|
+|FuriosaAI	|`pip install --upgrade --upgrade-strategy eager optimum[furiosa]`|
+
+Los flags `--upgrade --upgrade-strategy eager` son necesarios para garantizar que los diferentes paquetes se actualicen a la última versión posible.</markdown>
+  <markdown>Como la mayoría de la gente usa Pytorch en GPUs de Nvidia, y sobre todo, como Nvidia es lo que yo tengo, este post va a hablar solo del uso de `Optimun` con GPUs de Nvidia y Pytorch.</markdown>
+  <markdown>## BeterTransformer</markdown>
+  <markdown>BetterTransformer es una optimización nativa de PyTorch para obtener una aceleración de x1,25 a x4 en la inferencia de modelos basados ​​en Transformer</markdown>
+  <markdown>BetterTransformer es una API que permite aprovechar las características de hardware modernas para acelerar el entrenamiento y la inferencia de modelos de transformers en PyTorch, utilizando implementaciones de atención más eficientes y `fast path` de la versión nativa de `nn.TransformerEncoderLayer`.
+
+BetterTransformer usa dos tipos de aceleraciones:
+
+ 1. `Flash Attention`: Esta es una implementación de la `attention` que utiliza `sparse` para reducir la complejidad computacional. La atención es una de las operaciones más costosas en los modelos de transformers, y `Flash Attention` la hace más eficiente.
+ 2. `Memory-Efficient Attention`: Esta es otra implementación de la atención que utiliza la función `scaled_dot_product_attention` de PyTorch. Esta función es más eficiente en términos de memoria que la implementación estándar de la atención en PyTorch.
+
+Además, la versión 2.0 de PyTorch incluye un operador de atención de productos punto escalado (SDPA) nativo como parte de `torch.nn.functional`
+
+`Optimun` proporciona esta funcionalidad con la librería `Transformers`</markdown>
+  <markdown>### Inferencia con Automodel</markdown>
+  <markdown>Primero vamos a ver cómo sería la inferencia normal con `Transformers` y `Automodel`</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
+
+checkpoint = "openai-community/gpt2"
+tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+model = AutoModelForCausalLM.from_pretrained(checkpoint, device_map="auto")
+
+tokenizer.pad_token = tokenizer.eos_token
+
+input_tokens = tokenizer(["Me encanta aprender de"], return_tensors="pt", padding=True).to("cuda")
+output_tokens = model.generate(**input_tokens, max_length=50)
+
+sentence_output = tokenizer.decode(output_tokens[0], skip_special_tokens=True)
+sentence_output</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>'Me encanta aprender de la vie de la vie de la vie de la vie de la vie de la vie de la vie de la vie de la vie de la vie de la vie de'</output_code>
+  <markdown>Ahora vemos cómo se optimizaría con `BetterTransformer` y `Optimun`
+
+Lo que tenemos que hacer es convertir el modelo mediante el método `transform` de `BetterTransformer`</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
+from optimum.bettertransformer import BetterTransformer
+
+checkpoint = "openai-community/gpt2"
+tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+model_hf = AutoModelForCausalLM.from_pretrained(checkpoint, device_map="auto")
+
+# Convert the model to a BetterTransformer model
+model = BetterTransformer.transform(model_hf, keep_original_model=True)
+
+tokenizer.pad_token = tokenizer.eos_token
+
+input_tokens = tokenizer(["Me encanta aprender de"], return_tensors="pt", padding=True).to("cuda")
+output_tokens = model.generate(**input_tokens, max_length=50)
+
+sentence_output = tokenizer.decode(output_tokens[0], skip_special_tokens=True)
+sentence_output</input_code>
+  <output_code>The BetterTransformer implementation does not support padding during training, as the fused kernels do not support attention masks. Beware that passing padded batched data during training may result in unexpected outputs. Please refer to https://huggingface.co/docs/optimum/bettertransformer/overview for more details.
+Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>'Me encanta aprender de la vie de la vie de la vie de la vie de la vie de la vie de la vie de la vie de la vie de la vie de la vie de'</output_code>
+  <markdown>### Inferecncia con Pipeline</markdown>
+  <markdown>Al igual que antes, primero vemos cómo sería la inferencia normal con `Transformers` y `Pipeline`</markdown>
+  <input_code>from transformers import pipeline
+
+pipe = pipeline(task="fill-mask", model="distilbert-base-uncased")
+pipe("I am a student at [MASK] University.")</input_code>
+  <output_code>[{'score': 0.05116177722811699,
+  'token': 8422,
+  'token_str': 'stanford',
+  'sequence': 'i am a student at stanford university.'},
+ {'score': 0.04033993184566498,
+  'token': 5765,
+  'token_str': 'harvard',
+  'sequence': 'i am a student at harvard university.'},
+ {'score': 0.03990468755364418,
+  'token': 7996,
+  'token_str': 'yale',
+  'sequence': 'i am a student at yale university.'},
+ {'score': 0.0361952930688858,
+  'token': 10921,
+  'token_str': 'cornell',
+  'sequence': 'i am a student at cornell university.'},
+ {'score': 0.03303057327866554,
+  'token': 9173,
+  'token_str': 'princeton',
+  'sequence': 'i am a student at princeton university.'}]</output_code>
+  <markdown>Ahora vemos cómo optimizarlo, para ello usamos `pipeline` de `Optimun`, en vez de el de `Transformers`. Además hay que indicar que queremos usar `bettertransformer` como acelerador</markdown>
+  <input_code>from optimum.pipelines import pipeline
+
+# Use the BetterTransformer pipeline
+pipe = pipeline(task="fill-mask", model="distilbert-base-uncased", accelerator="bettertransformer")
+pipe("I am a student at [MASK] University.")</input_code>
+  <output_code>The BetterTransformer implementation does not support padding during training, as the fused kernels do not support attention masks. Beware that passing padded batched data during training may result in unexpected outputs. Please refer to https://huggingface.co/docs/optimum/bettertransformer/overview for more details.
+/home/wallabot/miniconda3/envs/nlp/lib/python3.11/site-packages/optimum/bettertransformer/models/encoder_models.py:868: UserWarning: The PyTorch API of nested tensors is in prototype stage and will change in the near future. (Triggered internally at /opt/conda/conda-bld/pytorch_1708025845868/work/aten/src/ATen/NestedTensorImpl.cpp:177.)
+  hidden_states = torch._nested_tensor_from_mask(hidden_states, attn_mask)
+</output_code>
+  <output_code>[{'score': 0.05116180703043938,
+  'token': 8422,
+  'token_str': 'stanford',
+  'sequence': 'i am a student at stanford university.'},
+ {'score': 0.040340032428503036,
+  'token': 5765,
+  'token_str': 'harvard',
+  'sequence': 'i am a student at harvard university.'},
+ {'score': 0.039904672652482986,
+  'token': 7996,
+  'token_str': 'yale',
+  'sequence': 'i am a student at yale university.'},
+ {'score': 0.036195311695337296,
+  'token': 10921,
+  'token_str': 'cornell',
+  'sequence': 'i am a student at cornell university.'},
+ {'score': 0.03303062543272972,
+  'token': 9173,
+  'token_str': 'princeton',
+  'sequence': 'i am a student at princeton university.'}]</output_code>
+  <markdown>### Entrenamiento</markdown>
+  <markdown>Para el entrneamiento con `Optimun` hacemos lo mismo que con la inferencia con Automodel, convertimos el modelo mediante el método `transform` de `BeterTransformer`.
+
+Cuando terminamos el entrenamiento, volvemos a convertir el modelo mediante el método `reverse` de `BetterTransformer` para volver a tener el modelo original y así poder guardarlo y subirlo al hub de Hugging Face.</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
+from optimum.bettertransformer import BetterTransformer
+
+checkpoint = "openai-community/gpt2"
+tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+model_hf = AutoModelForCausalLM.from_pretrained(checkpoint, device_map="auto")
+
+# Convert the model to a BetterTransformer model
+model = BetterTransformer.transform(model_hf, keep_original_model=True)
+
+##############################################################################
+# do your training here
+##############################################################################
+
+# Convert the model back to a Hugging Face model
+model_hf = BetterTransformer.reverse(model)
+
+model_hf.save_pretrained("fine_tuned_model")
+model_hf.push_to_hub("fine_tuned_model")</input_code>
+</notebook>

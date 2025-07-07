@@ -159,6 +159,14 @@ class TestMarkdownCodeToHtml(unittest.TestCase):
       <div class='highlight'><pre><code class="language-bash">sudo apt update<br>sudo apt install fail2ban</code></pre></div>
       </section>'''
         self.assertEqual(html, expected_html)
+    
+    def test_two_lines_python_code(self):
+        markdown_content = '```python\nHUGGINGFACE_TOKEN_INFERENCE_PROVIDERS="hf_aL...AY"\nREPLICATE_API_KEY="r8_Sh...UD"\n```'
+        html = markdown_code_to_html(markdown_content)
+        expected_html = '''<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python">HUGGINGFACE_TOKEN_INFERENCE_PROVIDERS="hf_aL...AY"<br>REPLICATE_API_KEY="r8_Sh...UD"</code></pre></div>
+      </section>'''
+        self.assertEqual(html, expected_html)
 
 class TestMarkdownImageToHtml(unittest.TestCase):
 

@@ -44,6 +44,23 @@ class TestInputCodeToHtml(unittest.TestCase):
 </section>'''
         html = input_code_to_html(input_code)
         self.assertEqual(html, expected_html)
+    
+    def test_multiple_lines_python_code_with_indentation(self):
+        input_code = 'from huggingface_hub import InferenceClient\n\nclient = InferenceClient(\n\tprovider="replicate",\n\tapi_key=REPLICATE_API_KEY,\n\ttimeout=1000\n)'
+        expected_html = '''<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">InferenceClient</span>
+<span class="w"> </span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">InferenceClient</span><span class="p">(</span>
+<span class="w">	</span><span class="n">provider</span><span class="o">=</span><span class="s2">&quot;replicate&quot;</span><span class="p">,</span>
+<span class="w">	</span><span class="n">api_key</span><span class="o">=</span><span class="n">REPLICATE_API_KEY</span><span class="p">,</span>
+<span class="w">	</span><span class="n">timeout</span><span class="o">=</span><span class="mi">1000</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>'''
+        html = input_code_to_html(input_code)
+        self.assertEqual(html, expected_html)
 
 if __name__ == '__main__':
     # It's good practice to ensure that only one unittest.main() call remains,

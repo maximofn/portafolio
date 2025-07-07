@@ -549,26 +549,41 @@ def input_code_to_html(code_content: str) -> str:
     # This handles the case where there are empty lines between code blocks
     highlighted_code = re.sub(r'\n\n', r'\n<span class="w"> </span>\n', highlighted_code)
     
-    # Convert leading tabs to whitespace spans as expected by tests
-    # This converts tabs at the beginning of lines to <span class="w">\t</span>
-    def replace_leading_tabs(match):
+    # Convert leading tabs and spaces to whitespace spans as expected by tests
+    def replace_leading_whitespace(match):
         line_content = match.group(0)
-        # Count leading tabs
-        leading_tabs = ''
+        leading_whitespace = ''
         i = 0
-        while i < len(line_content) and line_content[i] == '\t':
-            leading_tabs += '\t'
+        while i < len(line_content) and line_content[i] in ['\t', ' ']:
+            leading_whitespace += line_content[i]
             i += 1
         
-        if leading_tabs:
-            # Replace leading tabs with whitespace spans
-            tab_spans = ''.join([f'<span class="w">\t</span>' for _ in leading_tabs])
-            return tab_spans + line_content[i:]
+        if leading_whitespace:
+            # Replace leading whitespace with whitespace spans
+            # For tabs, use individual \t spans
+            # For spaces, group them together in one span
+            whitespace_spans = ''
+            j = 0
+            while j < len(leading_whitespace):
+                if leading_whitespace[j] == '\t':
+                    whitespace_spans += '<span class="w">\t</span>'
+                    j += 1
+                elif leading_whitespace[j] == ' ':
+                    # Count consecutive spaces
+                    space_start = j
+                    while j < len(leading_whitespace) and leading_whitespace[j] == ' ':
+                        j += 1
+                    spaces = leading_whitespace[space_start:j]
+                    whitespace_spans += f'<span class="w">{spaces}</span>'
+                else:
+                    j += 1
+                    
+            return whitespace_spans + line_content[len(leading_whitespace):]
         else:
             return line_content
     
-    # Apply the tab replacement to lines that start with tabs
-    highlighted_code = re.sub(r'^\t+[^<\n]*', replace_leading_tabs, highlighted_code, flags=re.MULTILINE)
+    # Apply the whitespace replacement to lines that start with tabs or spaces
+    highlighted_code = re.sub(r'^[\t ]+[^<\n]*', replace_leading_whitespace, highlighted_code, flags=re.MULTILINE)
     
     # We need to wrap this in the specific structure expected by the test
     html_output = f'''<section class="section-block-code-cell-">

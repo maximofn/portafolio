@@ -61,6 +61,22 @@ class TestInputCodeToHtml(unittest.TestCase):
 </section>'''
         html = input_code_to_html(input_code)
         self.assertEqual(html, expected_html)
+    
+    def test_multiple_lines_python_code_with_indentation_function(self):
+        input_code = 'def encode_decode(word):\n    tokens = encoder.encode(word)\n    decode_tokens = []\n    for token in tokens:\n        decode_tokens.append(encoder.decode([token]))\n    return tokens, decode_tokens'
+        expected_html = '''<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">encode_decode</span><span class="p">(</span><span class="n">word</span><span class="p">):</span>
+<span class="w">    </span><span class="n">tokens</span> <span class="o">=</span> <span class="n">encoder</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+<span class="w">    </span><span class="n">decode_tokens</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="w">    </span><span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">:</span>
+<span class="w">        </span><span class="n">decode_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">encoder</span><span class="o">.</span><span class="n">decode</span><span class="p">([</span><span class="n">token</span><span class="p">]))</span>
+<span class="w">    </span><span class="k">return</span> <span class="n">tokens</span><span class="p">,</span> <span class="n">decode_tokens</span>
+</pre></div>
+</div>
+</section>'''
+        html = input_code_to_html(input_code)
+        self.assertEqual(html, expected_html)
 
 if __name__ == '__main__':
     # It's good practice to ensure that only one unittest.main() call remains,

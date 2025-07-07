@@ -1,0 +1,113 @@
+<?xml version='1.0' encoding='utf-8'?>
+<notebook>
+  <markdown># Tokens</markdown>
+  <markdown>Ahora que están en auge los `LLM`s, no paramos de escuchar el número de `token`s que admite cada modelo, pero ¿qué son los `token`s? Son las unidades mínimas de representación de las palabras</markdown>
+  <markdown>Para explicar qué son los `token`s, primero veámoslo con un ejemplo práctico, vamos a usar el tokenizador de `OpenAI`, llamado [tiktoken](https://github.com/openai/tiktoken). 
+
+Así que, primero instalamos el paquete:
+
+```bash
+pip install tiktoken
+```</markdown>
+  <markdown>Una vez instalado creamos un tokenizador usando el modelo `cl100k_base`, que en el notebook de ejemplo [How to count tokens with tiktoken](https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb) explica que es el usado por los modelos `gpt-4`, `gpt-3.5-turbo` y `text-embedding-ada-002`</markdown>
+  <input_code>import tiktoken
+
+encoder = tiktoken.get_encoding("cl100k_base")</input_code>
+  <markdown>Ahora creamos una palabra de ejemplo para tokenizarla</markdown>
+  <input_code>example_word = "breakdown"</input_code>
+  <markdown>Y la tokenizamos</markdown>
+  <input_code>tokens = encoder.encode(example_word)
+tokens</input_code>
+  <output_code>[9137, 2996]</output_code>
+  <markdown>Se ha dividido la palabra en 2 `token`s, el `9137` y el `2996`. Vamos a ver a qué palabras corresponden</markdown>
+  <input_code>word1 = encoder.decode([tokens[0]])
+word2 = encoder.decode([tokens[1]])
+word1, word2</input_code>
+  <output_code>('break', 'down')</output_code>
+  <markdown>El tokenizador de `OpenAI` ha dividido la palabra `breakdown` en las palabras `break` y `down`. Es decir, ha dividido la palabra en 2 más sencillas.
+
+Esto es importante, ya que cuando se dice que un `LLM` admite x `token`s no se refiere a que admite x palabras, sino a que admite x unidades mínimas de representación de las palabras.</markdown>
+  <markdown>Si tienes un texto y quieres ver el número de `token`s que tiene para el tokenizador de `OpenAI`, puedes verlo en la página [Tokenizer](https://platform.openai.com/tokenizer), que muestra cada `token` en un color diferente
+
+![tokenizer](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/tokenizer.webp)</markdown>
+  <markdown>Hemos visto el tokenizador de `OpenAI`, pero cada `LLM` podrá usar otro</markdown>
+  <markdown>Como hemos dicho, los `token`s son las unidades mínimas de representación de las palabras, así que vamos a ver cuántos tokens distintos tiene `tiktoken`</markdown>
+  <input_code>n_vocab = encoder.n_vocab
+print(f"Vocab size: {n_vocab}")</input_code>
+  <output_code>Vocab size: 100277
+</output_code>
+  <markdown>Vamos a ver cómo tokeniza otro tipo de palabras</markdown>
+  <input_code>def encode_decode(word):
+    tokens = encoder.encode(word)
+    decode_tokens = []
+    for token in tokens:
+        decode_tokens.append(encoder.decode([token]))
+    return tokens, decode_tokens</input_code>
+  <input_code>word = "dog"
+tokens, decode_tokens = encode_decode(word)
+print(f"Word: {word} ==&gt; tokens: {tokens}, decode_tokens: {decode_tokens}")
+
+word = "tomorrow..."
+tokens, decode_tokens = encode_decode(word)
+print(f"Word: {word} ==&gt; tokens: {tokens}, decode_tokens: {decode_tokens}")
+
+word = "artificial intelligence"
+tokens, decode_tokens = encode_decode(word)
+print(f"Word: {word} ==&gt; tokens: {tokens}, decode_tokens: {decode_tokens}")
+
+word = "Python"
+tokens, decode_tokens = encode_decode(word)
+print(f"Word: {word} ==&gt; tokens: {tokens}, decode_tokens: {decode_tokens}")
+
+word = "12/25/2023"
+tokens, decode_tokens = encode_decode(word)
+print(f"Word: {word} ==&gt; tokens: {tokens}, decode_tokens: {decode_tokens}")
+
+word = "😊"
+tokens, decode_tokens = encode_decode(word)
+print(f"Word: {word} ==&gt; tokens: {tokens}, decode_tokens: {decode_tokens}")</input_code>
+  <output_code>Word: dog ==&gt; tokens: [18964], decode_tokens: ['dog']
+Word: tomorrow... ==&gt; tokens: [38501, 7924, 1131], decode_tokens: ['tom', 'orrow', '...']
+Word: artificial intelligence ==&gt; tokens: [472, 16895, 11478], decode_tokens: ['art', 'ificial', ' intelligence']
+Word: Python ==&gt; tokens: [31380], decode_tokens: ['Python']
+Word: 12/25/2023 ==&gt; tokens: [717, 14, 914, 14, 2366, 18], decode_tokens: ['12', '/', '25', '/', '202', '3']
+Word: 😊 ==&gt; tokens: [76460, 232], decode_tokens: ['�', '�']
+</output_code>
+  <markdown>Por último vamos a verlo con palabras en otro idioma</markdown>
+  <input_code>word = "perro"
+tokens, decode_tokens = encode_decode(word)
+print(f"Word: {word} ==&gt; tokens: {tokens}, decode_tokens: {decode_tokens}")
+
+word = "perra"
+tokens, decode_tokens = encode_decode(word)
+print(f"Word: {word} ==&gt; tokens: {tokens}, decode_tokens: {decode_tokens}")
+
+word = "mañana..."
+tokens, decode_tokens = encode_decode(word)
+print(f"Word: {word} ==&gt; tokens: {tokens}, decode_tokens: {decode_tokens}")
+
+word = "inteligencia artificial"
+tokens, decode_tokens = encode_decode(word)
+print(f"Word: {word} ==&gt; tokens: {tokens}, decode_tokens: {decode_tokens}")
+
+word = "Python"
+tokens, decode_tokens = encode_decode(word)
+print(f"Word: {word} ==&gt; tokens: {tokens}, decode_tokens: {decode_tokens}")
+
+word = "12/25/2023"
+tokens, decode_tokens = encode_decode(word)
+print(f"Word: {word} ==&gt; tokens: {tokens}, decode_tokens: {decode_tokens}")
+
+word = "😊"
+tokens, decode_tokens = encode_decode(word)
+print(f"Word: {word} ==&gt; tokens: {tokens}, decode_tokens: {decode_tokens}")</input_code>
+  <output_code>Word: perro ==&gt; tokens: [716, 299], decode_tokens: ['per', 'ro']
+Word: perra ==&gt; tokens: [79, 14210], decode_tokens: ['p', 'erra']
+Word: mañana... ==&gt; tokens: [1764, 88184, 1131], decode_tokens: ['ma', 'ñana', '...']
+Word: inteligencia artificial ==&gt; tokens: [396, 39567, 8968, 21075], decode_tokens: ['int', 'elig', 'encia', ' artificial']
+Word: Python ==&gt; tokens: [31380], decode_tokens: ['Python']
+Word: 12/25/2023 ==&gt; tokens: [717, 14, 914, 14, 2366, 18], decode_tokens: ['12', '/', '25', '/', '202', '3']
+Word: 😊 ==&gt; tokens: [76460, 232], decode_tokens: ['�', '�']
+</output_code>
+  <markdown>Podemos ver para palabras similares, en español se generan más `token`s que en inglés, por lo que para un mismo texto, con un número similar de palabras, el número de `token`s será mayor en español que en inglés</markdown>
+</notebook>

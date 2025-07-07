@@ -453,6 +453,11 @@ class TestMarkdownUnorderedListToHtml(unittest.TestCase):
         markdown = "  - indented item"
         expected_html = "<ul>\n  <li>indented item</li>\n</ul>"
         self.assertEqual(markdown_to_html_updated(markdown).strip(), expected_html.strip())
+    
+    def test_list_with_links(self):
+        markdown = ' * [LLM.int8()](/llm-int8)\n * [GPTQ](/gptq)\n * [QLoRA](/qlora)\n * AWQ\n * QuIP\n * GGUF\n * HQQ\n * AQLM\n * FBGEMM FP8\n'
+        expected_html = '<ul>\n  <li><a href="/llm-int8">LLM.int8()</a></li>\n  <li><a href="/gptq">GPTQ</a></li>\n  <li><a href="/qlora">QLoRA</a></li>\n  <li>AWQ</li>\n  <li>QuIP</li>\n  <li>GGUF</li>\n  <li>HQQ</li>\n  <li>AQLM</li>\n  <li>FBGEMM FP8</li>\n</ul>'
+        self.assertEqual(markdown_to_html_updated(markdown), expected_html)
 
 class TestMarkdownOrderedListToHtml(unittest.TestCase):
 

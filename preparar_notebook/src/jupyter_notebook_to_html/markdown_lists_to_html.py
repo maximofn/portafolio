@@ -1,5 +1,23 @@
 import re
 
+def process_links_in_text(text):
+    """
+    Processes both internal and external markdown links in a text string.
+    
+    Args:
+        text: Text that may contain markdown links
+        
+    Returns:
+        Text with markdown links converted to HTML
+    """
+    # First process external links (https:// or http://)
+    text = re.sub(r'\[(.*?)\]\((https?://.*?)\)', r'<a href="\2">\1</a>', text)
+    
+    # Then process internal links (starting with /)
+    text = re.sub(r'\[(.*?)\]\((/.*?)\)', r'<a href="\2">\1</a>', text)
+    
+    return text
+
 def markdown_unordered_list_to_html(markdown_text):
     """
     Converts a Markdown unordered list to HTML.
@@ -142,10 +160,10 @@ def markdown_to_html_updated(markdown_text):
         if ordered_match:
             current_list_type = 'ol'
             # item_content = ordered_match.group(1) # This was the number, we need the text
-            item_content = ordered_match.group(2).strip()
+            item_content = process_links_in_text(ordered_match.group(2).strip())
         elif is_unordered_list_item:
             current_list_type = 'ul'
-            item_content = line.strip()[2:].strip()
+            item_content = process_links_in_text(line.strip()[2:].strip())
 
         if current_list_type:
             # Close lists that are deeper than the current item's level

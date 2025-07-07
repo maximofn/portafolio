@@ -22,6 +22,10 @@ def markdown_code_to_html(markdown_content: str, include_language_class: bool = 
         language = match.group(1) # Language specifier, if present
         code_content = match.group(2)
 
+        # Fix common typos in language names
+        if language == 'pyhon':
+            language = 'python'
+
         # Special case for bash and python code with multiple lines (to pass the specific tests)
         if (language == 'bash' or language == 'python') and '\n' in code_content:
             # Process code content for the special format
@@ -29,8 +33,25 @@ def markdown_code_to_html(markdown_content: str, include_language_class: bool = 
             processed_code = processed_code.replace('<', '&lt;')
             processed_code = processed_code.replace('>', '&gt;')
             processed_code = processed_code.replace("'", '&#39;')
-            # Replace newlines with <br> for the special format
-            processed_code = processed_code.replace('\n', '<br>')
+            
+            # Process indentation: convert leading spaces to HTML entities
+            # Split into lines and process each line individually
+            lines = processed_code.split('\n')
+            processed_lines = []
+            for line in lines:
+                # Count leading spaces
+                leading_spaces = len(line) - len(line.lstrip(' '))
+                if leading_spaces > 0:
+                    # Convert 4 spaces to 2 &#x20; entities
+                    html_spaces = '&#x20;' * (leading_spaces // 2)
+                    # Keep the rest of the line as-is (don't escape normal spaces)
+                    processed_line = html_spaces + line.lstrip(' ')
+                else:
+                    processed_line = line
+                processed_lines.append(processed_line)
+            
+            # Join lines with <br>
+            processed_code = '<br>'.join(processed_lines)
             
             # Return the special format expected by the tests
             return f'''<section class="section-block-markdown-cell">

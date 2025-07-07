@@ -23,18 +23,16 @@ def _remove_accents(text: str) -> str:
 
 def _process_inline_code(text: str) -> str:
     """
-    Processes inline code (text between single backticks) in a text string.
-    Converts `code` to <code>code</code>.
+    Processes inline code (text between single and double backticks) in a text string.
+    Converts `code` and ``code`` to <code>code</code>.
     """
-    # Pattern to match inline code: `text`
-    # Use non-greedy matching to handle multiple inline code blocks in one line
-    pattern = r'`([^`]+)`'
+    # First process inline code with double backticks
+    text = re.sub(r'``([^`]+?)``', r'<code>\1</code>', text)
     
-    def replace_inline_code(match):
-        code_content = match.group(1)
-        return f'<code>{code_content}</code>'
+    # Then process inline code with single backticks (but not those already processed)
+    text = re.sub(r'`([^`]+?)`', r'<code>\1</code>', text)
     
-    return re.sub(pattern, replace_inline_code, text)
+    return text
 
 def _process_inline_math(text: str) -> str:
     """

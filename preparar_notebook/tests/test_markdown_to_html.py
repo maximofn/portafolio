@@ -167,6 +167,14 @@ class TestMarkdownCodeToHtml(unittest.TestCase):
       <div class='highlight'><pre><code class="language-python">HUGGINGFACE_TOKEN_INFERENCE_PROVIDERS="hf_aL...AY"<br>REPLICATE_API_KEY="r8_Sh...UD"</code></pre></div>
       </section>'''
         self.assertEqual(html, expected_html)
+      
+    def test_code_multiple_lines_python_code(self):
+        markdown_content = '```pyhon\n# Monkey patch setup_tunnel para que acepte el parámetro adicional\ndef patched_setup_tunnel(host, port, share_token, share_server_address, share_server_tls_certificate=None):\n    return original_setup_tunnel(host, port, share_token, share_server_address, share_server_tls_certificate)\n\n# Replace the original function with our patched version\ngradio.networking.setup_tunnel = patched_setup_tunnel\n```'
+        html = markdown_code_to_html(markdown_content)
+        expected_html = '''<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python"># Monkey patch setup_tunnel para que acepte el parámetro adicional<br>def patched_setup_tunnel(host, port, share_token, share_server_address, share_server_tls_certificate=None):<br>&#x20;&#x20;return original_setup_tunnel(host, port, share_token, share_server_address, share_server_tls_certificate)<br><br># Replace the original function with our patched version<br>gradio.networking.setup_tunnel = patched_setup_tunnel</code></pre></div>
+      </section>'''
+        self.assertEqual(html, expected_html)
 
 class TestMarkdownImageToHtml(unittest.TestCase):
 
@@ -504,6 +512,11 @@ class TestMarkdownOrderedListToHtml(unittest.TestCase):
     def test_ordered_list_with_inline_code(self):
         markdown = ' 1. `Flash Attention`: Esta es una implementación de la `attention` que utiliza `sparse` para reducir la complejidad computacional. La atención es una de las operaciones más costosas en los modelos de transformers, y `Flash Attention` la hace más eficiente.\n 2. `Memory-Efficient Attention`: Esta es otra implementación de la atención que utiliza la función `scaled_dot_product_attention` de PyTorch. Esta función es más eficiente en términos de memoria que la implementación estándar de la atención en PyTorch.\n'
         expected_html = '<ol>\n  <li><code>Flash Attention</code>: Esta es una implementación de la <code>attention</code> que utiliza <code>sparse</code> para reducir la complejidad computacional. La atención es una de las operaciones más costosas en los modelos de transformers, y <code>Flash Attention</code> la hace más eficiente.</li>\n  <li><code>Memory-Efficient Attention</code>: Esta es otra implementación de la atención que utiliza la función <code>scaled_dot_product_attention</code> de PyTorch. Esta función es más eficiente en términos de memoria que la implementación estándar de la atención en PyTorch.</li>\n</ol>'
+        self.assertEqual(markdown_to_html_updated(markdown), expected_html)
+    
+    def test_ordered_list_with_inline_code_with_two_apostrophes(self):
+        markdown = '1. ``OpenAI`` y ``Google`` lanzaron sus APIs multimodales en vivo para ChatGPT y Gemini. ¡OpenAI incluso lanzó un número de teléfono ``1-800-ChatGPT``!\n2. ``Kyutai`` lanzó [Moshi](https://huggingface.co/kyutai), un LLM de audio a audio completamente de código abierto.\n3. ``Alibaba`` lanzó [Qwen2-Audio](https://huggingface.co/Qwen/Qwen2-Audio-7B-Instruct), un LLM de código abierto que entiende audio de forma nativa.\n4. ``Fixie.ai`` lanzó [Ultravox](https://huggingface.co/fixie-ai/ultravox-v0_5-llama-3_3-70b), otro LLM de código abierto que también entiende audio de forma nativa.\n5. ``ElevenLabs`` recaudó 180 millones de dólares en su Serie C.\n'
+        expected_html = '<ol>\n  <li><code>OpenAI</code> y <code>Google</code> lanzaron sus APIs multimodales en vivo para ChatGPT y Gemini. ¡OpenAI incluso lanzó un número de teléfono <code>1-800-ChatGPT</code>!</li>\n  <li><code>Kyutai</code> lanzó <a href="https://huggingface.co/kyutai">Moshi</a>, un LLM de audio a audio completamente de código abierto.</li>\n  <li><code>Alibaba</code> lanzó <a href="https://huggingface.co/Qwen/Qwen2-Audio-7B-Instruct">Qwen2-Audio</a>, un LLM de código abierto que entiende audio de forma nativa.</li>\n  <li><code>Fixie.ai</code> lanzó <a href="https://huggingface.co/fixie-ai/ultravox-v0_5-llama-3_3-70b">Ultravox</a>, otro LLM de código abierto que también entiende audio de forma nativa.</li>\n  <li><code>ElevenLabs</code> recaudó 180 millones de dólares en su Serie C.</li>\n</ol>'
         self.assertEqual(markdown_to_html_updated(markdown), expected_html)
 
 class TestMixedMarkdownListsToHtml(unittest.TestCase):
@@ -1172,6 +1185,13 @@ print("Hello, World!")
         markdown = "`Whisper` es un sistema de reconocimiento automático de voz (automatic speech recognition (ASR)) entrenado en 680.000 horas de datos supervisados ​​multilingües y multitarea recopilados de la web. El uso de un conjunto de datos tan grande y diverso conduce a una mayor solidez ante los acentos, el ruido de fondo y el lenguaje técnico. Además, permite la transcripción en varios idiomas, así como la traducción de esos idiomas al inglés"
         expected_html = '''<section class="section-block-markdown-cell">
 <p><code>Whisper</code> es un sistema de reconocimiento automático de voz (automatic speech recognition (ASR)) entrenado en 680.000 horas de datos supervisados ​​multilingües y multitarea recopilados de la web. El uso de un conjunto de datos tan grande y diverso conduce a una mayor solidez ante los acentos, el ruido de fondo y el lenguaje técnico. Además, permite la transcripción en varios idiomas, así como la traducción de esos idiomas al inglés</p>
+</section>'''
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+    
+    def test_with_code_inline_with_two_apostrophes(self):
+        markdown = 'El siguiente nivel es usar un LLM para responder al usuario. `FastRTC` viene con capacidades de ``speech-to-text`` y ``text-to-speech`` incorporadas, por lo que trabajar con LLMs es realmente fácil. Vamos a cambiar nuestra función `echo` en consecuencia:'
+        expected_html = '''<section class="section-block-markdown-cell">
+<p>El siguiente nivel es usar un LLM para responder al usuario. <code>FastRTC</code> viene con capacidades de <code>speech-to-text</code> y <code>text-to-speech</code> incorporadas, por lo que trabajar con LLMs es realmente fácil. Vamos a cambiar nuestra función <code>echo</code> en consecuencia:</p>
 </section>'''
         self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
     

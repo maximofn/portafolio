@@ -10,8 +10,11 @@ def process_links_in_text(text):
     Returns:
         Text with markdown links and inline code converted to HTML
     """
-    # First process inline code (backticks)
-    text = re.sub(r'`([^`]+)`', r'<code>\1</code>', text)
+    # First process inline code with double backticks
+    text = re.sub(r'``([^`]+?)``', r'<code>\1</code>', text)
+    
+    # Then process inline code with single backticks (but not those already processed)
+    text = re.sub(r'`([^`]+?)`', r'<code>\1</code>', text)
     
     # Then process external links (https:// or http://)
     text = re.sub(r'\[(.*?)\]\((https?://.*?)\)', r'<a href="\2">\1</a>', text)

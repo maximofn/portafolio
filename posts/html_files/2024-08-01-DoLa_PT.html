@@ -1,99 +1,96 @@
 <section class="section-block-markdown-cell">
-<h1 id="DoLa:-a-decodifica%C3%A7%C3%A3o-por-camadas-contrastantes-melhora-a-factualidade-em-grandes-modelos-de-linguagem">DoLa: a decodificação por camadas contrastantes melhora a factualidade em grandes modelos de linguagem<a class="anchor-link" href="#DoLa:-a-decodifica%C3%A7%C3%A3o-por-camadas-contrastantes-melhora-a-factualidade-em-grandes-modelos-de-linguagem">¶</a></h1>
+<h1 id="DoLa: Decoding by Contrasting Layers Improves Factuality in Large Language Models">DoLa: Decoding by Contrasting Layers Improves Factuality in Large Language Models<a class="anchor-link" href="#DoLa: Decoding by Contrasting Layers Improves Factuality in Large Language Models">¶</a></h1>
 </section>
 <section class="section-block-markdown-cell">
-<p>Este caderno foi traduzido automaticamente para torná-lo acessível a mais pessoas, por favor me avise se você vir algum erro de digitação.</p>
+<p>Aunque a medida que los LLMs van aumentando de tamaño y van surgiendo nuevas capacidades, tenemos un problema y son las alucionaciones. Los autores del paper <a href="https://arxiv.org/abs/2309.03883">DoLa: Decoding by Contrasting Layers Improves Factuality in Large Language Models</a> proponen un método para evitar este problema.</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Entretanto, à medida que os LLMs aumentam de tamanho e surgem novos recursos, temos um problema, que é o aliasing. Os autores do artigo <a href="https://arxiv.org/abs/2309.03883">DoLa: Decoding by Contrasting Layers Improves Factuality in Large Language Models</a> propõem um método para evitar esse problema.</p>
+<p>Proponen un enfoque de decodificación contrastiva, donde la probabilidad de salida de la siguiente palabra se obtiene de la diferencia en los logits entre una capa superior y una inferior. Al enfatizar el conocimiento de las capas superiores y restarle importancia al de las inferiores, podemos hacer que los LM sean más factuales y, por lo tanto, reducir las alucinaciones.</p>
+<p>En la siguiente figura se muestra esta idea. Mientras que <code>Seattle</code> mantiene una alta probabilidad en todas las capas, la probabilidad de la respuesta correcta <code>Olympia</code> aumenta después de que las capas superiores inyecten más conocimiento factual. Contrastar las diferencias entre las distintas capas puede revelar la respuesta correcta en este caso</p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/DoLa-figure1.webp" alt="DoLa-figure1">
 </section>
 <section class="section-block-markdown-cell">
-<p>Eles propõem uma abordagem de decodificação contrastiva, em que a probabilidade de saída da próxima palavra é obtida a partir da diferença de logits entre uma camada superior e uma inferior. Ao enfatizar o conhecimento nas camadas superiores e reduzir a ênfase no conhecimento das camadas inferiores, podemos tornar as LMs mais factuais e, assim, reduzir as alucinações.</p>
-<p>A figura abaixo mostra essa ideia. Embora <code>Seattle</code> mantenha uma alta probabilidade em todas as camadas, a probabilidade da resposta correta <code>Olympia</code> aumenta depois que as camadas superiores injetam mais conhecimento factual. O contraste das diferenças entre as diferentes camadas pode revelar a resposta correta nesse caso.</p>
-<p><img alt="DoLa-figure1" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/DoLa-figure1.webp"/></p>
+<h2 id="Metodo">Método<a class="anchor-link" href="#Metodo">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="M%C3%A9todo">Método<a class="anchor-link" href="#M%C3%A9todo">¶</a></h2>
-</section>
-<section class="section-block-markdown-cell">
-<p>Um LLM consiste em uma camada de incorporação, vários transformadores sequenciais e, em seguida, uma camada de saída. O que eles propõem é medir a saída de cada transformador usando a divergência de Jensen-Shannon (JSD).</p>
-<p>A figura a seguir mostra essa medida na saída de cada transformador para uma frase de entrada do LLM. Cada coluna corresponde a um token da frase</p>
-<p><img alt="DoLa-figure2" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/DoLa-figure2.webp"/></p>
-<p>Dois padrões podem ser observados</p>
+<p>Un LLM consiste en una capa de embedding, varios transformers secuenciales y a continuación una capa de salida. Lo que proponen es medir la salida de cada transformer mediante la divergencia de Jensen-Shannon (JSD)</p>
+<p>En la siguiente figura se puede ver esta medida a la salida de cada transformer para una frase de entrada al LLM. Cada columna corresponde a un token de la frase.</p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/DoLa-figure2.webp" alt="DoLa-figure2">
+<p>Se pueden observar dos patrones</p>
 <ul>
-<li><p>O primeiro ocorre ao prever entidades nomeadas ou datas importantes, como <code>Wole Soyinka</code> e <code>1986</code>, que exigem conhecimento factual. É possível observar que o JSD calculado permanece extremamente alto nas camadas superiores. Esse padrão indica que o modelo continua alterando suas previsões nas camadas posteriores e, possivelmente, injetando mais conhecimento factual nas previsões.</p>
-</li>
-<li><p>A segunda ocorre ao prever palavras funcionais, como <code>was</code>, <code>the</code>, <code>to</code>, <code>in</code>, e tokens copiados da pergunta de entrada, como <code>first Nigerian</code>, <code>Nobel Prize</code>. Quando esses tokens "fáceis" são previstos, podemos observar que o JSD se torna muito pequeno a partir das camadas intermediárias. Essa constatação indica que o modelo já decidiu qual token gerar nas camadas intermediárias e mantém as distribuições de saída praticamente inalteradas nas camadas superiores. Essa descoberta também é consistente com as suposições nos LLMs de saída inicial <code>Schuster et al., 2022</code>.</p>
-</li>
+  <li>El primero ocurre cuando se predicen entidades de nombre o fechas importantes, como <code>Wole Soyinka</code> y <code>1986</code>, que requieren conocimiento factual. Se puede ver que la JSD calculada sigue siendo extremadamente alta en las capas superiores. Este patrón indica que el modelo sigue cambiando sus predicciones en las últimas capas, y potencialmente inyectando más conocimiento factual en las predicciones</li>
+</ul>
+<ul>
+  <li>El segundo ocurre cuando se predicen palabras funcionales, como <code>was</code>, <code>the</code>, <code>to</code>, <code>in</code>, y los tokens copiados de la pregunta de entrada, como <code>first Nigerian</code>, <code>Nobel Prize</code>. Cuando se predicen estos tokens "fáciles", podemos observar que la JSD se vuelve muy pequeña a partir de las capas intermedias. Este hallazgo indica que el modelo ya ha decidido qué token generar en las capas intermedias, y mantiene las distribuciones de salida casi sin cambios en las capas superiores. Este hallazgo también es consistente con las suposiciones en los LLM de salida temprana <code>Schuster et al., 2022</code></li>
 </ul>
 </section>
 <section class="section-block-markdown-cell">
-<p>Quando a previsão da próxima palavra requer conhecimento factual, o LLM parece alterar as previsões nas camadas superiores. O contraste das camadas antes e depois de uma mudança repentina pode, portanto, ampliar o conhecimento que emerge das camadas superiores e fazer com que o modelo confie mais em seu conhecimento factual interno. Além disso, essa evolução das informações parece variar de token para token.</p>
+<p>Cuando la predicción de la siguiente palabra requiere conocimiento factual, el LLM parece cambiar las predicciones en las capas superiores. Contrastar las capas antes y después de un cambio repentino puede, por lo tanto, amplificar el conocimiento que emerge de las capas superiores y hacer que el modelo se base más en su conocimiento interno factual. Además, esta evolución de la información parece variar de un token a otro</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Seu método requer a seleção precisa da camada prematura que contém informações plausíveis, mas menos factuais, que nem sempre podem estar na mesma camada inicial. Portanto, eles propõem encontrar essa camada prematura selecionando dinamicamente a camada prematura, conforme visto na imagem a seguir.</p>
-<p><img alt="DoLa-figure3" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/DoLa-figure3.webp"/></p>
+<p>Su método requiere seleccionar con precisión la capa prematura que contiene información plausible pero menos factual, que puede no estar siempre en la misma capa temprana. Por lo tanto, proponen encontrar esa capa prematura mediante una selección dinámica de la capa prematura como se ve en la siguiente imagen</p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/DoLa-figure3.webp" alt="DoLa-figure3">
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Sele%C3%A7%C3%A3o-din%C3%A2mica-da-camada-prematura">Seleção dinâmica da camada prematura<a class="anchor-link" href="#Sele%C3%A7%C3%A3o-din%C3%A2mica-da-camada-prematura">¶</a></h2>
+<h2 id="Seleccion dinamica de la capa prematura">Selección dinámica de la capa prematura<a class="anchor-link" href="#Seleccion dinamica de la capa prematura">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<p>Para selecionar a camada prematura, eles calculam a divergência de Jensen-Shannon (JSD) entre as camadas intermediárias e a camada final. A camada prematura é selecionada como a camada com a maior JSD.</p>
+<p>Para seleccionar la capa prematura, calculan la divergencia de Jensen-Shannon (JSD) entre las capas intermedias y la final. La capa prematura se selecciona como la capa con la JSD más alta</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Entretanto, como esse processo pode ser um pouco lento, o que eles fazem é agrupar várias camadas para fazer menos cálculos.</p>
+<p>Sin embargo, como este proceso puede ser un poco lento, lo que hacen es agrupar varias capas para hacer menos cálculos</p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Contraste-de-previs%C3%B5es">Contraste de previsões<a class="anchor-link" href="#Contraste-de-previs%C3%B5es">¶</a></h2>
+<h2 id="Contraste de las predicciones">Contraste de las predicciones<a class="anchor-link" href="#Contraste de las predicciones">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<p>Agora que temos a última camada (camada madura) e a camada prematura, podemos contrastar as previsões de ambas as camadas. Para isso, eles calculam a probabilidade de log do próximo token na camada madura e na camada prematura. Em seguida, eles subtraem a probabilidade de log da camada prematura daquela da camada madura, dando assim mais peso ao conhecimento da camada madura.</p>
+<p>Ahora que tenemos la última capa (capa madura) y la capa prematura, podemos contrastar las predicciones de ambas capas. Para ello, calculan la probabilidad logarítmica del siguiente token en la capa madura y la prematura. A continuación restan la probabilidad logarítmica de la capa prematura a la de la capa madura, así le dan más importancia al conocimiento de la capa madura</p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Penalidade-de-repeti%C3%A7%C3%A3o">Penalidade de repetição<a class="anchor-link" href="#Penalidade-de-repeti%C3%A7%C3%A3o">¶</a></h2>
+<h2 id="Penalizacion por repeticion">Penalización por repetición<a class="anchor-link" href="#Penalizacion por repeticion">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<p>A motivação da DoLa é reduzir a ênfase no conhecimento linguístico das camadas inferiores e ampliar o conhecimento factual do mundo real. Entretanto, isso pode fazer com que o modelo gere parágrafos gramaticalmente incorretos.</p>
-<p>Empiricamente, eles não observaram esse problema, mas descobriram que a distribuição DoLa resultante às vezes tem uma tendência maior de repetir frases geradas anteriormente, especialmente durante a geração de longas sequências de raciocínio na cadeia de pensamento.</p>
-<p>Portanto, eles incluem uma penalidade de repetição introduzida em <code>Keskar et al. (2019)</code> com <code>θ = 1,2</code> durante a decodificação.</p>
+<p>La motivación de DoLa es restar importancia al conocimiento lingüístico de las capas inferiores y amplificar el conocimiento factual del mundo real. Sin embargo, esto puede dar lugar a que el modelo genere párrafos gramaticalmente incorrectos</p>
+<p>Empíricamente no han observado ese problema, pero han encontrado que la distribución DoLa resultante a veces tiene una mayor tendencia a repetir frases generadas previamente, especialmente durante la generación de largas secuencias de razonamiento en la cadena de pensamiento</p>
+<p>Así que incluyen una penalización por repetición introducida en <code>Keskar et al. (2019)</code> con <code>θ = 1.2</code> durante la decodificación</p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Implementa%C3%A7%C3%A3o-com-transformadores">Implementação com transformadores<a class="anchor-link" href="#Implementa%C3%A7%C3%A3o-com-transformadores">¶</a></h2>
+<h2 id="Implementacion con transformers">Implementación con transformers<a class="anchor-link" href="#Implementacion con transformers">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<p>Vamos ver como implementar a DoLa com a biblioteca <code>transformers</code> da Hugging Face. Para obter mais informações sobre como implementar a DoLa com a biblioteca <code>transformers</code>, você pode consultar o seguinte <a href="https://huggingface.co/docs/transformers/main/en/generation_strategies#dola-decoding">link</a></p>
+<p>Vamos a ver cómo implementar DoLa con la librería <code>transformers</code> de Hugging Face. Para obtener más información de cómo aplicar DoLa con la librería <code>transformers</code> puedes consultar el siguiente <a href="https://huggingface.co/docs/transformers/main/en/generation_strategies#dola-decoding">enlace</a></p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Primeiro, fazemos o login no Hub, porque vamos usar o Llama 3 8B e, para usá-lo, precisamos pedir permissão ao Meta, portanto, para fazer o download, precisamos estar conectados para que ele saiba quem está fazendo o download.</p>
+<p>Primero nos logueamos en el Hub, porque vamos a usar Llama 3 8B, para poder usarlo hay que pedir permiso a Meta, así que para poder descargarlo hay que estar logueado para que sepa quién lo está descargando</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">notebook_login</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">notebook_login</span>
 <span class="n">notebook_login</span><span class="p">()</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Agora, instanciamos o tokenizador e o modelo</p>
+<p>Ahora instanciamos el tokenizador y el modelo</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">set_seed</span>
-<span class="kn">import</span> <span class="nn">torch</span>
-
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">set_seed</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="w"> </span>
 <span class="n">compute_dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_bf16_supported</span><span class="p">()</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>
-
-<span class="n">device</span> <span class="o">=</span> <span class="s1">'cuda'</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s1">'cpu'</span>
-<span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">"meta-llama/Meta-Llama-3-8B-Instruct"</span>
+<span class="w"> </span>
+<span class="n">device</span> <span class="o">=</span> <span class="s1">&#39;cuda&#39;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s1">&#39;cpu&#39;</span>
+<span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">&quot;meta-llama/Meta-Llama-3-8B-Instruct&quot;</span>
 <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>
 <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">,</span> <span class="n">torch_dtype</span><span class="o">=</span><span class="n">compute_dtype</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">,</span> <span class="n">torch_dtype</span><span class="o">=</span><span class="n">compute_dtype</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">)</span>
 <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">eos_token_id</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Atribuímos um valor de semente fixo para a reprodutibilidade do exemplo.</p>
+<p>Asignamos un valor fijo de semilla para la reproducibilidad del ejemplo</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -102,104 +99,116 @@
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Geramos os tokens de entrada do LLM.</p>
+<p>Generamos los tokens de entrada al LLM</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">question</span> <span class="o">=</span> <span class="s1">'What does Darth Vader say to Luke in "The Empire Strikes Back"?'</span>
-<span class="n">text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Answer with a short answer.</span><span class="se">\n\n</span><span class="s2">Question: </span><span class="si">{</span><span class="n">question</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">Answer: "</span>
-<span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">question</span> <span class="o">=</span> <span class="s1">&#39;What does Darth Vader say to Luke in &quot;The Empire Strikes Back&quot;?&#39;</span>
+<span class="n">text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Answer with a short answer.</span><span class="se">\n\n</span><span class="s2">Question: </span><span class="si">{</span><span class="n">question</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">Answer: &quot;</span>
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Agora, geramos a entrada vanilla, ou seja, sem aplicar o DoLa</p>
+<p>Generamos ahora la entrada vanilla, es decir, sin aplicar DoLa</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">generate_kwargs</span><span class="o">=</span><span class="p">{</span>
-    <span class="s2">"do_sample"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="s2">"max_new_tokens"</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
-    <span class="s2">"top_p"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="s2">"temperature"</span><span class="p">:</span> <span class="kc">None</span>
+<span class="w">    </span><span class="s2">&quot;do_sample&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;max_new_tokens&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;top_p&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="kc">None</span>
 <span class="p">}</span>
-
+<span class="w"> </span>
 <span class="n">vanilla_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">)</span>
-
+<span class="w"> </span>
 <span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">vanilla_output</span><span class="p">[:,</span> <span class="n">inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
-<div class="output-subarea-output-stream-output-stderr-output-text">
+<div class="output-subarea-output-stream-output-stdout-output-text">
 <pre>Setting `pad_token_id` to `eos_token_id`:128001 for open-end generation.
 </pre>
 </div>
 </div>
+</div>
+</section>
+<section class="section-block-code-cell-">
+<div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
 <div class="output-subarea-output-stream-output-stdout-output-text">
-<pre> "No, I am your father." (Note: This is a famous misquote. The actual quote is "No, I am your father" is not in the movie. The correct quote is "No, I am your father." is not
+<pre> &quot;No, I am your father.&quot; (Note: This is a famous misquote. The actual quote is &quot;No, I am your father&quot; is not in the movie. The correct quote is &quot;No, I am your father.&quot; is not
 </pre>
 </div>
 </div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Vemos que ele sabe que há um erro famoso, mas não diz a frase verdadeira</p>
+<p>Vemos que sabe que hay un error famoso, pero no consigue decir la frase correcta</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Agora aplicando o DoLa</p>
+<p>Ahora aplicando DoLa</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">dola_high_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">,</span> <span class="n">dola_layers</span><span class="o">=</span><span class="s1">'high'</span><span class="p">,</span> <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.2</span><span class="p">)</span>
-
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">dola_high_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">,</span> <span class="n">dola_layers</span><span class="o">=</span><span class="s1">&#39;high&#39;</span><span class="p">,</span> <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.2</span><span class="p">)</span>
+<span class="w"> </span>
 <span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">dola_high_output</span><span class="p">[:,</span> <span class="n">inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
-<div class="output-subarea-output-stream-output-stderr-output-text">
+<div class="output-subarea-output-stream-output-stdout-output-text">
 <pre>Setting `pad_token_id` to `eos_token_id`:128001 for open-end generation.
 </pre>
 </div>
 </div>
+</div>
+</section>
+<section class="section-block-code-cell-">
+<div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
 <div class="output-subarea-output-stream-output-stdout-output-text">
-<pre> "No, I am your father." (Note: This is one of the most famous lines in movie history, and it's often misquoted as "Luke, I am your father.")
+<pre> &quot;No, I am your father.&quot; (Note: This is one of the most famous lines in movie history, and it&#x27;s often misquoted as &quot;Luke, I am your father.&quot;)
 </pre>
 </div>
 </div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Agora ele consegue dar a frase correta e o <a href="https://www.bbc.co.uk/bitesize/articles/zc38kty">famoso erro</a></p>
+<p>Ahora sí consigue dar la frase correcta y el <a href="https://www.bbc.co.uk/bitesize/articles/zc38kty">error famoso</a></p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Vamos fazer outro teste com outro exemplo, reiniciar o notebook e usar outro modelo.</p>
+<p>Vamos a hacer otra prueba con otro ejemplo, reinicio el notebook y uso otro modelo</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">set_seed</span>
-<span class="kn">import</span> <span class="nn">torch</span>
-
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">set_seed</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="w"> </span>
 <span class="n">compute_dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_bf16_supported</span><span class="p">()</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>
-
-<span class="n">device</span> <span class="o">=</span> <span class="s1">'cuda'</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s1">'cpu'</span>
-<span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">"huggyllama/llama-7b"</span>
+<span class="w"> </span>
+<span class="n">device</span> <span class="o">=</span> <span class="s1">&#39;cuda&#39;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s1">&#39;cpu&#39;</span>
+<span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">&quot;huggyllama/llama-7b&quot;</span>
 <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>
 <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">,</span> <span class="n">torch_dtype</span><span class="o">=</span><span class="n">compute_dtype</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">,</span> <span class="n">torch_dtype</span><span class="o">=</span><span class="n">compute_dtype</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">)</span>
 <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">eos_token_id</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Atribuímos um valor de semente fixo para a reprodutibilidade do exemplo.</p>
+<p>Asignamos un valor fijo de semilla para la reproducibilidad del ejemplo</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -208,32 +217,34 @@
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Estou escrevendo uma nova pergunta</p>
+<p>Le escribo una nueva pregunta</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">text</span> <span class="o">=</span> <span class="s2">"On what date was the Declaration of Independence officially signed?"</span>
-<span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;On what date was the Declaration of Independence officially signed?&quot;</span>
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Geramos a saída vanilla</p>
+<p>Generamos la salida vanilla</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">generate_kwargs</span><span class="o">=</span><span class="p">{</span>
-    <span class="s2">"do_sample"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="s2">"max_new_tokens"</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
-    <span class="s2">"top_p"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="s2">"temperature"</span><span class="p">:</span> <span class="kc">None</span>
+<span class="w">    </span><span class="s2">&quot;do_sample&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;max_new_tokens&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;top_p&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="kc">None</span>
 <span class="p">}</span>
-
+<span class="w"> </span>
 <span class="n">vanilla_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">)</span>
-
+<span class="w"> </span>
 <span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">vanilla_output</span><span class="p">[:,</span> <span class="n">inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
@@ -248,18 +259,20 @@ The Declaration of Independence was signed on July 4,
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Como podemos ver, ela gera a partida errada, pois, embora seja comemorada em 4 de julho, na verdade foi assinada em <a href="https://www.nps.gov/inde/learn/historyculture/resources-declarationofindependence.htm">2 de agosto</a>.</p>
+<p>Como vemos, genera mal la salida, ya que aunque se celebra el 4 de julio, en realidad fue firmada el <a href="https://www.nps.gov/inde/learn/historyculture/resources-declarationofindependence.htm">2 de agosto</a></p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Vamos experimentar o DoLa agora</p>
+<p>Vamos a probar ahora con DoLa</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">dola_high_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">,</span> <span class="n">dola_layers</span><span class="o">=</span><span class="s1">'high'</span><span class="p">,</span> <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.2</span><span class="p">)</span>
-
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">dola_high_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">,</span> <span class="n">dola_layers</span><span class="o">=</span><span class="s1">&#39;high&#39;</span><span class="p">,</span> <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.2</span><span class="p">)</span>
+<span class="w"> </span>
 <span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">dola_high_output</span><span class="p">[:,</span> <span class="n">inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
@@ -272,15 +285,17 @@ July 4, 1776. This is the most well-known date in U.S. history. The day has been
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Ele ainda não gera a saída correta, portanto, vamos instruí-lo a contrastar apenas a camada final com as camadas 28 e 30.</p>
+<p>Sigue sin generar una salida correcta, así que vamos a indicarle que solo contraste la capa final con las capas 28 y 30</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">dola_high_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">,</span> <span class="n">dola_layers</span><span class="o">=</span><span class="p">[</span><span class="mi">28</span><span class="p">,</span><span class="mi">30</span><span class="p">],</span> <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.2</span><span class="p">)</span>
-
+<span class="w"> </span>
 <span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">dola_high_output</span><span class="p">[:,</span> <span class="n">inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
@@ -293,5 +308,5 @@ It was officially signed on 2 August 1776, when 56 members of the Second Contine
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Agora, ele consegue gerar a resposta correta</p>
+<p>Ahora sí consigue generar la respuesta correcta</p>
 </section>

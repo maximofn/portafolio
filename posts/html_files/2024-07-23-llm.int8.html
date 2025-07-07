@@ -1,83 +1,85 @@
 <section class="section-block-markdown-cell">
-<h1 id="llm.int8()---8-bit-Matrix-Multiplication-for-Transformers-at-Scale">llm.int8() - 8-bit Matrix Multiplication for Transformers at Scale<a class="anchor-link" href="#llm.int8()---8-bit-Matrix-Multiplication-for-Transformers-at-Scale">¶</a></h1>
+<h1 id="llm.int8() - 8-bit Matrix Multiplication for Transformers at Scale">llm.int8() - 8-bit Matrix Multiplication for Transformers at Scale<a class="anchor-link" href="#llm.int8() - 8-bit Matrix Multiplication for Transformers at Scale">¶</a></h1>
 </section>
 <section class="section-block-markdown-cell">
-<p>En el post <a href="https://maximofn.com/llms-quantization/">LLMs quantization</a> explicamos la importancia de la cuantización de los LLMs para ahorrar memoria. Además explicamos que existe una manera de cuantización que es la <a href="https://maximofn.com/llms-quantization/#Cuantizaci%C3%B3n-de-punto-cero">cuantización de punto cero</a> que consiste en transformar los valores de los parámetros de los pesos linealmente, pero esto tiene el problema de la degradación de los modelos de lenguaje a partir del momento que superan los 2.7B de parámetros</p>
-<p><img alt="llm.int8()-degradation" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-degradation.webp"/></p>
+<p>En el post <a href="https://maximofn.com/llms-quantization/">LLMs quantization</a> explicamos la importancia de la cuantización de los LLMs para ahorrar memoria. Además, explicamos que existe una manera de cuantización que es la <a href="https://maximofn.com/llms-quantization/#Cuantizaci%C3%B3n-de-punto-cero">cuantización de punto cero</a> que consiste en transformar los valores de los parámetros de los pesos linealmente, pero esto tiene el problema de la degradación de los modelos de lenguaje a partir del momento en que superan los 2.7B de parámetros</p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-degradation.webp" alt="llm.int8()-degradation">
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Cuantizaci%C3%B3n-vectorial">Cuantización vectorial<a class="anchor-link" href="#Cuantizaci%C3%B3n-vectorial">¶</a></h2>
+<h2 id="Cuantizacion vectorial">Cuantización vectorial<a class="anchor-link" href="#Cuantizacion vectorial">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<p>Como la cuantización de todos los parámetros de los modelos produce error en los grandes modelos de lenguaje, lo que proponen en el paper <a href="https://arxiv.org/abs/2208.07339">llm.int8()</a> es realizar la cuantización vectorial, es decir, separar las matrices de los pesos en vectores, de manera que algunos de esos vectores se pueden cuantizar en 8 bits, mientras que otros no. Por lo que los que si se pueden cuantizar en 8 bits se cuantizan y se realizan las multiplicaciones matriciales en formato INT8, mientras que los vectores que no pueden ser cuantizados se mantienen en formato FP16 y se realizan las multiplicaciones en formato FP16.</p>
+<p>Como la cuantización de todos los parámetros de los modelos produce error en los grandes modelos de lenguaje, lo que proponen en el paper <a href="https://arxiv.org/abs/2208.07339">llm.int8()</a> es realizar la cuantización vectorial, es decir, separar las matrices de los pesos en vectores, de manera que algunos de esos vectores se pueden cuantizar en 8 bits, mientras que otros no. Por lo que los que sí se pueden cuantizar en 8 bits se cuantizan y se realizan las multiplicaciones matriciales en formato INT8, mientras que los vectores que no pueden ser cuantizados se mantienen en formato FP16 y se realizan las multiplicaciones en formato FP16.</p>
 </section>
 <section class="section-block-markdown-cell">
 <p>Veámoslo con un ejemplo</p>
 <p>Supongamos que tenemos la matriz</p>
-<p><img alt="llm.int8()-A" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-A.webp"/></p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-A.webp" alt="llm.int8()-A">
 <p>y la queremos multiplicar por la matriz</p>
-<p><img alt="llm.int8()-B" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-B.webp"/></p>
-<p>Establecemos un valor umbral y todas las columnas de la primera matriz que tengan un valor mayor a ese umbral se dejan en formato FP16, las filas equivalentes a las filas de la primera matriz, en la segunda matriz también se dejan en formato FP16.</p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-B.webp" alt="llm.int8()-B">
+<p>Establecemos un valor umbral y todas las columnas de la primera matriz que tengan un valor mayor a ese umbral se dejan en formato FP16. Las filas equivalentes a las filas de la primera matriz, en la segunda matriz también se dejan en formato FP16.</p>
 <p>Lo explico más claro, como la segunda y cuarta columna de la primera matriz (columnas amarillas) tienen valores mayores a un cierto umbral, entonces la segunda y la cuarta fila de la segunda matriz (filas amarillas) se dejan en formato FP16</p>
-<p>En caso de tener valores umbrales en la segunda matriz se haría lo mismo, por ejemplo, si en la seguna matriz una fila tuviese un valor mayor a un umbral se dejaría en formato FP16, y esa columna en la primera matriz se dejaría en formato FP16</p>
+<p>En caso de tener valores umbrales en la segunda matriz se haría lo mismo, por ejemplo, si en la segunda matriz una fila tuviese un valor mayor a un umbral se dejaría en formato FP16, y esa columna en la primera matriz se dejaría en formato FP16</p>
 <p>El resto de filas y columnas que no se dejan en formato FP16 se cuantizan en 8 bits y se realizan las multiplicaciones en formato INT8</p>
-<p>Así que separamos la primera matriz en las dos matrices</p>
-<p><img alt="llm.int8()-A_separated" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-A_separated_.webp"/></p>
+<p>Así que separamos la primera matriz en las dos submatrices</p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-A_separated_.webp" alt="llm.int8()-A_separated">
 <p>Y la segunda matriz en las dos matrices</p>
-<p><img alt="llm.int8()-B_separated" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-B_separated_.webp"/></p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-B_separated_.webp" alt="llm.int8()-B_separated">
 </section>
 <section class="section-block-markdown-cell">
 <p>Multiplicamos las matrices en INT8 por un lado</p>
-<p><img alt="llm.int8()-AxB-int8" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB-int8_.webp"/></p>
-<p>y las que están en formato FP16 por otro lado</p>
-<p><img alt="llm.int8()-AxB-fp16" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB-fp16_.webp"/></p>
-<p>Como se puede ver, multiplicado las matrices en formato INT8 nos da como resultado una matriz de tamaño 3x2, y multiplicando las matrices en formato FP16 nos da como resultado otra matriz de tamaño 3x2, por lo que si las sumamos</p>
-<p><img alt="llm.int8()-fp16+int8" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-fp16int8_.webp"/></p>
-<p>Curiosamente nos da el mismo resultado que si hubiésemos multiplicado las matrices originales</p>
-<p><img alt="llm.int8()-AxB" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB_.webp"/></p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB-int8_.webp" alt="llm.int8()-AxB-int8">
+<p>Y las que están en formato FP16 por otro lado</p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB-fp16_.webp" alt="llm.int8()-AxB-fp16">
+<p>Como se puede ver, multiplicar las matrices en formato INT8 nos da como resultado una matriz de tamaño 3x2, y multiplicar las matrices en formato FP16 nos da como resultado otra matriz de tamaño 3x2, por lo que si las sumamos</p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-fp16int8_.webp" alt="llm.int8()-fp16+int8">
+<p>Curiosamente, nos da el mismo resultado que si hubiésemos multiplicado las matrices originales</p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB_.webp" alt="llm.int8()-AxB">
 </section>
 <section class="section-block-markdown-cell">
 <p>Para poder ver por qué ocurre esto, si desarrollamos el producto vectorial de las dos matrices originales</p>
-<p><img alt="llm.int8()-AxB-explained" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB-explained.webp"/></p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB-explained.webp" alt="llm.int8()-AxB-explained">
 <p>Vemos que la separación que hemos hecho no da problemas</p>
 </section>
 <section class="section-block-markdown-cell">
 <p>Por tanto, podemos concluir, que podemos separar filas y columnas de las matrices para realizar las multiplicaciones matriciales. Esta separación se hará cuando algún elemento de la fila o la columna sea mayor que un valor umbral, de manera que als filas o columnas que no tengan un valor mayor a ese umbral se codificarán en INT8 ocupando solo un byte y las filas o columnas que tengan algún elemento mayor que ese umbral se pasarán a FP16 ocupando 2 bytes. De esta manera no tendremos problemas de redondeo, ya que los cálculos que hagamos en INT8 los haremos con valores que hagan que las multiplicaciones no superen el rango de los 8 bits.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Valor-umbral-%CE%B1">Valor umbral α<a class="anchor-link" href="#Valor-umbral-%CE%B1">¶</a></h2>
+<h2 id="Valor umbral α">Valor umbral α<a class="anchor-link" href="#Valor umbral α">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
 <p>Como hemos dicho vamos a separar en filas y columnas que tengan algún elemento mayor que un valor umbral, pero ¿Qué valor umbral debemos elegir? Los autores del paper hicieron experimentos con varios valores y determinaron que ese valor umbral debía ser α=6. Por encima de ese valor empezaron a obtener degradaciones en los modelos de lenguaje</p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Uso-de-llm.int8()">Uso de llm.int8()<a class="anchor-link" href="#Uso-de-llm.int8()">¶</a></h2>
+<h2 id="Uso de llm.int8()">Uso de llm.int8()<a class="anchor-link" href="#Uso de llm.int8()">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
 <p>Vamos a ver cómo cuantizar un modelo con llm.int8() con la librería transformers. Para ello hay que tener instalado <code>bitsandbytes</code></p>
-<div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>bitsandbytes
-</pre></div>
+<div class='highlight'><pre><code class="language-bash">pip install bitsandbytes
+</code></pre></div>
 </section>
 <section class="section-block-markdown-cell">
 <p>Cargamos un modelo de 1B de parámetros dos veces, una de manera normal y la segunda cuantizándolo con llm.int8()</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">AutoTokenizer</span>
-<span class="kn">import</span> <span class="nn">torch</span>
-
-<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span><span class="p">)</span>
-<span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"TinyLlama/TinyLlama-1.1B-Chat-v1.0"</span>
-
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">AutoTokenizer</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="w"> </span>
+<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
+<span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">&quot;TinyLlama/TinyLlama-1.1B-Chat-v1.0&quot;</span>
+<span class="w"> </span>
 <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
-<span class="n">model_8bit</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">,</span> <span class="n">load_in_8bit</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">model_8bit</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="n">load_in_8bit</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
-<div class="output-subarea-output-stream-output-stderr-output-text">
+<div class="output-subarea-output-stream-output-stdout-output-text">
 <pre>The `load_in_4bit` and `load_in_8bit` arguments are deprecated and will be removed in the future versions. Please, pass a `BitsAndBytesConfig` object in `quantization_config` argument instead.
 </pre>
 </div>
@@ -92,11 +94,14 @@
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">get_memory_footprint</span><span class="p">()</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">),</span> <span class="n">model_8bit</span><span class="o">.</span><span class="n">get_memory_footprint</span><span class="p">()</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[6]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>(4.098002195358276, 1.1466586589813232)</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>(4.098002195358276, 1.1466586589813232)
+</pre>
 </div>
 </div>
 </div>
@@ -109,16 +114,19 @@
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">"Hello my name is Maximo and I am a Machine Learning Engineer"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">&quot;Hello my name is Maximo and I am a Machine Learning Engineer&quot;</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
 <span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[5]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
 <pre>tensor([[    1, 15043,   590,  1024,   338,  5918,  4200,   322,   306,   626,
-           263,  6189, 29257, 10863,   261]], device='cuda:0')</pre>
+           263,  6189, 29257, 10863,   261]], device=&#x27;cuda:0&#x27;)
+</pre>
 </div>
 </div>
 </div>
@@ -128,24 +136,26 @@
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">time</span>
-
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="w"> </span>
 <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
 <span class="n">max_new_tokens</span> <span class="o">=</span> <span class="mi">50</span>
 <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
-    <span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>
-    <span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>
-    <span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>
+<span class="w">    </span><span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>
+<span class="w">    </span><span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>
+<span class="w">    </span><span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
 <div class="output-subarea-output-stream-output-stdout-output-text">
-<pre>Hello my name is Maximo and I am a Machine Learning Engineer. I am currently working at [Company Name] as a Machine Learning Engineer. I have a Bachelor's degree in Computer Science from [University Name] and a Master's degree in Computer Science from [University Name]. I
+<pre>Hello my name is Maximo and I am a Machine Learning Engineer. I am currently working at [Company Name] as a Machine Learning Engineer. I have a Bachelor&#x27;s degree in Computer Science from [University Name] and a Master&#x27;s degree in Computer Science from [University Name]. I
 1.7616662979125977
 </pre>
 </div>
@@ -160,19 +170,21 @@
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
 <span class="n">max_new_tokens</span> <span class="o">=</span> <span class="mi">50</span>
 <span class="n">outputs</span> <span class="o">=</span> <span class="n">model_8bit</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
-    <span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>
-    <span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>
-    <span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>
+<span class="w">    </span><span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>
+<span class="w">    </span><span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>
+<span class="w">    </span><span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
 <div class="output-subarea-output-stream-output-stdout-output-text">
-<pre>Hello my name is Maximo and I am a Machine Learning Engineer. I am currently working at [Company Name] as a Machine Learning Engineer. I have a Bachelor's degree in Computer Science from [University Name] and a Master's degree in Computer Science from [University Name]. I
+<pre>Hello my name is Maximo and I am a Machine Learning Engineer. I am currently working at [Company Name] as a Machine Learning Engineer. I have a Bachelor&#x27;s degree in Computer Science from [University Name] and a Master&#x27;s degree in Computer Science from [University Name]. I
 9.100712776184082
 </pre>
 </div>
@@ -180,6 +192,6 @@
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Vemos dos cosas, por un lado que a la salida obtenemos el mismo texto, por lo que con un modelo mucho más pequeño podemos obtener la misma salida, sin embargo el modelo cuantizado tarda mucho más en ejecutarse, por lo que si se necesita usar este modelo en tiempo real no sería recomendable.</p>
+<p>Vemos dos cosas: por un lado, que a la salida obtenemos el mismo texto; por lo que con un modelo mucho más pequeño podemos obtener la misma salida. Sin embargo, el modelo cuantizado tarda mucho más en ejecutarse, por lo que si se necesita usar este modelo en tiempo real no sería recomendable.</p>
 <p>Esto es contradictorio, porque podríamos pensar que un modelo más pequeño tendría que ejecutarse más rápido, pero hay que pensar que en realidad los dos modelos, el normal y el cuantizado, realizan las mismas operaciones, solo que uno realiza todas las operaciones en FP32 y el otro las hace en INT8 y FP16, sin embargo el modelo cuantizado tiene que buscar filas y columnas con valores mayores al valor umbral, separarlas, realizar las operaciones en INT8 y FP16 y luego volver a juntar los resultados, por lo que el modelo cuantizado tarda más en ejecutarse.</p>
 </section>

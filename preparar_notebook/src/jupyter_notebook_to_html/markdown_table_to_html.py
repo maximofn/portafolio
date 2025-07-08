@@ -34,12 +34,14 @@ def markdown_table_to_html(markdown_table_string):
         def replace_code(match):
             code_content = match.group(1)
             # Only convert to HTML if it looks like a command (contains spaces and command keywords)
-            command_keywords = ['pip', 'docker', 'apt', 'npm', 'yarn', 'conda', 'git', 'sudo', 'curl', 'wget']
+            command_keywords = ['pip', 'docker', 'apt', 'npm', 'yarn', 'conda', 'git', 'sudo', 'curl', 'wget', 'uv']
             has_spaces = ' ' in code_content
             has_command_keyword = any(keyword in code_content.lower() for keyword in command_keywords)
             
             if has_spaces and has_command_keyword:
-                return f'<code>{code_content}</code>'
+                # Escape HTML characters
+                escaped_content = code_content.replace('<', '&#x3C;').replace('>', '&#x3E;')
+                return f'<code>{escaped_content}</code>'
             else:
                 # Return original markdown for simple code
                 return f'`{code_content}`'

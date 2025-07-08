@@ -92,6 +92,30 @@ class TestOutputCodeToHtml(unittest.TestCase):
         html_output = output_code_to_html(output_code)
         self.assertEqual(html_output, expected_html)
 
+    def test_output_code_with_ansi_escape_code(self):
+        output_code = "Cloning into 'LLMs-from-scratch'...\nremote: Enumerating objects: 260, done.\x1b[K\nremote: Counting objects: 100% (260/260), done.\x1b[K\nremote: Compressing objects: 100% (226/226), done.\x1b[K\nremote: Total 260 (delta 61), reused 121 (delta 22), pack-reused 0 (from 0)\x1b[K\nReceiving objects: 100% (260/260), 1.64 MiB | 6.94 MiB/s, done.\nResolving deltas: 100% (61/61), done.\n"
+        expected_html = '''<section class="section-block-code-cell-">
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>Cloning into &#x27;LLMs-from-scratch&#x27;...
+remote: Enumerating objects: 260, done.
+remote: Counting objects: 100% (260/260), done.
+remote: Compressing objects: 100% (226/226), done.
+remote: Total 260 (delta 61), reused 121 (delta 22), pack-reused 0 (from 0)
+Receiving objects: 100% (260/260), 1.64 MiB | 6.94 MiB/s, done.
+Resolving deltas: 100% (61/61), done.
+</pre>
+</div>
+</div>
+</div>
+</section>'''
+        html_output = output_code_to_html(output_code)
+        self.assertEqual(html_output, expected_html)
+
+
+
 if __name__ == '__main__':
     # It's good practice to ensure that only one unittest.main() call remains,
     # especially if tests might interfere (though less likely with simple unit tests).

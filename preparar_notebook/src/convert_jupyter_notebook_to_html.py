@@ -1,6 +1,7 @@
 import os
 import pathlib
 import platform
+import re
 from check_for_new_classes import check_for_new_classes
 from utils import get_portafolio_path
 from format_code_blocks import format_code_blocks
@@ -8,7 +9,6 @@ from PIL import Image
 import requests
 from io import BytesIO
 from img_base64 import base64_to_webp
-import re
 from jupyter_notebook_to_html.jupyter_notebook_to_html import jupyter_notebook_contents_in_xml_format_to_html
 
 CONVERT_TO_HTML_WITH_NBCONVERT = False
@@ -37,17 +37,37 @@ def add_index_html(html_content):
     html_content_lines = html_content.split("\n")
     for line in html_content_lines:
         if "<h2" in line or "<h3" in line or "<h4" in line or "<h5" in line or "<h6" in line:
+            line_to_add = line
             if "<h1" in line: tittle = "h1"
             elif "<h2" in line: tittle = "h2"
             elif "<h3" in line: tittle = "h3"
             elif "<h4" in line: tittle = "h4"
             elif "<h5" in line: tittle = "h5"
             elif "<h6" in line: tittle = "h6"
-            start_id_position = line.find('id="') + 4   # start id position is the position of `id="` in the line
-            end_id_position = line.find('">')           # end id position is the position of `">` in the line
-            start_anchor_position = line.find("<a")     # start anchor position is the position of `<a` in the line
-            id = line[start_id_position:end_id_position]
-            text = line[end_id_position+2:start_anchor_position]
+            
+            # Check if the line has id and anchor link
+            has_id = 'id="' in line
+            has_anchor = '<a' in line
+            
+            if has_id and has_anchor:
+                # Original logic for lines with id and anchor
+                start_id_position = line.find('id="') + 4   # start id position is the position of `id="` in the line
+                end_id_position = line.find('">')           # end id position is the position of `">` in the line
+                start_anchor_position = line.find("<a")     # start anchor position is the position of `<a` in the line
+                id = line[start_id_position:end_id_position]
+                text = line[end_id_position+2:start_anchor_position]
+            else:
+                # Handle lines without id or anchor link
+                # Extract text between opening and closing header tags
+                start_tag_end = line.find('>') + 1
+                end_tag_start = line.find(f'</{tittle}>')
+                if start_tag_end > 0 and end_tag_start > 0:
+                    text = line[start_tag_end:end_tag_start]
+                    # Generate id from text, removing HTML tags for the href
+                    id = re.sub(r'<[^>]+>', '', text).strip()
+                else:
+                    continue  # Skip if we can't parse the line properly
+            
             index_html += f'      <a class="anchor-link" href="#{id}"><{tittle}>{text}</{tittle}></a>\n'
     return index_html
 

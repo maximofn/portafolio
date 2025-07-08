@@ -924,6 +924,36 @@ Val 3   | Val 4 |
 </table>"""
         self.assertEqual(markdown_table_to_html(markdown).strip(), expected_html.strip())
 
+    def test_markdown_table_to_html_with_less_than_greater_than(self):
+        markdown = '| Comando | Velocidad |\n|--------------------|-----------------------|\n| `conda install <pkg>`              | lento           |\n| `pip install <pkg>`             | entre 2 y 10 veces más rápido que el anterior            |\n| `uv pip install <pkg>`                 | entre 5 y 10 veces más rápido que el anterior            |\n| `uv add <pkg>`                 | entre 2 y 5 veces más rápido que el anterior            |'
+        expected_html = '''<table>
+  <thead>
+    <tr>
+      <th>Comando</th>
+      <th>Velocidad</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>conda install &#x3C;pkg&#x3E;</code></td>
+      <td>lento</td>
+    </tr>
+    <tr>
+      <td><code>pip install &#x3C;pkg&#x3E;</code></td>
+      <td>entre 2 y 10 veces más rápido que el anterior</td>
+    </tr>
+    <tr>
+      <td><code>uv pip install &#x3C;pkg&#x3E;</code></td>
+      <td>entre 5 y 10 veces más rápido que el anterior</td>
+    </tr>
+    <tr>
+      <td><code>uv add &#x3C;pkg&#x3E;</code></td>
+      <td>entre 2 y 5 veces más rápido que el anterior</td>
+    </tr>
+  </tbody>
+</table>'''
+        self.assertEqual(markdown_table_to_html(markdown).strip(), expected_html.strip())
+
 class TestMarkdownToHtml(unittest.TestCase):
     def setUp(self):
         pass
@@ -1389,6 +1419,27 @@ $$E = mc^2$$'''
 <p>Antes <span class="math-inline">x = 5</span> después</p>
 </section>
 """
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+    
+    def test_markdown_to_html_less_than_greater_than(self):
+        markdown = 'Ahora que ya tenemos un entorno podemos ejecutar un script de dos maneras, la primera con `uv run python <script>.py`, que activará el entorno de `.venv` y ejecutará el script.'
+        expected_html = '''<section class="section-block-markdown-cell">
+<p>Ahora que ya tenemos un entorno podemos ejecutar un script de dos maneras, la primera con <code>uv run python &#x3C;script&#x3E;.py</code>, que activará el entorno de <code>.venv</code> y ejecutará el script.</p>
+</section>'''
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+      
+    def test_markdown_to_html_link_with_slash_n(self):
+        markdown = 'Como he dicho, estoy usando [LLMs-from-scratch/setup/01_optional-python-setup-preferences\n/native-uv.md](https://github.com/rasbt/LLMs-from-scratch/blob/main/setup/01_optional-python-setup-preferences/native-uv.md) como fuente, así que vamos a descargarnos el repositorio, instalar el entorno que propone y ver cómo ejecutar un script'
+        expected_html = '''<section class="section-block-markdown-cell">
+<p>Como he dicho, estoy usando <a href="https://github.com/rasbt/LLMs-from-scratch/blob/main/setup/01_optional-python-setup-preferences/native-uv.md">LLMs-from-scratch/setup/01_optional-python-setup-preferences/native-uv.md</a> como fuente, así que vamos a descargarnos el repositorio, instalar el entorno que propone y ver cómo ejecutar un script</p>
+</section>'''
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+    
+    def test_markdown_to_html_title_with_inline_code(self):
+        markdown = '## Instalar `uv`'
+        expected_html = '''<section class="section-block-markdown-cell">
+<h2>Instalar <code>uv</code></h2>
+</section>'''
         self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
 
 if __name__ == '__main__':

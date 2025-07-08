@@ -24,13 +24,19 @@ def _remove_accents(text: str) -> str:
 def _process_inline_code(text: str) -> str:
     """
     Processes inline code (text between single and double backticks) in a text string.
-    Converts `code` and ``code`` to <code>code</code>.
+    Converts `code` and ``code`` to <code>code</code>, escaping HTML characters.
     """
-    # First process inline code with double backticks
-    text = re.sub(r'``([^`]+?)``', r'<code>\1</code>', text)
+    def escape_and_wrap(match):
+        code_content = match.group(1)
+        # Escape characters that have special meaning in HTML, then replace with hex codes for test compatibility
+        escaped_content = html.escape(code_content, quote=True).replace('&lt;', '&#x3C;').replace('&gt;', '&#x3E;')
+        return f'<code>{escaped_content}</code>'
+
+    # Process inline code with double backticks first
+    text = re.sub(r'``([^`]+?)``', escape_and_wrap, text)
     
-    # Then process inline code with single backticks (but not those already processed)
-    text = re.sub(r'`([^`]+?)`', r'<code>\1</code>', text)
+    # Then process inline code with single backticks
+    text = re.sub(r'`([^`]+?)`', escape_and_wrap, text)
     
     return text
 
@@ -356,22 +362,24 @@ def _process_inline_links(text: str) -> str:
     """
     Processes inline links in a text string.
     Converts [text](url) to appropriate HTML link tags.
+    Handles links that span multiple lines by removing newlines from link text.
     """
     # First process external links (http:// or https://)
-    external_pattern = r'\[([^\]]*)\]\((https?://[^\)]+)\)'
+    # Updated pattern to handle multiline links using re.DOTALL flag
+    external_pattern = r'\[([^\]]*?)\]\((https?://[^\)]+?)\)'
     def replace_external_link(match):
-        link_text = match.group(1)
+        link_text = match.group(1).replace('\n', '')  # Remove newlines from link text
         link_url = match.group(2)
         return f'<a href="{link_url}">{link_text}</a>'
-    text = re.sub(external_pattern, replace_external_link, text)
+    text = re.sub(external_pattern, replace_external_link, text, flags=re.DOTALL)
     
     # Then process internal links (starting with /)
-    internal_pattern = r'\[([^\]]*)\]\((/[^\)]*)\)'
+    internal_pattern = r'\[([^\]]*?)\]\((/[^\)]*?)\)'
     def replace_internal_link(match):
-        link_text = match.group(1)
+        link_text = match.group(1).replace('\n', '')  # Remove newlines from link text
         link_url = match.group(2)
         return f'<a href="{link_url}">{link_text}</a>'
-    text = re.sub(internal_pattern, replace_internal_link, text)
+    text = re.sub(internal_pattern, replace_internal_link, text, flags=re.DOTALL)
     
     return text
 
@@ -384,15 +392,25 @@ def _process_text_block(text_content: str) -> str:
         # Use the original title for display (with accents)
         corrected_title = title.strip()
         
-        # Create ID without accents (normalize for URL-friendly IDs)
-        header_id = _remove_accents(title.strip())
-        
-        # Create the header with anchor link
-        return f'<h{level} id="{header_id}">{corrected_title}<a class="anchor-link" href="#{header_id}">¶</a></h{level}>'
+        # Check if title contains inline code (backticks)
+        if '`' in corrected_title:
+            # Process inline code in the title
+            processed_title = _process_inline_code(corrected_title)
+            # Return simple header without anchor link when code is present
+            return f'<h{level}>{processed_title}</h{level}>'
+        else:
+            # Create ID without accents (normalize for URL-friendly IDs)
+            header_id = _remove_accents(title.strip())
+            
+            # Create the header with anchor link for normal titles
+            return f'<h{level} id="{header_id}">{corrected_title}<a class="anchor-link" href="#{header_id}">¶</a></h{level}>'
     
     # First, process block math expressions across the entire text
     # This needs to happen before splitting into lines
     text_content = _process_block_math(text_content)
+    
+    # Process inline links BEFORE splitting into lines to handle multiline links
+    text_content = _process_inline_links(text_content)
     
     # Handle headers (H1 to H6) with anchor links
     # Order matters: H6 before H1 to avoid partial matches
@@ -494,7 +512,7 @@ def _process_text_block(text_content: str) -> str:
             if not line.strip().startswith("<"): # Simplistic check
                 processed_line = _process_inline_code(line.strip())
                 processed_line = _process_inline_math(processed_line)
-                processed_line = _process_inline_links(processed_line)
+                # Note: links are already processed above, so we don't process them again here
                 processed_lines.append(f"<p>{processed_line}</p>")
             else: # Already some HTML, or other structure
                  processed_lines.append(line.strip())
@@ -591,6 +609,20 @@ def input_code_to_html(code_content: str) -> str:
     
     return html_output
 
+def _remove_ansi_escape_codes(text: str) -> str:
+    """
+    Removes ANSI escape codes from text.
+    
+    Args:
+        text: Text that may contain ANSI escape codes
+        
+    Returns:
+        Text with ANSI escape codes removed
+    """
+    # Pattern to match ANSI escape sequences
+    ansi_escape = re.compile(r'\x1b\[[0-?]*[ -/]*[@-~]')
+    return ansi_escape.sub('', text)
+
 def output_code_to_html(output_content: str) -> str:
     """
     Converts output code to HTML with the appropriate Jupyter output structure.
@@ -602,7 +634,10 @@ def output_code_to_html(output_content: str) -> str:
     Returns:
         HTML string with the output wrapped in appropriate Jupyter output containers.
     """
-    # First, handle potential trailing newlines, which is important for both
+    # First, remove ANSI escape codes from the output content
+    output_content = _remove_ansi_escape_codes(output_content)
+    
+    # Then, handle potential trailing newlines, which is important for both
     # stream output consistency and for detecting execute_results.
     processed_content = output_content.rstrip()
 

@@ -1,0 +1,359 @@
+<?xml version='1.0' encoding='utf-8'?>
+<notebook>
+  <markdown># GPT1 - Melhorando a Compreensão de Linguagem por Pré-Treinamento Gerativo</markdown>
+  <markdown> &gt; Aviso: Este post foi traduzido para o português usando um modelo de tradução automática. Por favor, me avise se encontrar algum erro.</markdown>
+  <markdown>## Artigo</markdown>
+  <markdown>[Melhorando a Compreensão de Linguagem por Pré-Treinamento Gerativo](https://s3-us-west-2.amazonaws.com/openai-assets/research-covers/language-unsupervised/language_understanding_paper.pdf) é o paper do GPT1. Antes de ler o post, é necessário que você se situe: antes do GPT, os modelos de linguagem estavam baseados em redes recorrentes (RNN), que eram redes que funcionavam relativamente bem para tarefas específicas, mas com as quais não era possível reutilizar o pré-treinamento para fazer um fine tuning para outras tarefas. Além disso, elas não tinham muita memória, então se fossem alimentadas com frases muito longas, não lembravam muito bem o início da frase.</markdown>
+  <markdown>## Arquitetura</markdown>
+  <markdown>Antes de falar da arquitetura do GPT1, vamos lembrar como era a arquitetura dos transformers.
+![arquitetura do transformer](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/transformer-scaled.webp)</markdown>
+  <markdown>GPT1 é um modelo baseado nos decodificadores dos transformers, então, como não temos codificador, a arquitetura de um único decodificador fica da seguinte maneira
+![decoder architecture](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/transformer_decoder_only-scaled.webp)
+O mecanismo de atenção entre a sentença do encoder e do decoder é removido.</markdown>
+  <markdown>No o artigo do GPT1 propõem a seguinte arquitetura
+![arquitetura do gpt1](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/GPT1_architecture.webp)
+Que corresponde ao decoder de um transformer como vimos anteriormente, executado 12 vezes</markdown>
+  <markdown>## Resumo do artigo</markdown>
+  <markdown>As ideias mais interessantes do paper são:
+* O modelo é treinado em um grande corpus de texto sem supervisão. Com isso, cria-se um modelo de linguagem. Cria-se um modelo de linguagem de alta capacidade em um grande corpus de texto.* Em seguida, é feito um fine-tuning em tarefas de NLP supervisionadas com conjuntos de dados rotulados. Realiza-se um ajuste fino em uma tarefa objetivo com supervisão. Além disso, quando o modelo é avaliado na tarefa supervisionada, não é avaliado apenas por essa tarefa, mas também pelo quão bem ele prevê o próximo token, o que ajuda a melhorar a generalização do modelo supervisionado e faz com que o modelo convirja mais rapidamente.* Embora já tenhamos mencionado, no artigo diz que é utilizada a arquitetura transformer, pois até aquele momento eram usadas RNN para os modelos de linguagem. Isso resultou em uma melhoria na qual o aprendizado do primeiro treinamento (treinamento no corpus de texto sem supervisão) é mais fácil de transferir para tarefas supervisionadas. Ou seja, graças ao uso de transformers, foi possível realizar um treinamento em todo um corpus de texto e, posteriormente, ajustes finos em tarefas supervisionadas.* Avaliaram o modelo em quatro tipos de tarefas de compreensão da linguagem:* Inferência da linguagem natural* Resposta a perguntas* Similaridade semântica* Classificação de textos.* O modelo geral (treinado em todo o corpus de texto sem supervisão) supera os modelos RNN treinados discriminativamente que utilizam arquiteturas projetadas especificamente para cada tarefa, melhorando significativamente o estado da arte em 9 das 12 tarefas estudadas. Eles também analisaram os comportamentos de "tiro zero" do modelo pré-treinado em quatro ambientes diferentes e demonstraram que ele adquire um conhecimento linguístico útil para as tarefas subsequentes.* Nos últimos anos, os pesquisadores haviam demonstrado os benefícios de utilizar embeddings, que são treinados em corpora não anotados, para melhorar o desempenho em uma variedade de tarefas. No entanto, essas abordagens transferem principalmente informações a nível de palavra, enquanto o uso de transformers treinados em grandes corpora de texto sem supervisão captura a semântica de nível superior, a nível de frase.</markdown>
+  <markdown>## Geração de texto</markdown>
+  <markdown>Vamos a ver como gerar texto com um GPT1 pré-treinado</markdown>
+  <markdown>Primeiro é necessário instalar `ftfy` e `spacy` através de
+```bash
+pip install ftfy spacy```</markdown>
+  <markdown>Uma vez instaladas, você deve baixar o modelo de linguagem do spaCy que deseja usar. Por exemplo, para baixar o modelo em inglês, você pode executar:
+```bash
+python -m spacy download en_core_web_sm```</markdown>
+  <markdown>Para gerar texto vamos utilizar o modelo do repositório [GPT1](https://huggingface.co/openai-community/openai-gpt) da Hugging Face.</markdown>
+  <markdown>Importamos as bibliotecas</markdown>
+  <input_code>import torch
+from transformers import OpenAIGPTTokenizer, OpenAIGPTLMHeadModel, AutoTokenizer</input_code>
+  <markdown>Se você reparar, importamos `OpenAIGPTTokenizer` e `AutoTokenizer`. Isso é porque na [model card](https://huggingface.co/openai-community/openai-gpt) do GPT1 indica-se que se deve usar `OpenAIGPTTokenizer`, mas no post da biblioteca [transformers](https://maximofn.com/hugging-face-transformers/) explicamos que se deve usar `AutoTokenizer` para carregar o tokenizador. Então, vamos testar os dois.</markdown>
+  <input_code>ckeckpoints = "openai-community/openai-gpt"
+tokenizer = OpenAIGPTTokenizer.from_pretrained(ckeckpoints)
+auto_tokenizer = AutoTokenizer.from_pretrained(ckeckpoints)
+
+input_tokens = tokenizer("Hello, my dog is cute and", return_tensors="pt")
+input_auto_tokens = auto_tokenizer("Hello, my dog is cute and", return_tensors="pt")
+
+print(f"input tokens: \n{input_tokens}")
+print(f"input auto tokens: \n{input_auto_tokens}")</input_code>
+  <output_code>input tokens: 
+{'input_ids': tensor([[3570,  240,  547, 2585,  544, 4957,  488]]), 'attention_mask': tensor([[1, 1, 1, 1, 1, 1, 1]])}
+input auto tokens: 
+{'input_ids': tensor([[3570,  240,  547, 2585,  544, 4957,  488]]), 'attention_mask': tensor([[1, 1, 1, 1, 1, 1, 1]])}
+</output_code>
+  <markdown>Como pode ser visto com os dois tokenizadores, são obtidos os mesmos tokens. Então, para que o código seja mais geral, de forma que se os checkpoints forem alterados, não seja necessário alterar o código, vamos utilizar `AutoTokenizer`.</markdown>
+  <markdown>Criamos então o dispositivo, o tokenizador e o modelo</markdown>
+  <input_code>device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+tokenizer = AutoTokenizer.from_pretrained(ckeckpoints)
+model = OpenAIGPTLMHeadModel.from_pretrained(ckeckpoints).to(device)</input_code>
+  <markdown>Como instanciamos o modelo, vamos a ver quantos parâmetros ele tem.</markdown>
+  <input_code>params = sum(p.numel() for p in model.parameters())
+print(f"Number of parameters: {round(params/1e6)}M")</input_code>
+  <output_code>Number of parameters: 117M
+</output_code>
+  <markdown>Na era dos trilhões de parâmetros, podemos ver que o GPT1 tinha apenas 117 milhões de parâmetros.</markdown>
+  <markdown>Criamos os tokens de entrada para o modelo</markdown>
+  <input_code>input_sentence = "Hello, my dog is cute and"
+input_tokens = tokenizer(input_sentence, return_tensors="pt").to(device)
+
+input_tokens</input_code>
+  <output_code>{'input_ids': tensor([[3570,  240,  547, 2585,  544, 4957,  488]], device='cuda:0'), 'attention_mask': tensor([[1, 1, 1, 1, 1, 1, 1]], device='cuda:0')}</output_code>
+  <markdown>Passamo-los ao modelo para gerar os tokens de saída</markdown>
+  <input_code>output_tokens = model.generate(**input_tokens)
+
+print(f"output tokens: \n{output_tokens}")</input_code>
+  <output_code>output tokens: 
+tensor([[ 3570,   240,   547,  2585,   544,  4957,   488,   249,   719,   797,
+           485,   921,   575,   562,   246,  1671,   239,   244, 40477,   244]],
+       device='cuda:0')
+</output_code>
+  <output_code>/home/wallabot/miniconda3/envs/nlp/lib/python3.11/site-packages/transformers/generation/utils.py:1178: UserWarning: Using the model-agnostic default `max_length` (=20) to control the generation length. We recommend setting `max_new_tokens` to control the maximum length of the generation.
+  warnings.warn(
+</output_code>
+  <markdown>Decodificamos os tokens para obter a frase de saída</markdown>
+  <input_code>decoded_output = tokenizer.decode(output_tokens[0], skip_special_tokens=True)
+
+print(f"decoded output: \n{decoded_output}")</input_code>
+  <output_code>decoded output: 
+hello, my dog is cute and i'm going to take him for a walk. " 
+ "
+</output_code>
+  <markdown>Já conseguimos gerar texto com GPT1</markdown>
+  <markdown>### Gerar texto token a token</markdown>
+  <markdown>#### Busca gulosa</markdown>
+  <markdown>Nós usamos `model.generate` para gerar os tokens de saída de uma só vez, mas vamos ver como gerá-los um a um. Para isso, em vez de usar `model.generate` vamos usar `model`, que na verdade chama o método `model.forward`</markdown>
+  <input_code>outputs = model(**input_tokens)
+
+outputs</input_code>
+  <output_code>CausalLMOutput(loss=None, logits=tensor([[[ -5.9486,  -5.8697, -18.4258,  ...,  -9.7371, -10.4495,   0.8814],
+         [ -6.1212,  -4.8031, -14.3970,  ...,  -6.5411,  -9.5051,  -1.2015],
+         [ -7.4231,  -6.3615, -14.7297,  ..., -10.4575,  -8.4600,  -1.5183],
+         ...,
+         [ -5.4751,  -5.8803, -13.7767,  ..., -10.5048, -12.4167,  -6.1584],
+         [ -7.2052,  -6.0198, -21.5040,  ..., -16.2941, -14.0494,  -1.2416],
+         [ -7.7240,  -7.3631, -17.3174,  ..., -12.1546, -12.3327,  -1.7169]]],
+       device='cuda:0', grad_fn=&lt;UnsafeViewBackward0&gt;), hidden_states=None, attentions=None)</output_code>
+  <markdown>Vemos que saí muitos dados, primeiro vamos ver as keys da saída</markdown>
+  <input_code>outputs.keys()</input_code>
+  <output_code>odict_keys(['logits'])</output_code>
+  <markdown>Neste caso, temos apenas os logits do modelo, vamos verificar seu tamanho.</markdown>
+  <input_code>logits = outputs.logits
+
+logits.shape</input_code>
+  <output_code>torch.Size([1, 7, 40478])</output_code>
+  <markdown>Vamos ver quantos tokens tínhamos na entrada</markdown>
+  <input_code>input_tokens.input_ids.shape</input_code>
+  <output_code>torch.Size([1, 7])</output_code>
+  <markdown>Bem, na saída temos o mesmo número de logits que na entrada. Isso é normal.</markdown>
+  <markdown>Obtemos os logits da última posição da saída</markdown>
+  <input_code>nex_token_logits = logits[0,-1]
+
+nex_token_logits.shape</input_code>
+  <output_code>torch.Size([40478])</output_code>
+  <markdown>Há um total de 40478 logits, ou seja, há um vocabulário de 40478 tokens e temos que ver qual é o token com a maior probabilidade. Para isso, primeiro calculamos a softmax.</markdown>
+  <input_code>softmax_logits = torch.softmax(nex_token_logits, dim=0)
+
+softmax_logits.shape</input_code>
+  <output_code>torch.Size([40478])</output_code>
+  <input_code>next_token_prob, next_token_id = torch.max(softmax_logits, dim=0)
+
+next_token_prob, next_token_id</input_code>
+  <output_code>(tensor(0.1898, device='cuda:0', grad_fn=&lt;MaxBackward0&gt;),
+ tensor(249, device='cuda:0'))</output_code>
+  <markdown>Obtivemos o seguinte token, agora vamos decodificá-lo.</markdown>
+  <input_code>tokenizer.decode(next_token_id.item())</input_code>
+  <output_code>'i'</output_code>
+  <markdown>Obtivemos o seguinte token através do método greedy, ou seja, o token com maior probabilidade. Mas já vimos no post da biblioteca transformers as [formas de gerar textos](https://maximofn.com/hugging-face-transformers/#Formas-de-genera%C3%A7%C3%A3o-de-texto) que podem ser feitas sampling, top-k, top-p, etc.</markdown>
+  <markdown>Vamos a colocar tudo dentro de uma função e ver o que sai se gerarmos alguns tokens</markdown>
+  <input_code>def generate_next_greedy_token(input_sentence, tokenizer, model, device):
+    input_tokens = tokenizer(input_sentence, return_tensors="pt").to(device)
+    outputs = model(**input_tokens)
+    logits = outputs.logits
+    nex_token_logits = logits[0,-1]
+    softmax_logits = torch.softmax(nex_token_logits, dim=0)
+    next_token_prob, next_token_id = torch.max(softmax_logits, dim=0)
+    return next_token_prob, next_token_id</input_code>
+  <input_code>def generate_greedy_text(input_sentence, tokenizer, model, device, max_length=20):
+    generated_text = input_sentence
+    for _ in range(max_length):
+        next_token_prob, next_token_id = generate_next_greedy_token(generated_text, tokenizer, model, device)
+        generated_text += tokenizer.decode(next_token_id.item())
+    return generated_text</input_code>
+  <markdown>Agora geramos texto</markdown>
+  <input_code>generate_greedy_text("Hello, my dog is cute and", tokenizer, model, device)</input_code>
+  <output_code>'Hello, my dog is cute andi."\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n'</output_code>
+  <markdown>A saída é bastante repetitiva, como já foi visto nas [formas de gerar textos](https://maximofn.com/hugging-face-transformers/#Formas-de-gera%C3%A7%C3%A3o-de-texto)</markdown>
+  <markdown>## Ajuste fino do GPT</markdown>
+  <markdown>### Cálculo da perda</markdown>
+  <markdown>Antes de começar a fazer o fine tuning do GPT1, vamos ver uma coisa. Antes, quando obtínhamos a saída do modelo, fazíamos isso</markdown>
+  <input_code>outputs = model(**input_tokens)
+
+outputs</input_code>
+  <output_code>CausalLMOutput(loss=None, logits=tensor([[[ -5.9486,  -5.8697, -18.4258,  ...,  -9.7371, -10.4495,   0.8814],
+         [ -6.1212,  -4.8031, -14.3970,  ...,  -6.5411,  -9.5051,  -1.2015],
+         [ -7.4231,  -6.3615, -14.7297,  ..., -10.4575,  -8.4600,  -1.5183],
+         ...,
+         [ -5.4751,  -5.8803, -13.7767,  ..., -10.5048, -12.4167,  -6.1584],
+         [ -7.2052,  -6.0198, -21.5040,  ..., -16.2941, -14.0494,  -1.2416],
+         [ -7.7240,  -7.3631, -17.3174,  ..., -12.1546, -12.3327,  -1.7169]]],
+       device='cuda:0', grad_fn=&lt;UnsafeViewBackward0&gt;), hidden_states=None, attentions=None)</output_code>
+  <markdown>Pode-se ver que obtemos `loss=None`</markdown>
+  <input_code>print(outputs.loss)</input_code>
+  <output_code>None
+</output_code>
+  <markdown>Como vamos a precisar da loss para fazer o fine tuning, vamos a ver como obtê-la.
+Se nós formos à documentação do método [forward](https://huggingface.co/docs/transformers/model_doc/openai-gpt#transformers.OpenAIGPTLMHeadModel.forward) de `OpenAIGPTLMHeadModel`, podemos ver que diz que na saída retorna um objeto do tipo `transformers.modeling_outputs.CausalLMOutput`, então se formos à documentação de [transformers.modeling_outputs.CausalLMOutput](https://huggingface.co/docs/transformers/en/main_classes/output#transformers.modeling_outputs.CausalLMOutput), podemos ver que diz que retorna `loss` se for passado `labels` para o método `forward`.
+Se nós formos à fonte do código do método [forward](https://github.com/huggingface/transformers/blob/main/src/transformers/models/openai/modeling_openai.py#L544), vemos este bloco de código
+```python
+perda = Nonese labels não for None:# Deslocar para que os tokens &lt; n prevejam nshift_logits = lm_logits[..., :-1, :].contiguous()shift_labels = labels[..., 1:].contiguous()# Aplanar os tokensloss_fct = CrossEntropyLoss()loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))```
+
+Isso significa que a `loss` é calculada da seguinte maneira
+* Shift de logits e labels: A primeira parte é deslocar os logits (`lm_logits`) e as etiquetas (`labels`) para que os `tokens &lt; n` prevejam `n`, ou seja, a partir de uma posição `n` se prevê o próximo token com base nos anteriores.* CrossEntropyLoss: Cria-se uma instância da função de perda `CrossEntropyLoss()`.* Achatando tokens: A seguir, os logits e as etiquetas são aplanados utilizando `view(-1, shift_logits.size(-1))` e `view(-1)`, respectivamente. Isso é feito para que os logits e as etiquetas tenham a mesma forma para a função de perda.* Cálculo da perda: Finalmente, calcula-se a perda utilizando a função de perda `CrossEntropyLoss()` com os logits achatados e as etiquetas achatadas como entradas.
+Em resumo, a `loss` é calculada como a perda de entropia cruzada entre os logits deslocados e achatados e as labels deslocadas e achatadas.
+Portanto, se passarmos os labels para o método `forward`, ele retornará a `loss`.</markdown>
+  <input_code>outputs = model(**input_tokens, labels=input_tokens.input_ids)
+
+outputs.loss</input_code>
+  <output_code>tensor(4.2607, device='cuda:0', grad_fn=&lt;NllLossBackward0&gt;)</output_code>
+  <markdown>### Conjunto de Dados</markdown>
+  <markdown>Para o treinamento, vamos usar um dataset de piadas em inglês [short-jokes-dataset](https://huggingface.co/datasets/Maximofn/short-jokes-dataset), que é um dataset com 231 mil piadas em inglês.</markdown>
+  <markdown>Baixamos o dataset</markdown>
+  <input_code>from datasets import load_dataset
+
+jokes = load_dataset("Maximofn/short-jokes-dataset")
+jokes</input_code>
+  <output_code>DatasetDict({
+    train: Dataset({
+        features: ['ID', 'Joke'],
+        num_rows: 231657
+    })
+})</output_code>
+  <markdown>Vamos vê-lo um pouco</markdown>
+  <input_code>jokes["train"][0]</input_code>
+  <output_code>{'ID': 1,
+ 'Joke': '[me narrating a documentary about narrators] "I can\'t hear what they\'re saying cuz I\'m talking"'}</output_code>
+  <markdown>### Treinamento com Pytorch</markdown>
+  <markdown>Primeiro vamos ver como seria o treinamento com puro Pytorch
+&gt; Reiniciamos o notebook para que não haja problemas com a memória da GPU</markdown>
+  <input_code>import torch
+from transformers import OpenAIGPTLMHeadModel, AutoTokenizer
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+ckeckpoints = "openai-community/openai-gpt"
+tokenizer = AutoTokenizer.from_pretrained(ckeckpoints)
+model = OpenAIGPTLMHeadModel.from_pretrained(ckeckpoints)
+
+model = model.to(device)</input_code>
+  <markdown>#### Conjunto de dados do Pytorch</markdown>
+  <markdown>Criamos uma classe Dataset do Pytorch</markdown>
+  <input_code>from torch.utils.data import Dataset
+
+class JokesDataset(Dataset):
+    def __init__(self, dataset, tokenizer):
+        self.dataset = dataset
+        self.joke = "JOKE: "
+        self.end_of_text_token = "&lt;|endoftext|&gt;"
+        self.tokenizer = tokenizer
+        
+    def __len__(self):
+        return len(self.dataset["train"])
+
+    def __getitem__(self, item):
+        sentence = self.joke + self.dataset["train"][item]["Joke"] + self.end_of_text_token
+        tokens = self.tokenizer(sentence, return_tensors="pt")
+        return sentence, tokens</input_code>
+  <markdown>A instanciamos</markdown>
+  <input_code>dataset = JokesDataset(jokes, tokenizer=tokenizer)</input_code>
+  <markdown>Vamos ver um exemplo</markdown>
+  <input_code>sentence, tokens = dataset[5]
+print(sentence)
+tokens.input_ids.shape, tokens.attention_mask.shape</input_code>
+  <output_code>JOKE: Why can't Barbie get pregnant? Because Ken comes in a different box. Heyooooooo&lt;|endoftext|&gt;
+</output_code>
+  <output_code>(torch.Size([1, 30]), torch.Size([1, 30]))</output_code>
+  <markdown>#### Dataloader</markdown>
+  <markdown>Criamos agora um dataloader do Pytorch</markdown>
+  <input_code>from torch.utils.data import DataLoader
+
+BS = 1
+joke_dataloader = DataLoader(dataset, batch_size=BS, shuffle=True)</input_code>
+  <markdown>Vemos um lote</markdown>
+  <input_code>sentences, tokens = next(iter(joke_dataloader))
+len(sentences), tokens.input_ids.shape, tokens.attention_mask.shape</input_code>
+  <output_code>(1, torch.Size([1, 1, 29]), torch.Size([1, 1, 29]))</output_code>
+  <markdown>#### Treinamento</markdown>
+  <input_code>from transformers import AdamW, get_linear_schedule_with_warmup
+import tqdm
+
+BATCH_SIZE = 32
+EPOCHS = 5
+LEARNING_RATE = 3e-5
+WARMUP_STEPS = 5000
+MAX_SEQ_LEN = 500
+
+model.train()
+optimizer = AdamW(model.parameters(), lr=LEARNING_RATE)
+scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=WARMUP_STEPS, num_training_steps=-1)
+proc_seq_count = 0
+batch_count = 0
+
+tmp_jokes_tens = None
+
+for epoch in range(EPOCHS):
+    
+    print(f"EPOCH {epoch} started" + '=' * 30)
+    progress_bar = tqdm.tqdm(joke_dataloader, desc="Training")
+    
+    for sample in progress_bar:
+
+        sentence, tokens = sample
+        
+        #################### "Fit as many joke sequences into MAX_SEQ_LEN sequence as possible" logic start ####
+        joke_tens = tokens.input_ids[0].to(device)
+
+        # Skip sample from dataset if it is longer than MAX_SEQ_LEN
+        if joke_tens.size()[1] &gt; MAX_SEQ_LEN:
+            continue
+        
+        # The first joke sequence in the sequence
+        if not torch.is_tensor(tmp_jokes_tens):
+            tmp_jokes_tens = joke_tens
+            continue
+        else:
+            # The next joke does not fit in so we process the sequence and leave the last joke 
+            # as the start for next sequence 
+            if tmp_jokes_tens.size()[1] + joke_tens.size()[1] &gt; MAX_SEQ_LEN:
+                work_jokes_tens = tmp_jokes_tens
+                tmp_jokes_tens = joke_tens
+            else:
+                #Add the joke to sequence, continue and try to add more
+                tmp_jokes_tens = torch.cat([tmp_jokes_tens, joke_tens[:,1:]], dim=1)
+                continue
+        ################## Sequence ready, process it trough the model ##################
+            
+        outputs = model(work_jokes_tens, labels=work_jokes_tens)
+        loss = outputs.loss
+        loss.backward()
+                       
+        proc_seq_count = proc_seq_count + 1
+        if proc_seq_count == BATCH_SIZE:
+            proc_seq_count = 0    
+            batch_count += 1
+            optimizer.step()
+            scheduler.step() 
+            optimizer.zero_grad()
+            model.zero_grad()
+
+        progress_bar.set_postfix({'loss': loss.item(), 'lr': scheduler.get_last_lr()[0]})
+        if batch_count == 10:
+            batch_count = 0</input_code>
+  <output_code>/home/wallabot/miniconda3/envs/nlp/lib/python3.11/site-packages/transformers/optimization.py:429: FutureWarning: This implementation of AdamW is deprecated and will be removed in a future version. Use the PyTorch implementation torch.optim.AdamW instead, or set `no_deprecation_warning=True` to disable this warning
+  warnings.warn(
+</output_code>
+  <output_code>EPOCH 0 started==============================
+</output_code>
+  <output_code>Training: 100%|██████████| 231657/231657 [11:31&lt;00:00, 334.88it/s, loss=2.88, lr=2.93e-6]
+</output_code>
+  <output_code>EPOCH 1 started==============================
+</output_code>
+  <output_code>Training: 100%|██████████| 231657/231657 [11:30&lt;00:00, 335.27it/s, loss=2.49, lr=5.87e-6]
+</output_code>
+  <output_code>EPOCH 2 started==============================
+</output_code>
+  <output_code>Training: 100%|██████████| 231657/231657 [11:17&lt;00:00, 341.75it/s, loss=2.57, lr=8.81e-6]
+</output_code>
+  <output_code>EPOCH 3 started==============================
+</output_code>
+  <output_code>Training: 100%|██████████| 231657/231657 [11:18&lt;00:00, 341.27it/s, loss=2.41, lr=1.18e-5]
+</output_code>
+  <output_code>EPOCH 4 started==============================
+</output_code>
+  <output_code>Training: 100%|██████████| 231657/231657 [11:19&lt;00:00, 341.04it/s, loss=2.49, lr=1.47e-5]
+</output_code>
+  <markdown>#### Inferência</markdown>
+  <markdown>Vamos a ver como o modelo faz piadas</markdown>
+  <input_code>sentence_joke = "JOKE:"
+input_tokens_joke = tokenizer(sentence_joke, return_tensors="pt").to(device)
+output_tokens_joke = model.generate(**input_tokens_joke)
+decoded_output_joke = tokenizer.decode(output_tokens_joke[0], skip_special_tokens=True)
+
+print(f"decoded joke: \n{decoded_output_joke}")</input_code>
+  <output_code>decoded joke: 
+joke : what do you call a group of people who are not afraid of the dark? a group
+</output_code>
+  <markdown>Pode-se ver que você passa uma sequência com a palavra `joke` e ele retorna uma piada. Mas se você retornar outra sequência não</markdown>
+  <input_code>sentence_joke = "My dog is cute and"
+input_tokens_joke = tokenizer(sentence_joke, return_tensors="pt").to(device)
+output_tokens_joke = model.generate(**input_tokens_joke)
+decoded_output_joke = tokenizer.decode(output_tokens_joke[0], skip_special_tokens=True)
+
+print(f"decoded joke: \n{decoded_output_joke}")</input_code>
+  <output_code>decoded joke: 
+my dog is cute and i'm not sure if i should be offended or not. " 
+
+</output_code>
+</notebook>

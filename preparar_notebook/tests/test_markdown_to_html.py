@@ -1454,6 +1454,22 @@ $$E = mc^2$$'''
 <h2>Instalar <code>uv</code></h2>
 </section>'''
         self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+    
+    def test_markdown_to_html_link_and_text(self):
+        markdown = '[Improving Language Understanding by Generative Pre-Training](https://s3-us-west-2.amazonaws.com/openai-assets/research-covers/language-unsupervised/language_understanding_paper.pdf) es el paper de GPT1. Antes de leer el post es necesario que te pongas en situación, antes de GPT los modelos de lenguaje estaban basados en redes recurrentes (RNN), que eran redes que funcionaban relativamente bien para tareas específicas, pero con las que no se podía reutilizar el preentrenamiento para hacerles un fine tuning para otras tareas. Además no tenían mucha memoria, por lo que si se le metían frases muy largas no recordaban muy bien el inicio de la frase'
+        expected_html = '''<section class="section-block-markdown-cell">
+<p><a href="https://s3-us-west-2.amazonaws.com/openai-assets/research-covers/language-unsupervised/language_understanding_paper.pdf">Improving Language Understanding by Generative Pre-Training</a> es el paper de GPT1. Antes de leer el post es necesario que te pongas en situación, antes de GPT los modelos de lenguaje estaban basados en redes recurrentes (RNN), que eran redes que funcionaban relativamente bien para tareas específicas, pero con las que no se podía reutilizar el preentrenamiento para hacerles un fine tuning para otras tareas. Además no tenían mucha memoria, por lo que si se le metían frases muy largas no recordaban muy bien el inicio de la frase</p>
+</section>'''
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+    
+    def test_markdown_to_html_blockcuote(self):
+        markdown = '> Reiniciamos el notebook para que no haya problemas con la memoria de la GPU'
+        expected_html = '''<section class="section-block-markdown-cell">
+<blockquote>
+<p>Reiniciamos el notebook para que no haya problemas con la memoria de la GPU</p>
+</blockquote>
+</section>'''
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
 
 if __name__ == '__main__':
     # It's good practice to ensure that only one unittest.main() call remains,

@@ -421,6 +421,16 @@ def _process_text_block(text_content: str) -> str:
     text_content = re.sub(r"^\s*## (.*)", lambda m: create_header_with_anchor(2, m.group(1)), text_content, flags=re.MULTILINE)
     text_content = re.sub(r"^\s*# (.*)", lambda m: create_header_with_anchor(1, m.group(1)), text_content, flags=re.MULTILINE)
 
+    # Handle blockquotes (lines starting with >)
+    def process_blockquote(match):
+        quote_content = match.group(1).strip()
+        # Process inline code and math in the blockquote content
+        processed_content = _process_inline_code(quote_content)
+        processed_content = _process_inline_math(processed_content)
+        return f'<blockquote>\n<p>{processed_content}</p>\n</blockquote>'
+    
+    text_content = re.sub(r"^\s*>\s*(.*)", process_blockquote, text_content, flags=re.MULTILINE)
+
     # Now handle math display blocks that span multiple lines
     # We need to process the entire span as one unit and wrap it in <p> tags
     # Use a more specific pattern that handles nested spans correctly
@@ -494,6 +504,9 @@ def _process_text_block(text_content: str) -> str:
             continue # Skip empty lines for now, though they might signify paragraph breaks
         if re.match(r"<h[1-6].*</h[1-6]>", line.strip()):
             processed_lines.append(line.strip())
+        elif re.match(r'<blockquote>', line.strip()):
+            # Handle blockquotes - they are already processed, just add them
+            processed_lines.append(line.strip())
         elif re.match(r'<p><span class="math-display">', line.strip()):
             # Math display blocks are already processed and wrapped in <p> tags
             # Check if this line contains the complete math display block
@@ -515,7 +528,19 @@ def _process_text_block(text_content: str) -> str:
                 # Note: links are already processed above, so we don't process them again here
                 processed_lines.append(f"<p>{processed_line}</p>")
             else: # Already some HTML, or other structure
-                 processed_lines.append(line.strip())
+                # Check if this is inline HTML (like links) mixed with text that should be in a paragraph
+                stripped_line = line.strip()
+                # If it starts with inline HTML but doesn't look like a complete HTML block,
+                # it might be inline HTML mixed with text that should be wrapped in <p>
+                if (stripped_line.startswith("<a ") or 
+                    stripped_line.startswith("<code>") or 
+                    stripped_line.startswith("<span")) and not stripped_line.startswith(("<h", "<p", "<div", "<section", "<blockquote")):
+                    # This is likely inline HTML mixed with text, wrap in paragraph
+                    processed_line = _process_inline_code(stripped_line)
+                    processed_line = _process_inline_math(processed_line)
+                    processed_lines.append(f"<p>{processed_line}</p>")
+                else:
+                    processed_lines.append(stripped_line)
 
     result = "\n".join(processed_lines)
     
@@ -772,7 +797,16 @@ def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_con
                     # or the link converters need to be smart enough.
                     # Current generic_markdown_to_specific_markdowns transforms known internal links.
                     # We can check the pattern.
-                    if re.match(r"\[.*\]\((https?://.*)\)", block_content):
+                    
+                    # Check if this is a link followed by additional text (inline link)
+                    # Pattern: [text](url) followed by more text
+                    link_with_text_pattern = r'(\[.*?\]\([^\)]+\))\s*(.*)'
+                    match = re.match(link_with_text_pattern, block_content)
+                    
+                    if match and match.group(2).strip():
+                        # This is a link followed by additional text, treat as text block
+                        html_output_parts.append(_process_text_block(block_content))
+                    elif re.match(r"\[.*\]\((https?://.*)\)", block_content):
                         link_html = markdown_to_html_external_link(block_content)
                         html_output_parts.append(f"<p>{link_html}</p>")
                     elif re.match(r"\[.*\]\((/.*)\)", block_content): # Matches /path type links

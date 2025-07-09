@@ -561,6 +561,10 @@ def input_code_to_html(code_content: str) -> str:
         highlighted_code
     )
     
+    # Handle line continuation backslashes (\\\n) - convert to \\\\ followed by newline
+    # This handles bash line continuation syntax
+    highlighted_code = re.sub(r'\\(?=\n)', r'\\\\', highlighted_code)
+    
     # Handle empty lines - convert them to whitespace spans as expected by tests
     # This handles the case where there are empty lines between code blocks
     highlighted_code = re.sub(r'\n\n', r'\n<span class="w"> </span>\n', highlighted_code)

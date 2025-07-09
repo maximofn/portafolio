@@ -78,6 +78,22 @@ class TestInputCodeToHtml(unittest.TestCase):
         html = input_code_to_html(input_code)
         self.assertEqual(html, expected_html)
 
+    def test_one_line_split_in_multiple_lines_bash_code(self):
+        input_code = "!cd ~/comitizen_folder/.git/hooks &amp;&amp; \\\necho '#!/bin/sh' &gt; commit-msg &amp;&amp; \\\necho '# Este script valida el mensaje del commit usando commitizen' &gt;&gt; commit-msg &amp;&amp; \\\necho ' ' &gt;&gt; commit-msg &amp;&amp; \\\necho 'COMMIT_MSG_FILE=$1' &gt;&gt; commit-msg &amp;&amp; \\\necho 'cz check --commit-msg-file $COMMIT_MSG_FILE' &gt;&gt; commit-msg"
+        expected_html = '''<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="err">!</span><span class="n">cd</span> <span class="o">~/</span><span class="n">comitizen_folder</span><span class="o">/.</span><span class="n">git</span><span class="o">/</span><span class="n">hooks</span> <span class="o">&amp;</span></span><span class="o">&amp;</span> \\\\
+<span class="n">echo</span> <span class="s1">&#39;#!/bin/sh&#39;</span> <span class="o">&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="n">commit</span><span class="o">-</span><span class="n">msg</span> <span class="o">&amp;</span></span><span class="o">&amp;</span> \\\\
+<span class="n">echo</span> <span class="s1">&#39;# Este script valida el mensaje del commit usando commitizen&#39;</span> <span class="o">&amp;</span><span class="n">gt</span><span class="p">;</span><span class="o">&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="n">commit</span><span class="o">-</span><span class="n">msg</span> <span class="o">&amp;</span></span><span class="o">&amp;</span> \\\\
+<span class="n">echo</span> <span class="s1">&#39; &#39;</span> <span class="o">&amp;</span><span class="n">gt</span><span class="p">;</span><span class="o">&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="n">commit</span><span class="o">-</span><span class="n">msg</span> <span class="o">&amp;</span></span><span class="o">&amp;</span> \\\\
+<span class="n">echo</span> <span class="s1">&#39;COMMIT_MSG_FILE=$1&#39;</span> <span class="o">&amp;</span><span class="n">gt</span><span class="p">;</span><span class="o">&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="n">commit</span><span class="o">-</span><span class="n">msg</span> <span class="o">&amp;</span></span><span class="o">&amp;</span> \\\\
+<span class="n">echo</span> <span class="s1">&#39;cz check --commit-msg-file $COMMIT_MSG_FILE&#39;</span> <span class="o">&amp;</span><span class="n">gt</span><span class="p">;</span><span class="o">&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="n">commit</span><span class="o">-</span><span class="n">msg</span>
+</pre></div>
+</div>
+</section>'''
+        html = input_code_to_html(input_code)
+        self.assertEqual(html, expected_html)
+
 if __name__ == '__main__':
     # It's good practice to ensure that only one unittest.main() call remains,
     # especially if tests might interfere (though less likely with simple unit tests).

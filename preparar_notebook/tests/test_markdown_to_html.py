@@ -175,6 +175,14 @@ class TestMarkdownCodeToHtml(unittest.TestCase):
       <div class='highlight'><pre><code class="language-python"># Monkey patch setup_tunnel para que acepte el parámetro adicional<br>def patched_setup_tunnel(host, port, share_token, share_server_address, share_server_tls_certificate=None):<br>&#x20;&#x20;return original_setup_tunnel(host, port, share_token, share_server_address, share_server_tls_certificate)<br><br># Replace the original function with our patched version<br>gradio.networking.setup_tunnel = patched_setup_tunnel</code></pre></div>
       </section>'''
         self.assertEqual(html, expected_html)
+      
+    def test_code_git_commit_message(self):
+        markdown_content = '```git\n<type>[optional scope]: <description>\n\n[optional body]\n\n[optional footer(s)]\n```'
+        html = markdown_code_to_html(markdown_content)
+        expected_html = '''<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-git">&lt;type&gt;[optional scope]: &lt;description&gt;<br><br>[optional body]<br><br>[optional footer(s)]</code></pre></div>
+      </section>'''
+        self.assertEqual(html, expected_html)
 
 class TestMarkdownImageToHtml(unittest.TestCase):
 
@@ -465,6 +473,11 @@ class TestMarkdownUnorderedListToHtml(unittest.TestCase):
     def test_list_with_links(self):
         markdown = ' * [LLM.int8()](/llm-int8)\n * [GPTQ](/gptq)\n * [QLoRA](/qlora)\n * AWQ\n * QuIP\n * GGUF\n * HQQ\n * AQLM\n * FBGEMM FP8\n'
         expected_html = '<ul>\n  <li><a href="/llm-int8">LLM.int8()</a></li>\n  <li><a href="/gptq">GPTQ</a></li>\n  <li><a href="/qlora">QLoRA</a></li>\n  <li>AWQ</li>\n  <li>QuIP</li>\n  <li>GGUF</li>\n  <li>HQQ</li>\n  <li>AQLM</li>\n  <li>FBGEMM FP8</li>\n</ul>'
+        self.assertEqual(markdown_to_html_updated(markdown), expected_html)
+    
+    def test_list_with_strong_text(self):
+        markdown = '* **fix**: Se utiliza para corrección de bugs.\n* **feat**: Se utiliza para nuevas funcionalidades.\n * **docs**: Se utiliza para cambios en la documentación.\n* **style**: Se utiliza para cambios que no afectan el significado del código (por ejemplo, formato, eliminación de espacios en blanco).\n * **refactor**: Se utiliza para cambios de código que ni mejoran ni empeoran la funcionalidad, como reorganizar el código.\n * **perf**: Se utiliza para cambios que mejoran el rendimiento.\n* **test**: Se utiliza para agregar o actualizar pruebas.\n * **chore**: Se utiliza para cambios en el proceso o en las herramientas de desarrollo.\n* **ci**: Se utiliza para cambios en los archivos de configuración de integración continua.\n * **build**: Se utiliza para cambios que afectan el sistema de compilación o dependencias externas.\n * **revert**: Se utiliza para revertir un commit anterior.\n'
+        expected_html = '<ul>\n  <li><strong>fix</strong>: Se utiliza para corrección de bugs.</li>\n  <li><strong>feat</strong>: Se utiliza para nuevas funcionalidades.</li>\n  <li><strong>docs</strong>: Se utiliza para cambios en la documentación.</li>\n  <li><strong>style</strong>: Se utiliza para cambios que no afectan el significado del código (por ejemplo, formato, eliminación de espacios en blanco).</li>\n  <li><strong>refactor</strong>: Se utiliza para cambios de código que ni mejoran ni empeoran la funcionalidad, como reorganizar el código.</li>\n  <li><strong>perf</strong>: Se utiliza para cambios que mejoran el rendimiento.</li>\n  <li><strong>test</strong>: Se utiliza para agregar o actualizar pruebas.</li>\n  <li><strong>chore</strong>: Se utiliza para cambios en el proceso o en las herramientas de desarrollo.</li>\n  <li><strong>ci</strong>: Se utiliza para cambios en los archivos de configuración de integración continua.</li>\n  <li><strong>build</strong>: Se utiliza para cambios que afectan el sistema de compilación o dependencias externas.</li>\n  <li><strong>revert</strong>: Se utiliza para revertir un commit anterior.</li>\n</ul>'
         self.assertEqual(markdown_to_html_updated(markdown), expected_html)
 
 class TestMarkdownOrderedListToHtml(unittest.TestCase):

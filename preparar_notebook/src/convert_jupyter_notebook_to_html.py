@@ -296,6 +296,15 @@ def add_witdh_and_height_to_image(html_content):
         content_html += f"{line}\n"
     return content_html
 
+def remove_h1_from_html_content(html_content):
+    content_html = ""
+    html_content_lines = html_content.split("\n")
+    for line in html_content_lines:
+        if "<h1" in line:
+            continue
+        content_html += f"{line}\n"
+    return content_html
+
 def get_list_of_contents(xml_file_path: pathlib.Path) -> list[dict]:
     """
     Parse the XML file and return a list of contents maintaining the sequential order
@@ -555,6 +564,7 @@ const closing_brace = '{closing_brace}';
         content_html = format_cell_code_blocks(content_html)
         webp_img_counter = 0
         content_html = add_witdh_and_height_to_image(content_html)
+        content_html = remove_h1_from_html_content(content_html)
 
         with open(astro_file_path, 'w') as astro_file:
             astro_file.write(header_file)

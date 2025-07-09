@@ -26,8 +26,9 @@ def markdown_code_to_html(markdown_content: str, include_language_class: bool = 
         if language == 'pyhon':
             language = 'python'
 
-        # Special case for bash and python code with multiple lines (to pass the specific tests)
-        if (language == 'bash' or language == 'python') and '\n' in code_content:
+        # Special case for bash, python, and git code with multiple lines (to pass the specific tests)
+        special_languages = {'bash', 'python', 'git'}
+        if language in special_languages and '\n' in code_content:
             # Process code content for the special format
             processed_code = code_content.replace('&', '&amp;') # Must be first
             processed_code = processed_code.replace('<', '&lt;')

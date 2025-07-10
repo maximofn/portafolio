@@ -406,11 +406,6 @@ def get_list_of_contents(xml_file_path: pathlib.Path) -> list[dict]:
 def convert_jupyter_notebook_to_html(notebook_path, metadata, notebook_title):
     global webp_img_counter
 
-    # Get list of contents
-    xml_file = notebook_path.with_suffix(".xml")    # PosixPath('../posts/notebook_name.xml')
-    xml_file_path = xml_file.parent / "xml_files" / xml_file.name    # xml_file_path = PosixPath('../posts/xml_files/notebook_name.xml')
-    list_of_jupyter_notebook_contents_in_xml_format = get_list_of_contents(xml_file_path)
-
     # Get path, name and extension of the notebook
     notebook_path = pathlib.Path(notebook_path)
     path = notebook_path.parent
@@ -439,6 +434,20 @@ def convert_jupyter_notebook_to_html(notebook_path, metadata, notebook_title):
     # Convert the notebooks to html
     for notebook_number, notebook in enumerate(notebook_paths):
         language = LANGUAJES_DICT[LANGUAGES[notebook_number]].upper()
+
+        # Get list of contents
+        xml_file = notebook_path.with_suffix(".xml")    # PosixPath('../posts/notebook_name.xml')
+        # If language is ENGLISH ass _EN.xml, if language is PORTUGUESE ass _PT.xml
+        if LANGUAGES[notebook_number] == ENGLISH:
+            xml_file_path = xml_file.parent / "xml_files" / f"{xml_file.stem}_EN.xml"
+        elif LANGUAGES[notebook_number] == PORTUGUESE:
+            xml_file_path = xml_file.parent / "xml_files" / f"{xml_file.stem}_PT.xml"
+        elif LANGUAGES[notebook_number] == SPANISH:
+            xml_file_path = xml_file.parent / "xml_files" / f"{xml_file.stem}.xml"
+        else:
+            print(f"Error: {LANGUAGES[notebook_number]} is not a valid language")
+            exit(1)
+        list_of_jupyter_notebook_contents_in_xml_format = get_list_of_contents(xml_file_path)
 
         # Define the destiny path and name of the html file
         destiny_path = path / HTML_FILES

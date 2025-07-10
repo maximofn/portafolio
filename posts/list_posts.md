@@ -21,7 +21,7 @@
    * -rw-r--r--@   1 macm1  staff     46506 29 ene 17:29 2024-02-26-Hugging-Face-tokenizers.ipynb
    * -rw-r--r--@   1 macm1  staff     47207 29 ene 17:29 2024-06-04-BPE-tokenizer.ipynb
    * -rw-r--r--@   1 macm1  staff     47565 29 ene 17:29 2024-02-23-Transformers-from-top-to-the-bottom.ipynb
- * -rw-r--r--@   1 macm1  staff     56871 29 ene 17:29 2024-07-29-QLoRA.ipynb
+   * -rw-r--r--@   1 macm1  staff     56871 29 ene 17:29 2024-07-29-QLoRA.ipynb
  * -rw-r--r--@   1 macm1  staff     60497 29 ene 17:29 2024-10-23-RAG-fundamentals.ipynb
  * -rw-r--r--@   1 macm1  staff     61382 29 ene 17:29 2024-12-16-Langchain-opensource-integrations.ipynb
  * -rw-r--r--@   1 macm1  staff     63216 29 ene 17:29 2023-12-05-html.ipynb

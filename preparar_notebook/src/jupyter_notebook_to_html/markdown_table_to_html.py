@@ -27,24 +27,88 @@ def markdown_table_to_html(markdown_table_string):
 
     # Helper to convert inline code in cell content
     def process_inline_code(cell_content):
-        """Convert inline code (`code`) to HTML format only for command-like code"""
+        """Convert inline code (`code`) to HTML format using generic patterns"""
+        
         # Pattern to match text between backticks
         pattern = r'`([^`]+)`'
         
         def replace_code(match):
             code_content = match.group(1)
-            # Only convert to HTML if it looks like a command (contains spaces and command keywords)
-            command_keywords = ['pip', 'docker', 'apt', 'npm', 'yarn', 'conda', 'git', 'sudo', 'curl', 'wget', 'uv']
-            has_spaces = ' ' in code_content
-            has_command_keyword = any(keyword in code_content.lower() for keyword in command_keywords)
             
-            if has_spaces and has_command_keyword:
-                # Escape HTML characters
+            # Generic pattern-based detection
+            has_spaces = ' ' in code_content
+            
+            # Check for actual command patterns (not just any text with spaces)
+            is_command_like = has_spaces and (
+                # Commands typically have specific patterns
+                re.search(r'\b(install|run|update|add|build|exec|start|stop|apt|pip|docker|conda|git|sudo|curl|wget)\s+', code_content.lower()) or
+                '--' in code_content or  # flag pattern
+                '.py' in code_content or '.js' in code_content  # script file pattern
+            )
+            
+            # Simple single-character content without spaces gets normal formatting (preserve only for very simple cases)
+            if (not has_spaces and len(code_content) == 1 and 
+                not any(ord(char) > 127 for char in code_content)):
+                # Single ASCII characters that appear in Unicode context should use normal formatting
+                if any(ord(char) > 127 for char in cell_content):
+                    return f'<code>{code_content}</code>'
+                # Otherwise preserve original behavior
+                return f'`{code_content}`'
+            
+            # Check for complex context that needs special processing
+            transformation_pattern = r'\b(se convierte en|becomes|transforms to|converts to|results in)\b'
+            has_transformation = bool(re.search(transformation_pattern, cell_content.lower()))
+            has_unicode_in_cell = any(ord(char) > 127 for char in cell_content)
+            is_technical = ((re.search(r'^[a-z_]+[a-z0-9_]*$', code_content) and '_' in code_content) or 
+                           (re.search(r'^[a-z]+$', code_content) and code_content.lower() in ['lowercase', 'uppercase', 'title', 'capitalize']))
+            
+            # Preserve original behavior for simple cases (no spaces, no unicode, no special context)
+            if (not has_spaces and 
+                not any(ord(char) > 127 for char in code_content) and
+                not has_unicode_in_cell and
+                not has_transformation and
+                not is_technical):
+                return f'`{code_content}`'
+            
+            # Command-like content gets normal HTML code formatting
+            if is_command_like:
                 escaped_content = code_content.replace('<', '&#x3C;').replace('>', '&#x3E;')
                 return f'<code>{escaped_content}</code>'
-            else:
-                # Return original markdown for simple code
-                return f'`{code_content}`'
+            
+            # Check if it appears in transformation context (before or after transformation indicators)
+            code_position = cell_content.find(f'`{code_content}`')
+            
+            if has_transformation and code_position >= 0:
+                # Find if this specific code appears after a transformation phrase
+                text_before = cell_content[:code_position].lower()
+                if re.search(transformation_pattern, text_before):
+                    return f'<code>{code_content}</code>'  # Normal formatting for transformation results
+            
+            # Technical identifiers (snake_case patterns and common technical terms)
+            if is_technical:
+                return f'<code>{code_content}</code>'  # Normal formatting for technical terms
+            
+            # Determine formatting based on content characteristics
+            needs_escaped_backticks = (
+                # Unicode characters (non-ASCII)
+                any(ord(char) > 127 for char in code_content) or
+                # Padded content (leading/trailing spaces)
+                code_content != code_content.strip() or
+                # Example phrases (descriptive text, not code) - enhanced detection
+                (has_spaces and len(code_content.split()) <= 4 and 
+                 not re.search(r'[()[\]{}=<>_]', code_content) and  # no code-like symbols
+                 not is_command_like) or  # and not a command
+                # Text that appears before transformation (likely example text)
+                (has_transformation and has_spaces and 
+                 not re.search(transformation_pattern, cell_content[:code_position].lower()) if code_position >= 0 else False)
+            )
+            
+            # Apply escaped backticks for special cases
+            if needs_escaped_backticks:
+                return f'<code>&#x60;{code_content}&#x60;</code>'
+            
+            # Default: normal code formatting
+            return f'<code>{code_content}</code>'
         
         return re.sub(pattern, replace_code, cell_content)
 

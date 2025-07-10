@@ -502,7 +502,7 @@ const end_url = '{end_url}';
 const description = '{descriptions_list[notebook_number]}';
 const keywords = '{keywords_list[notebook_number]}';
 const languaje = '{LANGUAGES[notebook_number]}';
-const image_path = '{image}';
+const image_path = '{image.replace("'", "\\'")}';
 const opening_brace = '{open_brace}';
 const closing_brace = '{closing_brace}';
 ---

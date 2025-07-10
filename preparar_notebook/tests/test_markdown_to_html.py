@@ -966,6 +966,121 @@ Val 3   | Val 4 |
   </tbody>
 </table>'''
         self.assertEqual(markdown_table_to_html(markdown).strip(), expected_html.strip())
+    
+    def test_markdown_table_to_html_with_code_inline(self):
+        markdown = '|Normalización|Descripción|Ejemplo|\n|---|---|---|\n|NFD (Normalization for D)|Los caracteres se descomponen por equivalencia canónica|`â` (U+00E2) se descompone en `a` (U+0061) + `^` (U+0302)|\n|NFKD (Normalization Form KD)|Los caracteres se descomponen por compatibilidad|`ﬁ` (U+FB01) se descompone en `f` (U+0066) + `i` (U+0069)|\n|NFC (Normalization Form C)|Los caracteres se descomponen y luego se recomponen por equivalencia canónica|`â` (U+00E2) se descompone en `a` (U+0061) + `^` (U+0302) y luego se recompone en `â` (U+00E2)|\n|NFKC (Normalization Form KC)|Los caracteres se descomponen por compatibilidad y luego se recomponen por equivalencia canónica|`ﬁ` (U+FB01) se descompone en `f` (U+0066) + `i` (U+0069) y luego se recompone en `f` (U+0066) + `i` (U+0069)|\n|Lowercase|Convierte el texto a minúsculas|`Hello World` se convierte en `hello world`|\n|Strip|Elimina todos los espacios en blanco de los lados especificados (izquierdo, derecho o ambos) del texto|`  Hello World  ` se convierte en `Hello World`|\n|StripAccents|Elimina todos los símbolos de acento en unicode (se utilizará con NFD por coherencia)|`á` (U+00E1) se convierte en `a` (U+0061)|\n|Replace|Sustituye una cadena personalizada o [regex](https://maximofn.com/regular-expressions/) y la cambia por el contenido dado|`Hello World` se convierte en `Hello Universe`|\n|BertNormalizer|Proporciona una implementación del Normalizador utilizado en el BERT original. Las opciones que se pueden configurar son `clean_text`, `handle_chinese_chars`, `strip_accents` y `lowercase`|`Hello World` se convierte en `hello world`|'
+        expected_html = '''<table>
+  <thead>
+    <tr>
+      <th>Normalización</th>
+      <th>Descripción</th>
+      <th>Ejemplo</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>NFD (Normalization for D)</td>
+      <td>Los caracteres se descomponen por equivalencia canónica</td>
+      <td><code>&#x60;â&#x60;</code> (U+00E2) se descompone en <code>a</code> (U+0061) + <code>^</code> (U+0302)</td>
+    </tr>
+    <tr>
+      <td>NFKD (Normalization Form KD)</td>
+      <td>Los caracteres se descomponen por compatibilidad</td>
+      <td><code>&#x60;ﬁ&#x60;</code> (U+FB01) se descompone en <code>f</code> (U+0066) + <code>i</code> (U+0069)</td>
+    </tr>
+    <tr>
+      <td>NFC (Normalization Form C)</td>
+      <td>Los caracteres se descomponen y luego se recomponen por equivalencia canónica</td>
+      <td><code>&#x60;â&#x60;</code> (U+00E2) se descompone en <code>a</code> (U+0061) + <code>^</code> (U+0302) y luego se recompone en <code>&#x60;â&#x60;</code> (U+00E2)</td>
+    </tr>
+    <tr>
+      <td>NFKC (Normalization Form KC)</td>
+      <td>Los caracteres se descomponen por compatibilidad y luego se recomponen por equivalencia canónica</td>
+      <td><code>&#x60;ﬁ&#x60;</code> (U+FB01) se descompone en <code>f</code> (U+0066) + <code>i</code> (U+0069) y luego se recompone en <code>f</code> (U+0066) + <code>i</code> (U+0069)</td>
+    </tr>
+    <tr>
+      <td>Lowercase</td>
+      <td>Convierte el texto a minúsculas</td>
+      <td><code>&#x60;Hello World&#x60;</code> se convierte en <code>hello world</code></td>
+    </tr>
+    <tr>
+      <td>Strip</td>
+      <td>Elimina todos los espacios en blanco de los lados especificados (izquierdo, derecho o ambos) del texto</td>
+      <td><code>&#x60;  Hello World  &#x60;</code> se convierte en <code>Hello World</code></td>
+    </tr>
+    <tr>
+      <td>StripAccents</td>
+      <td>Elimina todos los símbolos de acento en unicode (se utilizará con NFD por coherencia)</td>
+      <td><code>&#x60;á&#x60;</code> (U+00E1) se convierte en <code>a</code> (U+0061)</td>
+    </tr>
+    <tr>
+      <td>Replace</td>
+      <td>Sustituye una cadena personalizada o [regex](https://maximofn.com/regular-expressions/) y la cambia por el contenido dado</td>
+      <td><code>&#x60;Hello World&#x60;</code> se convierte en <code>Hello Universe</code></td>
+    </tr>
+    <tr>
+      <td>BertNormalizer</td>
+      <td>Proporciona una implementación del Normalizador utilizado en el BERT original. Las opciones que se pueden configurar son <code>clean_text</code>, <code>handle_chinese_chars</code>, <code>strip_accents</code> y <code>lowercase</code></td>
+      <td><code>&#x60;Hello World&#x60;</code> se convierte en <code>hello world</code></td>
+    </tr>
+  </tbody>
+</table>'''
+        self.assertEqual(markdown_table_to_html(markdown).strip(), expected_html.strip())
+    
+    # def test_markdown_table_to_html_with_link(self):
+    #     markdown = '|PreTokenizer|Descripción|Ejemplo|\n|---|---|---|\n|ByteLevel|Divide en espacios en blanco mientras reasigna todos los bytes a un conjunto de caracteres visibles. Esta técnica fue introducida por OpenAI con GPT-2 y tiene algunas propiedades más o menos buenas: Como mapea sobre bytes, un tokenizador que utilice esto sólo requiere 256 caracteres como alfabeto inicial (el número de valores que puede tener un byte), frente a los más de 130.000 caracteres Unicode. Una consecuencia del punto anterior es que es absolutamente innecesario tener un token desconocido usando esto ya que podemos representar cualquier cosa con 256 tokens. Para caracteres no ascii, se vuelve completamente ilegible, ¡pero funciona!|`Hello my friend, how are you?` se divide en `Hello`, `Ġmy`, `Ġfriend`, `,`, `Ġhow`, `Ġare`, `Ġyou`, `?`|\n|Whitespace|Divide en límites de palabra usando la siguiente expresión regular: `\\w+[^\\w\\s]+`. En mi post sobre [expresiones regulares](https://maximofn.com/regular-expressions/) puedes entender qué hace|`Hello there!` se divide en `Hello`, `there`, `!`|\n|WhitespaceSplit|Se divide en cualquier carácter de espacio en blanco|`Hello there!` se divide en `Hello`, `there!`|\n|Punctuation|Aislará todos los caracteres de puntuación|`Hello?` se divide en `Hello`, `?`|\n|Metaspace|Separa los espacios en blanco y los sustituye por un carácter especial "▁" (U+2581)|`Hello there` se divide en `Hello`, `▁there`|\n|CharDelimiterSplit|Divisiones en un carácter determinado|Ejemplo con el caracter `x`: `Helloxthere` se divide en `Hello`, `there`|\n|Digits|Divide los números de cualquier otro carácter|`Hello123there` se divide en `Hello`, `123`, `there`|\n|Split|Pretokenizador versátil que divide según el patrón y el comportamiento proporcionados. El patrón se puede invertir si es necesario. El patrón debe ser una cadena personalizada o una [regex](https://maximofn.com/regular-expressions/). El comportamiento debe ser `removed`, `isolated`, `merged_with_previous`, `merged_with_next`, `contiguous`. Para invertir se indica con un booleano|Ejemplo con pattern=`" "`, behavior=`isolated`, invert=`False`: `Hello, how are you?` se divide en `Hello,`, ` `, `how`, ` `, `are`, ` `, `you?`|'
+    #     expected_html = '''<table>
+    #     <thead>
+    #       <tr>
+    #         <th>PreTokenizer</th>
+    #         <th>Descripción</th>
+    #         <th>Ejemplo</th>
+    #       </tr>
+    #     </thead>
+    #     <tbody>
+    #       <tr>
+    #         <td>ByteLevel</td>
+    #         <td>Divide en espacios en blanco mientras reasigna todos los bytes a un conjunto de caracteres visibles. Esta técnica fue introducida por OpenAI con GPT-2 y tiene algunas propiedades más o menos buenas: Como mapea sobre bytes, un tokenizador que utilice esto sólo requiere 256 caracteres como alfabeto inicial (el número de valores que puede tener un byte), frente a los más de 130.000 caracteres Unicode. Una consecuencia del punto anterior es que es absolutamente innecesario tener un token desconocido usando esto ya que podemos representar cualquier cosa con 256 tokens. Para caracteres no ascii, se vuelve completamente ilegible, ¡pero funciona!</td>
+    #         <td><code>Hello my friend, how are you?</code> se divide en <code>Hello</code>, <code>&#x60;Ġmy&#x60;</code>, <code>&#x60;Ġfriend&#x60;</code>, <code>,</code>, <code>&#x60;Ġhow&#x60;</code>, <code>&#x60;Ġare&#x60;</code>, <code>&#x60;Ġyou&#x60;</code>, <code>?</code></td>
+    #       </tr>
+    #       <tr>
+    #         <td>Whitespace</td>
+    #         <td>Divide en límites de palabra usando la siguiente expresión regular: <code>\w+[^\w\s]+</code>. En mi post sobre <a href="https://maximofn.com/regular-expressions/">expresiones regulares</a> puedes entender qué hace</td>
+    #         <td><code>&#x60;Hello there!&#x60;</code> se divide en <code>Hello</code>, <code>there</code>, <code>!</code></td>
+    #       </tr>
+    #       <tr>
+    #         <td>WhitespaceSplit</td>
+    #         <td>Se divide en cualquier carácter de espacio en blanco</td>
+    #         <td><code>&#x60;Hello there!&#x60;</code> se divide en <code>Hello</code>, <code>there!</code></td>
+    #       </tr>
+    #       <tr>
+    #         <td>Punctuation</td>
+    #         <td>Aislará todos los caracteres de puntuación</td>
+    #         <td><code>&#x60;Hello?&#x60;</code> se divide en <code>Hello</code>, <code>?</code></td>
+    #       </tr>
+    #       <tr>
+    #         <td>Metaspace</td>
+    #         <td>Separa los espacios en blanco y los sustituye por un carácter especial "▁" (U+2581)</td>
+    #         <td><code>&#x60;Hello there&#x60;</code> se divide en <code>Hello</code>, <code>&#x60;▁there&#x60;</code></td>
+    #       </tr>
+    #       <tr>
+    #         <td>CharDelimiterSplit</td>
+    #         <td>Divisiones en un carácter determinado</td>
+    #         <td>Ejemplo con el caracter <code>&#x60;x&#x60;</code>: <code>&#x60;Helloxthere&#x60;</code> se divide en <code>Hello</code>, <code>there</code></td>
+    #       </tr>
+    #       <tr>
+    #         <td>Digits</td>
+    #         <td>Divide los números de cualquier otro carácter</td>
+    #         <td><code>&#x60;Hello123there&#x60;</code> se divide en <code>Hello</code>, <code>123</code>, <code>there</code></td>
+    #       </tr>
+    #       <tr>
+    #         <td>Split</td>
+    #         <td>Pretokenizador versátil que divide según el patrón y el comportamiento proporcionados. El patrón se puede invertir si es necesario. El patrón debe ser una cadena personalizada o una <a href="https://maximofn.com/regular-expressions/">regex</a>. El comportamiento debe ser <code>removed</code>, <code>isolated</code>, <code>merged_with_previous</code>, <code>merged_with_next</code>, <code>contiguous</code>. Para invertir se indica con un booleano</td>
+    #         <td>Ejemplo con pattern=<code>&#x60;" "&#x60;</code>, behavior=<code>&#x60;isolated&#x60;</code>, invert=<code>&#x60;False&#x60;</code>: <code>&#x60;Hello, how are you?&#x60;</code> se divide en <code>Hello,</code>, <code>&#x60; &#x60;</code>, <code>how</code>, <code>&#x60; &#x60;</code>, <code>are</code>, <code>&#x60; &#x60;</code>, <code>you?</code></td>
+    #       </tr>
+    #     </tbody>
+    #   </table>'''
+    #     self.assertEqual(markdown_table_to_html(markdown).strip(), expected_html.strip())
 
 class TestMarkdownToHtml(unittest.TestCase):
     def setUp(self):

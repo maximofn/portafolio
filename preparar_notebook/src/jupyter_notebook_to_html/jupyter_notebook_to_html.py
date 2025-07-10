@@ -780,8 +780,6 @@ def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_con
             for specific_block in specific_markdowns:
                 block_type, block_content = list(specific_block.items())[0]
 
-                if 'Divide en espacios en blanco' in block_content:
-                    print("a")
                 if block_type == "text":
                     # Text blocks might contain headers or simple paragraphs.
                     # The generic_markdown_to_specific_markdowns might return larger text blocks

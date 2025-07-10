@@ -1,5 +1,5 @@
 <section class="section-block-markdown-cell">
-<h1 id="RAG:-Foundations-and-Naive-RAG">RAG: Foundations and Naive RAG<a class="anchor-link" href="#RAG:-Foundations-and-Naive-RAG">¶</a></h1>
+<h1 id="RAG: Basics and Naive RAG">RAG: Basics and Naive RAG<a class="anchor-link" href="#RAG: Basics and Naive RAG">¶</a></h1>
 </section>
 <section class="section-block-markdown-cell">
 <blockquote>
@@ -10,52 +10,52 @@
 <p>In this post, we will explore what the <code>RAG</code> (<code>Retrieval Augmented Generation</code>) technique entails and how it can be implemented in a language model. Additionally, we will do this using the most basic RAG architecture, called <code>naive RAG</code>.</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>To make it free, instead of using an OpenAI account (as you'll see in most tutorials), we're going to use the <code>API inference</code> from Hugging Face, which has a free tier of 1000 requests per day, more than enough for this post.</p>
+<p>To make it free, instead of using an OpenAI account (as you'll see in most tutorials), we're going to use the <code>API inference</code> from Hugging Face, which has a free tier of 1000 requests per day, which is more than enough for this post.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Setting-up-the-API-Inference-of-Hugging-Face">Setting up the <code>API Inference</code> of Hugging Face<a class="anchor-link" href="#Setting-up-the-API-Inference-of-Hugging-Face">¶</a></h2>
+<h2>Setting up the <code>API Inference</code> of Hugging Face</h2>
 </section>
 <section class="section-block-markdown-cell">
 <p>To be able to use the <code>API Inference</code> from HuggingFace, the first thing you need is to have an account on HuggingFace. Once you have one, you need to go to <a href="https://huggingface.co/settings/keys">Access tokens</a> in your profile settings and generate a new token.</p>
-<p>We need to give it a name. In my case, I'm going to call it <code>rag-fundamentals</code> and enable the <code>Make calls to serverless Inference API</code> permission. It will create a token that we need to copy.</p>
+<p>We need to give it a name. In my case, I will name it <code>rag-fundamentals</code> and enable the permission <code>Make calls to serverless Inference API</code>. It will create a token that we will have to copy.</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>To manage the token, we are going to create a file in the same path where we are working called <code>.env</code> and we are going to put the token that we have copied into the file in the following way:</p>
-<div class="highlight"><pre><span></span><span class="nv">RAG_FUNDAMENTALS_ADVANCE_TECHNIQUES_TOKEN</span><span class="o">=</span><span class="s2">"hf_...."</span>
-</pre></div>
+<p>To manage the token, we are going to create a file in the same path where we are working called <code>.env</code> and we are going to put the token we have copied into the file in the following way:</p>
+<p>``` bash</p>
+<p>RAG_FUNDAMENTALS_ADVANCE_TECHNIQUES_TOKEN="hf_...."```</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Now to obtain the token we need to have <code>dotenv</code> installed, which we install through</p>
-<div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>python-dotenv
-</pre></div>
+<p>Now, to obtain the token, we need to have <code>dotenv</code> installed, which we install through</p>
+<p>```bash</p>
+<p>pip install python-dotenv```</p>
 <p>And we run the following</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">dotenv</span>
-
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">dotenv</span>
+<span class="w"> </span>
 <span class="n">dotenv</span><span class="o">.</span><span class="n">load_dotenv</span><span class="p">()</span>
-
-<span class="n">RAG_FUNDAMENTALS_ADVANCE_TECHNIQUES_TOKEN</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"RAG_FUNDAMENTALS_ADVANCE_TECHNIQUES_TOKEN"</span><span class="p">)</span>
+<span class="w"> </span>
+<span class="n">RAG_FUNDAMENTALS_ADVANCE_TECHNIQUES_TOKEN</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;RAG_FUNDAMENTALS_ADVANCE_TECHNIQUES_TOKEN&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
 <p>Now that we have a token, we create a client. For this, we need to have the <code>huggingface_hub</code> library installed. We install it using conda or pip.</p>
-<div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>huggingface_hub
-</pre></div>
-<p>o</p>
-<div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>huggingface_hub
-</pre></div>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-bash">conda install -c conda-forge huggingface_hub```<br><br>o</code></pre></div>
+      </section>
+<p>bash</p>
+<p>pip install --upgrade huggingface_hub```</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Now we have to choose which model to use. You can see the available models on the <a href="https://huggingface.co/docs/api-inference/supported-models">Supported models</a> page of the Hugging Face <code>API Inference</code> documentation.</p>
-<p>As of the time of writing the post, the best available is <code>Qwen2.5-72B-Instruct</code>, so we will use that model.</p>
+<p>Now we have to choose which model we are going to use. You can see the available models on the <a href="https://huggingface.co/docs/api-inference/supported-models">Supported models</a> page of the Hugging Face <code>API Inference</code> documentation.</p>
+<p>As of the time of writing this post, the best available is <code>Qwen2.5-72B-Instruct</code>, so we will use that model.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">MODEL</span> <span class="o">=</span> <span class="s2">"Qwen/Qwen2.5-72B-Instruct"</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">MODEL</span> <span class="o">=</span> <span class="s2">&quot;Qwen/Qwen2.5-72B-Instruct&quot;</span>
 </pre></div>
 </div>
 </section>
@@ -64,17 +64,20 @@
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">InferenceClient</span>
-
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">InferenceClient</span>
+<span class="w"> </span>
 <span class="n">client</span> <span class="o">=</span> <span class="n">InferenceClient</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">RAG_FUNDAMENTALS_ADVANCE_TECHNIQUES_TOKEN</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">MODEL</span><span class="p">)</span>
 <span class="n">client</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[3]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>&lt;InferenceClient(model='Qwen/Qwen2.5-72B-Instruct', timeout=None)&gt;</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>&amp;lt;InferenceClient(model=&#x27;Qwen/Qwen2.5-72B-Instruct&#x27;, timeout=None)&amp;gt;
+</pre>
 </div>
 </div>
 </div>
@@ -85,21 +88,23 @@
 <section class="section-block-code-cell-">
 <div class="input-code">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">message</span> <span class="o">=</span> <span class="p">[</span>
-	<span class="p">{</span> <span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Hola, qué tal?"</span> <span class="p">}</span>
+<span class="w">	</span><span class="p">{</span> <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;Hola, qué tal?&quot;</span> <span class="p">}</span>
 <span class="p">]</span>
-
+<span class="w"> </span>
 <span class="n">stream</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
-	<span class="n">messages</span><span class="o">=</span><span class="n">message</span><span class="p">,</span> 
-	<span class="n">temperature</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
-	<span class="n">max_tokens</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span>
-	<span class="n">top_p</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
-	<span class="n">stream</span><span class="o">=</span><span class="kc">False</span>
+<span class="w">	</span><span class="n">messages</span><span class="o">=</span><span class="n">message</span><span class="p">,</span> 
+<span class="w">	</span><span class="n">temperature</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+<span class="w">	</span><span class="n">max_tokens</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span>
+<span class="w">	</span><span class="n">top_p</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+<span class="w">	</span><span class="n">stream</span><span class="o">=</span><span class="kc">False</span>
 <span class="p">)</span>
-
+<span class="w"> </span>
 <span class="n">response</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
@@ -111,67 +116,67 @@
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="What-is-RAG?">What is <code>RAG</code>?<a class="anchor-link" href="#What-is-RAG?">¶</a></h2>
+<h2>What is <code>RAG</code>?</h2>
 </section>
 <section class="section-block-markdown-cell">
-<p><code>RAG</code> stands for <code>Retrieval Augmented Generation</code>, it is a technique created to obtain information from documents. Although LLMs can be very powerful and have a lot of knowledge, they will never be able to respond about private documents, such as reports from your company, internal documentation, etc. That's why <code>RAG</code> was created, to be able to use these LLMs on that private documentation.</p>
-<p><img alt="What is RAG?" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/RAG.webp"/></p>
+<p><code>RAG</code> stands for <code>Retrieval Augmented Generation</code>, it is a technique created to obtain information from documents. Although LLMs can be very powerful and have a lot of knowledge, they will never be able to answer about private documents, such as reports from your company, internal documentation, etc. That's why <code>RAG</code> was created, to be able to use these LLMs on that private documentation.</p>
+<p>!<a href="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/RAG.webp">What is RAG?</a></p>
 </section>
 <section class="section-block-markdown-cell">
 <p>The idea is that a user asks a question about that private documentation, the system is able to retrieve the part of the documentation where the answer to that question is found, the question and the relevant part of the documentation are passed to an LLM, and the LLM generates the answer for the user.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="How-is-information-stored?">How is information stored?<a class="anchor-link" href="#How-is-information-stored?">¶</a></h3>
+<h3 id="How is information stored?">How is information stored?<a class="anchor-link" href="#How is information stored?">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>It is known, and if you didn't know, I'll tell you now, that LLMs have a limit to the amount of information that can be passed to them, this is called the context window. This is due to internal architectures of LLMs that are not relevant at the moment. But what's important is that you cannot simply pass a document and a question to an LLM, because it is likely that the LLM will not be able to process all that information.</p>
+<p>It is known, and if you didn't know, I'll tell you now, that LLMs have a limit to the amount of information that can be passed to them, which is called the context window. This is due to internal architectures of LLMs that are not relevant at the moment. But what's important is that you cannot simply pass a document and a question to an LLM, because it is likely that the LLM will not be able to process all that information.</p>
 <p>In cases where more information is usually passed than the context window allows, what typically happens is that the LLM does not pay attention to the end of the input. Imagine asking the LLM about something in your document, and that information is at the end of the document, but the LLM doesn't read it.</p>
 <p>Therefore, what is done is to divide the documentation into blocks called <code>chunk</code>s. So, the documentation is stored in a bunch of <code>chunk</code>s, which are pieces of that documentation. This way, when the user asks a question, the <code>chunk</code> containing the answer to that question is passed to the LLM.</p>
-<p>In addition to dividing the documentation into <code>chunk</code>s, these are converted into embeddings, which are numerical representations of the <code>chunk</code>s. This is done because LLMs actually do not understand text, but rather numbers, and the <code>chunk</code>s are converted into numbers so that the LLM can understand them. If you want to learn more about embeddings, you can read my post on <a href="https://www.maximofn.com/transformers">transformers</a> where I explain how transformers work, which is the architecture underlying LLMs. You can also read my post on <a href="https://www.maximofn.com/chromadb">ChromaDB</a> where I explain how embeddings are stored in a vector database. Additionally, it would be interesting for you to read my post about the <a href="https://www.maximofn.com/hugging-face-tokenizers">HuggingFace Tokenizers</a> library, which explains how text is tokenized, which is the step prior to generating embeddings.</p>
-<p><img alt="RAG - embeddings" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/RAG-embeddings.webp"/></p>
+<p>In addition to dividing the documentation into <code>chunk</code>s, these are converted into embeddings, which are numerical representations of the <code>chunk</code>s. This is done because LLMs actually don't understand text, but rather numbers, and the <code>chunk</code>s are converted into numbers so that the LLM can understand them. If you want to learn more about embeddings, you can read my post on <a href="https://www.maximofn.com/transformers">transformers</a> where I explain how transformers work, which is the architecture underlying LLMs. You can also read my post on <a href="https://www.maximofn.com/chromadb">ChromaDB</a> where I explain how embeddings are stored in a vector database. Additionally, it would be interesting for you to read my post about the <a href="https://www.maximofn.com/hugging-face-tokenizers">HuggingFace Tokenizers</a> library, which explains how text is tokenized, which is the step prior to generating embeddings.</p>
+<p>!<a href="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/RAG-embeddings.webp">RAG - embeddings</a></p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="How-do-you-get-the-correct-chunk?">How do you get the correct <code>chunk</code>?<a class="anchor-link" href="#How-do-you-get-the-correct-chunk?">¶</a></h3>
+<h3>How do you get the correct <code>chunk</code>?</h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>We have said that the documentation is divided into <code>chunk</code>s and the <code>chunk</code> containing the answer to the user's question is passed to the LLM. But, how do we know in which <code>chunk</code> the answer is? To determine this, the user's question is converted into an embedding, and the similarity between the question's embedding and the embeddings of the <code>chunk</code>s is calculated. The <code>chunk</code> with the highest similarity is the one passed to the LLM.</p>
-<p><img alt="" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/rag-chunk_retreival.webp"/></p>
+<p>We have said that the documentation is divided into <code>chunk</code>s and the <code>chunk</code> containing the answer to the user's question is passed to the LLM. But, how do we know which <code>chunk</code> contains the answer? To determine this, the user's question is converted into an embedding, and the similarity between the embedding of the question and the embeddings of the <code>chunk</code>s is calculated. The <code>chunk</code> with the highest similarity is the one passed to the LLM.</p>
+<p>!<a href="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/rag-chunk_retreival.webp"></a></p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Let's-revisit-what-RAG-is">Let's revisit what <code>RAG</code> is<a class="anchor-link" href="#Let's-revisit-what-RAG-is">¶</a></h3>
+<h3>Let's revisit what <code>RAG</code> is</h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>On one hand, we have the <code>retrieval</code>, which is obtaining the correct <code>chunk</code> from the documentation. On the other hand, we have the <code>augmented</code>, which involves passing the user's question and the <code>chunk</code> to the LLM. Finally, we have the <code>generation</code>, which is obtaining the response generated by the LLM.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Vector-database">Vector database<a class="anchor-link" href="#Vector-database">¶</a></h2>
+<h2 id="Vector database">Vector database<a class="anchor-link" href="#Vector database">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
 <p>We have seen that the documentation is divided into <code>chunk</code>s and stored in a vector database, so we need to use one. For this post, I will use <a href="https://www.trychroma.com/">ChromaDB</a>, which is a widely used vector database and I also have a <a href="https://www.maximofn.com/chromadb">post</a> where I explain how it works.</p>
 </section>
 <section class="section-block-markdown-cell">
 <p>So first we need to install the ChromaDB library, for this we install it with Conda or with pip</p>
-<div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>conda-forge::chromadb
-</pre></div>
-<p>o</p>
-<div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>chromadb
-</pre></div>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-bash">conda install conda-forge::chromadb```<br><br>o</code></pre></div>
+      </section>
+<p>bash</p>
+<p>pip install chromadb```</p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Embedding-Function">Embedding Function<a class="anchor-link" href="#Embedding-Function">¶</a></h3>
+<h3 id="Embedding Function">Embedding Function<a class="anchor-link" href="#Embedding Function">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>As we have said, everything will be based on embeddings. So, the first thing we do is create a function to get embeddings from a text. We are going to use the model <code>sentence-transformers/all-MiniLM-L6-v2</code>.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">chromadb.utils.embedding_functions</span> <span class="k">as</span> <span class="nn">embedding_functions</span>
-
-<span class="n">EMBEDDING_MODEL</span> <span class="o">=</span> <span class="s2">"sentence-transformers/all-MiniLM-L6-v2"</span>
-      
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">chromadb.utils.embedding_functions</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">embedding_functions</span>
+<span class="w"> </span>
+<span class="n">EMBEDDING_MODEL</span> <span class="o">=</span> <span class="s2">&quot;sentence-transformers/all-MiniLM-L6-v2&quot;</span>
+<span class="w">      </span>
 <span class="n">huggingface_ef</span> <span class="o">=</span> <span class="n">embedding_functions</span><span class="o">.</span><span class="n">HuggingFaceEmbeddingFunction</span><span class="p">(</span>
-    <span class="n">api_key</span><span class="o">=</span><span class="n">RAG_FUNDAMENTALS_ADVANCE_TECHNIQUES_TOKEN</span><span class="p">,</span>
-    <span class="n">model_name</span><span class="o">=</span><span class="n">EMBEDDING_MODEL</span>
+<span class="w">    </span><span class="n">api_key</span><span class="o">=</span><span class="n">RAG_FUNDAMENTALS_ADVANCE_TECHNIQUES_TOKEN</span><span class="p">,</span>
+<span class="w">    </span><span class="n">model_name</span><span class="o">=</span><span class="n">EMBEDDING_MODEL</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -181,24 +186,27 @@
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">embedding</span> <span class="o">=</span> <span class="n">huggingface_ef</span><span class="p">([</span><span class="s2">"Hello, how are you?"</span><span class="p">,])</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">embedding</span> <span class="o">=</span> <span class="n">huggingface_ef</span><span class="p">([</span><span class="s2">&quot;Hello, how are you?&quot;</span><span class="p">,])</span>
 <span class="n">embedding</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[6]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>(384,)</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>(384,)
+</pre>
 </div>
 </div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>We obtain an embedding of dimension 384. Although the purpose of this post is not to explain embeddings, in short, our embedding function has categorized the phrase <code>Hello, how are you?</code> into a 384-dimensional space.</p>
+<p>We obtain an embedding of dimension 384. Although the purpose of this post is not to explain embeddings, in summary, our embedding function has categorized the phrase <code>Hello, how are you?</code> into a 384-dimensional space.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="ChromaDB-client">ChromaDB client<a class="anchor-link" href="#ChromaDB-client">¶</a></h3>
+<h3 id="ChromaDB client">ChromaDB client<a class="anchor-link" href="#ChromaDB client">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>Now that we have our embedding function, we can create a ChromaDB client.</p>
@@ -208,9 +216,9 @@
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
-      
-<span class="n">chroma_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"chromadb_persisten_storage"</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="w">      </span>
+<span class="n">chroma_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;chromadb_persisten_storage&quot;</span><span class="p">)</span>
 <span class="n">chroma_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -220,8 +228,8 @@
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">chromadb</span> <span class="kn">import</span> <span class="n">PersistentClient</span>
-
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">chromadb</span><span class="w"> </span><span class="kn">import</span> <span class="n">PersistentClient</span>
+<span class="w"> </span>
 <span class="n">chroma_client</span> <span class="o">=</span> <span class="n">PersistentClient</span><span class="p">(</span><span class="n">path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">chroma_path</span><span class="p">))</span>
 </pre></div>
 </div>
@@ -237,84 +245,84 @@
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">collection_name</span> <span class="o">=</span> <span class="s2">"document_qa_collection"</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">collection_name</span> <span class="o">=</span> <span class="s2">&quot;document_qa_collection&quot;</span>
 <span class="n">collection</span> <span class="o">=</span> <span class="n">chroma_client</span><span class="o">.</span><span class="n">get_or_create_collection</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">collection_name</span><span class="p">,</span> <span class="n">embedding_function</span><span class="o">=</span><span class="n">huggingface_ef</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Document-Loading">Document Loading<a class="anchor-link" href="#Document-Loading">¶</a></h2>
+<h2 id="Document loading">Document loading<a class="anchor-link" href="#Document loading">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
 <p>Now that we have created the vector database, we need to split the documentation into <code>chunks</code> and save them in the vector database.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Document-Loading-Function">Document Loading Function<a class="anchor-link" href="#Document-Loading-Function">¶</a></h3>
+<h3 id="Document Loading Function">Document Loading Function<a class="anchor-link" href="#Document Loading Function">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>First we create a function to load all the <code>.txt</code> documents from a directory</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">load_one_document_from_directory</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">file</span><span class="p">):</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">file</span><span class="p">),</span> <span class="s2">"r"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-        <span class="k">return</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">file</span><span class="p">,</span> <span class="s2">"text"</span><span class="p">:</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()}</span>
-
-<span class="k">def</span> <span class="nf">load_documents_from_directory</span><span class="p">(</span><span class="n">directory</span><span class="p">):</span>
-    <span class="n">documents</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">directory</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">".txt"</span><span class="p">):</span>
-            <span class="n">documents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">load_one_document_from_directory</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">file</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">documents</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">load_one_document_from_directory</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">file</span><span class="p">):</span>
+<span class="w">    </span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">file</span><span class="p">),</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<span class="w">        </span><span class="k">return</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">file</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()}</span>
+<span class="w"> </span>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_documents_from_directory</span><span class="p">(</span><span class="n">directory</span><span class="p">):</span>
+<span class="w">    </span><span class="n">documents</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="w">    </span><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">directory</span><span class="p">):</span>
+<span class="w">        </span><span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.txt&quot;</span><span class="p">):</span>
+<span class="w">            </span><span class="n">documents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">load_one_document_from_directory</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">file</span><span class="p">))</span>
+<span class="w">    </span><span class="k">return</span> <span class="n">documents</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Function-to-split-the-documentation-into-chunks">Function to split the documentation into <code>chunk</code>s<a class="anchor-link" href="#Function-to-split-the-documentation-into-chunks">¶</a></h3>
+<h3>Function to split the documentation into <code>chunk</code>s</h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>Once we have the documents, we divide them into <code>chunk</code>s</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">split_text</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">chunk_overlap</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
-    <span class="n">chunks</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">while</span> <span class="n">start</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
-        <span class="n">end</span> <span class="o">=</span> <span class="n">start</span> <span class="o">+</span> <span class="n">chunk_size</span>
-        <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">text</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">])</span>
-        <span class="n">start</span> <span class="o">=</span> <span class="n">end</span> <span class="o">-</span> <span class="n">chunk_overlap</span>
-    <span class="k">return</span> <span class="n">chunks</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">split_text</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">chunk_overlap</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
+<span class="w">    </span><span class="n">chunks</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="w">    </span><span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="w">    </span><span class="k">while</span> <span class="n">start</span> <span class="o">&amp;</span><span class="n">lt</span><span class="p">;</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">        </span><span class="n">end</span> <span class="o">=</span> <span class="n">start</span> <span class="o">+</span> <span class="n">chunk_size</span>
+<span class="w">        </span><span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">text</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">])</span>
+<span class="w">        </span><span class="n">start</span> <span class="o">=</span> <span class="n">end</span> <span class="o">-</span> <span class="n">chunk_overlap</span>
+<span class="w">    </span><span class="k">return</span> <span class="n">chunks</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Function-to-generate-embeddings-for-a-chunk">Function to generate embeddings for a <code>chunk</code><a class="anchor-link" href="#Function-to-generate-embeddings-for-a-chunk">¶</a></h3>
+<h3>Function to generate embeddings of a <code>chunk</code></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>Now that we have the <code>chunk</code>s, we generate the <code>embedding</code>s for each of them.</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>We will see why later, but to generate the embeddings we are going to do it locally and not through the Hugging Face API. For this, we need to have <a href="https://pytorch.org">PyTorch</a> and <code>sentence-transformers</code> installed, for which we do</p>
-<div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </span>sentence-transformers
-</pre></div>
+<p>We will see why later, but to generate the embeddings we are going to do it locally and not through the Hugging Face API. For this, we need to have <a href="https://pytorch.org">PyTorch</a> and <code>sentence-transformers</code> installed. To do so, we run</p>
+<p>``` bash</p>
+<p>pip install -U sentence-transformers```</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">sentence_transformers</span> <span class="kn">import</span> <span class="n">SentenceTransformer</span>
-<span class="kn">import</span> <span class="nn">torch</span>
-
-<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span><span class="p">)</span>
-
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">sentence_transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">SentenceTransformer</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="w"> </span>
+<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
+<span class="w"> </span>
 <span class="n">embedding_model</span> <span class="o">=</span> <span class="n">SentenceTransformer</span><span class="p">(</span><span class="n">EMBEDDING_MODEL</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
-
-<span class="k">def</span> <span class="nf">get_embeddings</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">embedding</span> <span class="o">=</span> <span class="n">embedding_model</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">embedding</span>
-    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-        <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="w"> </span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_embeddings</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="k">try</span><span class="p">:</span>
+<span class="w">        </span><span class="n">embedding</span> <span class="o">=</span> <span class="n">embedding_model</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+<span class="w">        </span><span class="k">return</span> <span class="n">embedding</span>
+<span class="w">    </span><span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<span class="w">        </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -323,16 +331,19 @@
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">text</span> <span class="o">=</span> <span class="s2">"Hello, how are you?"</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;Hello, how are you?&quot;</span>
 <span class="n">embedding</span> <span class="o">=</span> <span class="n">get_embeddings</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
 <span class="n">embedding</span><span class="o">.</span><span class="n">shape</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[13]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>(384,)</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>(384,)
+</pre>
 </div>
 </div>
 </div>
@@ -344,10 +355,10 @@
 <p>The model <code>sentence-transformers/all-MiniLM-L6-v2</code> has only 22M parameters, so you will be able to run it on any GPU. Even if you don't have a GPU, you will be able to run it on a CPU.</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>The LLM we will use to generate the responses, which is <code>Qwen2.5-72B-Instruct</code>, as its name suggests, is a 72B parameter model, so this model cannot be run on any GPU and running it on a CPU is unthinkable due to how slow it would be. Therefore, we will use this LLM via the API, but when generating the <code>embeddings</code> we can do it locally without any problem.</p>
+<p>The LLM we will use to generate the responses, which is <code>Qwen2.5-72B-Instruct</code>, as its name suggests, is a 72B parameter model, so this model cannot be run on any GPU and running it on a CPU would be unthinkable due to how slow it would be. Therefore, we will use this LLM via the API, but when generating the <code>embeddings</code> we can do it locally without any issues.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Documents-We-Will-Be-Testing-With">Documents We Will Be Testing With<a class="anchor-link" href="#Documents-We-Will-Be-Testing-With">¶</a></h3>
+<h3 id="Documents We Will Be Testing With">Documents We Will Be Testing With<a class="anchor-link" href="#Documents We Will Be Testing With">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>To perform all these tests, I downloaded the dataset <a href="https://www.kaggle.com/datasets/harshsinghal/aws-case-studies-and-blogs">aws-case-studies-and-blogs</a> and placed it in the <code>rag-txt_dataset</code> folder. The following commands tell you how to download and extract it.</p>
@@ -357,7 +368,7 @@
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="o">!</span>mkdir<span class="w"> </span>rag_txt_dataset
+<div class="highlight hl-ipython3"><pre><span></span><span class="err">!</span><span class="n">mkdir</span> <span class="n">rag_txt_dataset</span>
 </pre></div>
 </div>
 </section>
@@ -366,16 +377,18 @@
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="o">!</span>curl<span class="w"> </span>-L<span class="w"> </span>-o<span class="w"> </span>./rag_txt_dataset/archive.zip<span class="w"> </span>https://www.kaggle.com/api/v1/datasets/download/harshsinghal/aws-case-studies-and-blogs
+<div class="highlight hl-ipython3"><pre><span></span><span class="err">!</span><span class="n">curl</span> <span class="o">-</span><span class="n">L</span> <span class="o">-</span><span class="n">o</span> <span class="o">./</span><span class="n">rag_txt_dataset</span><span class="o">/</span><span class="n">archive</span><span class="o">.</span><span class="n">zip</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">www</span><span class="o">.</span><span class="n">kaggle</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">api</span><span class="o">/</span><span class="n">v1</span><span class="o">/</span><span class="n">datasets</span><span class="o">/</span><span class="n">download</span><span class="o">/</span><span class="n">harshsinghal</span><span class="o">/</span><span class="n">aws</span><span class="o">-</span><span class="n">case</span><span class="o">-</span><span class="n">studies</span><span class="o">-</span><span class="ow">and</span><span class="o">-</span><span class="n">blogs</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
 <div class="output-subarea-output-stream-output-stdout-output-text">
-<pre>  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+<pre>&#x20;&#x20;% Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;Dload  Upload   Total   Spent    Left  Speed
+&#x20;&#x20;0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
 100 1430k  100 1430k    0     0  1082k      0  0:00:01  0:00:01 --:--:-- 2440k
 </pre>
 </div>
@@ -387,37 +400,39 @@
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="o">!</span>unzip<span class="w"> </span>rag_txt_dataset/archive.zip<span class="w"> </span>-d<span class="w"> </span>rag_txt_dataset
+<div class="highlight hl-ipython3"><pre><span></span><span class="err">!</span><span class="n">unzip</span> <span class="n">rag_txt_dataset</span><span class="o">/</span><span class="n">archive</span><span class="o">.</span><span class="n">zip</span> <span class="o">-</span><span class="n">d</span> <span class="n">rag_txt_dataset</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
 <div class="output-subarea-output-stream-output-stdout-output-text">
 <pre>Archive:  rag_txt_dataset/archive.zip
-  inflating: rag_txt_dataset/23andMe Case Study _ Life Sciences _ AWS.txt  
-  inflating: rag_txt_dataset/36 new or updated datasets on the Registry of Open Data_ AI analysis-ready datasets and more _ AWS Public Sector Blog.txt  
-  inflating: rag_txt_dataset/54gene _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/6sense Case Study.txt  
-  inflating: rag_txt_dataset/ADP Developed an Innovative and Secure Digital Wallet in a Few Months Using AWS Services _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/AEON Case Study.txt  
-  inflating: rag_txt_dataset/ALTBalaji _ Amazon Web Services.txt  
-  inflating: rag_txt_dataset/AWS Case Study - Ineos Team UK.txt  
-  inflating: rag_txt_dataset/AWS Case Study - StreamAMG.txt  
-  inflating: rag_txt_dataset/AWS Case Study_ Creditsafe.txt  
-  inflating: rag_txt_dataset/AWS Case Study_ Immowelt.txt  
-  inflating: rag_txt_dataset/AWS Customer Case Study _ Kepler Provides Effective Monitoring of Elderly Care Home Residents Using AWS _ AWS.txt  
-  inflating: rag_txt_dataset/AWS announces 21 startups selected for the AWS generative AI accelerator _ AWS Startups Blog.txt  
-  inflating: rag_txt_dataset/AWS releases smart meter data analytics _ AWS for Industries.txt  
-  inflating: rag_txt_dataset/Accelerate Time to Business Value Using Amazon SageMaker at Scale with NatWest Group _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/Accelerate Your Analytics Journey on AWS with DXC Analytics and AI Platform _ AWS Partner Network (APN) Blog.txt  
-  ...
-  inflating: rag_txt_dataset/Zomato Saves Big by Using AWS Graviton2 to Power Data-Driven Business Insights.txt  
-  inflating: rag_txt_dataset/Zoox Case Study _ Automotive _ AWS.txt  
-  inflating: rag_txt_dataset/e-banner Streamlines Its Contact Center Operations and Facilitates a Fully Remote Workforce with Amazon Connect _ e-banner Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/iptiQ Case Study.txt  
-  inflating: rag_txt_dataset/mod.io Provides Low Latency Gamer Experience Globally on AWS _ Case Study _ AWS.txt  
-  inflating: rag_txt_dataset/myposter Case Study.txt  
+&#x20;&#x20;inflating: rag_txt_dataset/23andMe Case Study _ Life Sciences _ AWS.txt  
+&#x20;&#x20;inflating: rag_txt_dataset/36 new or updated datasets on the Registry of Open Data_ AI analysis-ready datasets and more _ AWS Public Sector Blog.txt  
+&#x20;&#x20;inflating: rag_txt_dataset/54gene _ Case Study _ AWS.txt  
+&#x20;&#x20;inflating: rag_txt_dataset/6sense Case Study.txt  
+&#x20;&#x20;inflating: rag_txt_dataset/ADP Developed an Innovative and Secure Digital Wallet in a Few Months Using AWS Services _ Case Study _ AWS.txt  
+&#x20;&#x20;inflating: rag_txt_dataset/AEON Case Study.txt  
+&#x20;&#x20;inflating: rag_txt_dataset/ALTBalaji _ Amazon Web Services.txt  
+&#x20;&#x20;inflating: rag_txt_dataset/AWS Case Study - Ineos Team UK.txt  
+&#x20;&#x20;inflating: rag_txt_dataset/AWS Case Study - StreamAMG.txt  
+&#x20;&#x20;inflating: rag_txt_dataset/AWS Case Study_ Creditsafe.txt  
+&#x20;&#x20;inflating: rag_txt_dataset/AWS Case Study_ Immowelt.txt  
+&#x20;&#x20;inflating: rag_txt_dataset/AWS Customer Case Study _ Kepler Provides Effective Monitoring of Elderly Care Home Residents Using AWS _ AWS.txt  
+&#x20;&#x20;inflating: rag_txt_dataset/AWS announces 21 startups selected for the AWS generative AI accelerator _ AWS Startups Blog.txt  
+&#x20;&#x20;inflating: rag_txt_dataset/AWS releases smart meter data analytics _ AWS for Industries.txt  
+&#x20;&#x20;inflating: rag_txt_dataset/Accelerate Time to Business Value Using Amazon SageMaker at Scale with NatWest Group _ Case Study _ AWS.txt  
+&#x20;&#x20;inflating: rag_txt_dataset/Accelerate Your Analytics Journey on AWS with DXC Analytics and AI Platform _ AWS Partner Network (APN) Blog.txt  
+&#x20;&#x20;...
+&#x20;&#x20;inflating: rag_txt_dataset/Zomato Saves Big by Using AWS Graviton2 to Power Data-Driven Business Insights.txt  
+&#x20;&#x20;inflating: rag_txt_dataset/Zoox Case Study _ Automotive _ AWS.txt  
+&#x20;&#x20;inflating: rag_txt_dataset/e-banner Streamlines Its Contact Center Operations and Facilitates a Fully Remote Workforce with Amazon Connect _ e-banner Case Study _ AWS.txt  
+&#x20;&#x20;inflating: rag_txt_dataset/iptiQ Case Study.txt  
+&#x20;&#x20;inflating: rag_txt_dataset/mod.io Provides Low Latency Gamer Experience Globally on AWS _ Case Study _ AWS.txt  
+&#x20;&#x20;inflating: rag_txt_dataset/myposter Case Study.txt
 </pre>
 </div>
 </div>
@@ -428,7 +443,7 @@
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="o">!</span>rm<span class="w"> </span>rag_txt_dataset/archive.zip
+<div class="highlight hl-ipython3"><pre><span></span><span class="err">!</span><span class="n">rm</span> <span class="n">rag_txt_dataset</span><span class="o">/</span><span class="n">archive</span><span class="o">.</span><span class="n">zip</span>
 </pre></div>
 </div>
 </section>
@@ -437,42 +452,43 @@
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="o">!</span>ls<span class="w"> </span>rag_txt_dataset
+<div class="highlight hl-ipython3"><pre><span></span><span class="err">!</span><span class="n">ls</span> <span class="n">rag_txt_dataset</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt"></div>
-<div class="output-subarea-output-stream-output-stdout-output-text">
-<pre>'23andMe Case Study _ Life Sciences _ AWS.txt'
-'36 new or updated datasets on the Registry of Open Data_ AI analysis-ready datasets and more _ AWS Public Sector Blog.txt'
-'54gene _ Case Study _ AWS.txt'
-'6sense Case Study.txt'
-'Accelerate Time to Business Value Using Amazon SageMaker at Scale with NatWest Group _ Case Study _ AWS.txt'
-'Accelerate Your Analytics Journey on AWS with DXC Analytics and AI Platform _ AWS Partner Network (APN) Blog.txt'
-'Accelerating customer onboarding using Amazon Connect _ NCS Case Study _ AWS.txt'
-'Accelerating Migration at Scale Using AWS Application Migration Service with 3M Company _ Case Study _ AWS.txt'
-'Accelerating Time to Market Using AWS and AWS Partner AccelByte _ Omeda Studios Case Study _ AWS.txt'
-'Achieving Burstable Scalability and Consistent Uptime Using AWS Lambda with TiVo _ Case Study _ AWS.txt'
-'Acrobits Uses Amazon Chime SDK to Easily Create Video Conferencing Application Boosting Collaboration for Global Users _ Acrobits Case Study _ AWS.txt'
-'Actuate AI Case study.txt'
-'ADP Developed an Innovative and Secure Digital Wallet in a Few Months Using AWS Services _ Case Study _ AWS.txt'
-'Adzuna doubles its email open rates using Amazon SES _ Adzuna Case Study _ AWS.txt'
-'AEON Case Study.txt'
-'ALTBalaji _ Amazon Web Services.txt'
-'Amanotes Stays on Beat by Delivering Simple Music Games to Millions Worldwide on AWS.txt'
-'Amazon OpenSearch Services vector database capabilities explained _ AWS Big Data Blog.txt'
-'Anghami Case Study.txt'
-'Announcing enhanced table extractions with Amazon Textract _ AWS Machine Learning Blog.txt'
+<div class="prompt-output-prompt">Out[]:</div>
+<div class="output-text-output-subareaoutput_execute_result">
+<pre>&#x27;23andMe Case Study _ Life Sciences _ AWS.txt&#x27;
+&#x27;36 new or updated datasets on the Registry of Open Data_ AI analysis-ready datasets and more _ AWS Public Sector Blog.txt&#x27;
+&#x27;54gene _ Case Study _ AWS.txt&#x27;
+&#x27;6sense Case Study.txt&#x27;
+&#x27;Accelerate Time to Business Value Using Amazon SageMaker at Scale with NatWest Group _ Case Study _ AWS.txt&#x27;
+&#x27;Accelerate Your Analytics Journey on AWS with DXC Analytics and AI Platform _ AWS Partner Network (APN) Blog.txt&#x27;
+&#x27;Accelerating customer onboarding using Amazon Connect _ NCS Case Study _ AWS.txt&#x27;
+&#x27;Accelerating Migration at Scale Using AWS Application Migration Service with 3M Company _ Case Study _ AWS.txt&#x27;
+&#x27;Accelerating Time to Market Using AWS and AWS Partner AccelByte _ Omeda Studios Case Study _ AWS.txt&#x27;
+&#x27;Achieving Burstable Scalability and Consistent Uptime Using AWS Lambda with TiVo _ Case Study _ AWS.txt&#x27;
+&#x27;Acrobits Uses Amazon Chime SDK to Easily Create Video Conferencing Application Boosting Collaboration for Global Users _ Acrobits Case Study _ AWS.txt&#x27;
+&#x27;Actuate AI Case study.txt&#x27;
+&#x27;ADP Developed an Innovative and Secure Digital Wallet in a Few Months Using AWS Services _ Case Study _ AWS.txt&#x27;
+&#x27;Adzuna doubles its email open rates using Amazon SES _ Adzuna Case Study _ AWS.txt&#x27;
+&#x27;AEON Case Study.txt&#x27;
+&#x27;ALTBalaji _ Amazon Web Services.txt&#x27;
+&#x27;Amanotes Stays on Beat by Delivering Simple Music Games to Millions Worldwide on AWS.txt&#x27;
+&#x27;Amazon OpenSearch Services vector database capabilities explained _ AWS Big Data Blog.txt&#x27;
+&#x27;Anghami Case Study.txt&#x27;
+&#x27;Announcing enhanced table extractions with Amazon Textract _ AWS Machine Learning Blog.txt&#x27;
 ...
-'What Will Generative AI Mean for Your Business_ _ AWS Cloud Enterprise Strategy Blog.txt'
-'Which Recurring Business Processes Can Small and Medium Businesses Automate_ _ AWS Smart Business Blog.txt'
+&#x27;What Will Generative AI Mean for Your Business_ _ AWS Cloud Enterprise Strategy Blog.txt&#x27;
+&#x27;Which Recurring Business Processes Can Small and Medium Businesses Automate_ _ AWS Smart Business Blog.txt&#x27;
  Windsor.txt
-'Wireless Car Case Study _ AWS IoT Core _ AWS.txt'
-'Yamato Logistics (HK) case study.txt'
-'Zomato Saves Big by Using AWS Graviton2 to Power Data-Driven Business Insights.txt'
-'Zoox Case Study _ Automotive _ AWS.txt'
-</pre>
+&#x27;Wireless Car Case Study _ AWS IoT Core _ AWS.txt&#x27;
+&#x27;Yamato Logistics (HK) case study.txt&#x27;
+&#x27;Zomato Saves Big by Using AWS Graviton2 to Power Data-Driven Business Insights.txt&#x27;
+&#x27;Zoox Case Study _ Automotive _ AWS.txt&#x27;</pre>
 </div>
 </div>
 </div>
@@ -485,7 +501,7 @@
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">dataset_path</span> <span class="o">=</span> <span class="s2">"rag_txt_dataset"</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">dataset_path</span> <span class="o">=</span> <span class="s2">&quot;rag_txt_dataset&quot;</span>
 <span class="n">documents</span> <span class="o">=</span> <span class="n">load_documents_from_directory</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -496,9 +512,11 @@
 <section class="section-block-code-cell-">
 <div class="input-code">
 <div class="highlight hl-ipython3"><pre><span></span><span class="k">for</span> <span class="n">document</span> <span class="ow">in</span> <span class="n">documents</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">10</span><span class="p">]:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">document</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="n">document</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
@@ -525,9 +543,9 @@ Upstox Saves 1 Million Annually Using Amazon S3 Storage Lens _ Upstox Case Study
 <div class="input-code">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">chunked_documents</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="k">for</span> <span class="n">document</span> <span class="ow">in</span> <span class="n">documents</span><span class="p">:</span>
-    <span class="n">chunks</span> <span class="o">=</span> <span class="n">split_text</span><span class="p">(</span><span class="n">document</span><span class="p">[</span><span class="s2">"text"</span><span class="p">])</span>
-    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chunks</span><span class="p">):</span>
-        <span class="n">chunked_documents</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"id"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">document</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"text"</span><span class="p">:</span> <span class="n">chunk</span><span class="p">})</span>
+<span class="w">    </span><span class="n">chunks</span> <span class="o">=</span> <span class="n">split_text</span><span class="p">(</span><span class="n">document</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">])</span>
+<span class="w">    </span><span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chunks</span><span class="p">):</span>
+<span class="w">        </span><span class="n">chunked_documents</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">document</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">chunk</span><span class="p">})</span>
 </pre></div>
 </div>
 </section>
@@ -536,11 +554,14 @@ Upstox Saves 1 Million Annually Using Amazon S3 Storage Lens _ Upstox Case Study
 <div class="highlight hl-ipython3"><pre><span></span><span class="nb">len</span><span class="p">(</span><span class="n">chunked_documents</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[17]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>3611</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>3611
+</pre>
 </div>
 </div>
 </div>
@@ -558,35 +579,37 @@ Upstox Saves 1 Million Annually Using Amazon S3 Storage Lens _ Upstox Case Study
 <p>We generate the embeddings of the <code>chunk</code>s</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Last library we will have to install. Since the process of generating embeddings for the <code>chunk</code>s will be slow, we will install <code>tqdm</code> to show a progress bar. We can install it with conda or pip, whichever you prefer.</p>
-<div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>conda-forge::tqdm
-</pre></div>
-<p>o</p>
-<div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>tqdm
-</pre></div>
+<p>Last library we will have to install. Since the process of generating embeddings for the <code>chunk</code>s will be slow, we will install <code>tqdm</code> to show a progress bar. We can install it with Conda or pip, whichever you prefer.</p>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-bash">conda install conda-forge::tqdm```<br><br>o</code></pre></div>
+      </section>
+<p>bash</p>
+<p>pip install tqdm```</p>
 </section>
 <section class="section-block-markdown-cell">
 <p>We generate the embeddings of the <code>chunk</code>s</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">tqdm</span>
-
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">tqdm</span>
+<span class="w"> </span>
 <span class="n">progress_bar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="o">.</span><span class="n">tqdm</span><span class="p">(</span><span class="n">chunked_documents</span><span class="p">)</span>
-
+<span class="w"> </span>
 <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">progress_bar</span><span class="p">:</span>
-    <span class="n">embedding</span> <span class="o">=</span> <span class="n">get_embeddings</span><span class="p">(</span><span class="n">chunk</span><span class="p">[</span><span class="s2">"text"</span><span class="p">])</span>
-    <span class="k">if</span> <span class="n">embedding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">chunk</span><span class="p">[</span><span class="s2">"embedding"</span><span class="p">]</span> <span class="o">=</span> <span class="n">embedding</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Error with document </span><span class="si">{</span><span class="n">chunk</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="w">    </span><span class="n">embedding</span> <span class="o">=</span> <span class="n">get_embeddings</span><span class="p">(</span><span class="n">chunk</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">])</span>
+<span class="w">    </span><span class="k">if</span> <span class="n">embedding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="n">chunk</span><span class="p">[</span><span class="s2">&quot;embedding&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">embedding</span>
+<span class="w">    </span><span class="k">else</span><span class="p">:</span>
+<span class="w">        </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error with document </span><span class="si">{</span><span class="n">chunk</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
-<div class="output-subarea-output-stream-output-stderr-output-text">
-<pre>100%|██████████| 3611/3611 [00:16&lt;00:00, 220.75it/s]
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>100%|██████████| 3611/3611 [00:16&amp;lt;00:00, 220.75it/s]
 </pre>
 </div>
 </div>
@@ -597,12 +620,14 @@ Upstox Saves 1 Million Annually Using Amazon S3 Storage Lens _ Upstox Case Study
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">random</span> <span class="kn">import</span> <span class="n">randint</span>
-
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">random</span><span class="w"> </span><span class="kn">import</span> <span class="n">randint</span>
+<span class="w"> </span>
 <span class="n">idx</span> <span class="o">=</span> <span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunked_documents</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Chunk id: </span><span class="si">{</span><span class="n">chunked_documents</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s1">'id'</span><span class="p">]</span><span class="si">}</span><span class="s2">,</span><span class="se">\n\n</span><span class="s2">text: </span><span class="si">{</span><span class="n">chunked_documents</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s1">'text'</span><span class="p">]</span><span class="si">}</span><span class="s2">,</span><span class="se">\n\n</span><span class="s2">embedding shape: </span><span class="si">{</span><span class="n">chunked_documents</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s1">'embedding'</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Chunk id: </span><span class="si">{</span><span class="n">chunked_documents</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">,</span><span class="se">\n\n</span><span class="s2">text: </span><span class="si">{</span><span class="n">chunked_documents</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s1">&#39;text&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">,</span><span class="se">\n\n</span><span class="s2">embedding shape: </span><span class="si">{</span><span class="n">chunked_documents</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s1">&#39;embedding&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
@@ -613,14 +638,14 @@ text: Reducing Virtual Machines from 40 to 12
 The founders of BNS had been contemplating a migration from the company’s on-premises data center to the public cloud and observed a growing demand for cloud-based operations among current and potential BNS customers.
 Français
 Configures security according to cloud best practices
-Clive Pereira, R&amp;D director at BNS Group, explains, “The database that records Praisal’s SMS traffic resides in Praisal’s AWS environment. Praisal can now run complete analytics across its data and gain insights into what’s happening with its SMS traffic, which is a real game-changer for the organization.”  
+Clive Pereira, R&amp;amp;D director at BNS Group, explains, “The database that records Praisal’s SMS traffic resides in Praisal’s AWS environment. Praisal can now run complete analytics across its data and gain insights into what’s happening with its SMS traffic, which is a real game-changer for the organization.”  
 Español
  AWS ISV Accelerate Program
  Receiving Strategic, Foundational Support from ISV Specialists
  Learn More
 The value that AWS places on the ISV stream sealed the deal in our choice of cloud provider.” 
 日本語
-  Contact Sales 
+&#x20;&#x20;Contact Sales 
 BNS is an Australian software provider focused on secure enterprise SMS and fax messaging. Its software runs on the Windows platform and is l,
 
 embedding shape: (384,)
@@ -630,30 +655,32 @@ embedding shape: (384,)
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Load-the-chunks-into-the-vector-database">Load the <code>chunk</code>s into the vector database<a class="anchor-link" href="#Load-the-chunks-into-the-vector-database">¶</a></h3>
+<h3>Load the <code>chunk</code>s into the vector database</h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>Once we have all the chunks generated, we load them into the vector database. We use <code>tqdm</code> again to show a progress bar, because this is also going to be slow.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">tqdm</span>
-
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">tqdm</span>
+<span class="w"> </span>
 <span class="n">progress_bar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="o">.</span><span class="n">tqdm</span><span class="p">(</span><span class="n">chunked_documents</span><span class="p">)</span>
-
+<span class="w"> </span>
 <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">progress_bar</span><span class="p">:</span>
-    <span class="n">collection</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span>
-        <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="n">chunk</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]],</span>
-        <span class="n">documents</span><span class="o">=</span><span class="n">chunk</span><span class="p">[</span><span class="s2">"text"</span><span class="p">],</span>
-        <span class="n">embeddings</span><span class="o">=</span><span class="n">chunk</span><span class="p">[</span><span class="s2">"embedding"</span><span class="p">],</span>
-    <span class="p">)</span>
+<span class="w">    </span><span class="n">collection</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span>
+<span class="w">        </span><span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="n">chunk</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]],</span>
+<span class="w">        </span><span class="n">documents</span><span class="o">=</span><span class="n">chunk</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">],</span>
+<span class="w">        </span><span class="n">embeddings</span><span class="o">=</span><span class="n">chunk</span><span class="p">[</span><span class="s2">&quot;embedding&quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
-<div class="output-subarea-output-stream-output-stderr-output-text">
-<pre>100%|██████████| 3611/3611 [00:59&lt;00:00, 60.77it/s]
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>100%|██████████| 3611/3611 [00:59&amp;lt;00:00, 60.77it/s]
 </pre>
 </div>
 </div>
@@ -666,29 +693,29 @@ embedding shape: (384,)
 <p>Now that we have the vector database, we can ask questions to the documentation. For this, we need a function that returns the correct <code>chunk</code>.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Get-the-correct-chunk">Get the correct <code>chunk</code><a class="anchor-link" href="#Get-the-correct-chunk">¶</a></h3>
+<h3>Get the correct <code>chunk</code></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>Now we need a function that returns the correct <code>chunk</code>, let's create it</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">get_top_k_documents</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">query_texts</span><span class="o">=</span><span class="n">query</span><span class="p">,</span> <span class="n">n_results</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">results</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">get_top_k_documents</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+<span class="w">    </span><span class="n">results</span> <span class="o">=</span> <span class="n">collection</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">query_texts</span><span class="o">=</span><span class="n">query</span><span class="p">,</span> <span class="n">n_results</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span> <span class="n">results</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Finally, we create a <code>query</code>.</p>
+<p>Lastly, we create a <code>query</code>.</p>
 <p>To generate the query, I randomly selected the document <code>Using Amazon EC2 Spot Instances and Karpenter to Simplify and Optimize Kubernetes Infrastructure _ Neeva Case Study _ AWS.txt</code>, passed it to an LLM, and asked it to generate a question about the document. The question it generated is</p>
-<pre><code>How did Neeva use Karpenter and Amazon EC2 Spot Instances to improve its infrastructure management and cost optimization?
-</code></pre>
-<p>So we get the most relevant <code>chunks</code> in response to that question</p>
+<p>```</p>
+<p>How did Neeva use Karpenter and Amazon EC2 Spot Instances to improve its infrastructure management and cost optimization?```</p>
+<p>So we get the most relevant <code>chunks</code> in response to that question.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">query</span> <span class="o">=</span> <span class="s2">"How did Neeva use Karpenter and Amazon EC2 Spot Instances to improve its infrastructure management and cost optimization?"</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;How did Neeva use Karpenter and Amazon EC2 Spot Instances to improve its infrastructure management and cost optimization?&quot;</span>
 <span class="n">top_chunks</span> <span class="o">=</span> <span class="n">get_top_k_documents</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -698,10 +725,12 @@ embedding shape: (384,)
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">top_chunks</span><span class="p">[</span><span class="s2">"ids"</span><span class="p">][</span><span class="mi">0</span><span class="p">])):</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Rank </span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">top_chunks</span><span class="p">[</span><span class="s1">'ids'</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">, distance: </span><span class="si">{</span><span class="n">top_chunks</span><span class="p">[</span><span class="s1">'distances'</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">top_chunks</span><span class="p">[</span><span class="s2">&quot;ids&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">])):</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Rank </span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">top_chunks</span><span class="p">[</span><span class="s1">&#39;ids&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">, distance: </span><span class="si">{</span><span class="n">top_chunks</span><span class="p">[</span><span class="s1">&#39;distances&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
@@ -717,31 +746,31 @@ Rank 5: Using Amazon EC2 Spot Instances and Karpenter to Simplify and Optimize K
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>As I had mentioned, the document I randomly selected was <code>Using Amazon EC2 Spot Instances and Karpenter to Simplify and Optimize Kubernetes Infrastructure _ Neeva Case Study _ AWS.txt</code>, and as you can see, the <code>chunk</code>s it returned are from that document. That is, out of more than 3000 <code>chunk</code>s in the database, it was able to return the most relevant <code>chunk</code>s in response to that question. It seems this works!</p>
+<p>As I had mentioned, the document I randomly selected was <code>Using Amazon EC2 Spot Instances and Karpenter to Simplify and Optimize Kubernetes Infrastructure _ Neeva Case Study _ AWS.txt</code> and as you can see, the <code>chunk</code>s it returned are from that document. That is, out of more than 3000 <code>chunk</code>s in the database, it was able to return the most relevant <code>chunk</code>s in response to that question, it seems this works!</p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Generate-the-response">Generate the response<a class="anchor-link" href="#Generate-the-response">¶</a></h3>
+<h3 id="Generate the response">Generate the response<a class="anchor-link" href="#Generate the response">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>Since we already have the most relevant <code>chunks</code>, we pass them to the LLM, along with the question, so that it can generate an answer.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">generate_response</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">relevant_chunks</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span> <span class="n">top_p</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="n">context</span> <span class="o">=</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">chunk</span> <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">relevant_chunks</span><span class="p">])</span>
-    <span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"You are an assistant for question-answering. You have to answer the following question:</span><span class="se">\n\n</span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">Answer the question with the following information:</span><span class="se">\n\n</span><span class="si">{</span><span class="n">context</span><span class="si">}</span><span class="s2">"</span>
-    <span class="n">message</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="p">{</span> <span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">prompt</span> <span class="p">}</span>
-    <span class="p">]</span>
-    <span class="n">stream</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
-        <span class="n">messages</span><span class="o">=</span><span class="n">message</span><span class="p">,</span> 
-        <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
-        <span class="n">max_tokens</span><span class="o">=</span><span class="n">max_tokens</span><span class="p">,</span>
-        <span class="n">top_p</span><span class="o">=</span><span class="n">top_p</span><span class="p">,</span>
-        <span class="n">stream</span><span class="o">=</span><span class="n">stream</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span>
-    <span class="k">return</span> <span class="n">response</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">generate_response</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">relevant_chunks</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span> <span class="n">top_p</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="n">context</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">chunk</span> <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">relevant_chunks</span><span class="p">])</span>
+<span class="w">    </span><span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;You are an assistant for question-answering. You have to answer the following question:</span><span class="se">\n\n</span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">Answer the question with the following information:</span><span class="se">\n\n</span><span class="si">{</span><span class="n">context</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="w">    </span><span class="n">message</span> <span class="o">=</span> <span class="p">[</span>
+<span class="w">        </span><span class="p">{</span> <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">prompt</span> <span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="w">    </span><span class="n">stream</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+<span class="w">        </span><span class="n">messages</span><span class="o">=</span><span class="n">message</span><span class="p">,</span> 
+<span class="w">        </span><span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
+<span class="w">        </span><span class="n">max_tokens</span><span class="o">=</span><span class="n">max_tokens</span><span class="p">,</span>
+<span class="w">        </span><span class="n">top_p</span><span class="o">=</span><span class="n">top_p</span><span class="p">,</span>
+<span class="w">        </span><span class="n">stream</span><span class="o">=</span><span class="n">stream</span><span class="p">,</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="w">    </span><span class="n">response</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span>
+<span class="w">    </span><span class="k">return</span> <span class="n">response</span>
 </pre></div>
 </div>
 </section>
@@ -750,10 +779,12 @@ Rank 5: Using Amazon EC2 Spot Instances and Karpenter to Simplify and Optimize K
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">response</span> <span class="o">=</span> <span class="n">generate_response</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">top_chunks</span><span class="p">[</span><span class="s2">"documents"</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">response</span> <span class="o">=</span> <span class="n">generate_response</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">top_chunks</span><span class="p">[</span><span class="s2">&quot;documents&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
@@ -767,7 +798,7 @@ In late 2021, Neeva began working closely with the Karpenter team, experimenting
 Neeva runs its jobs on a large scale, which can lead to significant costs. To manage these costs effectively, the company adopted a combination of Amazon EC2 Spot Instances and On-Demand Instances. Spot Instances allow Neeva to bid on unused EC2 capacity, often at a fraction of the On-Demand price, while On-Demand Instances provide the necessary reliability for critical pipelines.
 
 ### Flexibility and Instance Diversification
-According to Mohit Agarwal, infrastructure engineering lead at Neeva, Karpenter's adoption of best practices for Spot Instances, including flexibility and instance diversification, has been crucial. This approach ensures that Neeva can dynamically adjust its compute resources to meet varying workloads while minimizing costs.
+According to Mohit Agarwal, infrastructure engineering lead at Neeva, Karpenter&#x27;s adoption of best practices for Spot Instances, including flexibility and instance diversification, has been crucial. This approach ensures that Neeva can dynamically adjust its compute resources to meet varying workloads while minimizing costs.
 
 ### Improved Scalability and Agility
 By using Karpenter to provision infrastructure resources for its Amazon EKS clusters, Neeva has achieved several key benefits:
@@ -775,13 +806,13 @@ By using Karpenter to provision infrastructure resources for its Amazon EKS clus
 - **Agility**: The company can iterate quickly and democratize infrastructure changes, reducing the time spent on systems administration by up to 100 hours per week.
 
 ### Enhanced Development Cycles
-The integration of Karpenter and Spot Instances has also accelerated Neeva's development cycles. The company can now launch new features and improvements more rapidly, which is essential for maintaining a competitive edge in the search engine market.
+The integration of Karpenter and Spot Instances has also accelerated Neeva&#x27;s development cycles. The company can now launch new features and improvements more rapidly, which is essential for maintaining a competitive edge in the search engine market.
 
 ### Cost Savings and Budget Control
 Using Spot Instances, Neeva has been able to stay within its budget while meeting its performance requirements. This cost optimization is critical for a company that prioritizes user-first experiences and has no competing incentives from advertising.
 
 ### Future Plans
-Neeva is committed to continuing its innovation and expansion. The company plans to launch in new regions and further improve its search engine, all while maintaining cost efficiency. As Mohit Agarwal notes, "The bulk of our compute is or will be managed using Karpenter going forward."
+Neeva is committed to continuing its innovation and expansion. The company plans to launch in new regions and further improve its search engine, all while maintaining cost efficiency. As Mohit Agarwal notes, &quot;The bulk of our compute is or will be managed using Karpenter going forward.&quot;
 
 ### Conclusion
 By leveraging Karpenter and Amazon EC2 Spot Instances, Neeva has not only optimized its infrastructure costs but also enhanced its scalability, agility, and development speed. This strategic approach has positioned Neeva to deliver high-quality, ad-free search experiences to its users while maintaining a strong focus on cost control and innovation.
@@ -794,111 +825,69 @@ By leveraging Karpenter and Amazon EC2 Spot Instances, Neeva has not only optimi
 <p>When I asked the LLM to generate a question about the document, I also asked it to generate the correct answer. This is the answer that the LLM gave me.</p>
 </section>
 <section class="section-block-markdown-cell">
-<div class="highlight"><pre><span></span>Neeva used Karpenter and Amazon EC2 Spot Instances to improve its infrastructure management and cost optimization in several ways:
-
-Simplified Instance Management:
-
-Karpenter: By adopting Karpenter, Neeva simplified the process of provisioning and managing compute resources for its Amazon EKS clusters. Karpenter automatically provisions and de-provisions instances based on the workload, eliminating the need for manual configurations and reducing the complexity of understanding different compute instances.
-Spot Instances: Neeva leveraged Amazon EC2 Spot Instances, which are unused EC2 capacity available at a significant discount (up to 90% cost savings). This allowed the company to control costs while meeting its performance requirements.
-Enhanced Scalability:
-
-Karpenter: Karpenter's ability to dynamically scale resources enabled Neeva to spin up new instances quickly, allowing the company to iterate at a higher velocity and run more experiments in less time.
-Spot Instances: The use of Spot Instances provided flexibility and instance diversification, making it easier for Neeva to scale its compute resources efficiently.
-Improved Productivity:
-
-Karpenter: By democratizing infrastructure changes, Karpenter allowed any engineer to modify Kubernetes configurations, reducing the dependency on specialized expertise. This saved the Neeva team up to 100 hours per week of wait time on systems administration.
-Spot Instances: The ability to quickly provision and de-provision Spot Instances reduced delays in the development pipeline, ensuring that jobs did not get stuck due to a lack of available resources.
-Cost Efficiency:
-
-Karpenter: Karpenter's best practices for Spot Instances, including flexibility and instance diversification, helped Neeva use these instances more effectively, staying within budget.
-Spot Instances: The cost savings from using Spot Instances allowed Neeva to run large-scale jobs, such as indexing, for nearly the same cost but in a fraction of the time. For example, Neeva reduced its indexing jobs from 18 hours to just 3 hours.
-Better Resource Utilization:
-
-Karpenter: Karpenter provided better visibility into compute resource usage, allowing Neeva to track and optimize its resource consumption more closely.
-Spot Instances: The combination of Karpenter and Spot Instances enabled Neeva to run large language models more efficiently, enhancing the search experience for its users.
-En resumen, la adopción de Karpenter y Amazon EC2 Spot Instances por parte de Neeva mejoró significativamente su gestión de infraestructura, optimización de costos y eficiencia general en el desarrollo, lo que permitió a la compañía ofrecer mejores experiencias de búsqueda sin publicidad a sus usuarios.
-</pre></div>
+<p>``` text</p>
+<p>Neeva used Karpenter and Amazon EC2 Spot Instances to improve its infrastructure management and cost optimization in several ways:</p>
+<p>Simplified Instance Management:</p>
+<p>Karpenter: By adopting Karpenter, Neeva simplified the process of provisioning and managing compute resources for its Amazon EKS clusters. Karpenter automatically provisions and de-provisions instances based on the workload, eliminating the need for manual configurations and reducing the complexity of understanding different compute instances.Spot Instances: Neeva leveraged Amazon EC2 Spot Instances, which are unused EC2 capacity available at a significant discount (up to 90% cost savings). This allowed the company to control costs while meeting its performance requirements.Enhanced Scalability:</p>
+<p>Karpenter: Karpenter's ability to dynamically scale resources enabled Neeva to spin up new instances quickly, allowing the company to iterate at a higher velocity and run more experiments in less time.Spot Instances: The use of Spot Instances provided flexibility and instance diversification, making it easier for Neeva to scale its compute resources efficiently.Improved Productivity:</p>
+<p>Karpenter: By democratizing infrastructure changes, Karpenter allowed any engineer to modify Kubernetes configurations, reducing the dependency on specialized expertise. This saved the Neeva team up to 100 hours per week of wait time on systems administration.Spot Instances: The ability to quickly provision and de-provision Spot Instances reduced delays in the development pipeline, ensuring that jobs did not get stuck due to a lack of available resources.Cost Efficiency:</p>
+<p>Karpenter: Karpenter's best practices for Spot Instances, including flexibility and instance diversification, helped Neeva use these instances more effectively, staying within budget.Spot Instances: The cost savings from using Spot Instances allowed Neeva to run large-scale jobs, such as indexing, for nearly the same cost but in a fraction of the time. For example, Neeva reduced its indexing jobs from 18 hours to just 3 hours.Better Resource Utilization:</p>
+<p>Karpenter: Karpenter provided better visibility into compute resource usage, allowing Neeva to track and optimize its resource consumption more closely.Spot Instances: The combination of Karpenter and Spot Instances enabled Neeva to run large language models more efficiently, enhancing the search experience for its users.En resumen, la adopción de Karpenter y Amazon EC2 Spot Instances por parte de Neeva mejoró significativamente su gestión de infraestructura, optimización de costos y eficiencia general en el desarrollo, lo que permitió a la compañía ofrecer mejores experiencias de búsqueda sin anuncios a sus usuarios.```</p>
 </section>
 <section class="section-block-markdown-cell">
 <p>And this has been the response generated by our <code>RAG</code></p>
 </section>
 <section class="section-block-markdown-cell">
-<div class="highlight"><pre><span></span>Neeva, a cloud-native, ad-free search engine founded in 2019, has leveraged Karpenter and Amazon EC2 Spot Instances to significantly improve its infrastructure management and cost optimization. Here’s how:
-
-### Early Collaboration with Karpenter
-En 2021, Neeva comenzó a trabajar estrechamente con el equipo de Karpenter, experimentando y contribuyendo con correcciones a una versión temprana de Karpenter. Esta colaboración permitió a Neeva integrar Karpenter con su panel de Kubernetes, lo que enable la empresa a recopilar métricas valiosas sobre el uso y el rendimiento.
-
-### Combining Spot Instances and On-Demand Instances
-Neeva runs its jobs on a large scale, which can lead to significant costs. To manage these costs effectively, the company adopted a combination of Amazon EC2 Spot Instances and On-Demand Instances. Spot Instances allow Neeva to bid on unused EC2 capacity, often at a fraction of the On-Demand price, while On-Demand Instances provide the necessary reliability for critical pipelines.
-
-### Flexibilidad y Diversificación de Instancias
-According to Mohit Agarwal, infrastructure engineering lead at Neeva, Karpenter's adoption of best practices for Spot Instances, including flexibility and instance diversification, has been crucial. This approach ensures that Neeva can dynamically adjust its compute resources to meet varying workloads while minimizing costs.
-
-### Mejorada escalabilidad y agilidad
-By using Karpenter to provision infrastructure resources for its Amazon EKS clusters, Neeva has achieved several key benefits:
-- **Scalability**: Neeva can scale its compute resources up or down as needed, ensuring that it always has the necessary capacity to handle its workloads.
-- **Agilidad**: La empresa puede iterar rápidamente y democratizar los cambios de infraestructura, reduciendo el tiempo dedicado a la administración de sistemas hasta en 100 horas por semana.
-
-### Enhanced Development Cycles
-La integración de Karpenter y Spot Instances también ha acelerado los ciclos de desarrollo de Neeva. La compañía ahora puede lanzar nuevas funciones y mejoras más rápidamente, lo cual es fundamental para mantener una ventaja competitiva en el mercado de motores de búsqueda.
-
-### Cost Savings and Budget Control
-Using Spot Instances, Neeva has been able to stay within its budget while meeting its performance requirements. This cost optimization is critical for a company that prioritizes user-first experiences and has no competing incentives from advertising.
-
-### Future Plans
-Neeva is committed to continuing its innovation and expansion. The company plans to launch in new regions and further improve its search engine, all while maintaining cost efficiency. As Mohit Agarwal notes, "The bulk of our compute is or will be managed using Karpenter going forward."
-
-### Conclusion
-By leveraging Karpenter and Amazon EC2 Spot Instances, Neeva has not only optimized its infrastructure costs but also enhanced its scalability, agility, and development speed. This strategic approach has positioned Neeva to deliver high-quality, ad-free search experiences to its users while maintaining a strong focus on cost control and innovation.
-</pre></div>
+<p>``` text</p>
+<p>Neeva, a cloud-native, ad-free search engine founded in 2019, has leveraged Karpenter and Amazon EC2 Spot Instances to significantly improve its infrastructure management and cost optimization. Here’s how:</p>
+<h3 id="Early Collaboration with KarpenterEn 2021, Neeva comenzo a trabajar estrechamente con el equipo de Karpenter, experimentando y contribuyendo con correcciones a una version temprana de Karpenter. Esta colaboracion permitio a Neeva integrar Karpenter con su panel de Kubernetes, lo que permitio a la empresa recopilar metricas valiosas sobre el uso y el rendimiento.">Early Collaboration with KarpenterEn 2021, Neeva comenzó a trabajar estrechamente con el equipo de Karpenter, experimentando y contribuyendo con correcciones a una versión temprana de Karpenter. Esta colaboración permitió a Neeva integrar Karpenter con su panel de Kubernetes, lo que permitió a la empresa recopilar métricas valiosas sobre el uso y el rendimiento.<a class="anchor-link" href="#Early Collaboration with KarpenterEn 2021, Neeva comenzo a trabajar estrechamente con el equipo de Karpenter, experimentando y contribuyendo con correcciones a una version temprana de Karpenter. Esta colaboracion permitio a Neeva integrar Karpenter con su panel de Kubernetes, lo que permitio a la empresa recopilar metricas valiosas sobre el uso y el rendimiento.">¶</a></h3>
+<h3 id="Combining Spot Instances and On-Demand InstancesNeeva runs its jobs on a large scale, which can lead to significant costs. To manage these costs effectively, the company adopted a combination of Amazon EC2 Spot Instances and On-Demand Instances. Spot Instances allow Neeva to bid on unused EC2 capacity, often at a fraction of the On-Demand price, while On-Demand Instances provide the necessary reliability for critical pipelines.">Combining Spot Instances and On-Demand InstancesNeeva runs its jobs on a large scale, which can lead to significant costs. To manage these costs effectively, the company adopted a combination of Amazon EC2 Spot Instances and On-Demand Instances. Spot Instances allow Neeva to bid on unused EC2 capacity, often at a fraction of the On-Demand price, while On-Demand Instances provide the necessary reliability for critical pipelines.<a class="anchor-link" href="#Combining Spot Instances and On-Demand InstancesNeeva runs its jobs on a large scale, which can lead to significant costs. To manage these costs effectively, the company adopted a combination of Amazon EC2 Spot Instances and On-Demand Instances. Spot Instances allow Neeva to bid on unused EC2 capacity, often at a fraction of the On-Demand price, while On-Demand Instances provide the necessary reliability for critical pipelines.">¶</a></h3>
+<h3 id="Flexibilidad y Diversificacion de InstanciasSegun Mohit Agarwal, ingeniero de infraestructura principal en Neeva, la adopcion por parte de Karpenter de las mejores practicas para Spot Instances, incluyendo flexibilidad y diversificacion de instancias, ha sido crucial. Este enfoque garantiza que Neeva pueda ajustar dinamicamente sus recursos de computo para satisfacer cargas de trabajo variables mientras minimiza los costos.">Flexibilidad y Diversificación de InstanciasSegún Mohit Agarwal, ingeniero de infraestructura principal en Neeva, la adopción por parte de Karpenter de las mejores prácticas para Spot Instances, incluyendo flexibilidad y diversificación de instancias, ha sido crucial. Este enfoque garantiza que Neeva pueda ajustar dinámicamente sus recursos de cómputo para satisfacer cargas de trabajo variables mientras minimiza los costos.<a class="anchor-link" href="#Flexibilidad y Diversificacion de InstanciasSegun Mohit Agarwal, ingeniero de infraestructura principal en Neeva, la adopcion por parte de Karpenter de las mejores practicas para Spot Instances, incluyendo flexibilidad y diversificacion de instancias, ha sido crucial. Este enfoque garantiza que Neeva pueda ajustar dinamicamente sus recursos de computo para satisfacer cargas de trabajo variables mientras minimiza los costos.">¶</a></h3>
+<h3 id="Mejorada Escalabilidad y AgilidadBy using Karpenter to provision infrastructure resources for its Amazon EKS clusters, Neeva has achieved several key benefits:- **Scalability**: Neeva can scale its compute resources up or down as needed, ensuring that it always has the necessary capacity to handle its workloads.- **Agility**: The company can iterate quickly and democratize infrastructure changes, reducing the time spent on systems administration by up to 100 hours per week.">Mejorada Escalabilidad y AgilidadBy using Karpenter to provision infrastructure resources for its Amazon EKS clusters, Neeva has achieved several key benefits:- **Scalability**: Neeva can scale its compute resources up or down as needed, ensuring that it always has the necessary capacity to handle its workloads.- **Agility**: The company can iterate quickly and democratize infrastructure changes, reducing the time spent on systems administration by up to 100 hours per week.<a class="anchor-link" href="#Mejorada Escalabilidad y AgilidadBy using Karpenter to provision infrastructure resources for its Amazon EKS clusters, Neeva has achieved several key benefits:- **Scalability**: Neeva can scale its compute resources up or down as needed, ensuring that it always has the necessary capacity to handle its workloads.- **Agility**: The company can iterate quickly and democratize infrastructure changes, reducing the time spent on systems administration by up to 100 hours per week.">¶</a></h3>
+<h3 id="Enhanced Development CyclesLa integracion de Karpenter y Spot Instances tambien ha acelerado los ciclos de desarrollo de Neeva. La compania ahora puede lanzar nuevas funciones y mejoras mas rapidamente, lo cual es esencial para mantener una ventaja competitiva en el mercado de motores de busqueda.">Enhanced Development CyclesLa integración de Karpenter y Spot Instances también ha acelerado los ciclos de desarrollo de Neeva. La compañía ahora puede lanzar nuevas funciones y mejoras más rápidamente, lo cual es esencial para mantener una ventaja competitiva en el mercado de motores de búsqueda.<a class="anchor-link" href="#Enhanced Development CyclesLa integracion de Karpenter y Spot Instances tambien ha acelerado los ciclos de desarrollo de Neeva. La compania ahora puede lanzar nuevas funciones y mejoras mas rapidamente, lo cual es esencial para mantener una ventaja competitiva en el mercado de motores de busqueda.">¶</a></h3>
+<h3 id="Cost Savings and Budget ControlUsing Spot Instances, Neeva has been able to stay within its budget while meeting its performance requirements. This cost optimization is critical for a company that prioritizes user-first experiences and has no competing incentives from advertising.">Cost Savings and Budget ControlUsing Spot Instances, Neeva has been able to stay within its budget while meeting its performance requirements. This cost optimization is critical for a company that prioritizes user-first experiences and has no competing incentives from advertising.<a class="anchor-link" href="#Cost Savings and Budget ControlUsing Spot Instances, Neeva has been able to stay within its budget while meeting its performance requirements. This cost optimization is critical for a company that prioritizes user-first experiences and has no competing incentives from advertising.">¶</a></h3>
+<h3 id="Future PlansNeeva is committed to continuing its innovation and expansion. The company plans to launch in new regions and further improve its search engine, all while maintaining cost efficiency. As Mohit Agarwal notes, "The bulk of our compute is or will be managed using Karpenter going forward."">Future PlansNeeva is committed to continuing its innovation and expansion. The company plans to launch in new regions and further improve its search engine, all while maintaining cost efficiency. As Mohit Agarwal notes, "The bulk of our compute is or will be managed using Karpenter going forward."<a class="anchor-link" href="#Future PlansNeeva is committed to continuing its innovation and expansion. The company plans to launch in new regions and further improve its search engine, all while maintaining cost efficiency. As Mohit Agarwal notes, "The bulk of our compute is or will be managed using Karpenter going forward."">¶</a></h3>
+<h3>ConclusionBy leveraging Karpenter and Amazon EC2 Spot Instances, Neeva has not only optimized its infrastructure costs but also enhanced its scalability, agility, and development speed. This strategic approach has positioned Neeva to deliver high-quality, ad-free search experiences to its users while maintaining a strong focus on cost control and innovation.```</h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>So we can conclude that the <code>RAG</code> has worked correctly!!!</p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Limits-of-Naive-RAG">Limits of Naive RAG<a class="anchor-link" href="#Limits-of-Naive-RAG">¶</a></h2>
+<h2 id="Limits of Naive RAG">Limits of Naive RAG<a class="anchor-link" href="#Limits of Naive RAG">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
 <p>As we have said, today we have explained <code>naive RAG</code>, which is the simplest RAG architecture, but it has its limitations.</p>
 </section>
 <section class="section-block-markdown-cell">
-<p><img alt="Naive RAG architecture" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/naive_RAG_architecture.webp"/></p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/naive_RAG_architecture.webp" alt="Naive RAG architecture">
 </section>
 <section class="section-block-markdown-cell">
 <p>The limitations of this architecture are:</p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Limits-in-Information-Retrieval-(retriever)">Limits in Information Retrieval (retriever)<a class="anchor-link" href="#Limits-in-Information-Retrieval-(retriever)">¶</a></h3>
+<h3 id="Limits in Information Retrieval">Limits in Information Retrieval<a class="anchor-link" href="#Limits in Information Retrieval">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <ul>
-<li><p>Limited knowledge of context and documentation: When the naive RAG system searches for chunks, it looks for those that have a semantically similar meaning to the prompt, but it is not capable of knowing which ones are the most relevant to the user's question, or which ones have the most up-to-date information, or whose information is more accurate than that of other chunks. For example, if a user asks about the problems of sweeteners in the digestive system, the naive RAG may return documents about sweeteners or about the digestive system, but it is not capable of knowing that the documents about the digestive system are the most relevant to the user's question. Another example is if the user asks about the latest advances in AI, but the naive RAG is not able to know which are the most recent papers in the database.</p>
-</li>
-<li><p>There is no synchronization between the retrieval and the generator. As we have seen, they are two independent systems; on one hand, the retrieval searches for the documents most similar to the user's question, and those documents are passed to the generator, which generates a response.</p>
-</li>
-<li><p>Inefficient scaling with large databases. Since retrieval searches for documents with the highest semantic similarity across the entire database, when it becomes very large, we can experience very long search times.</p>
-</li>
-<li><p>Limited adaptation to the user's question. If the user asks a question that involves several documents, meaning there is no single document containing all the information from the user's question, the system will retrieve all those documents and pass them to the generator, which may or may not use them. In a worst-case scenario, it might overlook some relevant documents when generating the response.</p>
-</li>
+  <li>Limited knowledge of context and documentation: When the naive RAG system searches for chunks, it looks for those that have a semantically similar meaning to the prompt, but it is not capable of knowing which ones are the most relevant to the user's question, or which ones have the most up-to-date information, or whose information is more accurate than others. For example, if a user asks about the problems of sweeteners in the digestive system, the naive RAG may return documents about sweeteners or about the digestive system, but it is not capable of knowing that the documents about the digestive system are the most relevant to the user's question. Another example is if the user asks about the latest advances in AI, but the naive RAG is not able to determine which are the most recent papers in the database.</li>
+  <li>There is no synchronization between the retrieval and the generator. As we have seen, they are two independent systems; on one hand, the retrieval searches for the documents most similar to the user's question, and these documents are passed to the generator, which generates a response.</li>
+  <li>Inefficient scaling with large databases. Since retrieval searches for documents with the highest semantic similarity across the entire database, when it becomes very large, search times can become very long.</li>
+  <li>Limited adaptation to the user's question. If the user asks a question that involves several documents, meaning there is no single document containing all the information needed for the user's question, the system will retrieve all those documents and pass them to the generator, which may or may not use them. In a worst-case scenario, it might overlook some relevant documents when generating the response.</li>
 </ul>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Limits-in-Response-Generation-(Generator)">Limits in Response Generation (Generator)<a class="anchor-link" href="#Limits-in-Response-Generation-(Generator)">¶</a></h3>
+<h3 id="Limits in Response Generation (Generator)">Limits in Response Generation (Generator)<a class="anchor-link" href="#Limits in Response Generation (Generator)">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <ul>
-<li><p>The model could hallucinate answers even when provided with relevant information.</p>
-</li>
-<li><p>The model could be limited by issues related to hate, discrimination, etc.</p>
-</li>
+  <li>The model could hallucinate responses even when provided with relevant information.</li>
+  <li>The model could be limited by issues related to hate, discrimination, etc.</li>
 </ul>
 </section>
 <section class="section-block-markdown-cell">
 <p>To overcome these limitations, techniques such as the</p>
 <ul>
-<li><p>Pre-retrieval: This includes techniques to improve indexing, so that information retrieval is more efficient. Or techniques such as enhancing the user's query to help retrieval find the most relevant documents.</p>
-</li>
-<li><p>Post-retrieval: Here techniques such as document re-ranking are used, which is a technique employed to improve the retrieval of relevant information</p>
-</li>
+  <li>Pre-retrieval: This includes techniques to improve indexing, so that information retrieval is more efficient. Or techniques such as improving the user's question so that retrieval can find the most relevant documents.</li>
+  <li>Post-retrieval: Here techniques such as document re-ranking are used, which is a technique used to improve the retrieval of relevant information</li>
 </ul>
 </section>

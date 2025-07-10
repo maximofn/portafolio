@@ -279,7 +279,12 @@ class TestMarkdownImageToHtml(unittest.TestCase):
 
     def test_url_contains_parentheses_not_supported_by_simple_regex(self):
         markdown = "![alt text](http://example.com/path(with_parens).png)"
-        expected_html = '<img src="http://example.com/path(with_parens" alt="alt text">.png)'
+        expected_html = '<img src="http://example.com/path(with_parens).png" alt="alt text">'
+        self.assertEqual(markdown_image_to_html(markdown), expected_html)
+
+    def test_image_gif(self):
+        markdown = '![Transformer - encoder-decoder (no detokenizer)](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/Transformer%20-%20encoder-decoder%20(no%20detokenizer).gif)'
+        expected_html = '<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/Transformer%20-%20encoder-decoder%20(no%20detokenizer).gif" alt="Transformer - encoder-decoder (no detokenizer)">'
         self.assertEqual(markdown_image_to_html(markdown), expected_html)
 
 class TestMarkdownLinkToHtml(unittest.TestCase):

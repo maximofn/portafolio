@@ -560,6 +560,7 @@ const closing_brace = '{closing_brace}';
                 print(f"full_destiny_path: {full_destiny_path}")
                 exit(1)
 
+        # write html_content to file
         index_html = add_index_html(html_content)
         html_content = html_content.replace('<img', '<img onerror="this.parentNode.removeChild(this)"')
         content_html = add_content_html(html_content)
@@ -572,7 +573,6 @@ const closing_brace = '{closing_brace}';
         content_html = img_base64_to_webp(content_html, notebook_title)
         content_html = format_cell_code_blocks(content_html)
         webp_img_counter = 0
-        content_html = add_witdh_and_height_to_image(content_html)
         content_html = remove_h1_from_html_content(content_html)
 
         with open(astro_file_path, 'w') as astro_file:

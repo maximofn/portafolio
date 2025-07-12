@@ -1,4 +1,4 @@
-   * -rw-r--r--@   1 macm1  staff      3597 29 ene 17:29 2024-03-16-git-sim.ipynb
+     * -rw-r--r--@   1 macm1  staff      3597 29 ene 17:29 2024-03-16-git-sim.ipynb
    * -rw-r--r--@   1 macm1  staff      4196 29 ene 17:29 2023-09-16-Fail2ban.ipynb
    * -rw-r--r--@   1 macm1  staff      5692 29 ene 17:29 2023-09-15-Caffeine.ipynb
    * -rw-r--r--@   1 macm1  staff      7080 29 ene 17:29 2023-12-18-Medida-de-similitud-entre-embeddings.ipynb

@@ -11,7 +11,7 @@
      * -rw-r--r--@   1 macm1  staff     17093 29 ene 17:29 2024-07-23-llm.int8.ipynb
      * -rw-r--r--@   1 macm1  staff     18013 29 ene 17:29 2024-06-01-Hugging-Face-optimun.ipynb
  * -rw-r--r--@   1 macm1  staff     21489 25 feb 18:01 2025-02-25-Langchain-cadenas de extraccion.ipynb
-   * -rw-r--r--@   1 macm1  staff     21746 11 jun 19:12 2024-08-01-DoLa.ipynb
+     * -rw-r--r--@   1 macm1  staff     21746 11 jun 19:12 2024-08-01-DoLa.ipynb
    * -rw-r--r--@   1 macm1  staff     24294 11 jun 19:12 2025-03-08-FastRTC.ipynb
  * -rw-r--r--@   1 macm1  staff     28483 25 feb 18:15 2025-02-19-Langchain-chat-models-and-prompts.ipynb
    * -rw-r--r--@   1 macm1  staff     30457 11 jun 19:12 2025-03-10-uv.ipynb

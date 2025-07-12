@@ -2,66 +2,71 @@
 <h1 id="DoLa: Decoding by Contrasting Layers Improves Factuality in Large Language Models">DoLa: Decoding by Contrasting Layers Improves Factuality in Large Language Models<a class="anchor-link" href="#DoLa: Decoding by Contrasting Layers Improves Factuality in Large Language Models">¶</a></h1>
 </section>
 <section class="section-block-markdown-cell">
-<p>Aunque a medida que los LLMs van aumentando de tamaño y van surgiendo nuevas capacidades, tenemos un problema y son las alucionaciones. Los autores del paper <a href="https://arxiv.org/abs/2309.03883">DoLa: Decoding by Contrasting Layers Improves Factuality in Large Language Models</a> proponen un método para evitar este problema.</p>
+<blockquote>
+<p>Disclaimer: This post has been translated to English using a machine translation model. Please, let me know if you find any mistakes.</p>
+</blockquote>
 </section>
 <section class="section-block-markdown-cell">
-<p>Proponen un enfoque de decodificación contrastiva, donde la probabilidad de salida de la siguiente palabra se obtiene de la diferencia en los logits entre una capa superior y una inferior. Al enfatizar el conocimiento de las capas superiores y restarle importancia al de las inferiores, podemos hacer que los LM sean más factuales y, por lo tanto, reducir las alucinaciones.</p>
-<p>En la siguiente figura se muestra esta idea. Mientras que <code>Seattle</code> mantiene una alta probabilidad en todas las capas, la probabilidad de la respuesta correcta <code>Olympia</code> aumenta después de que las capas superiores inyecten más conocimiento factual. Contrastar las diferencias entre las distintas capas puede revelar la respuesta correcta en este caso</p>
+<p>Although as LLMs grow in size and new capabilities emerge, we have a problem: hallucinations. The authors of the paper <a href="https://arxiv.org/abs/2309.03883">DoLa: Decoding by Contrasting Layers Improves Factuality in Large Language Models</a> propose a method to avoid this issue.</p>
+</section>
+<section class="section-block-markdown-cell">
+<p>They propose a contrastive decoding approach, where the probability of the next word's output is obtained from the difference in logits between an upper layer and a lower layer. By emphasizing the knowledge of the upper layers and de-emphasizing that of the lower layers, we can make LMs more factual and, therefore, reduce hallucinations.</p>
+<p>The following figure illustrates this idea. While <code>Seattle</code> maintains a high probability across all layers, the probability of the correct answer <code>Olympia</code> increases after the upper layers inject more factual knowledge. Comparing the differences between the various layers can reveal the correct answer in this case.</p>
 <img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/DoLa-figure1.webp" alt="DoLa-figure1">
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Metodo">Método<a class="anchor-link" href="#Metodo">¶</a></h2>
+<h2 id="Method">Method<a class="anchor-link" href="#Method">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<p>Un LLM consiste en una capa de embedding, varios transformers secuenciales y a continuación una capa de salida. Lo que proponen es medir la salida de cada transformer mediante la divergencia de Jensen-Shannon (JSD)</p>
-<p>En la siguiente figura se puede ver esta medida a la salida de cada transformer para una frase de entrada al LLM. Cada columna corresponde a un token de la frase.</p>
+<p>A LLM consists of an embedding layer, several sequential transformers, and then an output layer. What they propose is to measure the output of each transformer using the Jensen-Shannon divergence (JSD).</p>
+<p>In the following figure, this measure can be seen at the output of each transformer for an input sentence to the LLM. Each column corresponds to a token in the sentence.</p>
 <img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/DoLa-figure2.webp" alt="DoLa-figure2">
-<p>Se pueden observar dos patrones</p>
+<p>Two patterns can be observed</p>
 <ul>
-  <li>El primero ocurre cuando se predicen entidades de nombre o fechas importantes, como <code>Wole Soyinka</code> y <code>1986</code>, que requieren conocimiento factual. Se puede ver que la JSD calculada sigue siendo extremadamente alta en las capas superiores. Este patrón indica que el modelo sigue cambiando sus predicciones en las últimas capas, y potencialmente inyectando más conocimiento factual en las predicciones</li>
+  <li>The first occurs when predicting named entities or important dates, such as <code>Wole Soyinka</code> and <code>1986</code>, which require factual knowledge. It can be seen that the JSD calculated remains extremely high in the upper layers. This pattern indicates that the model is still changing its predictions in the final layers, potentially injecting more factual knowledge into the predictions.</li>
 </ul>
 <ul>
-  <li>El segundo ocurre cuando se predicen palabras funcionales, como <code>was</code>, <code>the</code>, <code>to</code>, <code>in</code>, y los tokens copiados de la pregunta de entrada, como <code>first Nigerian</code>, <code>Nobel Prize</code>. Cuando se predicen estos tokens "fáciles", podemos observar que la JSD se vuelve muy pequeña a partir de las capas intermedias. Este hallazgo indica que el modelo ya ha decidido qué token generar en las capas intermedias, y mantiene las distribuciones de salida casi sin cambios en las capas superiores. Este hallazgo también es consistente con las suposiciones en los LLM de salida temprana <code>Schuster et al., 2022</code></li>
+  <li>The second occurs when functional words are predicted, such as <code>was</code>, <code>the</code>, <code>to</code>, <code>in</code>, and tokens copied from the input question, like <code>first Nigerian</code>, <code>Nobel Prize</code>. When these "easy" tokens are predicted, we can observe that the JSD becomes very small from the intermediate layers onwards. This finding indicates that the model has already decided which token to generate by the intermediate layers, and maintains the output distributions almost unchanged in the upper layers. This finding is also consistent with the assumptions of early output LLMs <code>Schuster et al., 2022</code></li>
 </ul>
 </section>
 <section class="section-block-markdown-cell">
-<p>Cuando la predicción de la siguiente palabra requiere conocimiento factual, el LLM parece cambiar las predicciones en las capas superiores. Contrastar las capas antes y después de un cambio repentino puede, por lo tanto, amplificar el conocimiento que emerge de las capas superiores y hacer que el modelo se base más en su conocimiento interno factual. Además, esta evolución de la información parece variar de un token a otro</p>
+<p>When the prediction of the next word requires factual knowledge, the LLM seems to change predictions in the upper layers. Contrasting the layers before and after a sudden change can therefore amplify the knowledge that emerges from the upper layers and make the model rely more on its internal factual knowledge. Additionally, this evolution of information appears to vary from one token to another.</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Su método requiere seleccionar con precisión la capa prematura que contiene información plausible pero menos factual, que puede no estar siempre en la misma capa temprana. Por lo tanto, proponen encontrar esa capa prematura mediante una selección dinámica de la capa prematura como se ve en la siguiente imagen</p>
+<p>Your method requires accurately selecting the premature layer that contains plausible but less factual information, which may not always be in the same early layer. Therefore, they propose finding this premature layer through dynamic selection of the premature layer as shown in the following image</p>
 <img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/DoLa-figure3.webp" alt="DoLa-figure3">
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Seleccion dinamica de la capa prematura">Selección dinámica de la capa prematura<a class="anchor-link" href="#Seleccion dinamica de la capa prematura">¶</a></h2>
+<h2 id="Dynamic Selection of the Premature Layer">Dynamic Selection of the Premature Layer<a class="anchor-link" href="#Dynamic Selection of the Premature Layer">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<p>Para seleccionar la capa prematura, calculan la divergencia de Jensen-Shannon (JSD) entre las capas intermedias y la final. La capa prematura se selecciona como la capa con la JSD más alta</p>
+<p>To select the premature layer, they calculate the Jensen-Shannon Divergence (JSD) between the intermediate and final layers. The premature layer is selected as the layer with the highest JSD.</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Sin embargo, como este proceso puede ser un poco lento, lo que hacen es agrupar varias capas para hacer menos cálculos</p>
+<p>However, as this process can be a bit slow, what they do is group several layers to make fewer calculations</p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Contraste de las predicciones">Contraste de las predicciones<a class="anchor-link" href="#Contraste de las predicciones">¶</a></h2>
+<h2 id="Contrast of the predictions">Contrast of the predictions<a class="anchor-link" href="#Contrast of the predictions">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<p>Ahora que tenemos la última capa (capa madura) y la capa prematura, podemos contrastar las predicciones de ambas capas. Para ello, calculan la probabilidad logarítmica del siguiente token en la capa madura y la prematura. A continuación restan la probabilidad logarítmica de la capa prematura a la de la capa madura, así le dan más importancia al conocimiento de la capa madura</p>
+<p>Now that we have the last layer (mature layer) and the premature layer, we can contrast the predictions of both layers. To do this, they calculate the logarithmic probability of the next token in the mature layer and the premature layer. Then they subtract the logarithmic probability of the premature layer from that of the mature layer, thus giving more importance to the knowledge of the mature layer.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Penalizacion por repeticion">Penalización por repetición<a class="anchor-link" href="#Penalizacion por repeticion">¶</a></h2>
+<h2 id="Repetition Penalty">Repetition Penalty<a class="anchor-link" href="#Repetition Penalty">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<p>La motivación de DoLa es restar importancia al conocimiento lingüístico de las capas inferiores y amplificar el conocimiento factual del mundo real. Sin embargo, esto puede dar lugar a que el modelo genere párrafos gramaticalmente incorrectos</p>
-<p>Empíricamente no han observado ese problema, pero han encontrado que la distribución DoLa resultante a veces tiene una mayor tendencia a repetir frases generadas previamente, especialmente durante la generación de largas secuencias de razonamiento en la cadena de pensamiento</p>
-<p>Así que incluyen una penalización por repetición introducida en <code>Keskar et al. (2019)</code> con <code>θ = 1.2</code> durante la decodificación</p>
+<p>The motivation of DoLa is to downplay the linguistic knowledge of the lower layers and amplify the factual knowledge of the real world. However, this can lead to the model generating grammatically incorrect paragraphs.</p>
+<p>Empirically, they have not observed that problem, but they have found that the resulting DoLa distribution sometimes has a greater tendency to repeat previously generated phrases, especially during the generation of long reasoning sequences in the chain of thought.</p>
+<p>So they include a repetition penalty introduced in <code>Keskar et al. (2019)</code> with <code>θ = 1.2</code> during decoding</p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Implementacion con transformers">Implementación con transformers<a class="anchor-link" href="#Implementacion con transformers">¶</a></h2>
+<h2 id="Implementation with transformers">Implementation with transformers<a class="anchor-link" href="#Implementation with transformers">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<p>Vamos a ver cómo implementar DoLa con la librería <code>transformers</code> de Hugging Face. Para obtener más información de cómo aplicar DoLa con la librería <code>transformers</code> puedes consultar el siguiente <a href="https://huggingface.co/docs/transformers/main/en/generation_strategies#dola-decoding">enlace</a></p>
+<p>Let's see how to implement DoLa with the <code>transformers</code> library from Hugging Face. For more information on how to apply DoLa with the <code>transformers</code> library, you can consult the following <a href="https://huggingface.co/docs/transformers/main/en/generation_strategies#dola-decoding">link</a></p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Primero nos logueamos en el Hub, porque vamos a usar Llama 3 8B, para poder usarlo hay que pedir permiso a Meta, así que para poder descargarlo hay que estar logueado para que sepa quién lo está descargando</p>
+<p>First we log in to the Hub, because we are going to use Llama 3 8B, and to be able to use it, we need to request permission from Meta. So, to download it, you need to be logged in so they know who is downloading it.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -71,7 +76,7 @@
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Ahora instanciamos el tokenizador y el modelo</p>
+<p>Now we instantiate the tokenizer and the model</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -90,7 +95,7 @@
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Asignamos un valor fijo de semilla para la reproducibilidad del ejemplo</p>
+<p>We assign a fixed seed value for the reproducibility of the example</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -99,7 +104,7 @@
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Generamos los tokens de entrada al LLM</p>
+<p>We generate the input tokens for the LLM</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -110,7 +115,7 @@
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Generamos ahora la entrada vanilla, es decir, sin aplicar DoLa</p>
+<p>We now generate the vanilla input, that is, without applying DoLa</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -150,10 +155,10 @@
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Vemos que sabe que hay un error famoso, pero no consigue decir la frase correcta</p>
+<p>We see that he knows there is a famous mistake, but he can't manage to say the correct phrase.</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Ahora aplicando DoLa</p>
+<p>Now applying DoLa</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -186,10 +191,10 @@
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Ahora sí consigue dar la frase correcta y el <a href="https://www.bbc.co.uk/bitesize/articles/zc38kty">error famoso</a></p>
+<p>Now he manages to get the sentence right and the <a href="https://www.bbc.co.uk/bitesize/articles/zc38kty">famous error</a></p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Vamos a hacer otra prueba con otro ejemplo, reinicio el notebook y uso otro modelo</p>
+<p>Let's do another test with another example, I reset the notebook and use another model.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -208,7 +213,7 @@
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Asignamos un valor fijo de semilla para la reproducibilidad del ejemplo</p>
+<p>We assign a fixed seed value for the reproducibility of the example</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -217,7 +222,7 @@
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Le escribo una nueva pregunta</p>
+<p>Sure, please provide the new Markdown text you would like translated to English.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -227,7 +232,7 @@
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Generamos la salida vanilla</p>
+<p>We generate the vanilla output</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -259,10 +264,10 @@ The Declaration of Independence was signed on July 4,
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Como vemos, genera mal la salida, ya que aunque se celebra el 4 de julio, en realidad fue firmada el <a href="https://www.nps.gov/inde/learn/historyculture/resources-declarationofindependence.htm">2 de agosto</a></p>
+<p>As we can see, it generates the wrong output, since although it is celebrated on July 4th, it was actually signed on <a href="https://www.nps.gov/inde/learn/historyculture/resources-declarationofindependence.htm">August 2nd</a></p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Vamos a probar ahora con DoLa</p>
+<p>Let's try it now with DoLa</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -285,7 +290,7 @@ July 4, 1776. This is the most well-known date in U.S. history. The day has been
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Sigue sin generar una salida correcta, así que vamos a indicarle que solo contraste la capa final con las capas 28 y 30</p>
+<p>It's still not generating the correct output, so we're going to instruct it to only contrast the final layer with layers 28 and 30</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -308,5 +313,5 @@ It was officially signed on 2 August 1776, when 56 members of the Second Contine
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Ahora sí consigue generar la respuesta correcta</p>
+<p>Now it manages to generate the correct response.</p>
 </section>

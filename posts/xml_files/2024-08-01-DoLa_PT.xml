@@ -4,18 +4,29 @@
   <markdown> &gt; Aviso: Este post foi traduzido para o português usando um modelo de tradução automática. Por favor, me avise se encontrar algum erro.</markdown>
   <markdown>A medida que os LLMs aumentam de tamanho e surgem novas capacidades, temos um problema: as alucinações. Os autores do artigo [DoLa: Decoding by Contrasting Layers Improves Factuality in Large Language Models](https://arxiv.org/abs/2309.03883) propõem um método para evitar esse problema.</markdown>
   <markdown>Propõem uma abordagem de decodificação contrastiva, onde a probabilidade de saída da próxima palavra é obtida a partir da diferença nos logits entre uma camada superior e uma inferior. Ao enfatizar o conhecimento das camadas superiores e diminuir a importância das inferiores, podemos fazer com que os LM sejam mais fáticos e, portanto, reduzir as alucinações.
+
 Na figura a seguir, essa ideia é ilustrada. Enquanto `Seattle` mantém uma alta probabilidade em todas as camadas, a probabilidade da resposta correta `Olympia` aumenta após as camadas superiores injetarem mais conhecimento factual. Contrastar as diferenças entre as diferentes camadas pode revelar a resposta correta neste caso.
-![DoLa-figure1](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/DoLa-figure1.webp)</markdown>
+
+![DoLa-figure1](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/DoLa-figure1.webp)
+</markdown>
   <markdown>## Método</markdown>
   <markdown>Um LLM consiste em uma camada de embedding, vários transformers sequenciais e, em seguida, uma camada de saída. O que propõem é medir a saída de cada transformer por meio da divergência de Jensen-Shannon (JSD).
+
 Na figura seguinte, pode-se ver essa medida na saída de cada transformer para uma frase de entrada no LLM. Cada coluna corresponde a um token da frase.
+
 ![DoLa-figure2](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/DoLa-figure2.webp)
+
 Podem observar dois padrões
-* O primeiro ocorre quando são previstas entidades de nome ou datas importantes, como `Wole Soyinka` e `1986`, que requerem conhecimento fático. Pode-se ver que a JSD calculada continua extremamente alta nas camadas superiores. Este padrão indica que o modelo ainda está mudando suas previsões nas últimas camadas, e potencialmente injetando mais conhecimento fático nas previsões 
-* O segundo ocorre quando se preveem palavras funcionais, como `was`, `the`, `to`, `in`, e os tokens copiados da pergunta de entrada, como `first Nigerian`, `Nobel Prize`. Quando esses tokens "fáceis" são previstos, podemos observar que a JSD torna-se muito pequena a partir das camadas intermediárias. Essa descoberta indica que o modelo já decidiu qual token gerar nas camadas intermediárias e mantém as distribuições de saída quase inalteradas nas camadas superiores. Essa descoberta também é consistente com as suposições em LLMs de saída precoce `Schuster et al., 2022`</markdown>
+
+* O primeiro ocorre quando são previstas entidades de nome ou datas importantes, como `Wole Soyinka` e `1986`, que requerem conhecimento fático. Pode-se ver que a JSD calculada continua extremamente alta nas camadas superiores. Este padrão indica que o modelo ainda está mudando suas previsões nas últimas camadas, e potencialmente injetando mais conhecimento fático nas previsões
+ 
+* O segundo ocorre quando se preveem palavras funcionais, como `was`, `the`, `to`, `in`, e os tokens copiados da pergunta de entrada, como `first Nigerian`, `Nobel Prize`. Quando esses tokens "fáceis" são previstos, podemos observar que a JSD torna-se muito pequena a partir das camadas intermediárias. Essa descoberta indica que o modelo já decidiu qual token gerar nas camadas intermediárias e mantém as distribuições de saída quase inalteradas nas camadas superiores. Essa descoberta também é consistente com as suposições em LLMs de saída precoce `Schuster et al., 2022`
+</markdown>
   <markdown>Quando a previsão da próxima palavra requer conhecimento fático, o LLM parece alterar as previsões nas camadas superiores. Contrastar as camadas antes e depois de uma mudança súbita pode, portanto, amplificar o conhecimento que emerge das camadas superiores e fazer com que o modelo se baseie mais em seu conhecimento interno fático. Além disso, essa evolução da informação parece variar de um token para outro</markdown>
   <markdown>Seu método requer selecionar com precisão a camada prematura que contém informações plausíveis mas menos factuais, que pode não estar sempre na mesma camada inicial. Portanto, eles propõem encontrar essa camada prematura através de uma seleção dinâmica da camada prematura, como visto na imagem a seguir.
-![DoLa-figure3](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/DoLa-figure3.webp)</markdown>
+
+![DoLa-figure3](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/DoLa-figure3.webp)
+</markdown>
   <markdown>## Seleção dinâmica da camada prematura</markdown>
   <markdown>Para selecionar a camada prematura, eles calculam a divergência de Jensen-Shannon (JSD) entre as camadas intermediárias e a final. A camada prematura é selecionada como a camada com o JSD mais alto.</markdown>
   <markdown>No entanto, como esse processo pode ser um pouco lento, o que fazem é agrupar várias camadas para fazer menos cálculos</markdown>
@@ -23,8 +34,11 @@ Podem observar dois padrões
   <markdown>Agora que temos a última camada (camada madura) e a camada prematura, podemos contrastar as previsões de ambas camadas. Para isso, calculam a probabilidade logarítmica do próximo token na camada madura e na camada prematura. Em seguida, subtraem a probabilidade logarítmica da camada prematura da da camada madura, assim dando mais importância ao conhecimento da camada madura.</markdown>
   <markdown>## Penalização por repetição</markdown>
   <markdown>A motivação do DoLa é diminuir a importância do conhecimento linguístico das camadas inferiores e amplificar o conhecimento fático do mundo real. No entanto, isso pode levar o modelo a gerar parágrafos gramaticalmente incorretos.
+
 Empiricamente, eles não observaram esse problema, mas encontraram que a distribuição DoLa resultante às vezes tem uma maior tendência a repetir frases geradas anteriormente, especialmente durante a geração de longas sequências de raciocínio na cadeia de pensamento.
-Então, eles incluem uma penalização por repetição introduzida em `Keskar et al. (2019)` com `θ = 1.2` durante a decodificação.</markdown>
+
+Então, eles incluem uma penalização por repetição introduzida em `Keskar et al. (2019)` com `θ = 1.2` durante a decodificação.
+</markdown>
   <markdown>## Implementação com transformers</markdown>
   <markdown>Vamos ver como implementar DoLa com a biblioteca `transformers` do Hugging Face. Para obter mais informações sobre como aplicar DoLa com a biblioteca `transformers`, você pode consultar o seguinte [enlace](https://huggingface.co/docs/transformers/main/en/generation_strategies#dola-decoding)</markdown>
   <markdown>Primeiro nos logamos no Hub, pois vamos usar o Llama 3 8B, para poder usá-lo é necessário solicitar permissão à Meta, então para poder baixá-lo é preciso estar logado para que saibam quem está fazendo o download.</markdown>

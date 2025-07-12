@@ -19,7 +19,7 @@
      * -rw-r--r--@   1 macm1  staff     42882 29 ene 17:29 2024-10-16-Conventional-commits.ipynb
      * -rw-r--r--@   1 macm1  staff     44907 11 jun 19:12 2024-06-12-GPT1-Improving-Language-Understanding-by-Generative-Pre-Training.ipynb
      * -rw-r--r--@   1 macm1  staff     46506 29 ene 17:29 2024-02-26-Hugging-Face-tokenizers.ipynb
-   * -rw-r--r--@   1 macm1  staff     47207 29 ene 17:29 2024-06-04-BPE-tokenizer.ipynb
+     * -rw-r--r--@   1 macm1  staff     47207 29 ene 17:29 2024-06-04-BPE-tokenizer.ipynb
    * -rw-r--r--@   1 macm1  staff     47565 29 ene 17:29 2024-02-23-Transformers-from-top-to-the-bottom.ipynb
    * -rw-r--r--@   1 macm1  staff     56871 29 ene 17:29 2024-07-29-QLoRA.ipynb
    * -rw-r--r--@   1 macm1  staff     60497 29 ene 17:29 2024-10-23-RAG-fundamentals.ipynb

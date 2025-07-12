@@ -1,0 +1,1098 @@
+<?xml version='1.0' encoding='utf-8'?>
+<notebook>
+  <markdown># Vector databases</markdown>
+  <markdown>We have seen in the [embeddings](https://www.maximofn.com/embeddings) post that embeddings are a way of representing words in a vector space. In this post we are going to see how we can store those embeddings in vector databases and how we can make queries on them.</markdown>
+  <markdown>This notebook has been automatically translated to make it accessible to more people, please let me know if you see any typos.
+
+When we have a query, we can create the embedding of the query, search the vector database for the embeddings that most closely match the query and return the documents that correspond to those embeddings or an explanation of those documents.
+
+![vector database](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/vector_database.svg)
+
+That is to say, we are going to generate a database of information, we are going to create embeddings of that information and we are going to store it in a vector database. Then when a user makes a query, we will convert the query to embeddings, search the database for the embeddings with the highest similarity and return the documents that correspond to those embeddings.
+
+In addition to the documents, additional information can be stored in the database, which we will call metadata. For example, if we are working with a set of news, we can store the title, date, author, etc. of the news.</markdown>
+  <markdown>## Chroma</markdown>
+  <markdown>In this post we are going to look at [crhoma](https://www.trychroma.com/), as it is the most widely used [vector database](https://blog.langchain.dev/langchain-state-of-ai-2023/#most-used-vectorstores), as can be seen in this [langchain state of ai 2023](https://blog.langchain.dev/langchain-state-of-ai-2023) report.
+
+![Most Used Vectorstores](https://blog.langchain.dev/content/images/size/w1000/2023/12/Top-vectorstores--1-.png)</markdown>
+  <markdown>## Installation</markdown>
+  <markdown>So to install chroma with conda you need to do the following
+
+```bash
+conda install conda-forge::chromadb
+```
+
+Or if you want to install with pip
+
+```bash
+pip install chromadb
+```</markdown>
+  <markdown>## Quick use</markdown>
+  <markdown>For a quick application, we first import chroma</markdown>
+  <input_code>import chromadb</input_code>
+  <markdown>Next we create a chroma client</markdown>
+  <input_code>chroma_client = chromadb.Client()</input_code>
+  <markdown>We create a collection. A collection is the place where embeddings, embeddings and metadata will be stored.</markdown>
+  <input_code>collection = chroma_client.create_collection(name="my_collection")</input_code>
+  <markdown>As we can see a message comes up indicating that no embeddings function has been entered and therefore it will default to `all-MiniLM-L6-v2`, which is similar to the `paraphrase-MiniLM-L6-v2` model we used in the [embeddings](https://maximofn.com/embeddings/) post.
+
+We will see this later, but we can choose how we are going to generate the embeddings.</markdown>
+  <markdown>Now we add documents, ids and metadata to the collection</markdown>
+  <input_code>collection.add(
+    documents=["This is a python docs", "This is JavaScript docs"],
+    metadatas=[{"source": "Python source"}, {"source": "JavaScript source"}],
+    ids=["id1", "id2"]
+)</input_code>
+  <markdown>Now we can make a query</markdown>
+  <input_code>results = collection.query(
+    query_texts=["This is a query of Python"],
+    n_results=2
+)</input_code>
+  <input_code>results</input_code>
+  <output_code>{'ids': [['id1', 'id2']],
+ 'distances': [[0.6205940246582031, 1.4631636142730713]],
+ 'metadatas': [[{'source': 'Python source'}, {'source': 'JavaScript source'}]],
+ 'embeddings': None,
+ 'documents': [['This is a python docs', 'This is JavaScript docs']],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>As we can see the distance to id1 is less than the distance to id2, so it seems that document 1 is more appropriate for answering the query</markdown>
+  <markdown>## Persistent databases</markdown>
+  <markdown>The database that we have created before is temporary, as soon as we close the notebook it will disappear. So to create a persistent database we have to pass to chroma the path where to save it.</markdown>
+  <markdown>First we are going to create the folder where to save the database</markdown>
+  <input_code>from pathlib import Path
+
+chroma_path = Path("chromadb")
+chroma_path.mkdir(exist_ok=True)</input_code>
+  <markdown>Now we create a client in the folder we created</markdown>
+  <input_code>chroma_client_persistent = chromadb.PersistentClient(path = str(chroma_path))</input_code>
+  <markdown>## Collections</markdown>
+  <markdown>### Create collections</markdown>
+  <markdown>When creating a collection, a name must be specified. The name must have the following considerations:
+
+ * The length of the name must be between 3 and 63 characters.
+ * The name must begin and end with a lowercase letter or digit and may contain periods, hyphens and underscores in the middle.
+ * The name must not contain two consecutive colons.
+ * The name must not be a valid IP address.
+
+We can also give it an embedding function. In case we don't give it one, it will use by default the `all-MiniLM-L6-v2` function.</markdown>
+  <input_code>collection = chroma_client.create_collection(name="my_other_collection")</input_code>
+  <markdown>As you can see, a second collection has been created for the same customer `chroma_client`, so for a single customer we can have several collections.</markdown>
+  <markdown>### Retrieve collections</markdown>
+  <markdown>If we want to retrieve a collection from a client we can do it with the `get_collection` method.</markdown>
+  <input_code>collection = chroma_client.get_collection(name = "my_collection")</input_code>
+  <markdown>### Retrieve or create collections</markdown>
+  <markdown>We can obtain collections and, in case they do not exist, create them with the `get_or_create_collection` method.</markdown>
+  <input_code>collection = chroma_client.get_or_create_collection(name = "my_tird_collection")</input_code>
+  <markdown>### Delete collections</markdown>
+  <markdown>We can delete a collection with the `delete_collection` method.</markdown>
+  <input_code>chroma_client.delete_collection(name="my_tird_collection")</input_code>
+  <markdown>### Get items from collections</markdown>
+  <markdown>We can obtain the first 10 items of the collection with the `peek` method.</markdown>
+  <input_code>collection = chroma_client.get_collection(name = "my_collection")
+collection.peek()</input_code>
+  <output_code>{'ids': ['id1', 'id2'],
+ 'embeddings': [[-0.06924048811197281,
+   0.061624377965927124,
+   -0.090973399579525,
+   0.013923337683081627,
+   0.006247623357921839,
+   -0.1078396588563919,
+   -0.012472339905798435,
+   0.03485661745071411,
+   -0.06300634145736694,
+   -0.00880391988903284,
+   0.06879935413599014,
+   0.0564003586769104,
+   0.07040536403656006,
+   -0.020754728466272354,
+   -0.04048658534884453,
+   -0.006666888482868671,
+   -0.0953674241900444,
+   0.049781784415245056,
+   0.021780474111437798,
+   -0.06344643980264664,
+   0.06119797006249428,
+   0.0834411084651947,
+   -0.034758951514959335,
+   0.0029120452236384153,
+   ...
+   -0.013378280214965343]],
+ 'metadatas': [{'source': 'Python source'}, {'source': 'JavaScript source'}],
+ 'documents': ['This is a python docs', 'This is JavaScript docs'],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>In this case only two documents have been obtained, because our collection only has two documents</markdown>
+  <markdown>If you want to obtain another quantity of items you can specify it with the argument `limit`.</markdown>
+  <input_code>collection.peek(limit=1)</input_code>
+  <output_code>{'ids': ['id1'],
+ 'embeddings': [[-0.06924048811197281,
+   0.061624377965927124,
+   -0.090973399579525,
+   0.013923337683081627,
+   0.006247623357921839,
+   -0.1078396588563919,
+   -0.012472339905798435,
+   0.03485661745071411,
+   -0.06300634145736694,
+   -0.00880391988903284,
+   0.06879935413599014,
+   0.0564003586769104,
+   0.07040536403656006,
+   -0.020754728466272354,
+   -0.04048658534884453,
+   -0.006666888482868671,
+   -0.0953674241900444,
+   0.049781784415245056,
+   0.021780474111437798,
+   -0.06344643980264664,
+   0.06119797006249428,
+   0.0834411084651947,
+   -0.034758951514959335,
+   0.0029120452236384153,
+   ...
+   0.012315398082137108]],
+ 'metadatas': [{'source': 'Python source'}],
+ 'documents': ['This is a python docs'],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>### Obtain the total number of items in the collections</markdown>
+  <markdown>We can obtain the total number of items in the collection with the `count` method.</markdown>
+  <input_code>collection.count()</input_code>
+  <output_code>2</output_code>
+  <markdown>### Change similarity function</markdown>
+  <markdown>Earlier, when we made a query we got the similarity of the embeddings with our query, since by default in a collection the distance function is used, but we can specify which similarity function we want to use. The possibilities are
+
+ * Squared L2 (`l2`)
+ * Inner product (`ip`)
+ * Cosine similarity (`cosine`)
+
+In the post [Measurement of similarity between embeddings](http://maximofn.com/embeddings-similarity/) we saw L2 and cosine similarity, if you want to go deeper into them.</markdown>
+  <markdown>So we can create collections with another similarity function with the argument `metadata={"hnsw:space": &lt;function&gt;}`.</markdown>
+  <input_code>collection = chroma_client.create_collection(name="colection_cosine", metadata={"hnsw:space": "cosine"})</input_code>
+  <markdown>### Add data to the collection</markdown>
+  <markdown>#### Add documents</markdown>
+  <markdown>Let's look again at the data we have in the collection with the `peek` method</markdown>
+  <input_code>collection.peek()</input_code>
+  <output_code>{'ids': [],
+ 'embeddings': [],
+ 'metadatas': [],
+ 'documents': [],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>As we can see it is empty, that is because the last collection that we have created has been the one of the similarity function `cosine`, but we have not added data to it. Let's see how it is like this obtaining the name of the collection</markdown>
+  <input_code>collection.name</input_code>
+  <output_code>'colection_cosine'</output_code>
+  <markdown>So we bring back the first collection we have created, which we have entered data for.</markdown>
+  <input_code>collection = chroma_client.get_collection(name = "my_collection")</input_code>
+  <markdown>Now we can add data to the collection with the `add` method</markdown>
+  <input_code>collection.add(
+    documents=["This is a Mojo docs", "This is Rust docs"],
+    metadatas=[{"source": "Mojo source"}, {"source": "Rust source"}],
+    ids=["id3", "id4"]
+)</input_code>
+  <markdown>As you can see the `ID`s are consecutive and do not have the same value as before, since the `ID`s have to be unique.</markdown>
+  <markdown>If we try to add data by repeating `ID`s, it will indicate that data with those `ID`s already exists.</markdown>
+  <input_code>collection.add(
+    documents=["This is a Pytorch docs", "This is TensorRT docs"],
+    metadatas=[{"source": "Pytorch source"}, {"source": "TensorRT source"}],
+    ids=["id3", "id4"]
+)</input_code>
+  <output_code>Add of existing embedding ID: id3
+Add of existing embedding ID: id4
+Insert of existing embedding ID: id3
+Insert of existing embedding ID: id4
+</output_code>
+  <markdown>We have not been able to add the Pytorch and TensorRT documents.</markdown>
+  <markdown>Let's take a look at the collection data</markdown>
+  <input_code>collection.peek()</input_code>
+  <output_code>{'ids': ['id1', 'id2', 'id3', 'id4'],
+ 'embeddings': [[-0.06924048811197281,
+   0.061624377965927124,
+   -0.090973399579525,
+   0.013923337683081627,
+   0.006247623357921839,
+   -0.1078396588563919,
+   -0.012472339905798435,
+   0.03485661745071411,
+   -0.06300634145736694,
+   -0.00880391988903284,
+   0.06879935413599014,
+   0.0564003586769104,
+   0.07040536403656006,
+   -0.020754728466272354,
+   -0.04048658534884453,
+   -0.006666888482868671,
+   -0.0953674241900444,
+   0.049781784415245056,
+   0.021780474111437798,
+   -0.06344643980264664,
+   0.06119797006249428,
+   0.0834411084651947,
+   -0.034758951514959335,
+   0.0029120452236384153,
+   ...
+  {'source': 'JavaScript source'},
+  {'source': 'Mojo source'},
+  {'source': 'Rust source'}],
+ 'documents': ['This is a python docs',
+  'This is JavaScript docs',
+  'This is a Mojo docs',
+  'This is Rust docs'],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>As we can see, the original contents of `ID3` and `ID4` have been maintained.</markdown>
+  <markdown>#### Add embeddings</markdown>
+  <markdown>We can add embeddings directly without adding documents. Although this does not make much sense, because if we only add the embeddings, when we want to make a query there will be no documents to retrieve.</markdown>
+  <markdown>We obtain some embeddings to create others with the same dimensions.</markdown>
+  <input_code>embedding1 = collection.peek(1)['embeddings']
+len(embedding1), len(embedding1[0])</input_code>
+  <output_code>(1, 384)</output_code>
+  <markdown>We create new embeddings with all of them to know that they are the ones we have created.</markdown>
+  <input_code>new_embedding = [1] * len(embedding1[0])
+new_embedding = [new_embedding]
+len(new_embedding), len(new_embedding[0])</input_code>
+  <output_code>(1, 384)</output_code>
+  <markdown>Now we add the new embeddings</markdown>
+  <input_code>collection.add(
+    embeddings=new_embedding,
+    metadatas=[{"source": "Only embeddings"}],
+    ids=["id5"]
+)</input_code>
+  <markdown>Let's take a look at the collection data</markdown>
+  <input_code>collection.peek()['embeddings'][-1]</input_code>
+  <output_code>[1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ ...,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0]</output_code>
+  <markdown>The last element of the condition has the embeddings that we have added</markdown>
+  <markdown> &gt; Note: If we try to add embbedings with a different size than the ones already in the collection, we will get an error.</markdown>
+  <input_code>new_embedding_differetn_size = [1] * (len(embedding1[0])-1)
+new_embedding_differetn_size = [new_embedding_differetn_size]
+len(new_embedding_differetn_size), len(new_embedding_differetn_size[0])</input_code>
+  <output_code>(1, 383)</output_code>
+  <markdown>As you can see the embedding dimension is 383, instead of 384.</markdown>
+  <input_code>collection.add(
+    embeddings=new_embedding_differetn_size,
+    metadatas=[{"source": "New embeddings different size"}],
+    ids=["id6"]
+)</input_code>
+  <output_code>---------------------------------------------------------------------------InvalidDimensionException                 Traceback (most recent call last)Cell In[28], line 1
+----&gt; 1 collection.add(
+      2     embeddings=new_embedding_differetn_size,
+      3     metadatas=[{"source": "New embeddings different size"}],
+      4     ids=["id6"]
+      5 )
+File ~/miniforge3/envs/crhomadb/lib/python3.11/site-packages/chromadb/api/models/Collection.py:168, in Collection.add(self, ids, embeddings, metadatas, documents, images, uris)
+    163             raise ValueError(
+    164                 "You must set a data loader on the collection if loading from URIs."
+    165             )
+    166         embeddings = self._embed(self._data_loader(uris))
+--&gt; 168 self._client._add(ids, self.id, embeddings, metadatas, documents, uris)
+File ~/miniforge3/envs/crhomadb/lib/python3.11/site-packages/chromadb/telemetry/opentelemetry/__init__.py:127, in trace_method.&lt;locals&gt;.decorator.&lt;locals&gt;.wrapper(*args, **kwargs)
+    125 global tracer, granularity
+    126 if trace_granularity &lt; granularity:
+--&gt; 127     return f(*args, **kwargs)
+    128 if not tracer:
+    129     return f(*args, **kwargs)
+File ~/miniforge3/envs/crhomadb/lib/python3.11/site-packages/chromadb/api/segment.py:375, in SegmentAPI._add(self, ids, collection_id, embeddings, metadatas, documents, uris)
+    365 records_to_submit = []
+    366 for r in _records(
+    367     t.Operation.ADD,
+    368     ids=ids,
+   (...)
+    373     uris=uris,
+    374 ):
+--&gt; 375     self._validate_embedding_record(coll, r)
+    376     records_to_submit.append(r)
+    377 self._producer.submit_embeddings(coll["topic"], records_to_submit)
+File ~/miniforge3/envs/crhomadb/lib/python3.11/site-packages/chromadb/telemetry/opentelemetry/__init__.py:127, in trace_method.&lt;locals&gt;.decorator.&lt;locals&gt;.wrapper(*args, **kwargs)
+    125 global tracer, granularity
+    126 if trace_granularity &lt; granularity:
+--&gt; 127     return f(*args, **kwargs)
+    128 if not tracer:
+    129     return f(*args, **kwargs)
+File ~/miniforge3/envs/crhomadb/lib/python3.11/site-packages/chromadb/api/segment.py:799, in SegmentAPI._validate_embedding_record(self, collection, record)
+    797 add_attributes_to_current_span({"collection_id": str(collection["id"])})
+    798 if record["embedding"]:
+--&gt; 799     self._validate_dimension(collection, len(record["embedding"]), update=True)
+File ~/miniforge3/envs/crhomadb/lib/python3.11/site-packages/chromadb/telemetry/opentelemetry/__init__.py:127, in trace_method.&lt;locals&gt;.decorator.&lt;locals&gt;.wrapper(*args, **kwargs)
+    125 global tracer, granularity
+    126 if trace_granularity &lt; granularity:
+--&gt; 127     return f(*args, **kwargs)
+    128 if not tracer:
+    129     return f(*args, **kwargs)
+File ~/miniforge3/envs/crhomadb/lib/python3.11/site-packages/chromadb/api/segment.py:814, in SegmentAPI._validate_dimension(self, collection, dim, update)
+    812         self._collection_cache[id]["dimension"] = dim
+    813 elif collection["dimension"] != dim:
+--&gt; 814     raise InvalidDimensionException(
+    815         f"Embedding dimension {dim} does not match collection dimensionality {collection['dimension']}"
+    816     )
+    817 else:
+    818     return
+InvalidDimensionException: Embedding dimension 383 does not match collection dimensionality 384</output_code>
+  <markdown>#### Add documents and embeddings</markdown>
+  <markdown>Chroma also allows us to add documents and embeddings at the same time. So if this is done, it will not create the embeddings of the document.</markdown>
+  <input_code>collection.add(
+    documents=["This is a Pytorch docs"],
+    embeddings=new_embedding,
+    metadatas=[{"source": "Pytorch source"}],
+    ids=["id6"]
+)</input_code>
+  <markdown>If we look at the embeddings of the last element of the collection, we will see that these are the ones we added</markdown>
+  <input_code>collection.peek()['embeddings'][-1]</input_code>
+  <output_code>[1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ ...,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0,
+ 1.0]</output_code>
+  <markdown>### Inquiries</markdown>
+  <markdown>#### Queries by documents</markdown>
+  <markdown>To make a query we use the `query` method. With the `n_results` parameter we can specify how many results we want to get</markdown>
+  <input_code>collection.query(
+    query_texts=["python"],
+    n_results=1,
+)</input_code>
+  <output_code>{'ids': [['id1']],
+ 'distances': [[0.5389559268951416]],
+ 'metadatas': [[{'source': 'Python source'}]],
+ 'embeddings': None,
+ 'documents': [['This is a python docs']],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>If instead of `n_results = 1` we set a higher value, it will return more results.</markdown>
+  <input_code>collection.query(
+    query_texts=["python"],
+    n_results=10,
+)</input_code>
+  <output_code>Number of requested results 10 is greater than number of elements in index 6, updating n_results = 6
+</output_code>
+  <output_code>{'ids': [['id1', 'id2', 'id4', 'id3', 'id5', 'id6']],
+ 'distances': [[0.5389559268951416,
+   1.5743632316589355,
+   1.578398585319519,
+   1.59961998462677,
+   384.56890869140625,
+   384.56890869140625]],
+ 'metadatas': [[{'source': 'Python source'},
+   {'source': 'JavaScript source'},
+   {'source': 'Rust source'},
+   {'source': 'Mojo source'},
+   {'source': 'Only embeddings'},
+   {'source': 'Pytorch source'}]],
+ 'embeddings': None,
+ 'documents': [['This is a python docs',
+   'This is JavaScript docs',
+   'This is Rust docs',
+   'This is a Mojo docs',
+   None,
+   'This is a Pytorch docs']],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>We can filter by a metadata value with the argument `where`.</markdown>
+  <input_code>collection.query(
+    query_texts=["python"],
+    n_results=10,
+    where={"source": "Python source"}
+)</input_code>
+  <output_code>Number of requested results 10 is greater than number of elements in index 6, updating n_results = 6
+</output_code>
+  <output_code>{'ids': [['id1']],
+ 'distances': [[0.5389559268951416]],
+ 'metadatas': [[{'source': 'Python source'}]],
+ 'embeddings': None,
+ 'documents': [['This is a python docs']],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>We can see that only 1 result is already returned</markdown>
+  <markdown>We can also filter by document content with the argument `where_document`.</markdown>
+  <input_code>collection.query(
+    query_texts=["python"],
+    n_results=10,
+    where_document={"$contains": "python"}
+)</input_code>
+  <output_code>Number of requested results 10 is greater than number of elements in index 6, updating n_results = 6
+</output_code>
+  <output_code>{'ids': [['id1']],
+ 'distances': [[0.5389559268951416]],
+ 'metadatas': [[{'source': 'Python source'}]],
+ 'embeddings': None,
+ 'documents': [['This is a python docs']],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>We will see later on the possibilities we have here</markdown>
+  <markdown>When we make a query we can say what data we want to be returned, for example only the embeddings, only the metadata, or several data by specifying it in a list using the `include` argument.</markdown>
+  <input_code>collection.query(
+    query_texts=["python"],
+    n_results=10,
+    include=["documents", "distances"]
+)</input_code>
+  <output_code>Number of requested results 10 is greater than number of elements in index 6, updating n_results = 6
+</output_code>
+  <output_code>{'ids': [['id1', 'id2', 'id4', 'id3', 'id5', 'id6']],
+ 'distances': [[0.5389559268951416,
+   1.5743632316589355,
+   1.578398585319519,
+   1.59961998462677,
+   384.56890869140625,
+   384.56890869140625]],
+ 'metadatas': None,
+ 'embeddings': None,
+ 'documents': [['This is a python docs',
+   'This is JavaScript docs',
+   'This is Rust docs',
+   'This is a Mojo docs',
+   None,
+   'This is a Pytorch docs']],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>We see that now `metadatas` is `None`.</markdown>
+  <markdown>#### Several queries at once</markdown>
+  <markdown>We can make several queries to the collection at the same time, for this, we pass a list to the `query_texts` parameter</markdown>
+  <input_code>collection.query(
+    query_texts=["programming language", "high level", "multi propuse"],
+    n_results=1,
+)</input_code>
+  <output_code>{'ids': [['id1'], ['id1'], ['id3']],
+ 'distances': [[1.152251958847046], [1.654376745223999], [1.6786067485809326]],
+ 'metadatas': [[{'source': 'Python source'}],
+  [{'source': 'Python source'}],
+  [{'source': 'Mojo source'}]],
+ 'embeddings': None,
+ 'documents': [['This is a python docs'],
+  ['This is a python docs'],
+  ['This is a Mojo docs']],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>For each query it returned a result</markdown>
+  <markdown>This is very useful when the database is hosted on a server and we are charged for each query we make. So instead of making a query for each question we have, we make a query with all the questions we have.</markdown>
+  <markdown>#### Queries for embeddings</markdown>
+  <markdown>When we make a query for documents, what chroma does is to calculate the embedding of the `query_texts` and look for the documents that most resemble that embedding. But if we already have the embedding, we can make the query directly with the embedding.</markdown>
+  <markdown>Let's first get the embedding of a query with the same embedding function of the collections</markdown>
+  <input_code>query_texts = ["python language"]
+query_embeddings = collection._embedding_function(query_texts)
+query_embeddings</input_code>
+  <output_code>[[-0.04816831275820732,
+  0.014662696048617363,
+  -0.031021444126963615,
+  0.008308809250593185,
+  -0.07176128774881363,
+  -0.10355626791715622,
+  0.06690476089715958,
+  0.04229631647467613,
+  -0.03681119903922081,
+  -0.04993892088532448,
+  0.03186540678143501,
+  0.015252595767378807,
+  0.0642094686627388,
+  0.018130118027329445,
+  0.016300885006785393,
+  -0.028082313016057014,
+  -0.03994889184832573,
+  0.023195551708340645,
+  0.004547565709799528,
+  -0.11764183640480042,
+  0.019792592152953148,
+  0.0496944822371006,
+  -0.013253907673060894,
+  0.03610404208302498,
+  0.030529780313372612,
+  -0.01815914921462536,
+  -0.009753326885402203,
+  0.03412770479917526,
+  0.03020440600812435,
+  ...
+  0.02079579420387745,
+  -0.00972712505608797,
+  0.13462257385253906,
+  0.15277136862277985,
+  -0.028574923053383827]]</output_code>
+  <markdown>Now we can make the query with embedding</markdown>
+  <input_code>collection.query(
+    query_embeddings=query_embeddings,
+    n_results=1,
+)</input_code>
+  <output_code>{'ids': [['id1']],
+ 'distances': [[0.6297433376312256]],
+ 'metadatas': [[{'source': 'Python source'}]],
+ 'embeddings': None,
+ 'documents': [['This is a python docs']],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>As before we can get more results by increasing the value of the `n_results` parameter, and we can filter with the `where` and `where_document` parameters. We can also do several queries at once, and we can specify what data we want to return with the `include` parameter.</markdown>
+  <markdown> &gt; Note: If we try to make a query with an embedding of a different dimension than the ones already in the collection, we will get an error.</markdown>
+  <markdown>### Retrieve documents by `ID`.</markdown>
+  <markdown>If we know the `ID` of a document, we can retrieve the document with the `get` method</markdown>
+  <input_code>collection.get(
+    ids=["id1"],
+)</input_code>
+  <output_code>{'ids': ['id1'],
+ 'embeddings': None,
+ 'metadatas': [{'source': 'Python source'}],
+ 'documents': ['This is a python docs'],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>Multiple documents can also be retrieved at once.</markdown>
+  <input_code>collection.get(
+    ids=["id1", "id2", "id3"],
+)</input_code>
+  <output_code>{'ids': ['id1', 'id2', 'id3'],
+ 'embeddings': None,
+ 'metadatas': [{'source': 'Python source'},
+  {'source': 'JavaScript source'},
+  {'source': 'Mojo source'}],
+ 'documents': ['This is a python docs',
+  'This is JavaScript docs',
+  'This is a Mojo docs'],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>As before we can filter with the `where` and `where_document` arguments. We can also make several queries at once, and we can specify what data we want to return with the `include` parameter.</markdown>
+  <markdown>### Filtering</markdown>
+  <markdown>As we have seen, it is possible to filter by metadata with the parameter `where`, and by document content with the parameter `where_document`.</markdown>
+  <markdown>#### Filtering by metadata</markdown>
+  <markdown>How metadata will enter me as a dictionary
+
+```python
+collection.add(
+    documents=["This is a python docs", "This is JavaScript docs"],
+    metadatas=[{"source": "Python source"}, {"source": "JavaScript source"}],
+    ids=["id1", "id2"]
+
+```
+
+The first thing we have to do is to indicate the key of the metadata by which we want to filter. Next we have to put an operator and the value
+
+```python
+{
+    "metadata_field": {
+        &lt;Operator&gt;: &lt;Value&gt;.
+    }
+}
+```</markdown>
+  <markdown>The possible values of the oerator are
+
+ * **$eq** - equal to (string, int, float)
+ * **$ne** - not equal to (string, int, float)
+ * **$gt** - greater than (int, float)
+ * **$gte** - greater than or equal to (int, float)
+ **$lt** - less than (int, float)
+ * **$lte** - less than or equal to (int, float)</markdown>
+  <markdown>Let's see now a query</markdown>
+  <input_code>collection.query(
+    query_texts=["python"],
+    n_results=1,
+    where=
+    {
+        "source": 
+        {
+            "$eq": "Python source"
+        }
+    }
+)</input_code>
+  <output_code>{'ids': [['id1']],
+ 'distances': [[0.5389559268951416]],
+ 'metadatas': [[{'source': 'Python source'}]],
+ 'embeddings': None,
+ 'documents': [['This is a python docs']],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>If we do not set operator, the default will be `$eq`, i.e., that is, this
+
+```python
+{
+    "metadata_field": {
+        &lt;"$eq"&gt;: &lt;Value&gt;.
+    }
+}
+```
+
+It is the same as this
+
+```python
+{
+    "metadata_field": &lt;Value&gt;.
+}
+```</markdown>
+  <markdown> **Note**: Chroma will only search data that has the `source` metadata, for example if you search `where={"version": {"$ne": 1}}` it will only return data that has a `version` key in its metadata and is not 1.</markdown>
+  <markdown>#### Filtering by document content</markdown>
+  <markdown>When filtering by document content we have two possible keys `$contains` and `$not_contains`.</markdown>
+  <markdown>For example, we look for the data in the collection in which the word `python` appears in your document</markdown>
+  <input_code>collection.query(
+    query_texts=["python"],
+    n_results=10,
+    where_document={"$contains": "python"}
+)</input_code>
+  <output_code>Number of requested results 10 is greater than number of elements in index 6, updating n_results = 6
+</output_code>
+  <output_code>{'ids': [['id1']],
+ 'distances': [[0.5389559268951416]],
+ 'metadatas': [[{'source': 'Python source'}]],
+ 'embeddings': None,
+ 'documents': [['This is a python docs']],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>And all the data in the collection in which the word `python` does not appear in your document</markdown>
+  <input_code>collection.query(
+    query_texts=["python"],
+    n_results=10,
+    where_document={"$not_contains": "python"}
+)</input_code>
+  <output_code>Number of requested results 10 is greater than number of elements in index 6, updating n_results = 6
+</output_code>
+  <output_code>{'ids': [['id2', 'id4', 'id3', 'id6']],
+ 'distances': [[1.5743632316589355,
+   1.578398585319519,
+   1.59961998462677,
+   384.56890869140625]],
+ 'metadatas': [[{'source': 'JavaScript source'},
+   {'source': 'Rust source'},
+   {'source': 'Mojo source'},
+   {'source': 'Pytorch source'}]],
+ 'embeddings': None,
+ 'documents': [['This is JavaScript docs',
+   'This is Rust docs',
+   'This is a Mojo docs',
+   'This is a Pytorch docs']],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>We can also use the logical operators `$and` and `$or` to make more complex queries.
+
+```python
+{
+    "$and": [
+        {
+            &lt;Operator&gt;: &lt;Value&gt;.
+        },
+        {
+            &lt;Operator&gt;: &lt;Value&gt;.
+        }
+    
+}
+```
+
+```python
+{
+    "$or": [
+        {
+            &lt;Operator&gt;: &lt;Value&gt;.
+        },
+        {
+            &lt;Operator&gt;: &lt;Value&gt;.
+        }
+    
+}
+```</markdown>
+  <markdown>For example, we search for all documents containing the words `python` and `docs`.</markdown>
+  <input_code>collection.query(
+    query_texts=["python"],
+    n_results=10,
+    where_document=
+    {
+        "$and": [
+            {"$contains": "python"},
+            {"$contains": "docs"},
+        ],
+    },
+)</input_code>
+  <output_code>Number of requested results 10 is greater than number of elements in index 6, updating n_results = 6
+</output_code>
+  <output_code>{'ids': [['id1']],
+ 'distances': [[0.5389559268951416]],
+ 'metadatas': [[{'source': 'Python source'}]],
+ 'embeddings': None,
+ 'documents': [['This is a python docs']],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>### Update data</markdown>
+  <markdown>Any item of data can be updated with the update method</markdown>
+  <input_code>collection.update(
+    ids=["id1"],
+    documents=["This is a updated Python docs"]
+)</input_code>
+  <markdown>Let's see if it has been updated</markdown>
+  <input_code>collection.query(
+    query_texts=["python"],
+    n_results=10,
+    where_document={"$contains": "Python"}
+)</input_code>
+  <output_code>Number of requested results 10 is greater than number of elements in index 6, updating n_results = 6
+</output_code>
+  <output_code>{'ids': [['id1']],
+ 'distances': [[0.8247963190078735]],
+ 'metadatas': [[{'source': 'Python source'}]],
+ 'embeddings': None,
+ 'documents': [['This is a updated Python docs']],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown> &gt; Note: If you try to update an `ID` that does not exist, you will get an error.</markdown>
+  <markdown> &gt; Note: If we try to update an embeddings with another embeddings of a different size, we will get an error.</markdown>
+  <markdown>### Update or add data</markdown>
+  <markdown>With the `upsert` method we can update a data if it already exists, or add it if it does not exist.</markdown>
+  <input_code>collection.upsert(
+    ids=["id6"],
+    documents=["This is a Pytorch docs"],
+    metadatas=[{"source": "Pytorch source"}],   
+)</input_code>
+  <markdown>Let's see if it has been added to the collection</markdown>
+  <input_code>collection.peek()</input_code>
+  <output_code>{'ids': ['id1', 'id2', 'id3', 'id4', 'id5', 'id6'],
+ 'embeddings': [[-0.08374718576669693,
+   0.01027572900056839,
+   -0.04819200187921524,
+   0.01758415624499321,
+   0.013158757239580154,
+   -0.11435151100158691,
+   -0.024248722940683365,
+   -0.01319972239434719,
+   -0.09626100957393646,
+   -0.010561048053205013,
+   0.09369225800037384,
+   0.06017905846238136,
+   0.031283188611269,
+   0.014855983667075634,
+   -0.0015984248602762818,
+   0.023238031193614006,
+   -0.04709107056260109,
+   -0.007838696241378784,
+   0.012870412319898605,
+   -0.028354981914162636,
+   -0.007653804495930672,
+   0.09018168598413467,
+   0.060235824435949326,
+   0.0005205210763961077,
+   ...
+   0.014388148672878742]],
+ 'metadatas': [{'source': 'Python source'},
+  {'source': 'JavaScript source'},
+  {'source': 'Mojo source'},
+  {'source': 'Rust source'},
+  {'source': 'Only embeddings'},
+  {'source': 'Pytorch source'}],
+ 'documents': ['This is a updated Python docs',
+  'This is JavaScript docs',
+  'This is a Mojo docs',
+  'This is Rust docs',
+  None,
+  'This is a Pytorch docs'],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>We see that yes</markdown>
+  <markdown>### Delete data</markdown>
+  <markdown>We can delete data from a collection with the `delete` method</markdown>
+  <markdown>We are going to delete the datum with `ID` `id5` which is the one we added with its embedding all to ones</markdown>
+  <input_code>collection.delete(
+    ids=["id5"]
+)</input_code>
+  <markdown>Let's see if it has been removed</markdown>
+  <input_code>collection.peek()</input_code>
+  <output_code>{'ids': ['id1', 'id2', 'id3', 'id4', 'id6'],
+ 'embeddings': [[-0.08374718576669693,
+   0.01027572900056839,
+   -0.04819200187921524,
+   0.01758415624499321,
+   0.013158757239580154,
+   -0.11435151100158691,
+   -0.024248722940683365,
+   -0.01319972239434719,
+   -0.09626100957393646,
+   -0.010561048053205013,
+   0.09369225800037384,
+   0.06017905846238136,
+   0.031283188611269,
+   0.014855983667075634,
+   -0.0015984248602762818,
+   0.023238031193614006,
+   -0.04709107056260109,
+   -0.007838696241378784,
+   0.012870412319898605,
+   -0.028354981914162636,
+   -0.007653804495930672,
+   0.09018168598413467,
+   0.060235824435949326,
+   0.0005205210763961077,
+   ...
+   0.07033486664295197,
+   0.014388148672878742]],
+ 'metadatas': [{'source': 'Python source'},
+  {'source': 'JavaScript source'},
+  {'source': 'Mojo source'},
+  {'source': 'Rust source'},
+  {'source': 'Pytorch source'}],
+ 'documents': ['This is a updated Python docs',
+  'This is JavaScript docs',
+  'This is a Mojo docs',
+  'This is Rust docs',
+  'This is a Pytorch docs'],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>We see that it is no longer</markdown>
+  <markdown>## Embeddings</markdown>
+  <markdown>As we have said we can use different embeddings functions and if none is specified it will use `all-MiniLM-L6-v2`. In the chroma [embeddings documentation](https://docs.trychroma.com/docs/embeddings/embedding-functions) page we can see the different embeddings functions we can use. As this is something that can change, and also some of them are paid and require api key, we are going to explain only how to use the HuggingFace ones.</markdown>
+  <markdown>First we set the embedding function</markdown>
+  <input_code>import chromadb.utils.embedding_functions as embedding_functions
+
+huggingface_ef = embedding_functions.HuggingFaceEmbeddingFunction(
+    api_key="YOUR_API_KEY",
+    model_name="sentence-transformers/all-mpnet-base-v2"
+)</input_code>
+  <markdown>In my case I use `sentence-transformers/all-mpnet-base-v2` which is the most downloaded of `sentence-transformers` at the time of writing this post.</markdown>
+  <markdown>To now add the embedding function to the collection, we have to add the argument `metadata={"embedding": &lt;function&gt;}`.</markdown>
+  <input_code>collection = chroma_client.create_collection(
+    name="colection_huggingface",
+    embedding_function=huggingface_ef
+)</input_code>
+  <markdown>We can check that we have added the new embedding function by calculating the embeddings of a word</markdown>
+  <input_code>embedding = collection._embedding_function(["python"])
+len(embedding), len(embedding[0])</input_code>
+  <output_code>(1, 768)</output_code>
+  <markdown>The embedding length is 768</markdown>
+  <markdown>If we now calculate the embedding with the embedding function of the previous collection</markdown>
+  <input_code>collection = chroma_client.get_collection(name = "my_collection")</input_code>
+  <input_code>embedding = collection._embedding_function(["python"])
+len(embedding), len(embedding[0])</input_code>
+  <output_code>(1, 384)</output_code>
+  <markdown>We see that now the length of the ambedding is 384, i.e., we had used a new embedding function before</markdown>
+  <markdown>## Multimodality</markdown>
+  <markdown>We can add image embeddings since chroma has built-in [OpenCLIP](https://github.com/mlfoundations/open_clip). [OpenCLIP](https://github.com/mlfoundations/open_clip) is an open source implementation of [CLIP](https://github.com/openai/CLIP) (Contrastive Language-Image Pre-Training), which is an OpenAI neural network that is able to give a description of an image.</markdown>
+  <markdown>In order to use OpenCLIP, we have to install it with pip
+
+```bash
+pip install open-clip-torch
+```</markdown>
+  <markdown>Once installed we can use it to create embeddings of the following picture
+
+![chroma db - python mixture](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/chromadb_dalle3.webp)
+
+I have it in my local path `../images/chromadb_dalle3.webp`.</markdown>
+  <input_code>from chromadb.utils.embedding_functions import  OpenCLIPEmbeddingFunction
+
+embedding_function = OpenCLIPEmbeddingFunction()
+image = "../images/chromadb_dalle3.webp"
+embedding = embedding_function(image)
+len(embedding), len(embedding[0])</input_code>
+  <output_code>(30, 512)</output_code>
+  <markdown>As we can see it creates an embeddings of size 30x512</markdown>
+  <markdown>Chroma also comes with an image uploader</markdown>
+  <input_code>from chromadb.utils.data_loaders import ImageLoader
+data_loader = ImageLoader()
+data = data_loader._load_image(image)
+type(data), data.shape</input_code>
+  <output_code>(numpy.ndarray, (1024, 1024, 3))</output_code>
+  <markdown>So we can create a multimodal collection with this embedding function and the image uploader</markdown>
+  <input_code>collection = chroma_client.create_collection(
+    name="multimodal_collection",
+    embedding_function=embedding_function,
+    data_loader=data_loader
+)</input_code>
+  <markdown>And we can add the embeddings of the images</markdown>
+  <input_code>collection.add(
+    ids=['id1'],
+    images=[image]
+)</input_code>
+  <markdown>Let's see what you have saved</markdown>
+  <input_code>collection.peek()</input_code>
+  <output_code>{'ids': ['id1'],
+ 'embeddings': [[-0.014372998848557472,
+   0.0063015008345246315,
+   -0.03794914484024048,
+   -0.028725482523441315,
+   -0.014304812066257,
+   -0.04323698952794075,
+   0.008670451119542122,
+   -0.016066772863268852,
+   -0.02365742437541485,
+   0.07881983369588852,
+   0.022775636985898018,
+   0.004407387692481279,
+   0.058205753564834595,
+   -0.02389293536543846,
+   -0.027586588636040688,
+   0.05778728798031807,
+   -0.2631031572818756,
+   0.044124454259872437,
+   0.010588622651994228,
+   -0.035578884184360504,
+   -0.041719693690538406,
+   -0.0033654430881142616,
+   -0.04731074720621109,
+   -0.0019943572115153074,
+   ...
+   0.04397008568048477,
+   0.04396628588438034]],
+ 'metadatas': [None],
+ 'documents': [None],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>Chroma does not store the images, only the embeddings, so in order not to lose the relationship between the embeddings and the images, we can save the path to the images in the metadata. Let's use the `update` method to add the path to the image</markdown>
+  <input_code>collection.update(
+    ids=['id1'],
+    images=[image],
+    metadatas=[{"source": image}]
+)</input_code>
+  <markdown>If we go back to see what the collection has in store.</markdown>
+  <input_code>collection.peek()</input_code>
+  <output_code>{'ids': ['id1'],
+ 'embeddings': [[-0.014372998848557472,
+   0.0063015008345246315,
+   -0.03794914484024048,
+   -0.028725482523441315,
+   -0.014304812066257,
+   -0.04323698952794075,
+   0.008670451119542122,
+   -0.016066772863268852,
+   -0.02365742437541485,
+   0.07881983369588852,
+   0.022775636985898018,
+   0.004407387692481279,
+   0.058205753564834595,
+   -0.02389293536543846,
+   -0.027586588636040688,
+   0.05778728798031807,
+   -0.2631031572818756,
+   0.044124454259872437,
+   0.010588622651994228,
+   -0.035578884184360504,
+   -0.041719693690538406,
+   -0.0033654430881142616,
+   -0.04731074720621109,
+   -0.0019943572115153074,
+   ...
+   0.04397008568048477,
+   0.04396628588438034]],
+ 'metadatas': [{'source': '../images/chromadb_dalle3.webp'}],
+ 'documents': [None],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>As the collection is multimodal, we can add documents to it as before.</markdown>
+  <input_code>collection.add(
+    ids=['id2', 'id3'],
+    documents=["This is a python docs", "This is JavaScript docs"],
+    metadatas=[{"source": "Python source"}, {"source": "JavaScript source"}]
+)
+collection.peek()</input_code>
+  <output_code>{'ids': ['id1', 'id2', 'id3'],
+ 'embeddings': [[-0.014372998848557472,
+   0.0063015008345246315,
+   -0.03794914484024048,
+   -0.028725482523441315,
+   -0.014304812066257,
+   -0.04323698952794075,
+   0.008670451119542122,
+   -0.016066772863268852,
+   -0.02365742437541485,
+   0.07881983369588852,
+   0.022775636985898018,
+   0.004407387692481279,
+   0.058205753564834595,
+   -0.02389293536543846,
+   -0.027586588636040688,
+   0.05778728798031807,
+   -0.2631031572818756,
+   0.044124454259872437,
+   0.010588622651994228,
+   -0.035578884184360504,
+   -0.041719693690538406,
+   -0.0033654430881142616,
+   -0.04731074720621109,
+   -0.0019943572115153074,
+   ...
+   -0.061795610934495926,
+   -0.02433035336434841]],
+ 'metadatas': [{'source': '../images/chromadb_dalle3.webp'},
+  {'source': 'Python source'},
+  {'source': 'JavaScript source'}],
+ 'documents': [None, 'This is a python docs', 'This is JavaScript docs'],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>Finally, we can make queries with text</markdown>
+  <input_code>collection.query(
+    query_texts=["persona trabajando en una mesa"],
+)</input_code>
+  <output_code>WARNING:chromadb.segment.impl.vector.local_hnsw:Number of requested results 10 is greater than number of elements in index 3, updating n_results = 3
+</output_code>
+  <output_code>{'ids': [['id2', 'id1', 'id3']],
+ 'distances': [[1.1276676654815674, 1.1777206659317017, 1.2047353982925415]],
+ 'metadatas': [[{'source': 'Python source'},
+   {'source': '../images/chromadb_dalle3.webp'},
+   {'source': 'JavaScript source'}]],
+ 'embeddings': None,
+ 'documents': [['This is a python docs', None, 'This is JavaScript docs']],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>With text we didn't get the image as the first result, if we follow the python documentation</markdown>
+  <markdown>But we can also make them with images, in this case I'm going to do it with this image
+
+![chroma logo](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/chromadb_elegant.webp)</markdown>
+  <input_code>query_image = "https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/chromadb_elegant.webp"
+collection.query(
+    query_images=[query_image],
+)</input_code>
+  <output_code>WARNING:chromadb.segment.impl.vector.local_hnsw:Number of requested results 10 is greater than number of elements in index 3, updating n_results = 3
+</output_code>
+  <output_code>{'ids': [['id1', 'id2', 'id3']],
+ 'distances': [[0.6684874296188354, 0.9450105428695679, 1.0639115571975708]],
+ 'metadatas': [[{'source': '../images/chromadb_dalle3.webp'},
+   {'source': 'Python source'},
+   {'source': 'JavaScript source'}]],
+ 'embeddings': None,
+ 'documents': [[None, 'This is a python docs', 'This is JavaScript docs']],
+ 'uris': None,
+ 'data': None}</output_code>
+  <markdown>Now it gives as first result the image that we had saved.</markdown>
+</notebook>

@@ -1,0 +1,1083 @@
+<?xml version='1.0' encoding='utf-8'?>
+<notebook>
+  <markdown># SSH</markdown>
+  <markdown> &gt; Aviso: Este post foi traduzido para o português usando um modelo de tradução automática. Por favor, me avise se encontrar algum erro.</markdown>
+  <markdown>## Introdução histórica</markdown>
+  <markdown>Nos primeiros dias da internet foi criado o protocolo `telnet` para poder comunicar vários computadores, mas tinha o problema de não estar cifrado, por isso qualquer um que se intrometesse no meio poderia ler a comunicação sem problemas, por isso foi criado o `SSH` (Secure Shell)</markdown>
+  <markdown>## Cifrado de `SSH`</markdown>
+  <markdown>O sistema de criptografia do `SSH` funciona através do sistema de chave pública e chave privada, de forma que se a comunicação for criptografada com uma das duas chaves, só pode ser descriptografada pela outra chave.
+
+E por que há uma chave pública e uma chave privada? A chave pública é a que você dá para todo mundo e a chave privada é a que apenas você deve possuir.
+
+Então, se você quiser se comunicar com outra equipe por `SSH`, primeiro você dá sua chave pública a eles. Em seguida, criptografa a mensagem com sua chave privada e a mensagem só pode ser descriptografada com a chave pública que você deu ao outro time.
+Da mesma forma, ocorre ao contrário, se o outro time quiser te enviar uma mensagem, ele a criptografa com sua chave pública e só pode ser descriptografada com a chave privada que apenas você possui.
+</markdown>
+  <markdown>## Requisitos `SSH`</markdown>
+  <markdown>### Serviço `SSH`</markdown>
+  <markdown>Para poder usar `SSH` você precisa ter um serviço de `SSH`. No `Linux` geralmente já vem instalado, mas se não for o caso, você pode instalá-lo por meio de</markdown>
+  <input_code>!apt install openssh-server</input_code>
+  <markdown>Durante o processo de instalação, será solicitada a sua localização para ajustar o fuso horário.</markdown>
+  <markdown>A seguir, levantamos o serviço</markdown>
+  <input_code>!systemctl enable ssh</input_code>
+  <markdown>### Cliente `SSH`</markdown>
+  <markdown>Uma vez que você tenha o serviço, você precisa de um cliente, embora em `Linux` ele geralmente venha instalado, mas se não for o caso, você pode instalá-lo por meio de</markdown>
+  <input_code>!apt install openssh-client</input_code>
+  <markdown>## Conexão por `SSH`</markdown>
+  <markdown>Para se conectar via `SSH` você precisa digitar o comando `ssh &lt;user&gt;@&lt;ip&gt;`</markdown>
+  <input_code>!ssh root@172.17.0.1</input_code>
+  <output_code>The authenticity of host '172.17.0.1 (172.17.0.1)' can't be established.
+ECDSA key fingerprint is SHA256:M+qsqSC4HiYztm1ij8iDkh9KHJz+pxrTm9GTZIf2N9k.
+Are you sure you want to continue connecting (yes/no/[fingerprint])?
+</output_code>
+  <markdown>Como você pode ver, da primeira vez ele pergunta se você deseja salvar o `fingerprint`, isso é para que, se a próxima vez que você se conectar à mesma máquina (à mesma chave pública) o `fingerprint` tiver mudado, você deve ter cuidado, pois pode haver algo perigoso, como alguém se passando por essa máquina.
+
+Se confiarmos, introduzimos `yes`
+</markdown>
+  <input_code>!ssh root@172.17.0.1</input_code>
+  <output_code>The authenticity of host '172.17.0.1 (172.17.0.1)' can't be established.
+ECDSA key fingerprint is SHA256:M+qsqSC4HiYztm1ij8iDkh9KHJz+pxrTm9GTZIf2N9k.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '172.17.0.1' (ECDSA) to the list of known hosts.
+root@172.17.0.1's password:
+</output_code>
+  <markdown>A seguir, a máquina à qual nos conectamos solicita a senha. A introduzimos e já estaremos dentro da máquina.</markdown>
+  <input_code>!ssh root@172.17.0.1</input_code>
+  <output_code>The authenticity of host '172.17.0.1 (172.17.0.1)' can't be established.
+ECDSA key fingerprint is SHA256:M+qsqSC4HiYztm1ij8iDkh9KHJz+pxrTm9GTZIf2N9k.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '172.17.0.1' (ECDSA) to the list of known hosts.
+root@172.17.0.1's password: 
+Welcome to Ubuntu 20.04.5 LTS (GNU/Linux 5.15.0-58-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+1 device has a firmware upgrade available.
+Run `fwupdmgr get-upgrades` for more information.
+
+
+ * Introducing Expanded Security Maintenance for Applications.
+   Receive updates to over 25,000 software packages with your
+   Ubuntu Pro subscription. Free for personal use.
+
+     https://ubuntu.com/pro
+
+Se pueden aplicar 0 actualizaciones de forma inmediata.
+
+Your Hardware Enablement Stack (HWE) is supported until April 2025.
+Last login: Thu Dec  1 16:32:23 2022 from 127.0.0.1
+root@172.17.0.1:~$
+</output_code>
+  <markdown>## Conexão sem necessidade de senha</markdown>
+  <markdown>Como vimos, quando nos conectamos nos pede a senha da máquina de destino, mas se for uma máquina à qual vamos nos conectar frequentemente, podemos configurar para não ser solicitada a senha cada vez que quisermos nos conectar.</markdown>
+  <markdown>Para isso, em primeiro lugar geramos uma chave `ssh` por meio de `ssh-keygen`</markdown>
+  <input_code>!ssh-keygen</input_code>
+  <output_code>Generating public/private rsa key pair.
+Enter file in which to save the key (/root/.ssh/id_rsa): 
+Enter passphrase (empty for no passphrase): 
+Enter same passphrase again: 
+Your identification has been saved in /root/.ssh/id_rsa
+Your public key has been saved in /root/.ssh/id_rsa.pub
+The key fingerprint is:
+SHA256:4HxRXkVkcK5kNXNyzakfQ6t8a24wRGCUYz4s5KL5ZEc root@e108f6f395b3
+The key's randomart image is:
++---[RSA 3072]----+
+|          o+==@.=|
+|         +.= * Oo|
+|      . + = = + .|
+|     o o E * + + |
+|      = S . = o o|
+|     o + .   = o |
+|      + .     + .|
+|       .       + |
+|              +. |
++----[SHA256]-----+
+</output_code>
+  <markdown>Como vemos, primeiro nos pergunta onde queremos salvar a chave, se não inserirmos nada, ela será salva no caminho padrão. E em seguida uma frase para gerar a chave, **se você escrever uma frase deve lembrá-la sempre**. Além disso, se você escrever uma frase, ela será solicitada todas as vezes que tentar acessar a chave, portanto, toda vez que quisermos acessar a máquina por meio de `SSH`, não nos pedirá a senha da máquina, mas sim esta frase. Portanto, você escolhe se não inserir uma frase para que nunca seja solicitada, ou se inseri-la e sempre as fornecer.</markdown>
+  <markdown>A seguir, pedimos à máquina remota que salve nossa chave através de `ssh-copy-id &lt;user&gt;@&lt;id&gt;:`</markdown>
+  <input_code>!ssh-copy-id root@172.17.0.1:</input_code>
+  <output_code>/usr/bin/ssh-copy-id: INFO: Source of key(s) to be installed: "/root/.ssh/id_rsa.pub"
+/usr/bin/ssh-copy-id: INFO: attempting to log in with the new key(s), to filter out any that are already installed
+/usr/bin/ssh-copy-id: INFO: 1 key(s) remain to be installed -- if you are prompted now it is to install the new keys
+root@172.17.0.1's password: 
+
+Number of key(s) added: 1
+
+Now try logging into the machine, with:   "ssh 'root@172.17.0.1'"
+and check to make sure that only the key(s) you wanted were added.
+
+root@103b6040196a:/# ssh root@172.17.0.1
+Welcome to Ubuntu 20.04.5 LTS (GNU/Linux 5.15.0-58-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+4 devices have a firmware upgrade available.
+Run `fwupdmgr get-upgrades` for more information.
+
+
+58 updates can be applied immediately.
+41 of these updates are standard security updates.
+To see these additional updates run: apt list --upgradable
+
+New release '22.04.1 LTS' available.
+Run 'do-release-upgrade' to upgrade to it.
+
+Your Hardware Enablement Stack (HWE) is supported until April 2025.
+Last login: Thu Feb  2 08:05:48 2023 from 172.17.0.2
+(base) root@172.17.0.1:~$
+</output_code>
+  <markdown>## Usar a terminal remota por `SSH`</markdown>
+  <markdown>Talvez não precisemos nos conectar à máquina remota, pois só precisamos executar um único comando, então podemos usar sua terminal remotamente adicionando a bandeira `-t` ao comando `SSH`, ou seja, por meio de `ssh -t &lt;user&gt;@&lt;id&gt; &lt;command&gt;`</markdown>
+  <input_code>!ssh -t root@172.17.0.1 ping -c 4 google.com</input_code>
+  <output_code>PING google.com (172.217.168.174) 56(84) bytes of data.
+64 bytes from mad07s10-in-f14.1e100.net (172.217.168.174): icmp_seq=1 ttl=111 time=2.94 ms
+64 bytes from mad07s10-in-f14.1e100.net (172.217.168.174): icmp_seq=2 ttl=111 time=2.55 ms
+64 bytes from mad07s10-in-f14.1e100.net (172.217.168.174): icmp_seq=3 ttl=111 time=2.78 ms
+64 bytes from mad07s10-in-f14.1e100.net (172.217.168.174): icmp_seq=4 ttl=111 time=2.69 ms
+
+--- google.com ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3005ms
+rtt min/avg/max/mdev = 2.550/2.739/2.940/0.142 ms
+Connection to 172.17.0.1 closed.
+</output_code>
+  <markdown>Como pode ser visto, o comando é executado na máquina remota e quando termina, na última linha nos diz que a conexão é fechada.</markdown>
+  <markdown>## Proxy `SSH`</markdown>
+  <markdown>Se você está navegando em um lugar não muito seguro, ou em um lugar que tem um proxy que não te deixa acessar alguns portas, você pode navegar através do proxy de outra máquina usando `SSH`, isso pode ser feito adicionando a flag `-D` e a porta pela qual você deseja realizar a conexão com o proxy remoto, como a porta para o `tcp/ip` é a `9999`, o comando poderia ficar assim: `ssh -D 9999 &lt;user&gt;@&lt;id&gt;`</markdown>
+  <markdown>Para que isso fique melhor, antes de executá-lo obtenho meu IP público</markdown>
+  <input_code>!curl ifconfig.me</input_code>
+  <output_code>188.127.184.59</output_code>
+  <markdown>Agora uso o proxy de um servidor web que tenho levantado</markdown>
+  <input_code>!ssh -D 9999 root@194.62.99.222</input_code>
+  <output_code>Welcome to Ubuntu 22.04.1 LTS (GNU/Linux 5.15.0-53-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+  System information as of Wed Feb 22 06:08:51 AM UTC 2023
+
+  System load:           0.02978515625
+  Usage of /:            11.7% of 24.53GB
+  Memory usage:          33%
+  Swap usage:            0%
+  Processes:             89
+  Users logged in:       0
+  IPv4 address for eth0: 194.62.99.222
+  IPv4 address for eth1: 10.7.0.168
+  IPv6 address for eth2: 2a04:3542:8000:1000:d48a:cbff:fefb:5b1
+
+
+0 updates can be applied immediately.
+
+
+The list of available updates is more than a week old.
+To check for new updates run: sudo apt update
+
+Last login: Wed Feb 22 06:02:35 2023 from 188.127.184.59
+root@server1:~#
+</output_code>
+  <markdown>Mudo a configuração do proxy do meu computador
+
+![proxy ssh](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/proxy_ssh.webp)
+</markdown>
+  <markdown>Agora eu volto a verificar meu IP público, mas usando o proxy recentemente configurado.</markdown>
+  <input_code>!curl -x socks5h://localhost:9999 ifconfig.me</input_code>
+  <output_code>194.62.99.222</output_code>
+  <markdown>Vemos que obtemos o IP pública do servidor</markdown>
+  <markdown>## Interface gráfica remota por `SSH`</markdown>
+  <markdown>Em Linux, a interface gráfica é um servidor, então podemos nos beneficiar disso e executar programas com interfaces gráficas que estão em uma máquina remota por `SSH`, para isso é necessário usar o flag `-X`. O comando ficaria `ssh -X &lt;user&gt;@&lt;id&gt;`</markdown>
+  <markdown>Primeiro entro no meu servidor e instalo `xeyes` através de `sudo apt install x11-apps` e depois o executo remotamente do meu computador.</markdown>
+  <input_code>!ssh -X root@194.62.99.222</input_code>
+  <output_code>Welcome to Ubuntu 22.04.1 LTS (GNU/Linux 5.15.0-53-generic x86_64)
+
+Last login: Wed Feb 22 06:39:52 2023 from 188.127.184.59
+/usr/bin/xauth:  file /root/.Xauthority does not exist
+root@server1:~sudo apt install x11-apps
+root@server1:~#xeyes
+</output_code>
+  <markdown>Agora na minha máquina está abrindo a janela do `xeyes`, mas não está sendo executada na minha máquina.
+
+![xeyes](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/xeyes.webp)
+</markdown>
+  <markdown>## Túnel `SSH`</markdown>
+  <markdown>Como comentei, subi um servidor ao qual tenho acesso via SSH</markdown>
+  <input_code>!ssh root@194.62.99.222</input_code>
+  <output_code>Welcome to Ubuntu 22.04.1 LTS (GNU/Linux 5.15.0-53-generic x86_64)
+
+Last login: Wed Feb 22 06:40:58 2023 from 188.127.184.59
+root@server1:~#
+</output_code>
+  <markdown>E levanto também um segundo servidor do qual tenho acesso a partir do `server1`, mas não tenho acesso a partir do meu computador.</markdown>
+  <markdown>A seguir, tento acessar o `server2` do meu computador e vemos que não consigo</markdown>
+  <input_code>!ssh root@194.62.99.235</input_code>
+  <output_code>ssh: connect to host 194.62.99.235 port 22: Connection timed out
+</output_code>
+  <markdown>E em seguida tento acessar o `server2` a partir do `server1` e vemos que sim, eu consigo.</markdown>
+  <input_code>!root@server1:~# ssh root@10.7.2.228</input_code>
+  <output_code>Welcome to Ubuntu 22.04.1 LTS (GNU/Linux 5.15.0-53-generic x86_64)
+
+Last login: Wed Feb 22 06:59:01 2023 from 10.7.0.168
+root@server2:~#
+</output_code>
+  <markdown>Então o que criamos é um túnel do meu computador até o `server2` através do `server1`, para isso usamos a flag `-L`. Para criar o túnel, é necessário indicar a porta do seu computador na qual você vai criar o túnel, em seguida o `IP` de destino do túnel, a porta pela qual irá o túnel e por último o dispositivo que criará o túnel. Ficaria assim
+
+``` bash
+ssh -L &amp;ltPORTA DO HOST&amp;gt:&amp;ltIP DESTINO&amp;gt:&amp;ltPORTA DO TÚNEL&amp;gt &amp;ltUSUÁRIO CRIADOR DO TÚNEL&amp;gt@&amp;ltIP CRIADOR DO TÚNEL&amp;gt
+```
+
+Vamos vê-lo com meu exemplo, tenho o `server1` com um `IP` público que podemos chamar de `ip_pub1` e ao qual tenho acesso por `SSH` e um `IP` privado que podemos chamar de `ip_priv1` que está dentro da mesma rede do `server2`. E tenho o `server2` com um `IP` público que podemos chamar de `ip_pub2` ao qual não tenho acesso por `SSH` e um `IP` que podemos chamar de `ip_priv2` dentro da mesma rede do `server1`.
+
+Primeiro crio o túnel
+
+``` bash
+ssh -L host_port:ip_priv2:22 root@ip_pub1
+```
+
+Criei um túnel até o `IP` privado do `server2` através do `IP` público do `server1`
+
+Por último, para me conectar ao `server2` faço isso através do `localhost` e da porta do host que declarei no túnel.
+
+``` bash
+ssh -p 2020 root@localhost
+```
+</markdown>
+  <markdown>Vamos vê-lo na realidade, os `IP`s dos meus servidores são
+
+* `server1`:
+* `IP` pública: `194.62.99.222`
+* `IP` privada: `10.7.0.168`
+* `server2`:* `IP` pública: `194.62.99.235`
+* `IP` privada: `10.7.2.228`
+
+Primeiro crio o túnel
+</markdown>
+  <input_code>!ssh -L 2020:10.7.2.228:22 root@194.62.99.222</input_code>
+  <output_code>Welcome to Ubuntu 22.04.1 LTS (GNU/Linux 5.15.0-53-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+  System information as of Wed Feb 22 11:13:39 AM UTC 2023
+
+  System load:           0.0
+  Usage of /:            13.3% of 24.53GB
+  Memory usage:          36%
+  Swap usage:            0%
+  Processes:             91
+  Users logged in:       1
+  IPv4 address for eth0: 194.62.99.222
+  IPv4 address for eth1: 10.7.0.168
+  IPv6 address for eth2: 2a04:3542:8000:1000:d48a:cbff:fefb:5b1
+
+
+101 updates can be applied immediately.
+60 of these updates are standard security updates.
+To see these additional updates run: apt list --upgradable
+
+
+Last login: Wed Feb 22 09:29:52 2023 from 188.127.184.59
+[?2004h]0;root@server1: ~[01;32mroot@server1[00m:[01;34m~[00m# ^C[?2004l
+[?2004l
+[?2004h]0;root@server1: ~[01;32mroot@server1[00m:[01;34m~[00m# </output_code>
+  <markdown>Com o túnel criado, já posso me conectar ao `server2` do meu computador.</markdown>
+  <input_code>!ssh -p 2020 root@localhost</input_code>
+  <output_code>Welcome to Ubuntu 22.04.1 LTS (GNU/Linux 5.15.0-53-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+  System information as of Wed Feb 22 11:14:15 AM UTC 2023
+
+  System load:           0.0
+  Usage of /:            13.3% of 24.53GB
+  Memory usage:          33%
+  Swap usage:            0%
+  Processes:             90
+  Users logged in:       0
+  IPv4 address for eth0: 194.62.99.235
+  IPv4 address for eth1: 10.7.2.228
+  IPv6 address for eth2: 2a04:3542:8000:1000:d48a:cbff:fefb:7f47
+
+ * Strictly confined Kubernetes makes edge and IoT secure. Learn how MicroK8s
+   just raised the bar for easy, resilient and secure K8s cluster deployment.
+
+   https://ubuntu.com/engage/secure-kubernetes-at-the-edge
+
+101 updates can be applied immediately.
+60 of these updates are standard security updates.
+To see these additional updates run: apt list --upgradable
+
+
+Last login: Wed Feb 22 11:14:16 2023 from 10.7.0.168
+[?2004h]0;root@server2: ~[01;32mroot@server2[00m:[01;34m~[00m# ^C[?2004l
+[?2004l
+[?2004h]0;root@server2: ~[01;32mroot@server2[00m:[01;34m~[00m# </output_code>
+  <markdown>## Conexão reversa</markdown>
+  <markdown>Vamos supor que eu quero me conectar ao `server2`, mas agora não posso fazer, por qualquer razão, um túnel a partir do `server1`. O que podemos fazer é criar uma conexão reversa a partir de outro servidor.
+
+Suponhamos que tenho um terceiro servidor, chamado `server3`, ao qual se tem acesso por `SSH` de qualquer lugar, ou seja, tanto eu do meu computador quanto o `server2` têm acesso. Portanto, se pudermos acessar fisicamente o `server2`, podemos fazer uma conexão reversa do `server2` para o `server3`.
+
+```
+ssh -R &amp;ltserver3port&amp;gt:localhost:22 root@&amp;ltIPserver3&amp;gt
+```
+
+Com isso, o que fiz foi habilitar uma conexão do `server3` para o `server2` (algo que não era possível antes), através do `localhost` e da porta `server3port` do `server3`.
+
+Agora posso me conectar ao `server3` a partir do meu computador e, a partir do `server3`, posso me conectar ao `server2` por meio de
+``` bash
+ssh -p &amp;ltserver3port&amp;gt root@localhost
+```
+</markdown>
+  <markdown>Vamos vê-lo com os dados dos meus servidores
+
+* `server2`:
+* `IP` pública: `194.62.99.235`* `server3`:
+* `IP` pública: `194.62.96.236`
+</markdown>
+  <markdown>Primeiro faço a conexão reversa do `server2` para o `server3`</markdown>
+  <input_code>!root@server2:~# ssh -R 2020:localhost:22 root@194.62.96.236</input_code>
+  <output_code>Welcome to Ubuntu 22.04.1 LTS (GNU/Linux 5.15.0-53-generic x86_64)
+
+Last login: Wed Feb 22 15:25:58 2023 from 188.127.184.59
+root@server3:~#
+</output_code>
+  <markdown>Agora me conecto ao `server3`</markdown>
+  <input_code>!ssh root@194.62.96.236</input_code>
+  <output_code>Welcome to Ubuntu 22.04.1 LTS (GNU/Linux 5.15.0-53-generic x86_64)
+
+Last login: Wed Feb 22 15:12:19 2023 from 188.127.184.59
+root@server3:~#
+</output_code>
+  <markdown>E agora que estou no `server3` me conecto ao `server2`</markdown>
+  <input_code>!root@server3:~# ssh -p 2020 root@localhost</input_code>
+  <output_code>Welcome to Ubuntu 22.04.1 LTS (GNU/Linux 5.15.0-53-generic x86_64)
+
+Last login: Wed Feb 22 15:12:07 2023 from 188.127.184.59
+root@server2:~#
+</output_code>
+  <markdown>¡Conseguido! Através do meu computador não consigo me conectar diretamente ao `server2`, mas ao me conectar ao `server3` consegui acessar o `server2` graças à conexão reversa que tinha feito do `server2` para o `server3`</markdown>
+  <markdown>## Pular</markdown>
+  <markdown>Por último, outra maneira de entrar no `server2` é entrando no `server1` e a seguir, do `server1`, entrar no `server2`. Mas isso é um pouco trabalhoso, porque primeiro tem que fazer uma conexão `SSH` ao `server1` e depois outra ao `server2`, então para fazer tudo de uma vez podemos usar o flag `-J` (`jump`), ou seja, ficaria `ssh -J server1 server2`.</markdown>
+  <markdown>Resumo, primeiro faríamos `ssh root@194.62.99.222` e depois `ssh root@10.7.2.228` (já que dentro de `server1` nos conectamos a `server2` através do `IP` privado).
+
+Então poderíamos fazer tudo de uma vez com `ssh -J root@194.62.99.222 root@10.7.2.228`
+
+Vamos a provar
+</markdown>
+  <input_code>!ssh -J root@194.62.99.222 root@10.7.2.228</input_code>
+  <output_code>Welcome to Ubuntu 22.04.1 LTS (GNU/Linux 5.15.0-60-generic x86_64)
+
+Last login: Fri Feb 24 06:46:11 2023 from 10.7.0.168
+root@server2:~#
+</output_code>
+  <markdown>¡Conseguimos fazer os pulos!</markdown>
+  <markdown>## Arquivo de configuração `SSH` do usuário</markdown>
+  <markdown>### Dispositivos com Apelido</markdown>
+  <markdown>Em todo computador há um arquivo de configuração para o `SSH` que geralmente está na pasta do usuário</markdown>
+  <input_code>!cat ~/.ssh/config</input_code>
+  <output_code># Read more about SSH config files: https://linux.die.net/man/5/ssh_config
+Host 192.168.1.138
+    HostName 192.168.1.138
+    User maximo.fernandez
+</output_code>
+  <markdown>Neste arquivo, eu tenho armazenadas as credenciais do usuário e o IP de alguns dispositivos aos quais costumo me conectar, para não precisar preenchê-los manualmente. Vamos ver isso com os servidores que tenho.
+
+Meu servidor `server1` tem o usuário `root` e o IP `194.62.99.222`, então eu o adiciono à lista
+</markdown>
+  <input_code>!echo "Host server1\n    HostName 194.62.99.222\n    User root" &gt;&gt; ~/.ssh/config</input_code>
+  <markdown>Voltemos a ver como ficou o arquivo de configuração</markdown>
+  <input_code>!cat ~/.ssh/config</input_code>
+  <output_code># Read more about SSH config files: https://linux.die.net/man/5/ssh_config
+Host 192.168.1.138
+    HostName 192.168.1.138
+    User maximo.fernandez
+
+Host server1
+    HostName 194.62.99.222
+    User root
+</output_code>
+  <markdown>Agora que o adicionamos para nos conectar ao `server1`, só precisamos fazer `ssh server1`.</markdown>
+  <input_code>!ssh server1 </input_code>
+  <output_code>Welcome to Ubuntu 22.04.1 LTS (GNU/Linux 5.15.0-60-generic x86_64)
+
+Last login: Fri Feb 24 05:18:59 2023 from 188.127.184.59
+root@server1:~# 
+</output_code>
+  <markdown>### Proxy</markdown>
+  <markdown>Como já vimos, adicionando a bandeira `-D &amp;ltport&amp;gt` podemos alterar o proxy. Para salvar isso no arquivo de configuração, basta adicionar a linha `DynamicForward &amp;ltport&amp;gt` ao host que estamos salvando.</markdown>
+  <markdown>Repetindo o exemplo anterior no qual usamos o `server1` como um proxy da porta `TCP/IP` (`9999`), no arquivo de configuração ficaria assim
+
+```
+Host proxyServer1
+HostName 194.62.99.222
+Usuário root
+DynamicForward 9999
+```
+
+O adicionamos
+</markdown>
+  <input_code>!echo "Host proxyServer1\n    HostName 194.62.99.222\n    User root\n    DynamicForward 9999" &gt;&gt; ~/.ssh/config</input_code>
+  <markdown>Vamos ver como fica o arquivo de configuração</markdown>
+  <input_code>!cat ~/.ssh/config</input_code>
+  <output_code># Read more about SSH config files: https://linux.die.net/man/5/ssh_config
+Host 192.168.1.138
+    HostName 192.168.1.138
+    User maximo.fernandez
+
+Host server1
+    HostName 194.62.99.222
+    User root
+Host proxyServer1
+    HostName 194.62.99.222
+    User root
+    DynamicForward 9999
+</output_code>
+  <markdown>Obtenho meu `IP` público</markdown>
+  <input_code>!curl ifconfig.me</input_code>
+  <output_code>188.127.184.59</output_code>
+  <markdown>Conecto-me ao servidor proxy</markdown>
+  <input_code>!ssh proxyServer1 </input_code>
+  <output_code>Welcome to Ubuntu 22.04.1 LTS (GNU/Linux 5.15.0-60-generic x86_64)
+
+Last login: Fri Feb 24 05:42:32 2023 from 188.127.184.59
+root@server1:~#
+</output_code>
+  <markdown>Mudo a configuração do proxy do meu computador
+
+![proxy ssh](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/proxy_ssh.webp)
+</markdown>
+  <markdown>Volto a ver meu `IP` público, mas usando o proxy recém-configurado</markdown>
+  <input_code>!curl -x socks5h://localhost:9999 ifconfig.me</input_code>
+  <output_code>194.62.99.222</output_code>
+  <markdown>Vemos que obtemos o IP pública do servidor</markdown>
+  <markdown>### Túnel SSH</markdown>
+  <markdown>Se como antes quero criar um túnel até o `server2` através do `server1`, antes tínhamos que fazer `ssh &amp;ltHOST PORT&amp;gt:&amp;ltDEST IP&amp;gt:&amp;ltTUNNEL PORT&amp;gt &amp;ltTUNNEL CREATOR USER&amp;gt@&amp;ltTUNNEL CREATOR IP&amp;gt`, agora temos que adicionar a linha
+
+``` bash
+LocalForward &amp;ltlocalhost&amp;gt:&amp;ltPORTA DO HOST&amp;gt &amp;ltIP DE DESTINO&amp;gt:&amp;ltPORTA DO TÚNEL&amp;gt```
+</markdown>
+  <markdown>Isto é, o arquivo de configuração ficaria
+
+```
+Host tunelToServer2
+HostName 194.62.99.222
+Usuário root
+LocalForward 127.0.0.1:2020 10.7.2.228:22
+```
+</markdown>
+  <markdown>Mas isso não fica muito claro, vamos ver com um exemplo concreto.
+
+* `server1`:
+* `IP` pública: `194.62.99.222`
+* `IP` privada: `10.7.0.168`
+* `server2`:
+* `IP` pública: `194.62.99.235`
+* `IP` privada: `10.7.2.228`
+
+Antes, o comando era
+
+``` bash
+ssh -L 2020:10.7.2.228:22 root@194.62.99.222
+```
+
+Assim, o arquivo de configuração deve ficar
+```
+Host tunelToServer2
+HostName 194.62.99.222
+Usuário root
+LocalForward 127.0.0.1:2020 10.7.2.228:22
+```
+
+Vamos ver se funciona
+</markdown>
+  <markdown>Adicionamos a nova configuração</markdown>
+  <input_code>!echo "Host tunelToServer2\n    HostName 194.62.99.222\n    User root\n    LocalForward 127.0.0.1:2020 10.7.2.228:22" &gt;&gt; ~/.ssh/config</input_code>
+  <markdown>Vamos ver como ficou o arquivo de configuração</markdown>
+  <input_code>!cat ~/.ssh/config</input_code>
+  <output_code># Read more about SSH config files: https://linux.die.net/man/5/ssh_config
+Host 192.168.1.138
+    HostName 192.168.1.138
+    User maximo.fernandez
+
+Host server1
+    HostName 194.62.99.222
+    User root
+Host proxyServer1
+    HostName 194.62.99.222
+    User root
+    DynamicForward 9999
+Host tunelToServer2
+    HostName 194.62.99.222
+    User root
+    LocalForward 127.0.0.1:2020 10.7.2.228:22
+</output_code>
+  <markdown>Criamos o túnel</markdown>
+  <input_code>!ssh tunelToServer2 </input_code>
+  <output_code>Welcome to Ubuntu 22.04.1 LTS (GNU/Linux 5.15.0-60-generic x86_64)
+
+Last login: Fri Feb 24 06:02:20 2023 from 188.127.184.59
+root@server1:~#
+</output_code>
+  <markdown>Agora tentamos nos conectar ao `server2` do meu computador.</markdown>
+  <input_code>!ssh -p 2020 root@localhost</input_code>
+  <output_code>Welcome to Ubuntu 22.04.1 LTS (GNU/Linux 5.15.0-60-generic x86_64)
+
+Last login: Fri Feb 24 06:02:36 2023 from 10.7.0.168
+root@server2:~# 
+</output_code>
+  <markdown>¡Conseguido! Mas podemos deixar tudo um pouco mais limpo, podemos adicionar esta última conexão ao arquivo de configuração</markdown>
+  <input_code>!echo "Host server2ByTunel\n    HostName localhost\n    User root\n    Port 2020" &gt;&gt; ~/.ssh/config</input_code>
+  <markdown>Vamos ver como fica o arquivo de configuração</markdown>
+  <input_code>!cat ~/.ssh/config</input_code>
+  <output_code># Read more about SSH config files: https://linux.die.net/man/5/ssh_config
+Host 192.168.1.138
+    HostName 192.168.1.138
+    User maximo.fernandez
+
+Host server1
+    HostName 194.62.99.222
+    User root
+Host proxyServer1
+    HostName 194.62.99.222
+    User root
+    DynamicForward 9999
+Host tunelToServer2
+    HostName 194.62.99.222
+    User root
+    LocalForward 127.0.0.1:2020 10.7.2.228:22
+Host server2ByTunel
+    HostName localhost
+    User root
+    Port 2020
+</output_code>
+  <markdown>Agora nos reconectamos ao `server2` do meu computador, através do túnel, mas com a última configuração que acabamos de salvar.</markdown>
+  <input_code>!ssh server2ByTunel </input_code>
+  <output_code>Welcome to Ubuntu 22.04.1 LTS (GNU/Linux 5.15.0-60-generic x86_64)
+
+Last login: Fri Feb 24 06:13:33 2023 from 10.7.0.168
+root@server2:~# 
+</output_code>
+  <markdown>Em resumo, com tudo o que fizemos, podemos criar o túnel até o `server2` com o comando `ssh tunelToServer2` e, em seguida, conectar-nos ao `server2` com o comando `ssh server2ByTunel`
+
+¡Impressionante!
+</markdown>
+  <markdown>### Conexão reversa</markdown>
+  <markdown>Lembramos que agora nosso problema era que não conseguíamos nos conectar ao `server2` através do túnel do `server1`. De modo que criando uma conexão reversa do `server2` (temos alguém no `server2` que pode fazer essa conexão reversa, ou a deixamos pronta nós antes de irmos) até um `server3`, posso me conectar ao `server3` do meu computador e, em seguida, me conectar ao `server2`.</markdown>
+  <markdown>Primeiro temos que fazer a conexão reversa do `server2` para o `server3`. Isso poderíamos fazer através de um comando
+
+``` bash
+ssh -R &amp;ltserver3port&amp;gt:localhost:22 root@&amp;ltIPserver3&amp;gt
+```
+
+Ou guardar a conexão no arquivo de configuração adicionando
+
+```
+Host reverseToServer3
+HostName &amp;ltIPserver3&amp;gt
+Usuário root
+RemoteForward &amp;ltserver3port&amp;gt localhost:22
+```
+
+E fazer a conexão inversa mediante
+
+``` bash
+ssh reverseToServer3
+```
+</markdown>
+  <markdown>Como assim não se entende bem, vejamos com dados concretos
+
+* `server2`:
+* `IP` pública: `194.62.99.235`
+* `server3`:
+* `IP` pública: `194.62.96.236`
+
+Para fazer a conexão reversa seria necessário usar o comando
+
+``` bash
+ssh -R 2020:localhost:22 root@194.62.96.236
+```
+
+ou salvar a seguinte configuração
+
+``` bash
+Host reverseToServer3
+HostName 194.62.96.236Usuário root
+RemoteForward 2020 localhost:22
+```
+
+E conectar-se através de
+
+``` bash
+ssh reverseToServer3
+```
+</markdown>
+  <markdown>Então eu salvo a configuração no servidor 2 e faço a conexão</markdown>
+  <input_code>!root@server2:~# echo "Host reverseToServer3\n    HostName 194.62.96.236\n    User root\n    RemoteForward 2020 localhost:22" &gt;&gt; ~/.ssh/config</input_code>
+  <markdown>Vamos ver se foi salvo corretamente.</markdown>
+  <input_code>!root@server2:~# cat .ssh/config</input_code>
+  <output_code>
+Host reverseToServer3
+    HostName 194.62.96.236
+    User root
+    RemoteForward 2020 localhost:22
+</output_code>
+  <markdown>Faço a conexão inversa</markdown>
+  <input_code>!root@server2:~# ssh reverseToServer3 </input_code>
+  <output_code>Welcome to Ubuntu 22.04.1 LTS (GNU/Linux 5.15.0-53-generic x86_64)
+
+Last login: Wed Feb 22 15:26:18 2023 from 194.62.99.235
+root@server3:~# 
+</output_code>
+  <markdown>### Pular</markdown>
+  <markdown>Como dissem, fazíamos saltos mediante a flag `-J`, de maneira que com o comando `ssh -J root@194.62.99.222 root@10.7.2.228` podíamos nos conectar ao `server2`</markdown>
+  <markdown>Para configurar o arquivo de configuração, há duas opções</markdown>
+  <markdown>A primeira é que, como já temos o `server1` salvo no arquivo de configuração, apenas adicionamos o `server2`.
+
+``` bash
+Servidor2
+HostName 10.7.2.228
+Usuário root
+```
+
+E a seguir poderíamos nos conectar mediante
+
+``` bash
+ssh -J server1 server2
+```
+
+Vamos a testá-lo
+</markdown>
+  <input_code>!echo "Host server2\n    HostName 10.7.2.228\n    User root\n" &gt;&gt; ~/.ssh/config</input_code>
+  <markdown>Vemos o arquivo de configuração</markdown>
+  <input_code>!cat ~/.ssh/config</input_code>
+  <output_code># Read more about SSH config files: https://linux.die.net/man/5/ssh_config
+Host 192.168.1.138
+    HostName 192.168.1.138
+    User maximo.fernandez
+
+Host server1
+    HostName 194.62.99.222
+    User root
+Host proxyServer1
+    HostName 194.62.99.222
+    User root
+    DynamicForward 9999
+Host tunelToServer2
+    HostName 194.62.99.222
+    User root
+    LocalForward 127.0.0.1:2020 10.7.2.228:22
+Host server2ByTunel
+    HostName localhost
+    User root
+    Port 2020
+Host server2
+    HostName 10.7.2.228
+    User root
+
+</output_code>
+  <markdown>Agora nos conectamos através dos saltos</markdown>
+  <input_code>!ssh -J server1 server2</input_code>
+  <output_code>Welcome to Ubuntu 22.04.1 LTS (GNU/Linux 5.15.0-60-generic x86_64)
+
+Last login: Fri Feb 24 12:05:16 2023 from 10.7.0.168
+root@server2:~#
+</output_code>
+  <markdown>Esta foi a primeira opção: salvar cada servidor e definir os salts; mas uma segunda opção é salvar todos os salts em uma única configuração, que ficaria assim
+
+``` bash
+Servidor de salto2
+HostName 10.7.2.228
+Usuário root
+ProxyJump root@194.62.99.222
+```
+
+E já só faltaria conectar-se através de
+
+```
+ssh server2jumping
+```
+
+Vamos a testar
+</markdown>
+  <input_code>!echo "Host server2jumping\n    HostName 10.7.2.228\n    User root\n    ProxyJump root@194.62.99.222" &gt;&gt; ~/.ssh/config</input_code>
+  <markdown>Vamos ver o arquivo de configuração</markdown>
+  <input_code>!cat ~/.ssh/config</input_code>
+  <output_code># Read more about SSH config files: https://linux.die.net/man/5/ssh_config
+Host 192.168.1.138
+    HostName 192.168.1.138
+    User maximo.fernandez
+
+Host server1
+    HostName 194.62.99.222
+    User root
+Host proxyServer1
+    HostName 194.62.99.222
+    User root
+    DynamicForward 9999
+Host tunelToServer2
+    HostName 194.62.99.222
+    User root
+    LocalForward 127.0.0.1:2020 10.7.2.228:22
+Host server2ByTunel
+    HostName localhost
+    User root
+    Port 2020
+Host server2
+    HostName 10.7.2.228
+    User root
+Host server2jumping
+    HostName 10.7.2.228
+    User root
+    ProxyJump root@194.62.99.222
+</output_code>
+  <markdown>Agora tentamos nos conectar</markdown>
+  <input_code>!ssh server2jumping</input_code>
+  <output_code>Welcome to Ubuntu 22.04.1 LTS (GNU/Linux 5.15.0-60-generic x86_64)
+
+Last login: Fri Feb 24 12:06:22 2023 from 10.7.0.168
+root@server2:~# 
+</output_code>
+  <markdown>## Arquivo de configuração `SSH` do sistema</markdown>
+  <markdown>Antes vimos o arquivo de configuração do `SSH` do usuário, onde guardamos configurações de máquinas para as quais queríamos nos conectar por `SSH`, mas há outro arquivo de configuração do `SSH`, neste caso do sistema, que se encontra em `/etc/ssh/ssh_config`, vamos vê-lo.</markdown>
+  <input_code>!cat /etc/ssh/sshd_config</input_code>
+  <output_code>#	$OpenBSD: sshd_config,v 1.103 2018/04/09 20:41:22 tj Exp $
+
+# This is the sshd server system-wide configuration file.  See
+# sshd_config(5) for more information.
+
+# This sshd was compiled with PATH=/usr/bin:/bin:/usr/sbin:/sbin
+
+# The strategy used for options in the default sshd_config shipped with
+# OpenSSH is to specify options with their default value where
+# possible, but leave them commented.  Uncommented options override the
+# default value.
+
+Include /etc/ssh/sshd_config.d/*.conf
+
+#Port 22
+#AddressFamily any
+#ListenAddress 0.0.0.0
+#ListenAddress ::
+
+#HostKey /etc/ssh/ssh_host_rsa_key
+#HostKey /etc/ssh/ssh_host_ecdsa_key
+#HostKey /etc/ssh/ssh_host_ed25519_key
+
+# Ciphers and keying
+#RekeyLimit default none
+
+# Logging
+#SyslogFacility AUTH
+#LogLevel INFO
+
+# Authentication:
+
+#LoginGraceTime 2m
+#PermitRootLogin prohibit-password
+#StrictModes yes
+#MaxAuthTries 6
+#MaxSessions 10
+
+#PubkeyAuthentication yes
+
+# Expect .ssh/authorized_keys2 to be disregarded by default in future.
+#AuthorizedKeysFile	.ssh/authorized_keys .ssh/authorized_keys2
+
+#AuthorizedPrincipalsFile none
+
+#AuthorizedKeysCommand none
+#AuthorizedKeysCommandUser nobody
+
+# For this to work you will also need host keys in /etc/ssh/ssh_known_hosts
+#HostbasedAuthentication no
+# Change to yes if you don't trust ~/.ssh/known_hosts for
+# HostbasedAuthentication
+#IgnoreUserKnownHosts no
+# Don't read the user's ~/.rhosts and ~/.shosts files
+#IgnoreRhosts yes
+
+# To disable tunneled clear text passwords, change to no here!
+#PasswordAuthentication yes
+#PermitEmptyPasswords no
+
+# Change to yes to enable challenge-response passwords (beware issues with
+# some PAM modules and threads)
+ChallengeResponseAuthentication no
+
+# Kerberos options
+#KerberosAuthentication no
+#KerberosOrLocalPasswd yes
+#KerberosTicketCleanup yes
+#KerberosGetAFSToken no
+
+# GSSAPI options
+#GSSAPIAuthentication no
+#GSSAPICleanupCredentials yes
+#GSSAPIStrictAcceptorCheck yes
+#GSSAPIKeyExchange no
+
+# Set this to 'yes' to enable PAM authentication, account processing,
+# and session processing. If this is enabled, PAM authentication will
+# be allowed through the ChallengeResponseAuthentication and
+# PasswordAuthentication.  Depending on your PAM configuration,
+# PAM authentication via ChallengeResponseAuthentication may bypass
+# the setting of "PermitRootLogin without-password".
+# If you just want the PAM account and session checks to run without
+# PAM authentication, then enable this but set PasswordAuthentication
+# and ChallengeResponseAuthentication to 'no'.
+UsePAM yes
+
+#AllowAgentForwarding yes
+#AllowTcpForwarding yes
+#GatewayPorts no
+X11Forwarding yes
+#X11DisplayOffset 10
+#X11UseLocalhost yes
+#PermitTTY yes
+PrintMotd no
+#PrintLastLog yes
+#TCPKeepAlive yes
+#PermitUserEnvironment no
+#Compression delayed
+#ClientAliveInterval 0
+#ClientAliveCountMax 3
+#UseDNS no
+#PidFile /var/run/sshd.pid
+#MaxStartups 10:30:100
+#PermitTunnel no
+#ChrootDirectory none
+#VersionAddendum none
+
+# no default banner path
+#Banner none
+
+# Allow client to pass locale environment variables
+AcceptEnv LANG LC_*
+
+# override default of no subsystems
+Subsystem	sftp	/usr/lib/openssh/sftp-server
+
+# Example of overriding settings on a per-user basis
+#Match User anoncvs
+#	X11Forwarding no
+#	AllowTcpForwarding no
+#	PermitTTY no
+#	ForceCommand cvs server
+</output_code>
+  <markdown>Com este arquivo, podemos alterar a configuração de como o `SSH` funciona no nosso computador. Por exemplo, podemos ver uma linha comentada que diz
+
+``` bash
+#Porta 22
+```
+
+Se a descomentar e mudar o número `SSH`, deixará de usar a porta 22, que é sua porta padrão, e usará o número da porta especificada ali.
+</markdown>
+  <markdown>## Cópia de arquivos por `SSH`</markdown>
+  <markdown>Podemos copiar arquivos por `SSH` mediante o comando `scp` (cópia segura). Para isso, a sintaxe é
+
+``` bash
+scp &amp;ltcaminho arquivo local&amp;gt &amp;ltusuário&amp;gt@&amp;ltIP&amp;gt:&amp;ltcaminho para salvar&amp;gt
+```
+
+o
+
+``` bash
+scp &amp;ltuser&amp;gt@&amp;ltip&amp;gt:&amp;ltpath to remote file&amp;gt &amp;ltpath to save&amp;gt```
+
+Da primeira forma, copiamos um arquivo do nosso computador para outro e, da segunda, de outro para o nosso.
+</markdown>
+  <markdown>Por exemplo, vamos fazer um `ls` do `server1`</markdown>
+  <input_code>!ssh -t server1 "ls"</input_code>
+  <output_code>snap
+Connection to 194.62.99.222 closed.
+</output_code>
+  <markdown>Vamos ver agora o que temos localmente que possamos passar</markdown>
+  <input_code>!ls</input_code>
+  <output_code> 2021-02-11-Introduccion-a-Python.ipynb         html_files
+ 2021-04-23-Calculo-matricial-con-Numpy.ipynb   html.ipynb
+ 2021-06-15-Manejo-de-datos-con-Pandas.ipynb    introduccion_python
+ 2022-09-12-Introduccion-a-la-terminal.ipynb    mi_paquete_de_python
+ 2023-01-22-Docker.ipynb		        movies.csv
+ 2023-02-01-Bash-scripting.ipynb	        movies.dat
+ 2023-02-04-Blip-2.ipynb		        notebooks_translated
+ 2023-XX-XX-SSH.ipynb			        __pycache__
+ california_housing_train.csv		        scripts_bash
+ command-line-cheat-sheet.pdf		        ssh.ipynb
+ CSS.ipynb				        test.ipynb
+'Expresiones regulares.ipynb'
+</output_code>
+  <markdown>Vamos enviar ao servidor o arquivo `html.ipynb` já que ocupa pouco</markdown>
+  <input_code>!scp html.ipynb server1:/root/</input_code>
+  <output_code>html.ipynb                                    100%   14KB 229.0KB/s   00:00    
+</output_code>
+  <markdown>Voltamos a ver o que há dentro de `server1`</markdown>
+  <input_code>!ssh -t server1 "ls"</input_code>
+  <output_code>html.ipynb  snap
+Connection to 194.62.99.222 closed.
+</output_code>
+  <markdown>Foi copiado</markdown>
+  <markdown>## Sincronização de arquivos por `SSH`</markdown>
+  <markdown>O problema do comando `scp` é que, se algo der errado durante a cópia e o arquivo não for completamente transferido, ao tentar novamente será necessário começar do zero. Isso é especialmente problemático com arquivos muito grandes.</markdown>
+  <markdown>Para resolver isso, pode-se usar o `rsync`, a sintaxe é
+
+``` bash
+rsync --partial --progress --rsh=ssh &lt;caminho arquivo local&gt; &lt;usuário&gt;@&lt;IP&gt;:&lt;caminho para salvar&gt;
+```
+
+o
+
+``` bash
+rsync --partial --progress --rsh=ssh &lt;user&gt;@&lt;ip&gt;:&lt;caminho para o arquivo remoto&gt; &lt;caminho para salvar&gt;```
+
+Assim como antes, da primeira forma copia um arquivo do nosso computador para outro e a segunda de outro para o nosso. A flag `--partial` é para indicar que arquivos parcialmente copiados devem ser salvos, ou seja, se a cópia for interrompida antes de terminar, o que já foi copiado será mantido. A flag `--progress` é para indicar que deve mostrar o progresso da cópia. A flag `--rsh=ssh` é para indicar que a transferência de arquivos deve ser feita por `SSH`.
+</markdown>
+  <markdown>Passamos um arquivo</markdown>
+  <input_code>!rsync --partial --progress -rsh=ssh 2021-06-15-Manejo-de-datos-con-Pandas.ipynb  server1:/root/</input_code>
+  <output_code>sending incremental file list
+2021-06-15-Manejo-de-datos-con-Pandas.ipynb
+        608.34K 100%  197.78MB/s    0:00:00 (xfr#1, to-chk=0/1)
+</output_code>
+  <markdown>E vemos se foi copiado</markdown>
+  <input_code>!ssh -t server1 "ls"</input_code>
+  <output_code>2021-06-15-Manejo-de-datos-con-Pandas.ipynb  html.ipynb  snap
+Connection to 194.62.99.222 closed.
+</output_code>
+  <markdown>## Montar pastas remotas localmente</markdown>
+  <markdown>No caso de quisermos ter uma pasta de outra máquina como se estivesse no nosso computador, temos que usar `sshfs`.
+
+Primeiro é necessário instalá-lo por meio de
+
+``` bash
+sudo apt install sshfs
+```
+
+E uma vez instalado, é usado com a sintaxe
+
+``` bash
+sshfs &amp;ltuser&amp;gt@&amp;ltip&amp;gt:&amp;ltcaminho remoto&amp;gt &amp;ltcaminho local para montar&amp;gt
+```
+</markdown>
+  <markdown>Vamos a montar a pasta `/root` do `server1`, mas para isso primeiro vamos criar uma pasta onde ela será montada.</markdown>
+  <input_code>!mkdir server1folder</input_code>
+  <markdown>Vemos que, dentro da pasta que montamos, não há nada</markdown>
+  <input_code>!ls server1folder</input_code>
+  <markdown>Agora montamos a pasta do servidor</markdown>
+  <input_code>!!sshfs server1:/root/ server1folder</input_code>
+  <markdown>Voltamos a ver o que há dentro</markdown>
+  <input_code>!ls server1folder</input_code>
+  <output_code>2021-06-15-Manejo-de-datos-con-Pandas.ipynb  html.ipynb  snap
+</output_code>
+  <markdown>Quando já não quisermos ter a pasta montada, podemos desmontá-la através de `fusermount -u server1folder`</markdown>
+  <input_code>!!fusermount -u server1folder</input_code>
+  <markdown>Voltamos a olhar o que há dentro para ver se não há nada</markdown>
+  <input_code>!ls server1folder</input_code>
+  <markdown>## Depurar a conexão `SSH`</markdown>
+  <markdown>Podemos depurar a conexão `SSH` adicionando de `-v` até `-vvvv` à conexão, quanto mais `v`s colocarmos, maior será o nível de informação.</markdown>
+  <input_code>!ssh -v server1</input_code>
+  <output_code>OpenSSH_8.2p1 Ubuntu-4ubuntu0.5, OpenSSL 1.1.1f  31 Mar 2020
+debug1: Reading configuration data /home/wallabot/.ssh/config
+debug1: /home/wallabot/.ssh/config line 6: Applying options for server1
+debug1: Reading configuration data /etc/ssh/ssh_config
+debug1: /etc/ssh/ssh_config line 19: include /etc/ssh/ssh_config.d/*.conf matched no files
+debug1: /etc/ssh/ssh_config line 21: Applying options for *
+debug1: Connecting to 194.62.99.222 [194.62.99.222] port 22.
+debug1: Connection established.
+debug1: identity file /home/wallabot/.ssh/id_rsa type 0
+debug1: identity file /home/wallabot/.ssh/id_rsa-cert type -1
+debug1: identity file /home/wallabot/.ssh/id_dsa type -1
+debug1: identity file /home/wallabot/.ssh/id_dsa-cert type -1
+debug1: identity file /home/wallabot/.ssh/id_ecdsa type -1
+debug1: identity file /home/wallabot/.ssh/id_ecdsa-cert type -1
+debug1: identity file /home/wallabot/.ssh/id_ecdsa_sk type -1
+debug1: identity file /home/wallabot/.ssh/id_ecdsa_sk-cert type -1
+debug1: identity file /home/wallabot/.ssh/id_ed25519 type -1
+debug1: identity file /home/wallabot/.ssh/id_ed25519-cert type -1
+debug1: identity file /home/wallabot/.ssh/id_ed25519_sk type -1
+debug1: identity file /home/wallabot/.ssh/id_ed25519_sk-cert type -1
+debug1: identity file /home/wallabot/.ssh/id_xmss type -1
+debug1: identity file /home/wallabot/.ssh/id_xmss-cert type -1
+debug1: Local version string SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.5
+debug1: Remote protocol version 2.0, remote software version OpenSSH_8.9p1 Ubuntu-3
+debug1: match: OpenSSH_8.9p1 Ubuntu-3 pat OpenSSH* compat 0x04000000
+debug1: Authenticating to 194.62.99.222:22 as 'root'
+debug1: SSH2_MSG_KEXINIT sent
+debug1: SSH2_MSG_KEXINIT received
+debug1: kex: algorithm: curve25519-sha256
+debug1: kex: host key algorithm: ecdsa-sha2-nistp256
+debug1: kex: server-&gt;client cipher: chacha20-poly1305@openssh.com MAC: &lt;implicit&gt; compression: none
+debug1: kex: client-&gt;server cipher: chacha20-poly1305@openssh.com MAC: &lt;implicit&gt; compression: none
+debug1: expecting SSH2_MSG_KEX_ECDH_REPLY
+debug1: Server host key: ecdsa-sha2-nistp256 SHA256:jwpQt2a69LQcuvvYPPKL32bBwTi1Je/ZmUdr4zEiD1Y
+debug1: Host '194.62.99.222' is known and matches the ECDSA host key.
+debug1: Found key in /home/wallabot/.ssh/known_hosts:14
+debug1: rekey out after 134217728 blocks
+debug1: SSH2_MSG_NEWKEYS sent
+debug1: expecting SSH2_MSG_NEWKEYS
+debug1: SSH2_MSG_NEWKEYS received
+debug1: rekey in after 134217728 blocks
+debug1: Will attempt key: /home/wallabot/.ssh/id_rsa RSA SHA256:ID3HcrbyPBGjFx/qeiJK50eqihLGrpDVu02oRSyKGh4 agent
+debug1: Will attempt key: wallabot@wallabot RSA SHA256:Qlq6hXbToInW+efEK666BFT26EeUSpBhzcqxTLrDBpQ agent
+debug1: Will attempt key: /home/wallabot/.ssh/id_dsa 
+debug1: Will attempt key: /home/wallabot/.ssh/id_ecdsa 
+debug1: Will attempt key: /home/wallabot/.ssh/id_ecdsa_sk 
+debug1: Will attempt key: /home/wallabot/.ssh/id_ed25519 
+debug1: Will attempt key: /home/wallabot/.ssh/id_ed25519_sk 
+debug1: Will attempt key: /home/wallabot/.ssh/id_xmss 
+debug1: SSH2_MSG_EXT_INFO received
+debug1: kex_input_ext_info: server-sig-algs=&lt;ssh-ed25519,sk-ssh-ed25519@openssh.com,ssh-rsa,rsa-sha2-256,rsa-sha2-512,ssh-dss,ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,sk-ecdsa-sha2-nistp256@openssh.com,webauthn-sk-ecdsa-sha2-nistp256@openssh.com&gt;
+debug1: kex_input_ext_info: publickey-hostbound@openssh.com (unrecognised)
+debug1: SSH2_MSG_SERVICE_ACCEPT received
+debug1: Authentications that can continue: publickey
+debug1: Next authentication method: publickey
+debug1: Offering public key: /home/wallabot/.ssh/id_rsa RSA SHA256:ID3HcrbyPBGjFx/qeiJK50eqihLGrpDVu02oRSyKGh4 agent
+debug1: Authentications that can continue: publickey
+debug1: Offering public key: wallabot@wallabot RSA SHA256:Qlq6hXbToInW+efEK666BFT26EeUSpBhzcqxTLrDBpQ agent
+debug1: Server accepts key: wallabot@wallabot RSA SHA256:Qlq6hXbToInW+efEK666BFT26EeUSpBhzcqxTLrDBpQ agent
+debug1: Authentication succeeded (publickey).
+Authenticated to 194.62.99.222 ([194.62.99.222]:22).
+debug1: channel 0: new [client-session]
+debug1: Requesting no-more-sessions@openssh.com
+debug1: Entering interactive session.
+debug1: pledge: network
+debug1: client_input_global_request: rtype hostkeys-00@openssh.com want_reply 0
+debug1: Remote: /root/.ssh/authorized_keys:1: key options: agent-forwarding port-forwarding pty user-rc x11-forwarding
+debug1: Remote: /root/.ssh/authorized_keys:1: key options: agent-forwarding port-forwarding pty user-rc x11-forwarding
+debug1: Sending environment.
+debug1: Sending env LANG = es_ES.UTF-8
+Welcome to Ubuntu 22.04.1 LTS (GNU/Linux 5.15.0-60-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+  System information as of Fri Feb 24 01:25:10 PM UTC 2023
+
+  System load:           0.0
+  Usage of /:            15.2% of 24.53GB
+  Memory usage:          34%
+  Swap usage:            0%
+  Processes:             89
+  Users logged in:       0
+  IPv4 address for eth0: 194.62.99.222
+  IPv4 address for eth1: 10.7.0.168
+  IPv6 address for eth2: 2a04:3542:8000:1000:d48a:cbff:fefb:5b1
+
+ * Strictly confined Kubernetes makes edge and IoT secure. Learn how MicroK8s
+   just raised the bar for easy, resilient and secure K8s cluster deployment.
+
+   https://ubuntu.com/engage/secure-kubernetes-at-the-edge
+
+43 updates can be applied immediately.
+To see these additional updates run: apt list --upgradable
+
+
+Last login: Fri Feb 24 13:10:05 2023 from 188.127.184.59
+[?2004h]0;root@server1: ~[01;32mroot@server1[00m:[01;34m~[00m# ^C[?2004l
+[?2004l
+[?2004h]0;root@server1: ~[01;32mroot@server1[00m:[01;34m~[00m# </output_code>
+</notebook>

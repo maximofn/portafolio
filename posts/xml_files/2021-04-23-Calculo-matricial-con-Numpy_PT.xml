@@ -1,0 +1,1250 @@
+<?xml version='1.0' encoding='utf-8'?>
+<notebook>
+  <markdown># Cálculo matricial com NumPy</markdown>
+  <markdown> &gt; Aviso: Este post foi traduzido para o português usando um modelo de tradução automática. Por favor, me avise se encontrar algum erro.</markdown>
+  <markdown>## 1. Resumo</markdown>
+  <markdown>Vamos ver uma pequena introdução à biblioteca de cálculo matricial `NumPy`. Esta biblioteca está projetada para todo tipo de cálculo matricial, então vamos nos concentrar apenas na parte que será útil para entender os cálculos dentro das redes neurais, deixando de lado coisas interessantes como o uso da biblioteca para a álgebra linear.
+
+
+&lt;p align="center"&gt;
+&lt;img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/numpy-icon.webp"&gt;
+&lt;/p&gt;</markdown>
+  <markdown>## 2. O que é o NumPy?</markdown>
+  <markdown>NumPy é uma biblioteca de Python projetada para realizar cálculos matriciais. O cálculo matricial é algo que se utiliza muito na ciência em geral e na ciência de dados em particular, por isso é necessário ter uma biblioteca que faça isso muito bem.</markdown>
+  <markdown>Seu nome significa Numerical Python</markdown>
+  <markdown>Seu objeto principal é o `ndarray`, que encapsula matrizes de dimensão `n` de tipos de dados homogêneos, ao contrário das listas do Python, que podem ter dados de diferentes tipos.</markdown>
+  <markdown>NumPy tem como objetivo realizar o cálculo matricial muito mais rápido do que com as listas do Python, mas como isso é possível?
+
+*   NumPy utiliza código compilado, enquanto Python utiliza código interpretado. A diferença é que Python no momento da execução tem que interpretar, compilar e executar o código, enquanto NumPy já está compilado, portanto, executa mais rápido
+*   Os `ndarray`s têm um tamanho fixo, ao contrário das listas do Python que são dinâmicas. Se no NumPy quiser modificar o tamanho de uma matriz, será criada uma nova e a antiga será eliminada.
+*   Todos os elementos dos `ndarray`s são do mesmo tipo de dado, ao contrário das listas de Python que podem ter elementos de diferentes tipos
+*   Parte do código do NumPy está escrita em C/C++ (muito mais rápida que Python)
+*   Os dados das matrizes são armazenados na memória de maneira contínua, ao contrário das listas do Python, o que faz com que seja muito mais rápido manipulá-los</markdown>
+  <markdown>NumPy oferece a facilidade de usar código simples de escrever e de ler, mas que está escrito e pré-compilado em C, o que o torna muito mais rápido.
+ 
+Suponhamos que queremos multiplicar dois vetores, isso seria feito em C da seguinte maneira:
+ 
+```c
+for (i = 0; i &lt; rows; i++): {
+  for (j = 0; j &lt; columns; j++): {
+    c[i][j] = a[i][j]*b[i][j];
+  }
+}
+```
+ 
+NumPy oferece a possibilidade de executar este código por baixo, mas de uma maneira muito mais fácil de escrever e de entender através de
+ 
+```python
+c = a * b
+```</markdown>
+  <markdown>NumPy oferece código vetorizado, o que significa não ter que escrever laços, mas que, no entanto, estão sendo executados em segundo plano em código C otimizado e pré-compilado. Isso tem as seguintes vantagens:
+
+*   O código é mais fácil de escrever e ler
+*   Como são necessárias menos linhas de código, há menor probabilidade de introduzir erros
+*   O código se assemelha mais à notação matemática</markdown>
+  <markdown>### 2.1. NumPy como `np`</markdown>
+  <markdown>Geralmente na hora de importar NumPy costuma-se importá-lo com o alias de `np`</markdown>
+  <input_code>import numpy as np
+
+print(np.__version__)</input_code>
+  <output_code>1.18.1
+</output_code>
+  <markdown>## 3. Velocidade do NumPy</markdown>
+  <markdown>Como foi explicado, o NumPy realiza o cálculo muito mais rápido do que as listas do Python. Vamos ver um exemplo no qual é realizado o produto escalar de duas matrizes, usando listas do Python e usando `ndarray`s.</markdown>
+  <input_code>from time import time
+ 
+# Dimensión de las matrices
+dim = 1000
+shape = (dim, dim)
+ 
+# Se crean dos ndarrays de NumPy de dimensión dim x dim
+ndarray_a = np.ones(shape=shape)
+ndarray_b = np.ones(shape=shape)
+ 
+# Se crean dos listas de Python de dimensión dim x dim a partir de los ndarrays
+list_a = list(ndarray_a)
+list_b = list(ndarray_b)
+ 
+# Se crean el ndarray y la lista de Python donde se guardarán los resultados
+ndarray_c = np.empty(shape=shape)
+list_c = list(ndarray_c)
+ 
+# Producto escalar de dos listas de python
+t0 = time()
+for fila in range(dim):
+  for columna in range(dim):
+    list_c[fila][columna] = list_a[fila][columna] * list_b[fila][columna]
+t = time()
+t_listas = t-t0
+print(f"Tiempo para realizar el producto escalar de dos listas de Python de dimensiones {dim}x{dim}: {t_listas:.4f} ms")
+ 
+ 
+# Producto escalar de dos ndarrays de NumPy
+t0 = time()
+ndarray_c = ndarray_a * ndarray_b
+t = time()
+t_ndarrays = t-t0
+print(f"Tiempo para realizar el producto escalar de dos ndarrays de NumPy de dimensiones {dim}x{dim}: {t_ndarrays:.4f} ms")
+ 
+# Comparación de tiempos
+print(f"\nHacer el cálculo con listas de Python tarda {t_listas/t_ndarrays:.2f} veces más rápido que con ndarrays de NumPy")</input_code>
+  <output_code>Tiempo para realizar el producto escalar de dos listas de Python de dimensiones 1000x1000: 0.5234 ms
+Tiempo para realizar el producto escalar de dos ndarrays de NumPy de dimensiones 1000x1000: 0.0017 ms
+
+Hacer el cálculo con listas de Python tarda 316.66 veces más rápido que con ndarrays de NumPy
+</output_code>
+  <markdown>## 4. Matrizes em NumPy</markdown>
+  <markdown>Em NumPy, uma matriz é um objeto `ndarray`.</markdown>
+  <input_code>arr = np.array([1, 2, 3, 4, 5])
+
+print(arr)
+print(type(arr))</input_code>
+  <output_code>[1 2 3 4 5]
+&lt;class 'numpy.ndarray'&gt;
+</output_code>
+  <markdown>### 4.1. Como criar matrizes</markdown>
+  <markdown>Com o método `array()` é possível criar `ndarray`s inserindo listas do Python (como no exemplo anterior) ou tuplas</markdown>
+  <input_code>arr = np.array((1, 2, 3, 4, 5))
+
+print(arr)
+print(type(arr))</input_code>
+  <output_code>[1 2 3 4 5]
+&lt;class 'numpy.ndarray'&gt;
+</output_code>
+  <markdown>Com o método `zeros()` é possível criar matrizes cheias de zeros</markdown>
+  <input_code>arr = np.zeros((3, 4))
+
+print(arr)</input_code>
+  <output_code>[[0. 0. 0. 0.]
+ [0. 0. 0. 0.]
+ [0. 0. 0. 0.]]
+</output_code>
+  <markdown>O método `zeros_like(A)` retorna uma matriz com a mesma forma da matriz A, mas preenchida com zeros.</markdown>
+  <input_code>A = np.array((1, 2, 3, 4, 5))
+arr = np.zeros_like(A)
+
+print(arr)</input_code>
+  <output_code>[0 0 0 0 0]
+</output_code>
+  <markdown>Com o método `ones()` é possível criar matrizes cheias de uns</markdown>
+  <input_code>arr = np.ones((4, 3))
+
+print(arr)</input_code>
+  <output_code>[[1. 1. 1.]
+ [1. 1. 1.]
+ [1. 1. 1.]
+ [1. 1. 1.]]
+</output_code>
+  <markdown>O método `ones_like(A)` retorna uma matriz com a mesma forma da matriz A, mas preenchida com uns.</markdown>
+  <input_code>A = np.array((1, 2, 3, 4, 5))
+arr = np.ones_like(A)
+
+print(arr)</input_code>
+  <output_code>[1 1 1 1 1]
+</output_code>
+  <markdown>Com o método `empty()` podemos criar matrizes com as dimensões que desejarmos, mas inicializadas aleatoriamente.</markdown>
+  <input_code>arr = np.empty((6, 3))
+
+print(arr)</input_code>
+  <output_code>[[4.66169180e-310 2.35541533e-312 2.41907520e-312]
+ [2.14321575e-312 2.46151512e-312 2.31297541e-312]
+ [2.35541533e-312 2.05833592e-312 2.22809558e-312]
+ [2.56761491e-312 2.48273508e-312 2.05833592e-312]
+ [2.05833592e-312 2.29175545e-312 2.07955588e-312]
+ [2.14321575e-312 0.00000000e+000 0.00000000e+000]]
+</output_code>
+  <markdown>O método `empty_like(A)` retorna uma matriz com a mesma forma da matriz A, mas inicializada aleatoriamente.</markdown>
+  <input_code>A = np.array((1, 2, 3, 4, 5))
+arr = np.empty_like(A)
+
+print(arr)</input_code>
+  <output_code>[4607182418800017408 4611686018427387904 4613937818241073152
+ 4616189618054758400 4617315517961601024]
+</output_code>
+  <markdown>Com o método `arange(start, stop, step)` é possível criar matrizes em um intervalo determinado. Este método é semelhante ao método `range()` do Python.</markdown>
+  <input_code>arr = np.arange(10, 30, 5)
+
+print(arr)</input_code>
+  <output_code>[10 15 20 25]
+</output_code>
+  <markdown>Quando `arange` é usado com argumentos de ponto flutuante, geralmente não é possível prever o número de elementos obtidos, devido à precisão de ponto flutuante ser finita.
+
+Por esse motivo, é geralmente melhor usar a função `linspace(start, stop, n)` que recebe como argumento a quantidade de elementos que desejamos, em vez do passo.</markdown>
+  <input_code>arr = np.linspace(0, 2, 9)
+ 
+print(arr)</input_code>
+  <output_code>[0.   0.25 0.5  0.75 1.   1.25 1.5  1.75 2.  ]
+</output_code>
+  <markdown>Por último, se quisermos criar matrizes com números aleatórios, podemos usar a função `random.rand` com uma tupla com as dimensões como parâmetro.</markdown>
+  <input_code>arr = np.random.rand(2, 3)
+
+print(arr)</input_code>
+  <output_code>[[0.32726085 0.65571767 0.73126697]
+ [0.91938206 0.9862451  0.95033649]]
+</output_code>
+  <markdown>### 4.2. Dimensões das matrizes</markdown>
+  <markdown>Em NumPy podemos criar matrizes de qualquer dimensão. Para obter a dimensão de um array usamos o método `ndim`</markdown>
+  <markdown>Matriz de dimensão 0, o que equivaleria a um número</markdown>
+  <input_code>arr = np.array(42)
+
+print(arr)
+print(arr.ndim)</input_code>
+  <output_code>42
+0
+</output_code>
+  <markdown>Matriz de dimensão 1, o que equivaleria a um vetor</markdown>
+  <input_code>arr = np.array([1, 2, 3, 4, 5])
+
+print(arr)
+print(arr.ndim)</input_code>
+  <output_code>[1 2 3 4 5]
+1
+</output_code>
+  <markdown>Matriz de dimensão 2, o que equivaleria a uma matriz</markdown>
+  <input_code>arr = np.array([[1, 2, 3, 4, 5], 
+                [6, 7, 8, 9, 10]])
+
+print(arr)
+print(arr.ndim)</input_code>
+  <output_code>[[ 1  2  3  4  5]
+ [ 6  7  8  9 10]]
+2
+</output_code>
+  <markdown>Matriz de dimensão 3</markdown>
+  <input_code>arr = np.array([
+                [[1, 2, 3, 4, 5], 
+                [6, 7, 8, 9, 10]],
+                
+                [[11, 12, 13, 14, 15], 
+                [16, 17, 18, 19, 20]]
+                ])
+
+print(arr)
+print(arr.ndim)</input_code>
+  <output_code>[[[ 1  2  3  4  5]
+  [ 6  7  8  9 10]]
+
+ [[11 12 13 14 15]
+  [16 17 18 19 20]]]
+3
+</output_code>
+  <markdown>Matriz de dimensão N. Na hora de criar `ndarray`s, pode-se estabelecer o número de dimensões por meio do parâmetro `ndim`.</markdown>
+  <input_code>arr = np.array([1, 2, 3, 4, 5], ndmin=6)
+
+print(arr)
+print(arr.ndim)</input_code>
+  <output_code>[[[[[[1 2 3 4 5]]]]]]
+6
+</output_code>
+  <markdown>### 4.3. Tamanho das matrizes</markdown>
+  <markdown>Se quisermos ver o tamanho da matriz em vez de sua dimensão, podemos usar o método `shape`</markdown>
+  <input_code>arr = np.array([
+                [[1, 2, 3, 4, 5], 
+                [6, 7, 8, 9, 10]],
+                
+                [[11, 12, 13, 14, 15], 
+                [16, 17, 18, 19, 20]]
+                ])
+
+print(arr.shape)</input_code>
+  <output_code>(2, 2, 5)
+</output_code>
+  <markdown>## 5. Tipo de dados</markdown>
+  <markdown>Os dados que as matrizes do NumPy podem armazenar são os seguintes:
+
+
+*   `i` - inteiro
+*   `b` - booleano
+*   `u` - inteiro sem sinal
+*   `f` - flutuante
+*   `c` - Complexo de ponto flutuante
+*   `m` - Timedelta
+*   `M` - DataHora
+*   `O` - Objeto
+*   `S` - string
+*   `U` - String de Unicode
+*   `V` - Fragmento de memória fixo para outro tipo (void)</markdown>
+  <markdown>Podemos verificar o tipo de dados de uma matriz usando `dtype`</markdown>
+  <input_code>arr = np.array([1, 2, 3, 4])
+print(arr.dtype)
+
+arr = np.array(['apple', 'banana', 'cherry'])
+print(arr.dtype)</input_code>
+  <output_code>int64
+&lt;U6
+</output_code>
+  <markdown>Também podemos criar matrizes indicando o tipo de dado que queremos que tenha através de `dtype`</markdown>
+  <input_code>arr = np.array([1, 2, 3, 4], dtype='i')
+print("Enteros:")
+print(arr)
+print(arr.dtype)
+ 
+arr = np.array([1, 2, 3, 4], dtype='f')
+print("\nFloat:")
+print(arr)
+print(arr.dtype)
+ 
+arr = np.array([1, 2, 3, 4], dtype='f')
+print("\nComplejos:")
+print(arr)
+print(arr.dtype)
+ 
+arr = np.array([1, 2, 3, 4], dtype='S')
+print("\nString:")
+print(arr)
+print(arr.dtype)
+ 
+arr = np.array([1, 2, 3, 4], dtype='U')
+print("\nUnicode string:")
+print(arr)
+print(arr.dtype)
+ 
+arr = np.array([1, 2, 3, 4], dtype='O')
+print("\nObjeto:")
+print(arr)
+print(arr.dtype)</input_code>
+  <output_code>Enteros:
+[1 2 3 4]
+int32
+
+Float:
+[1. 2. 3. 4.]
+float32
+
+Complejos:
+[1. 2. 3. 4.]
+float32
+
+String:
+[b'1' b'2' b'3' b'4']
+|S1
+
+Unicode string:
+['1' '2' '3' '4']
+&lt;U1
+
+Objeto:
+[1 2 3 4]
+object
+</output_code>
+  <markdown>## 6. Operações matemáticas</markdown>
+  <markdown>### 6.1. Operações básicas</markdown>
+  <markdown>As operações matriciais são realizadas elemento a elemento, por exemplo, se somarmos duas matrizes, serão somados os elementos de cada matriz na mesma posição, assim como é feito na soma matemática de duas matrizes.</markdown>
+  <input_code>A = np.array([1, 2, 3])
+B = np.array([1, 2, 3])
+
+print(f"Matriz A: tamaño {A.shape}\n{A}\n")
+print(f"Matriz B: tamaño {B.shape}\n{B}\n")
+
+C = A + B
+print(f"Matriz C: tamaño {C.shape}\n{C}\n")
+
+D = A - B
+print(f"Matriz D: tamaño {D.shape}\n{D}")</input_code>
+  <output_code>Matriz A: tamaño (3,)
+[1 2 3]
+
+Matriz B: tamaño (3,)
+[1 2 3]
+
+Matriz C: tamaño (3,)
+[2 4 6]
+
+Matriz D: tamaño (3,)
+[0 0 0]
+</output_code>
+  <markdown>No entanto, se fizermos a multiplicação de duas matrizes, também é feita a multiplicação de cada elemento das matrizes (produto escalar).</markdown>
+  <input_code>A = np.array([[3, 5], [4, 1]])
+B = np.array([[1, 2], [-3, 0]])
+ 
+print(f"Matriz A: tamaño {A.shape}\n{A}\n")
+print(f"Matriz B: tamaño {B.shape}\n{B}\n")
+ 
+C = A * B
+print(f"Matriz C: tamaño {C.shape}\n{C}\n")</input_code>
+  <output_code>Matriz A: tamaño (2, 2)
+[[3 5]
+ [4 1]]
+
+Matriz B: tamaño (2, 2)
+[[ 1  2]
+ [-3  0]]
+
+Matriz C: tamaño (2, 2)
+[[  3  10]
+ [-12   0]]
+
+</output_code>
+  <markdown>Para fazer o produto matricial que tem sido ensinado em matemática há toda a vida, é necessário usar o operador `@` ou o método `dot`.</markdown>
+  <input_code>A = np.array([[3, 5], [4, 1], [6, -1]])
+B = np.array([[1, 2, 3], [-3, 0, 4]])
+
+print(f"Matriz A: tamaño {A.shape}\n{A}\n")
+print(f"Matriz B: tamaño {B.shape}\n{B}\n")
+
+C = A @ B
+print(f"Matriz C: tamaño {C.shape}\n{C}\n")
+
+D = A.dot(B)
+print(f"Matriz D: tamaño {D.shape}\n{D}")</input_code>
+  <output_code>Matriz A: tamaño (3, 2)
+[[ 3  5]
+ [ 4  1]
+ [ 6 -1]]
+
+Matriz B: tamaño (2, 3)
+[[ 1  2  3]
+ [-3  0  4]]
+
+Matriz C: tamaño (3, 3)
+[[-12   6  29]
+ [  1   8  16]
+ [  9  12  14]]
+
+Matriz D: tamaño (3, 3)
+[[-12   6  29]
+ [  1   8  16]
+ [  9  12  14]]
+</output_code>
+  <markdown>Se quisermos modificar uma matriz existente em vez de criar uma nova, podemos usar os operadores `+=`, `-=` ou `*=`.</markdown>
+  <input_code>A = np.array([[3, 5], [4, 1]])
+B = np.array([[1, 2], [-3, 0]])
+
+print(f"Matriz A: tamaño {A.shape}\n{A}\n")
+print(f"Matriz B: tamaño {B.shape}\n{B}\n")
+
+A += B
+print(f"Matriz A tras suma: tamaño {A.shape}\n{A}\n")
+
+A -= B
+print(f"Matriz A tras resta: tamaño {A.shape}\n{A}\n")
+
+A *= B
+print(f"Matriz A tras multiplicación: tamaño {A.shape}\n{A}\n")</input_code>
+  <output_code>Matriz A: tamaño (2, 2)
+[[3 5]
+ [4 1]]
+
+Matriz B: tamaño (2, 2)
+[[ 1  2]
+ [-3  0]]
+
+Matriz A tras suma: tamaño (2, 2)
+[[4 7]
+ [1 1]]
+
+Matriz A tras resta: tamaño (2, 2)
+[[3 5]
+ [4 1]]
+
+Matriz A tras multiplicación: tamaño (2, 2)
+[[  3  10]
+ [-12   0]]
+
+</output_code>
+  <markdown>Operações podem ser realizadas em todos os elementos de uma matriz, isso é possível graças a uma propriedade chamada `broadcasting` que veremos com mais detalhes posteriormente.</markdown>
+  <input_code>A = np.array([[3, 5], [4, 1]])
+ 
+print(f"Matriz A: tamaño {A.shape}\n{A}\n")
+ 
+B = A * 2
+print(f"Matriz B: tamaño {B.shape}\n{B}\n")
+ 
+C = A ** 2
+print(f"Matriz C: tamaño {C.shape}\n{C}\n")
+ 
+D = 2*np.sin(A)
+print(f"Matriz D: tamaño {D.shape}\n{D}")</input_code>
+  <output_code>Matriz A: tamaño (2, 2)
+[[3 5]
+ [4 1]]
+
+Matriz B: tamaño (2, 2)
+[[ 6 10]
+ [ 8  2]]
+
+Matriz C: tamaño (2, 2)
+[[ 9 25]
+ [16  1]]
+
+Matriz D: tamaño (2, 2)
+[[ 0.28224002 -1.91784855]
+ [-1.51360499  1.68294197]]
+</output_code>
+  <markdown>### 6.2. Funções sobre matrizes</markdown>
+  <markdown>Como pode ser visto no último cálculo, NumPy oferece operadores de funções sobre matrizes, há uma infinidade de [funções](https://numpy.org/doc/stable/reference/routines.html) que podem ser realizadas sobre matrizes, matemáticas, lógicas, de álgebra linear, etc. A seguir mostramos algumas</markdown>
+  <input_code>A = np.array([[3, 5], [4, 1]])
+
+print(f"A\n{A}\n")
+
+print(f"exp(A)\n{np.exp(A)}\n")
+print(f"sqrt(A)\n{np.sqrt(A)}\n")
+print(f"cos(A)\n{np.cos(A)}\n")</input_code>
+  <output_code>A
+[[3 5]
+ [4 1]]
+
+exp(A)
+[[ 20.08553692 148.4131591 ]
+ [ 54.59815003   2.71828183]]
+
+sqrt(A)
+[[1.73205081 2.23606798]
+ [2.         1.        ]]
+
+cos(A)
+[[-0.9899925   0.28366219]
+ [-0.65364362  0.54030231]]
+
+</output_code>
+  <markdown>Há algumas funções que retornam informações das matrizes, como a média</markdown>
+  <input_code>A = np.array([[3, 5], [4, 1]])
+
+print(f"A\n{A}\n")
+
+print(f"A.mean()\n{A.mean()}\n")</input_code>
+  <output_code>A
+[[3 5]
+ [4 1]]
+
+A.mean()
+3.25
+
+</output_code>
+  <markdown>No entanto, podemos obter tais informações de cada eixo por meio do atributo `axis`. Se for 0, é feito em cada coluna; enquanto se for 1, é feito em cada linha.</markdown>
+  <input_code>A = np.array([[3, 5], [4, 1]])
+ 
+print(f"A\n{A}\n")
+ 
+print(f"A.mean() columnas\n{A.mean(axis=0)}\n")
+print(f"A.mean() filas\n{A.mean(axis=1)}\n")</input_code>
+  <output_code>A
+[[3 5]
+ [4 1]]
+
+A.mean() columnas
+[3.5 3. ]
+
+A.mean() filas
+[4.  2.5]
+
+</output_code>
+  <markdown>### 6.3. Transmissão</markdown>
+  <markdown>Operações matriciais podem ser realizadas com matrizes de diferentes dimensões. Neste caso, o NumPy detectará isso e fará uma projeção da menor matriz até igualá-la à maior.
+
+![numpy_broadcasting](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/numpy_broadcasting.webp)
+
+Esta é uma grande qualidade do NumPy, que permite realizar cálculos em matrizes sem ter que se preocupar com a correspondência das dimensões dessas matrizes.</markdown>
+  <input_code>A = np.array([1, 2, 3])
+
+print(f"A\n{A}\n")
+
+B = A + 5
+
+print(f"B\n{B}\n")</input_code>
+  <output_code>A
+[1 2 3]
+
+B
+[6 7 8]
+
+</output_code>
+  <input_code>A = np.array([1, 2, 3])
+B = np.ones((3,3))
+
+print(f"A\n{A}\n")
+print(f"B\n{B}\n")
+
+C = A + B
+
+print(f"C\n{C}\n")</input_code>
+  <output_code>A
+[1 2 3]
+
+B
+[[1. 1. 1.]
+ [1. 1. 1.]
+ [1. 1. 1.]]
+
+C
+[[2. 3. 4.]
+ [2. 3. 4.]
+ [2. 3. 4.]]
+
+</output_code>
+  <input_code>A = np.array([1, 2, 3])
+B = np.array([[1], [2], [3]])
+ 
+print(f"A\n{A}\n")
+print(f"B\n{B}\n")
+ 
+C = A + B
+ 
+print(f"C\n{C}\n")</input_code>
+  <output_code>A
+[1 2 3]
+
+B
+[[1]
+ [2]
+ [3]]
+
+C
+[[2 3 4]
+ [3 4 5]
+ [4 5 6]]
+
+</output_code>
+  <markdown>## 7. Indexação de matrizes</markdown>
+  <markdown>O indexação de matrizes é feita da mesma forma que com as listas do Python</markdown>
+  <input_code>arr = np.array([1, 2, 3, 4, 5])
+arr[3]</input_code>
+  <output_code>4</output_code>
+  <markdown>No caso de ter mais de uma dimensão, deve-se indicar o índice em cada uma delas</markdown>
+  <input_code>arr = np.array([[1, 2, 3, 4, 5], 
+                [6, 7, 8, 9, 10]])
+arr[1, 2]</input_code>
+  <output_code>8</output_code>
+  <markdown>Pode-se usar a indexação negativa</markdown>
+  <input_code>arr[-1, -2]</input_code>
+  <output_code>9</output_code>
+  <markdown>Em caso de não indicar um dos eixos, considera-se que se quer o completo</markdown>
+  <input_code>arr = np.array([[1, 2, 3, 4, 5], 
+                [6, 7, 8, 9, 10]])
+arr[1]</input_code>
+  <output_code>array([ 6,  7,  8,  9, 10])</output_code>
+  <markdown>### 7.1. Fatias de matrizes</markdown>
+  <markdown>Na hora de indexar, podemos ficar com partes de matrizes da mesma forma que era feito com as listas do Python.
+
+Lembre-se de que era feito da seguinte maneira:
+
+`início:fim:passo`
+
+Onde o intervalo vai do `start` (inclusivo) até o `stop` (exclusivo) com um passo de `step`
+
+Se `step` não for indicado, por padrão é 1</markdown>
+  <markdown>Por exemplo, se quisermos itens da segunda linha e da segunda à quarta coluna:
+
+*   Selecionamos a segunda linha com um 1 (já que se começa a contar do 0)
+*   Selecionamos da segunda à quarta linha usando 1:4, onde o 1 indica a segunda coluna e o 4 indica a quinta (já que o segundo número indica a coluna em que se termina sem incluir essa coluna). Os dois números levando em conta que a contagem começa a partir de 0</markdown>
+  <input_code>print(arr)
+print(arr[1, 1:4])</input_code>
+  <output_code>[[ 1  2  3  4  5]
+ [ 6  7  8  9 10]]
+[7 8 9]
+</output_code>
+  <markdown>Podemos pegar desde uma posição até o final</markdown>
+  <input_code>arr[1, 2:]</input_code>
+  <output_code>array([ 8,  9, 10])</output_code>
+  <markdown>Desde o início até uma posição</markdown>
+  <input_code>arr[1, :3]</input_code>
+  <output_code>array([6, 7, 8])</output_code>
+  <markdown>Definir o intervalo com números negativos</markdown>
+  <input_code>arr[1, -3:-1]</input_code>
+  <output_code>array([8, 9])</output_code>
+  <markdown>Escolher o passo</markdown>
+  <input_code>arr[1, 1:4:2]</input_code>
+  <output_code>array([7, 9])</output_code>
+  <markdown>### 7.2. Iteração sobre matrizes</markdown>
+  <markdown>A iteração sobre matrizes multidimensionais é realizada em relação ao primeiro eixo</markdown>
+  <input_code>M = np.array( [[[  0,  1,  2],
+                [ 10, 12, 13]],
+               [[100,101,102],
+                [110,112,113]]])
+
+print(f'Matriz de dimensión: {M.shape}\n')
+
+i = 0
+for fila in M:
+  print(f'Fila {i}: {fila}')
+  i += 1</input_code>
+  <output_code>Matriz de dimensión: (2, 2, 3)
+
+Fila 0: [[ 0  1  2]
+ [10 12 13]]
+Fila 1: [[100 101 102]
+ [110 112 113]]
+</output_code>
+  <markdown>No entanto, se o que queremos é iterar por cada item, podemos usar o método 'flat'</markdown>
+  <input_code>i = 0
+for fila in M.flat:
+  print(f'Elemento {i}: {fila}')
+  i += 1</input_code>
+  <output_code>Elemento 0: 0
+Elemento 1: 1
+Elemento 2: 2
+Elemento 3: 10
+Elemento 4: 12
+Elemento 5: 13
+Elemento 6: 100
+Elemento 7: 101
+Elemento 8: 102
+Elemento 9: 110
+Elemento 10: 112
+Elemento 11: 113
+</output_code>
+  <markdown>## 8. Cópia de matrizes</markdown>
+  <markdown>Em NumPy temos duas maneiras de copiar arrays: através de `copy`, que realiza uma cópia nova do array, e através de `view`, que realiza uma visualização do array original.
+ 
+A cópia é proprietária dos dados e qualquer alteração realizada na cópia não afetará a matriz original, e qualquer alteração realizada na matriz original não afetará a cópia.
+ 
+A visualização não é proprietária dos dados e qualquer alteração realizada na cópia afetará a matriz original, e qualquer alteração realizada na matriz original afetará a cópia.</markdown>
+  <markdown>### 8.1. Cópia</markdown>
+  <input_code>arr = np.array([1, 2, 3, 4, 5])
+copy_arr = arr.copy()
+arr[0] = 42
+copy_arr[1] = 43
+ 
+print(f'Original: {arr}')
+print(f'Copia:    {copy_arr}')</input_code>
+  <output_code>Original: [42  2  3  4  5]
+Copia:    [ 1 43  3  4  5]
+</output_code>
+  <markdown>### 8.2. Visão</markdown>
+  <input_code>arr = np.array([1, 2, 3, 4, 5])
+view_arr = arr.view()
+arr[0] = 42
+view_arr[1] = 43
+ 
+print(f'Original: {arr}')
+print(f'Vista:    {view_arr}')</input_code>
+  <output_code>Original: [42 43  3  4  5]
+Vista:    [42 43  3  4  5]
+</output_code>
+  <markdown>### 8.3. Proprietário dos dados</markdown>
+  <markdown>Diante da dúvida se temos uma cópia ou uma visão, podemos usar `base`</markdown>
+  <input_code>arr = np.array([1, 2, 3, 4, 5])
+ 
+copy_arr = arr.copy()
+view_arr = arr.view()
+ 
+print(copy_arr.base)
+print(view_arr.base)</input_code>
+  <output_code>None
+[1 2 3 4 5]
+</output_code>
+  <markdown>## 9. Forma das matrizes</markdown>
+  <markdown>Podemos saber a forma que tem a matriz através do método `shape`. Este nos retornará uma tupla, o tamanho da tupla representa as dimensões da matriz, em cada elemento da tupla é indicado o número de itens em cada uma das dimensões da matriz.</markdown>
+  <input_code>arr = np.array([
+                [[1, 2, 3, 4, 5], 
+                [6, 7, 8, 9, 10]],
+                
+                [[11, 12, 13, 14, 15], 
+                [16, 17, 18, 19, 20]]
+                ])
+ 
+print(arr)
+print(arr.shape)</input_code>
+  <output_code>[[[ 1  2  3  4  5]
+  [ 6  7  8  9 10]]
+
+ [[11 12 13 14 15]
+  [16 17 18 19 20]]]
+(2, 2, 5)
+</output_code>
+  <markdown>### 9.1. Reshape</markdown>
+  <markdown>Podemos mudar a forma das matrizes para aquela que desejarmos através do método `reshape`.
+
+Por exemplo, a matriz anterior, que tem uma forma de `(2, 2, 4)`. Podemos passá-la para `(5, 4)`.</markdown>
+  <input_code>arr_reshape = arr.reshape(5, 4)
+
+print(arr_reshape)
+print(arr_reshape.shape)</input_code>
+  <output_code>[[ 1  2  3  4]
+ [ 5  6  7  8]
+ [ 9 10 11 12]
+ [13 14 15 16]
+ [17 18 19 20]]
+(5, 4)
+</output_code>
+  <markdown>Deve-se ter em conta que para redimensionar as matrizes, o número de itens da nova forma deve ser igual ao número de itens da primeira forma.
+
+Isto é, no exemplo anterior, a primeira matriz tinha 20 itens (2x2x4), e a nova matriz tem 20 itens (5x4). O que não podemos fazer é redimensioná-la para uma matriz de tamanho (3, 4), pois no total haveria 12 itens.</markdown>
+  <input_code>arr_reshape = arr.reshape(3, 4)</input_code>
+  <output_code>---------------------------------------------------------------------------ValueError                                Traceback (most recent call last)&lt;ipython-input-12-29e85875d1df&gt; in &lt;module&gt;()
+----&gt; 1 arr_reshape = arr.reshape(3, 4)
+ValueError: cannot reshape array of size 20 into shape (3,4)</output_code>
+  <markdown>### 9.2. Dimensão desconhecida</markdown>
+  <markdown>No caso de quisermos mudar a forma de uma matriz e uma das dimensões não importar ou desconhecermos, podemos fazer com que o NumPy a calcule para nós inserindo um `-1` como parâmetro.</markdown>
+  <input_code>arr = np.array([
+                [[1, 2, 3, 4, 5], 
+                [6, 7, 8, 9, 10]],
+                
+                [[11, 12, 13, 14, 15], 
+                [16, 17, 18, 19, 20]]
+                ])
+
+arr_reshape = arr.reshape(2, -1)
+
+print(arr_reshape)
+print(arr_reshape.shape)</input_code>
+  <output_code>[[ 1  2  3  4  5  6  7  8  9 10]
+ [11 12 13 14 15 16 17 18 19 20]]
+(2, 10)
+</output_code>
+  <markdown>Deve-se ter em conta que não se pode colocar qualquer número nas dimensões conhecidas. O número de itens da matriz original deve ser um múltiplo das dimensões conhecidas.
+
+No exemplo anterior, a matriz tem 20 itens, que é múltiplo de 2, dimensão conhecida introduzida. Não seria possível colocar um 3 como dimensão conhecida, já que 20 não é múltiplo de 3, e não haveria nenhum número que pudesse ser colocado na dimensão desconhecida que fizesse com que, no total, houvesse 20 itens.</markdown>
+  <markdown>### 9.3. Achatamento de matrizes</markdown>
+  <markdown>Podemos aplanar as matrizes, ou seja, passá-las para uma única dimensão usando `reshape(-1)`. Desta forma, independentemente das dimensões da matriz original, a nova sempre terá uma única dimensão.</markdown>
+  <input_code>arr = np.array([
+                [[1, 2, 3, 4, 5], 
+                [6, 7, 8, 9, 10]],
+                
+                [[11, 12, 13, 14, 15], 
+                [16, 17, 18, 19, 20]]
+                ])
+
+arr_flatten = arr.reshape(-1)
+
+print(arr_flatten)
+print(arr_flatten.shape)</input_code>
+  <output_code>[ 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20]
+(20,)
+</output_code>
+  <markdown>Outra forma de aplanar uma matriz é através do método `ravel()`</markdown>
+  <input_code>arr = np.array([
+                [[1, 2, 3, 4, 5], 
+                [6, 7, 8, 9, 10]],
+                
+                [[11, 12, 13, 14, 15], 
+                [16, 17, 18, 19, 20]]
+                ])
+
+arr_flatten = arr.ravel()
+
+print(arr_flatten)
+print(arr_flatten.shape)</input_code>
+  <output_code>[ 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20]
+(20,)
+</output_code>
+  <markdown>### 9.4. Matriz transposta</markdown>
+  <markdown>Pode-se obter a transposta de uma matriz através do método `T`. Fazer a transposta de uma matriz é trocar as linhas pelas colunas da matriz, na imagem seguinte vemos um exemplo que esclarece melhor.
+
+![transpose_matrix](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/Transpose_matrix.webp)</markdown>
+  <input_code>arr = np.array([[1, 0, 4], 
+                [0, 5, 0],
+                [6, 0, -9]])
+ 
+arr_t = arr.T
+ 
+print(arr_t)
+print(arr_t.shape)</input_code>
+  <output_code>[[ 1  0  6]
+ [ 0  5  0]
+ [ 4  0 -9]]
+(3, 3)
+</output_code>
+  <markdown>## 10. Empilhamento de matrizes</markdown>
+  <markdown>### 10.1. Empilhamento vertical</markdown>
+  <markdown>Matrizes podem ser empilhadas verticalmente (juntando linhas) usando o método `vstack()`.</markdown>
+  <input_code>a = np.array([[1, 1, 1], 
+              [2, 2, 2],
+              [3, 3, 3]])
+
+b = np.array([[4, 4, 4], 
+              [5, 5, 5],
+              [6, 6, 6]])
+
+c = np.vstack((a,b))
+c</input_code>
+  <output_code>array([[1, 1, 1],
+       [2, 2, 2],
+       [3, 3, 3],
+       [4, 4, 4],
+       [5, 5, 5],
+       [6, 6, 6]])</output_code>
+  <markdown>Se tiver matrizes com mais de 2 dimensões, `vstack()` empilhará ao longo da primeira dimensão.</markdown>
+  <input_code>a = np.array([
+                [[1, 1], 
+                [2, 2]],
+                
+                [[3, 3], 
+                [4, 4]]
+                ])
+ 
+b = np.array([
+                [[5, 5], 
+                [6, 6]],
+                
+                [[7, 7], 
+                [8, 8]]
+                ])
+ 
+c = np.vstack((a,b))
+c</input_code>
+  <output_code>array([[[1, 1],
+        [2, 2]],
+
+       [[3, 3],
+        [4, 4]],
+
+       [[5, 5],
+        [6, 6]],
+
+       [[7, 7],
+        [8, 8]]])</output_code>
+  <markdown>### 10.2. Empilhamento horizontal</markdown>
+  <markdown>Matrizes podem ser empilhadas horizontalmente (juntando colunas) através do método `hstack()`</markdown>
+  <input_code>a = np.array([[1, 2, 3], 
+              [1, 2, 3],
+              [1, 2, 3]])
+
+b = np.array([[4, 5, 6], 
+              [4, 5, 6],
+              [4, 5, 6]])
+
+c = np.hstack((a,b))
+c</input_code>
+  <output_code>array([[1, 2, 3, 4, 5, 6],
+       [1, 2, 3, 4, 5, 6],
+       [1, 2, 3, 4, 5, 6]])</output_code>
+  <markdown>Se tiver matrizes com mais de 2 dimensões, `hstack()` empilhará ao longo da segunda dimensão.</markdown>
+  <input_code>a = np.array([
+                [[1, 1], 
+                [2, 2]],
+                
+                [[3, 3], 
+                [4, 4]]
+                ])
+
+b = np.array([
+                [[5, 5], 
+                [6, 6]],
+                
+                [[7, 7], 
+                [8, 8]]
+                ])
+
+c = np.hstack((a,b))
+c</input_code>
+  <output_code>array([[[1, 1],
+        [2, 2],
+        [5, 5],
+        [6, 6]],
+
+       [[3, 3],
+        [4, 4],
+        [7, 7],
+        [8, 8]]])</output_code>
+  <markdown>Outra maneira de adicionar colunas a uma matriz é através do método `column_stack()`</markdown>
+  <input_code>a = np.array([[1, 2, 3], 
+              [1, 2, 3],
+              [1, 2, 3]])
+ 
+b = np.array([4, 4, 4])
+ 
+c = np.column_stack((a,b))
+c</input_code>
+  <output_code>array([[1, 2, 3, 4],
+       [1, 2, 3, 4],
+       [1, 2, 3, 4]])</output_code>
+  <markdown>### 10.3. Empilhamento em profundidade</markdown>
+  <markdown>Matrizes podem ser empilhadas em profundidade (terceira dimensão) usando o método `dstack()`</markdown>
+  <input_code>a = np.array([
+                [[1, 1], 
+                [2, 2]],
+                
+                [[3, 3], 
+                [4, 4]]
+                ])
+
+b = np.array([
+                [[1, 1], 
+                [2, 2]],
+                
+                [[3, 3], 
+                [4, 4]]
+                ])
+
+c = np.dstack((a,b))
+print(f"c: {c}\n")
+print(f"a.shape: {a.shape}, b.shape: {b.shape}, c.shape: {c.shape}")</input_code>
+  <output_code>c: [[[1 1 1 1]
+  [2 2 2 2]]
+
+ [[3 3 3 3]
+  [4 4 4 4]]]
+
+a.shape: (2, 2, 2), b.shape: (2, 2, 2), c.shape: (2, 2, 4)
+</output_code>
+  <markdown>Se tiver matrizes com mais de 4 dimensões, `dstack()` empilhará ao longo da terceira dimensão.</markdown>
+  <input_code>a = np.array([1, 2, 3, 4, 5], ndmin=4)
+
+b = np.array([1, 2, 3, 4, 5], ndmin=4)
+
+c = np.dstack((a,b))
+print(f"a.shape: {a.shape}, b.shape: {b.shape}, c.shape: {c.shape}")</input_code>
+  <output_code>a.shape: (1, 1, 1, 5), b.shape: (1, 1, 1, 5), c.shape: (1, 1, 2, 5)
+</output_code>
+  <markdown>### 10.3. Empilhamento personalizado</markdown>
+  <markdown>Por meio do método `concatenate()`, é possível escolher o eixo ao longo do qual as matrizes serão empilhadas.</markdown>
+  <input_code>a = np.array([
+                [[1, 1], 
+                [2, 2]],
+                
+                [[3, 3], 
+                [4, 4]]
+                ])
+
+b = np.array([
+                [[5, 5], 
+                [6, 6]],
+                
+                [[7, 7], 
+                [8, 8]]
+                ])
+
+conc0 = np.concatenate((a,b), axis=0) # concatenamiento en el primer eje
+conc1 = np.concatenate((a,b), axis=1) # concatenamiento en el segundo eje
+conc2 = np.concatenate((a,b), axis=2) # concatenamiento en el tercer eje
+print(f"conc0: {conc0}\n")
+print(f"conc1: {conc1}\n")
+print(f"conc2: {conc2}")</input_code>
+  <output_code>conc0: [[[1 1]
+  [2 2]]
+
+ [[3 3]
+  [4 4]]
+
+ [[5 5]
+  [6 6]]
+
+ [[7 7]
+  [8 8]]]
+
+conc1: [[[1 1]
+  [2 2]
+  [5 5]
+  [6 6]]
+
+ [[3 3]
+  [4 4]
+  [7 7]
+  [8 8]]]
+
+conc2: [[[1 1 5 5]
+  [2 2 6 6]]
+
+ [[3 3 7 7]
+  [4 4 8 8]]]
+</output_code>
+  <markdown>## 11. Dividir matrizes</markdown>
+  <markdown>### 11.1. Dividir verticalmente</markdown>
+  <markdown>Matrizes podem ser divididas verticalmente (separando linhas) através do método `vsplit()`</markdown>
+  <input_code>a = np.array([[1.1, 1.2, 1.3, 1.4], 
+              [2.1, 2.2, 2.3, 2.4],
+              [3.1, 3.2, 3.3, 3.4],
+              [4.1, 4.2, 4.3, 4.4]])
+
+[a1, a2] = np.vsplit(a, 2)
+print(f"a1: {a1}\n")
+print(f"a2: {a2}")</input_code>
+  <output_code>a1: [[1.1 1.2 1.3 1.4]
+ [2.1 2.2 2.3 2.4]]
+
+a2: [[3.1 3.2 3.3 3.4]
+ [4.1 4.2 4.3 4.4]]
+</output_code>
+  <markdown>Se tiver matrizes com mais de 2 dimensões, `vsplit()` dividirá ao longo da primeira dimensão.</markdown>
+  <input_code>a = np.array([
+                [[1, 1], 
+                [2, 2]],
+                
+                [[3, 3], 
+                [4, 4]]
+                ])
+
+[a1, a2] = np.vsplit(a, 2)
+print(f"a1: {a1}\n")
+print(f"a2: {a2}")</input_code>
+  <output_code>a1: [[[1 1]
+  [2 2]]]
+
+a2: [[[3 3]
+  [4 4]]]
+</output_code>
+  <markdown>### 11.2. Dividir horizontalmente</markdown>
+  <markdown>Matrizes podem ser divididas horizontalmente (separando colunas) através do método `hsplit()`</markdown>
+  <input_code>a = np.array([[1.1, 1.2, 1.3, 1.4], 
+              [2.1, 2.2, 2.3, 2.4],
+              [3.1, 3.2, 3.3, 3.4],
+              [4.1, 4.2, 4.3, 4.4]])
+
+[a1, a2] = np.hsplit(a, 2)
+print(f"a1: {a1}\n")
+print(f"a2: {a2}")</input_code>
+  <output_code>a1: [[1.1 1.2]
+ [2.1 2.2]
+ [3.1 3.2]
+ [4.1 4.2]]
+
+a2: [[1.3 1.4]
+ [2.3 2.4]
+ [3.3 3.4]
+ [4.3 4.4]]
+</output_code>
+  <markdown>Se tiver matrizes com mais de 2 dimensões, `hsplit()` dividirá ao longo da segunda dimensão.</markdown>
+  <input_code>a = np.array([
+                [[1, 1], 
+                [2, 2]],
+                
+                [[3, 3], 
+                [4, 4]]
+                ])
+
+[a1, a2] = np.hsplit(a, 2)
+print(f"a1: {a1}\n")
+print(f"a2: {a2}")</input_code>
+  <output_code>a1: [[[1 1]]
+
+ [[3 3]]]
+
+a2: [[[2 2]]
+
+ [[4 4]]]
+</output_code>
+  <markdown>### 11.3. Dividir de maneira personalizada</markdown>
+  <markdown>Com o método `array_split()`, é possível escolher o eixo em que se deseja dividir as matrizes.</markdown>
+  <input_code>a = np.array([
+                [[1, 1], 
+                [2, 2]],
+                
+                [[3, 3], 
+                [4, 4]]
+                ])
+
+[a1_eje0, a2_eje0] = np.array_split(a, 2, axis=0)
+[a1_eje1, a2_eje1] = np.array_split(a, 2, axis=1)
+[a1_eje2, a2_eje2] = np.array_split(a, 2, axis=2)
+
+print(f"a1_eje0: {a1_eje0}\n")
+print(f"a2_eje0: {a2_eje0}\n\n")
+
+print(f"a1_eje1: {a1_eje1}\n")
+print(f"a2_eje1: {a2_eje1}\n\n")
+
+print(f"a1_eje2: {a1_eje2}\n")
+print(f"a2_eje2: {a2_eje2}")</input_code>
+  <output_code>a1_eje0: [[[1 1]
+  [2 2]]]
+
+a2_eje0: [[[3 3]
+  [4 4]]]
+
+
+a1_eje1: [[[1 1]]
+
+ [[3 3]]]
+
+a2_eje1: [[[2 2]]
+
+ [[4 4]]]
+
+
+a1_eje2: [[[1]
+  [2]]
+
+ [[3]
+  [4]]]
+
+a2_eje2: [[[1]
+  [2]]
+
+ [[3]
+  [4]]]
+</output_code>
+  <markdown>## 12. Busca em matrizes</markdown>
+  <markdown>Se quiser buscar um valor dentro de uma matriz, pode-se usar o método `where()` que retorna as posições onde a matriz possui o valor que estamos procurando.</markdown>
+  <input_code>arr = np.array([1, 2, 3, 4, 5, 4, 4])
+
+ids = np.where(arr == 4)
+ids</input_code>
+  <output_code>(array([3, 5, 6]),)</output_code>
+  <markdown>Funções podem ser usadas para buscar, por exemplo, se quisermos encontrar em quais posições os valores são pares</markdown>
+  <input_code>arr = np.array([1, 2, 3, 4, 5, 6, 7, 8])
+
+ids = np.where(arr%2)
+ids</input_code>
+  <output_code>(array([0, 2, 4, 6]),)</output_code>
+  <markdown>## 13. Ordenar matrizes</markdown>
+  <markdown>Com o método `sort()` podemos ordenar arrays</markdown>
+  <input_code>arr = np.array([3, 2, 0, 1])
+
+arr_ordenado = np.sort(arr)
+arr_ordenado</input_code>
+  <output_code>array([0, 1, 2, 3])</output_code>
+  <markdown>Se temos strings, eles são ordenados alfabeticamente</markdown>
+  <input_code>arr = np.array(['banana', 'apple', 'cherry'])
+
+arr_ordenado = np.sort(arr)
+arr_ordenado</input_code>
+  <output_code>array(['apple', 'banana', 'cherry'], dtype='&lt;U6')</output_code>
+  <markdown>E as matrizes de booleanos também são ordenadas</markdown>
+  <input_code>arr = np.array([True, False, True])
+
+arr_ordenado = np.sort(arr)
+arr_ordenado</input_code>
+  <output_code>array([False,  True,  True])</output_code>
+  <markdown>Se tiver matrizes de mais de uma dimensão, as ordena por dimensões, ou seja, se tiver uma matriz de 2 dimensões, ordena os números da primeira linha entre si e os da segunda linha entre si.</markdown>
+  <input_code>arr = np.array([[3, 2, 4], [5, 0, 1]])
+
+arr_ordenado = np.sort(arr)
+arr_ordenado</input_code>
+  <output_code>array([[2, 3, 4],
+       [0, 1, 5]])</output_code>
+  <markdown>Por padrão, ordena sempre com relação às linhas, mas se quiser que ordene com relação a outra dimensão, deve ser especificado através da variável `axis`.</markdown>
+  <input_code>arr = np.array([[3, 2, 4], [5, 0, 1]])
+
+arr_ordenado0 = np.sort(arr, axis=0) # Se ordena con respecto a la primera dimensión
+arr_ordenado1 = np.sort(arr, axis=1) # Se ordena con respecto a la segunda dimensión
+
+print(f"arr_ordenado0: {arr_ordenado0}\n")
+print(f"arr_ordenado1: {arr_ordenado1}\n")</input_code>
+  <output_code>arr_ordenado0: [[3 0 1]
+ [5 2 4]]
+
+arr_ordenado1: [[2 3 4]
+ [0 1 5]]
+
+</output_code>
+  <markdown>## 14. Filtros em matrizes</markdown>
+  <markdown>NumPy oferece a possibilidade de buscar certos elementos de uma matriz e criar uma nova
+
+Isso é feito criando uma matriz de índices booleanos, ou seja, cria uma nova matriz que indica quais posições mantemos da matriz e quais não.
+
+Vamos ver um exemplo de uma matriz de índices booleanos</markdown>
+  <input_code>arr = np.array([37, 85, 12, 45, 69, 22])
+
+indices_booleanos = [False, False, True, False, False, True]
+
+arr_filter = arr[indices_booleanos]
+
+print(f"Array original: {arr}")
+print(f"indices booleanos: {indices_booleanos}")
+print(f"Array filtrado: {arr_filter}")</input_code>
+  <output_code>Array original: [37 85 12 45 69 22]
+indices booleanos: [False, False, True, False, False, True]
+Array filtrado: [12 22]
+</output_code>
+  <markdown>Como se pode ver, o array filtrado (`arr_filtr`), só ficou com os elementos do array original (`arr`) que correspondem aos elementos em que o array `indices_booleanos` é `True`</markdown>
+  <markdown>Outra coisa que podemos observar é que apenas os elementos pares foram mantidos, então agora vamos ver como fazer para manter apenas os elementos pares de uma matriz, sem ter que fazê-lo manualmente como fizemos no exemplo anterior.</markdown>
+  <input_code>arr = np.array([[1, 2, 3, 4, 5], 
+                [6, 7, 8, 9, 10]])
+ 
+indices_booleanos = arr % 2 == 0
+ 
+arr_filter = arr[indices_booleanos]
+ 
+print(f"Array original: {arr}\n")
+print(f"indices booleanos: {indices_booleanos}\n")
+print(f"Array filtrado: {arr_filter}")</input_code>
+  <output_code>Array original: [[ 1  2  3  4  5]
+ [ 6  7  8  9 10]]
+
+indices booleanos: [[False  True False  True False]
+ [ True False  True False  True]]
+
+Array filtrado: [ 2  4  6  8 10]
+</output_code>
+</notebook>

@@ -508,8 +508,8 @@ const {open_brace} svg_paths {closing_brace} = await import('@portfolio/consts.j
 
 const page_title = '{tittles_list[notebook_number]}';
 const end_url = '{end_url}';
-const description = '{descriptions_list[notebook_number]}';
-const keywords = '{keywords_list[notebook_number]}';
+const description = '{descriptions_list[notebook_number].replace("'", "\\'")}';
+const keywords = '{keywords_list[notebook_number].replace("'", "\\'")}';
 const languaje = '{LANGUAGES[notebook_number]}';
 const image_path = '{image.replace("'", "\\'")}';
 const opening_brace = '{open_brace}';

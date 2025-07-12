@@ -6,15 +6,22 @@
   <markdown>To make it free, instead of using an OpenAI account (as you'll see in most tutorials), we're going to use the `API inference` from Hugging Face, which has a free tier of 1000 requests per day, which is more than enough for this post.</markdown>
   <markdown>## Setting up the `API Inference` of Hugging Face</markdown>
   <markdown>To be able to use the `API Inference` from HuggingFace, the first thing you need is to have an account on HuggingFace. Once you have one, you need to go to [Access tokens](https://huggingface.co/settings/keys) in your profile settings and generate a new token.
-We need to give it a name. In my case, I will name it `rag-fundamentals` and enable the permission `Make calls to serverless Inference API`. It will create a token that we will have to copy.</markdown>
-  <markdown>To manage the token, we are going to create a file in the same path where we are working called `.env` and we are going to put the token we have copied into the file in the following way:
-``` bash
-RAG_FUNDAMENTALS_ADVANCE_TECHNIQUES_TOKEN="hf_...."```</markdown>
-  <markdown>Now, to obtain the token, we need to have `dotenv` installed, which we install through
-```bash
-pip install python-dotenv```
 
-And we run the following</markdown>
+We need to give it a name. In my case, I will name it `rag-fundamentals` and enable the permission `Make calls to serverless Inference API`. It will create a token that we will have to copy.
+</markdown>
+  <markdown>To manage the token, we are going to create a file in the same path where we are working called `.env` and we are going to put the token we have copied into the file in the following way:
+
+``` bash
+RAG_FUNDAMENTALS_ADVANCE_TECHNIQUES_TOKEN="hf_...."```
+</markdown>
+  <markdown>Now, to obtain the token, we need to have `dotenv` installed, which we install through
+
+```bash
+pip install python-dotenv
+```
+
+And we run the following
+</markdown>
   <input_code>import os
 import dotenv
 
@@ -22,14 +29,21 @@ dotenv.load_dotenv()
 
 RAG_FUNDAMENTALS_ADVANCE_TECHNIQUES_TOKEN = os.getenv("RAG_FUNDAMENTALS_ADVANCE_TECHNIQUES_TOKEN")</input_code>
   <markdown>Now that we have a token, we create a client. For this, we need to have the `huggingface_hub` library installed. We install it using conda or pip.
+
 ``` bash
-conda install -c conda-forge huggingface_hub```
+conda install -c conda-forge huggingface_hub
+```
 
 o
+
 ```bash
-pip install --upgrade huggingface_hub```</markdown>
+pip install --upgrade huggingface_hub
+```
+</markdown>
   <markdown>Now we have to choose which model we are going to use. You can see the available models on the [Supported models](https://huggingface.co/docs/api-inference/supported-models) page of the Hugging Face `API Inference` documentation.
-As of the time of writing this post, the best available is `Qwen2.5-72B-Instruct`, so we will use that model.</markdown>
+
+As of the time of writing this post, the best available is `Qwen2.5-72B-Instruct`, so we will use that model.
+</markdown>
   <input_code>MODEL = "Qwen/Qwen2.5-72B-Instruct"</input_code>
   <markdown>Now we can create the client</markdown>
   <input_code>from huggingface_hub import InferenceClient
@@ -56,28 +70,42 @@ print(response)</input_code>
 </output_code>
   <markdown>## What is `RAG`?</markdown>
   <markdown>`RAG` stands for `Retrieval Augmented Generation`, it is a technique created to obtain information from documents. Although LLMs can be very powerful and have a lot of knowledge, they will never be able to answer about private documents, such as reports from your company, internal documentation, etc. That's why `RAG` was created, to be able to use these LLMs on that private documentation.
-![What is RAG?](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/RAG.webp)</markdown>
+
+![What is RAG?](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/RAG.webp)
+</markdown>
   <markdown>The idea is that a user asks a question about that private documentation, the system is able to retrieve the part of the documentation where the answer to that question is found, the question and the relevant part of the documentation are passed to an LLM, and the LLM generates the answer for the user.</markdown>
   <markdown>### How is information stored?</markdown>
   <markdown>It is known, and if you didn't know, I'll tell you now, that LLMs have a limit to the amount of information that can be passed to them, which is called the context window. This is due to internal architectures of LLMs that are not relevant at the moment. But what's important is that you cannot simply pass a document and a question to an LLM, because it is likely that the LLM will not be able to process all that information.
+
 In cases where more information is usually passed than the context window allows, what typically happens is that the LLM does not pay attention to the end of the input. Imagine asking the LLM about something in your document, and that information is at the end of the document, but the LLM doesn't read it.
+
 Therefore, what is done is to divide the documentation into blocks called `chunk`s. So, the documentation is stored in a bunch of `chunk`s, which are pieces of that documentation. This way, when the user asks a question, the `chunk` containing the answer to that question is passed to the LLM.
+
 In addition to dividing the documentation into `chunk`s, these are converted into embeddings, which are numerical representations of the `chunk`s. This is done because LLMs actually don't understand text, but rather numbers, and the `chunk`s are converted into numbers so that the LLM can understand them. If you want to learn more about embeddings, you can read my post on [transformers](https://www.maximofn.com/transformers) where I explain how transformers work, which is the architecture underlying LLMs. You can also read my post on [ChromaDB](https://www.maximofn.com/chromadb) where I explain how embeddings are stored in a vector database. Additionally, it would be interesting for you to read my post about the [HuggingFace Tokenizers](https://www.maximofn.com/hugging-face-tokenizers) library, which explains how text is tokenized, which is the step prior to generating embeddings.
-![RAG - embeddings](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/RAG-embeddings.webp)</markdown>
+
+![RAG - embeddings](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/RAG-embeddings.webp)
+</markdown>
   <markdown>### How do you get the correct `chunk`?</markdown>
   <markdown>We have said that the documentation is divided into `chunk`s and the `chunk` containing the answer to the user's question is passed to the LLM. But, how do we know which `chunk` contains the answer? To determine this, the user's question is converted into an embedding, and the similarity between the embedding of the question and the embeddings of the `chunk`s is calculated. The `chunk` with the highest similarity is the one passed to the LLM.
-![](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/rag-chunk_retreival.webp)</markdown>
+
+![](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/rag-chunk_retreival.webp)
+</markdown>
   <markdown>### Let's revisit what `RAG` is</markdown>
   <markdown>On one hand, we have the `retrieval`, which is obtaining the correct `chunk` from the documentation. On the other hand, we have the `augmented`, which involves passing the user's question and the `chunk` to the LLM. Finally, we have the `generation`, which is obtaining the response generated by the LLM.</markdown>
   <markdown>## Vector database</markdown>
   <markdown>We have seen that the documentation is divided into `chunk`s and stored in a vector database, so we need to use one. For this post, I will use [ChromaDB](https://www.trychroma.com/), which is a widely used vector database and I also have a [post](https://www.maximofn.com/chromadb) where I explain how it works.</markdown>
   <markdown>So first we need to install the ChromaDB library, for this we install it with Conda or with pip
+
 ```bash
-conda install conda-forge::chromadb```
+conda install conda-forge::chromadb
+```
 
 o
+
 ```bash
-pip install chromadb```</markdown>
+pip install chromadb
+```
+</markdown>
   <markdown>### Embedding Function</markdown>
   <markdown>As we have said, everything will be based on embeddings. So, the first thing we do is create a function to get embeddings from a text. We are going to use the model `sentence-transformers/all-MiniLM-L6-v2`.</markdown>
   <input_code>import chromadb.utils.embedding_functions as embedding_functions
@@ -138,8 +166,10 @@ def load_documents_from_directory(directory):
   <markdown>### Function to generate embeddings of a `chunk`</markdown>
   <markdown>Now that we have the `chunk`s, we generate the `embedding`s for each of them.</markdown>
   <markdown>We will see why later, but to generate the embeddings we are going to do it locally and not through the Hugging Face API. For this, we need to have [PyTorch](https://pytorch.org) and `sentence-transformers` installed. To do so, we run
+
 ``` bash
-pip install -U sentence-transformers```</markdown>
+pip install -U sentence-transformers```
+</markdown>
   <input_code>from sentence_transformers import SentenceTransformer
 import torch
 
@@ -264,12 +294,17 @@ for document in documents:
   <markdown>Since we are only going to create the embeddings of the `chunk`s once, even if we don't have a very powerful computer and it takes a long time, it will only run once. Later, when we want to ask questions about the documentation, that's when we will generate the embeddings of the prompt using the Hugging Face API and use the LLM with the API. So we will only have to go through the process of generating the embeddings of the `chunk`s once.</markdown>
   <markdown>We generate the embeddings of the `chunk`s</markdown>
   <markdown>Last library we will have to install. Since the process of generating embeddings for the `chunk`s will be slow, we will install `tqdm` to show a progress bar. We can install it with Conda or pip, whichever you prefer.
+
 ```bash
-conda install conda-forge::tqdm```
+conda install conda-forge::tqdm
+```
 
 o
+
 ```bash
-pip install tqdm```</markdown>
+pip install tqdm
+```
+</markdown>
   <markdown>We generate the embeddings of the `chunk`s</markdown>
   <input_code>import tqdm
 
@@ -328,11 +363,15 @@ for chunk in progress_bar:
     results = collection.query(query_texts=query, n_results=k)
     return results</input_code>
   <markdown>Lastly, we create a `query`.
-To generate the query, I randomly selected the document `Using Amazon EC2 Spot Instances and Karpenter to Simplify and Optimize Kubernetes Infrastructure _ Neeva Case Study _ AWS.txt`, passed it to an LLM, and asked it to generate a question about the document. The question it generated is
-```
-How did Neeva use Karpenter and Amazon EC2 Spot Instances to improve its infrastructure management and cost optimization?```
 
-So we get the most relevant `chunks` in response to that question.</markdown>
+To generate the query, I randomly selected the document `Using Amazon EC2 Spot Instances and Karpenter to Simplify and Optimize Kubernetes Infrastructure _ Neeva Case Study _ AWS.txt`, passed it to an LLM, and asked it to generate a question about the document. The question it generated is
+
+```
+How did Neeva use Karpenter and Amazon EC2 Spot Instances to improve its infrastructure management and cost optimization?
+```
+
+So we get the most relevant `chunks` in response to that question.
+</markdown>
   <input_code>query = "How did Neeva use Karpenter and Amazon EC2 Spot Instances to improve its infrastructure management and cost optimization?"
 top_chunks = get_top_k_documents(query=query, k=5)</input_code>
   <markdown>Let's see which `chunk`s it has returned</markdown>
@@ -396,23 +435,60 @@ By leveraging Karpenter and Amazon EC2 Spot Instances, Neeva has not only optimi
   <markdown>When I asked the LLM to generate a question about the document, I also asked it to generate the correct answer. This is the answer that the LLM gave me.</markdown>
   <markdown>``` text
 Neeva used Karpenter and Amazon EC2 Spot Instances to improve its infrastructure management and cost optimization in several ways:
+
 Simplified Instance Management:
-Karpenter: By adopting Karpenter, Neeva simplified the process of provisioning and managing compute resources for its Amazon EKS clusters. Karpenter automatically provisions and de-provisions instances based on the workload, eliminating the need for manual configurations and reducing the complexity of understanding different compute instances.Spot Instances: Neeva leveraged Amazon EC2 Spot Instances, which are unused EC2 capacity available at a significant discount (up to 90% cost savings). This allowed the company to control costs while meeting its performance requirements.Enhanced Scalability:
-Karpenter: Karpenter's ability to dynamically scale resources enabled Neeva to spin up new instances quickly, allowing the company to iterate at a higher velocity and run more experiments in less time.Spot Instances: The use of Spot Instances provided flexibility and instance diversification, making it easier for Neeva to scale its compute resources efficiently.Improved Productivity:
-Karpenter: By democratizing infrastructure changes, Karpenter allowed any engineer to modify Kubernetes configurations, reducing the dependency on specialized expertise. This saved the Neeva team up to 100 hours per week of wait time on systems administration.Spot Instances: The ability to quickly provision and de-provision Spot Instances reduced delays in the development pipeline, ensuring that jobs did not get stuck due to a lack of available resources.Cost Efficiency:
-Karpenter: Karpenter's best practices for Spot Instances, including flexibility and instance diversification, helped Neeva use these instances more effectively, staying within budget.Spot Instances: The cost savings from using Spot Instances allowed Neeva to run large-scale jobs, such as indexing, for nearly the same cost but in a fraction of the time. For example, Neeva reduced its indexing jobs from 18 hours to just 3 hours.Better Resource Utilization:
-Karpenter: Karpenter provided better visibility into compute resource usage, allowing Neeva to track and optimize its resource consumption more closely.Spot Instances: The combination of Karpenter and Spot Instances enabled Neeva to run large language models more efficiently, enhancing the search experience for its users.En resumen, la adopción de Karpenter y Amazon EC2 Spot Instances por parte de Neeva mejoró significativamente su gestión de infraestructura, optimización de costos y eficiencia general en el desarrollo, lo que permitió a la compañía ofrecer mejores experiencias de búsqueda sin anuncios a sus usuarios.```</markdown>
+
+Karpenter: By adopting Karpenter, Neeva simplified the process of provisioning and managing compute resources for its Amazon EKS clusters. Karpenter automatically provisions and de-provisions instances based on the workload, eliminating the need for manual configurations and reducing the complexity of understanding different compute instances.
+Spot Instances: Neeva leveraged Amazon EC2 Spot Instances, which are unused EC2 capacity available at a significant discount (up to 90% cost savings). This allowed the company to control costs while meeting its performance requirements.
+Enhanced Scalability:
+
+Karpenter: Karpenter's ability to dynamically scale resources enabled Neeva to spin up new instances quickly, allowing the company to iterate at a higher velocity and run more experiments in less time.
+Spot Instances: The use of Spot Instances provided flexibility and instance diversification, making it easier for Neeva to scale its compute resources efficiently.
+Improved Productivity:
+
+Karpenter: By democratizing infrastructure changes, Karpenter allowed any engineer to modify Kubernetes configurations, reducing the dependency on specialized expertise. This saved the Neeva team up to 100 hours per week of wait time on systems administration.
+Spot Instances: The ability to quickly provision and de-provision Spot Instances reduced delays in the development pipeline, ensuring that jobs did not get stuck due to a lack of available resources.
+Cost Efficiency:
+
+Karpenter: Karpenter's best practices for Spot Instances, including flexibility and instance diversification, helped Neeva use these instances more effectively, staying within budget.
+Spot Instances: The cost savings from using Spot Instances allowed Neeva to run large-scale jobs, such as indexing, for nearly the same cost but in a fraction of the time. For example, Neeva reduced its indexing jobs from 18 hours to just 3 hours.
+Better Resource Utilization:
+
+Karpenter: Karpenter provided better visibility into compute resource usage, allowing Neeva to track and optimize its resource consumption more closely.
+Spot Instances: The combination of Karpenter and Spot Instances enabled Neeva to run large language models more efficiently, enhancing the search experience for its users.
+En resumen, la adopción de Karpenter y Amazon EC2 Spot Instances por parte de Neeva mejoró significativamente su gestión de infraestructura, optimización de costos y eficiencia general en el desarrollo, lo que permitió a la compañía ofrecer mejores experiencias de búsqueda sin anuncios a sus usuarios.
+```
+</markdown>
   <markdown>And this has been the response generated by our `RAG`</markdown>
   <markdown>``` text
 Neeva, a cloud-native, ad-free search engine founded in 2019, has leveraged Karpenter and Amazon EC2 Spot Instances to significantly improve its infrastructure management and cost optimization. Here’s how:
-### Early Collaboration with KarpenterEn 2021, Neeva comenzó a trabajar estrechamente con el equipo de Karpenter, experimentando y contribuyendo con correcciones a una versión temprana de Karpenter. Esta colaboración permitió a Neeva integrar Karpenter con su panel de Kubernetes, lo que permitió a la empresa recopilar métricas valiosas sobre el uso y el rendimiento.
-### Combining Spot Instances and On-Demand InstancesNeeva runs its jobs on a large scale, which can lead to significant costs. To manage these costs effectively, the company adopted a combination of Amazon EC2 Spot Instances and On-Demand Instances. Spot Instances allow Neeva to bid on unused EC2 capacity, often at a fraction of the On-Demand price, while On-Demand Instances provide the necessary reliability for critical pipelines.
-### Flexibilidad y Diversificación de InstanciasSegún Mohit Agarwal, ingeniero de infraestructura principal en Neeva, la adopción por parte de Karpenter de las mejores prácticas para Spot Instances, incluyendo flexibilidad y diversificación de instancias, ha sido crucial. Este enfoque garantiza que Neeva pueda ajustar dinámicamente sus recursos de cómputo para satisfacer cargas de trabajo variables mientras minimiza los costos.
-### Mejorada Escalabilidad y AgilidadBy using Karpenter to provision infrastructure resources for its Amazon EKS clusters, Neeva has achieved several key benefits:- **Scalability**: Neeva can scale its compute resources up or down as needed, ensuring that it always has the necessary capacity to handle its workloads.- **Agility**: The company can iterate quickly and democratize infrastructure changes, reducing the time spent on systems administration by up to 100 hours per week.
+
+### Early Collaboration with Karpenter
+En 2021, Neeva comenzó a trabajar estrechamente con el equipo de Karpenter, experimentando y contribuyendo con correcciones a una versión temprana de Karpenter. Esta colaboración permitió a Neeva integrar Karpenter con su panel de Kubernetes, lo que permitió a la empresa recopilar métricas valiosas sobre el uso y el rendimiento.
+
+### Combining Spot Instances and On-Demand Instances
+Neeva runs its jobs on a large scale, which can lead to significant costs. To manage these costs effectively, the company adopted a combination of Amazon EC2 Spot Instances and On-Demand Instances. Spot Instances allow Neeva to bid on unused EC2 capacity, often at a fraction of the On-Demand price, while On-Demand Instances provide the necessary reliability for critical pipelines.
+
+### Flexibilidad y Diversificación de Instancias
+Según Mohit Agarwal, ingeniero de infraestructura principal en Neeva, la adopción por parte de Karpenter de las mejores prácticas para Spot Instances, incluyendo flexibilidad y diversificación de instancias, ha sido crucial. Este enfoque garantiza que Neeva pueda ajustar dinámicamente sus recursos de cómputo para satisfacer cargas de trabajo variables mientras minimiza los costos.
+
+### Mejorada Escalabilidad y Agilidad
+By using Karpenter to provision infrastructure resources for its Amazon EKS clusters, Neeva has achieved several key benefits:
+- **Scalability**: Neeva can scale its compute resources up or down as needed, ensuring that it always has the necessary capacity to handle its workloads.
+- **Agility**: The company can iterate quickly and democratize infrastructure changes, reducing the time spent on systems administration by up to 100 hours per week.
+
 ### Enhanced Development CyclesLa integración de Karpenter y Spot Instances también ha acelerado los ciclos de desarrollo de Neeva. La compañía ahora puede lanzar nuevas funciones y mejoras más rápidamente, lo cual es esencial para mantener una ventaja competitiva en el mercado de motores de búsqueda.
-### Cost Savings and Budget ControlUsing Spot Instances, Neeva has been able to stay within its budget while meeting its performance requirements. This cost optimization is critical for a company that prioritizes user-first experiences and has no competing incentives from advertising.
-### Future PlansNeeva is committed to continuing its innovation and expansion. The company plans to launch in new regions and further improve its search engine, all while maintaining cost efficiency. As Mohit Agarwal notes, "The bulk of our compute is or will be managed using Karpenter going forward."
-### ConclusionBy leveraging Karpenter and Amazon EC2 Spot Instances, Neeva has not only optimized its infrastructure costs but also enhanced its scalability, agility, and development speed. This strategic approach has positioned Neeva to deliver high-quality, ad-free search experiences to its users while maintaining a strong focus on cost control and innovation.```</markdown>
+
+### Cost Savings and Budget Control
+Using Spot Instances, Neeva has been able to stay within its budget while meeting its performance requirements. This cost optimization is critical for a company that prioritizes user-first experiences and has no competing incentives from advertising.
+
+### Future Plans
+Neeva is committed to continuing its innovation and expansion. The company plans to launch in new regions and further improve its search engine, all while maintaining cost efficiency. As Mohit Agarwal notes, "The bulk of our compute is or will be managed using Karpenter going forward."
+
+### Conclusion
+By leveraging Karpenter and Amazon EC2 Spot Instances, Neeva has not only optimized its infrastructure costs but also enhanced its scalability, agility, and development speed. This strategic approach has positioned Neeva to deliver high-quality, ad-free search experiences to its users while maintaining a strong focus on cost control and innovation.
+```
+</markdown>
   <markdown>So we can conclude that the `RAG` has worked correctly!!!</markdown>
   <markdown>## Limits of Naive RAG</markdown>
   <markdown>As we have said, today we have explained `naive RAG`, which is the simplest RAG architecture, but it has its limitations.</markdown>
@@ -420,13 +496,21 @@ Neeva, a cloud-native, ad-free search engine founded in 2019, has leveraged Karp
   <markdown>The limitations of this architecture are:</markdown>
   <markdown>### Limits in Information Retrieval</markdown>
   <markdown>* Limited knowledge of context and documentation: When the naive RAG system searches for chunks, it looks for those that have a semantically similar meaning to the prompt, but it is not capable of knowing which ones are the most relevant to the user's question, or which ones have the most up-to-date information, or whose information is more accurate than others. For example, if a user asks about the problems of sweeteners in the digestive system, the naive RAG may return documents about sweeteners or about the digestive system, but it is not capable of knowing that the documents about the digestive system are the most relevant to the user's question. Another example is if the user asks about the latest advances in AI, but the naive RAG is not able to determine which are the most recent papers in the database.
+
 * There is no synchronization between the retrieval and the generator. As we have seen, they are two independent systems; on one hand, the retrieval searches for the documents most similar to the user's question, and these documents are passed to the generator, which generates a response.
+
 * Inefficient scaling with large databases. Since retrieval searches for documents with the highest semantic similarity across the entire database, when it becomes very large, search times can become very long.
-* Limited adaptation to the user's question. If the user asks a question that involves several documents, meaning there is no single document containing all the information needed for the user's question, the system will retrieve all those documents and pass them to the generator, which may or may not use them. In a worst-case scenario, it might overlook some relevant documents when generating the response.</markdown>
+* Limited adaptation to the user's question. If the user asks a question that involves several documents, meaning there is no single document containing all the information needed for the user's question, the system will retrieve all those documents and pass them to the generator, which may or may not use them. In a worst-case scenario, it might overlook some relevant documents when generating the response.
+</markdown>
   <markdown>### Limits in Response Generation (Generator)</markdown>
   <markdown>* The model could hallucinate responses even when provided with relevant information.
-* The model could be limited by issues related to hate, discrimination, etc.</markdown>
+
+* The model could be limited by issues related to hate, discrimination, etc.
+</markdown>
   <markdown>To overcome these limitations, techniques such as the
+
 * Pre-retrieval: This includes techniques to improve indexing, so that information retrieval is more efficient. Or techniques such as improving the user's question so that retrieval can find the most relevant documents.
-* Post-retrieval: Here techniques such as document re-ranking are used, which is a technique used to improve the retrieval of relevant information</markdown>
+
+* Post-retrieval: Here techniques such as document re-ranking are used, which is a technique used to improve the retrieval of relevant information
+</markdown>
 </notebook>

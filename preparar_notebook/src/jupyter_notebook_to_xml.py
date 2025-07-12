@@ -24,6 +24,18 @@ def notebook_to_xml_tree(notebook_path):
     for cell in notebook_json.get('cells', []):
         cell_type = cell.get('cell_type')
         if cell_type == 'markdown':
+            if 'EN' in str(notebook_path) or 'PT' in str(notebook_path):
+                num_sourece_elements = len(cell.get('source', []))
+                for i,source in enumerate(cell.get('source', [])):
+                    # if is the last element, do nothing
+                    if i == num_sourece_elements - 1:
+                        continue
+                    # if the element ends with a break line, do nothing
+                    if source.endswith('\n'):
+                        continue
+                    # else, add a break line
+                    cell.get('source', []).insert(i+1, '\n')
+
             md = ''.join(cell.get('source', []))
             # Duplicate backslashes followed by pipe characters for LaTeX compatibility
             md = md.replace('\\|', '||')

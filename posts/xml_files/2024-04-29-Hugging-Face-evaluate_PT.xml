@@ -1,0 +1,377 @@
+<?xml version='1.0' encoding='utf-8'?>
+<notebook>
+  <markdown># Avaliação do rosto do abraço</markdown>
+  <markdown>A biblioteca `Evaluate` do `Hugging Face` é uma biblioteca para avaliar facilmente modelos e conjuntos de dados.
+
+Com uma única linha de código, você tem acesso a dezenas de métodos de avaliação para diferentes domínios (PNL, visão computacional, aprendizagem por reforço e outros). Seja em seu computador local ou em uma configuração de treinamento distribuído, você pode avaliar modelos de forma consistente e reproduzível.
+
+Uma lista completa das métricas disponíveis pode ser encontrada na página [evaluate](https://huggingface.co/evaluate-metric) na Hugging Face. Cada métrica tem um `Space` dedicado no Hugging Face com uma demonstração interativa sobre como usar a métrica e um cartão de documentação detalhando as limitações e o uso das métricas.</markdown>
+  <markdown>Este caderno foi traduzido automaticamente para torná-lo acessível a mais pessoas, por favor me avise se você vir algum erro de digitação..
+
+## Instalação</markdown>
+  <markdown>Para instalar a biblioteca, é necessário fazer o seguinte
+
+``` bash
+pip install evaluate
+```</markdown>
+  <markdown>## Tipo de avaliações</markdown>
+  <markdown>Há vários tipos de avaliações disponíveis
+
+ * Métrica: uma métrica é usada para avaliar o desempenho de um modelo e, normalmente, inclui previsões de modelos e rótulos de verdade terrestre.
+ * Comparação: é usada para comparar dois modelos. Isso pode ser feito, por exemplo, comparando suas previsões com rótulos de verdade terrestre.
+ * Medição: o conjunto de dados é tão importante quanto o modelo treinado nele. As medições podem ser usadas para investigar as propriedades de um conjunto de dados.</markdown>
+  <markdown>## Carga</markdown>
+  <markdown>Cada `metric`, `comparison` ou `measurement` pode ser carregado com o método load</markdown>
+  <input_code>import evaluate
+
+accuracy = evaluate.load("accuracy")
+accuracy</input_code>
+  <output_code>EvaluationModule(name: "accuracy", module_type: "metric", features: {'predictions': Value(dtype='int32', id=None), 'references': Value(dtype='int32', id=None)}, usage: """
+Args:
+    predictions (`list` of `int`): Predicted labels.
+    references (`list` of `int`): Ground truth labels.
+    normalize (`boolean`): If set to False, returns the number of correctly classified samples. Otherwise, returns the fraction of correctly classified samples. Defaults to True.
+    sample_weight (`list` of `float`): Sample weights Defaults to None.
+
+Returns:
+    accuracy (`float` or `int`): Accuracy score. Minimum possible value is 0. Maximum possible value is 1.0, or the number of examples input, if `normalize` is set to `True`.. A higher score means higher accuracy.
+
+Examples:
+
+    Example 1-A simple example
+        &gt;&gt;&gt; accuracy_metric = evaluate.load("accuracy")
+        &gt;&gt;&gt; results = accuracy_metric.compute(references=[0, 1, 2, 0, 1, 2], predictions=[0, 1, 1, 2, 1, 0])
+        &gt;&gt;&gt; print(results)
+        {'accuracy': 0.5}
+
+    Example 2-The same as Example 1, except with `normalize` set to `False`.
+        &gt;&gt;&gt; accuracy_metric = evaluate.load("accuracy")
+        &gt;&gt;&gt; results = accuracy_metric.compute(references=[0, 1, 2, 0, 1, 2], predictions=[0, 1, 1, 2, 1, 0], normalize=False)
+        &gt;&gt;&gt; print(results)
+        {'accuracy': 3.0}
+
+    Example 3-The same as Example 1, except with `sample_weight` set.
+        &gt;&gt;&gt; accuracy_metric = evaluate.load("accuracy")
+        &gt;&gt;&gt; results = accuracy_metric.compute(references=[0, 1, 2, 0, 1, 2], predictions=[0, 1, 1, 2, 1, 0], sample_weight=[0.5, 2, 0.7, 0.5, 9, 0.4])
+        &gt;&gt;&gt; print(results)
+        {'accuracy': 0.8778625954198473}
+""", stored examples: 0)</output_code>
+  <markdown>Se quiser ter certeza de que está carregando o tipo de métrica que deseja, seja `metric`, `comparison` ou `measurement`, você pode fazer isso adicionando o parâmetro `module_type`.</markdown>
+  <input_code>import evaluate
+
+accuracy = evaluate.load("accuracy", module_type="metric")
+word_length = evaluate.load("word_length", module_type="measurement")</input_code>
+  <output_code>[nltk_data] Downloading package punkt to
+[nltk_data]     /home/maximo.fernandez/nltk_data...
+[nltk_data]   Package punkt is already up-to-date!
+</output_code>
+  <markdown>### Carregamento dos módulos da comunidade</markdown>
+  <markdown>Além dos módulos oferecidos pela própria biblioteca, você também pode carregar modelos carregados por outra pessoa no hub do Hugging Face.</markdown>
+  <input_code>element_count = evaluate.load("lvwerra/element_count", module_type="measurement")</input_code>
+  <markdown>### Lista de módulos disponíveis</markdown>
+  <markdown>Se quisermos obter uma lista de todos os módulos disponíveis, teremos que usar o método `list_evaluation_modules`, no qual podemos colocar filtros de pesquisa</markdown>
+  <input_code>evaluate.list_evaluation_modules(
+  module_type="comparison",
+  include_community=True,
+  with_details=True)</input_code>
+  <output_code>[{'name': 'ncoop57/levenshtein_distance',
+  'type': 'comparison',
+  'community': True,
+  'likes': 0},
+ {'name': 'kaleidophon/almost_stochastic_order',
+  'type': 'comparison',
+  'community': True,
+  'likes': 1}]</output_code>
+  <markdown>## Atributos do módulo</markdown>
+  <markdown>Todos os módulos de avaliação vêm com uma variedade de atributos úteis que ajudam a usar o módulo, esses atributos são
+
+|Atributo|Descrição|
+|---|---|
+|Descrição: uma breve descrição do módulo de avaliação.|
+|citation|Uma cadeia de caracteres BibTex a ser citada quando disponível.|
+|features|Um objeto Features que define o formato de entrada.|
+|Isso é equivalente à string de documentação do módulo.|
+|homepage|A página inicial do módulo.|
+|license|A licença do módulo.|
+|codebase_urls|Link para o código por trás do módulo.|
+|reference_urls|URLs de referência adicionais.|</markdown>
+  <markdown>Vamos dar uma olhada em alguns deles</markdown>
+  <input_code>accuracy = evaluate.load("accuracy")</input_code>
+  <input_code>print(f"description: {accuracy.description}")
+print(f"\ncitation: {accuracy.citation}")
+print(f"\nfeatures: {accuracy.features}")
+print(f"\ninputs_description: {accuracy.inputs_description}")
+print(f"\nhomepage: {accuracy.homepage}")
+print(f"\nlicense: {accuracy.license}")
+print(f"\ncodebase_urls: {accuracy.codebase_urls}")
+print(f"\nreference_urls: {accuracy.reference_urls}")</input_code>
+  <output_code>description: 
+Accuracy is the proportion of correct predictions among the total number of cases processed. It can be computed with:
+Accuracy = (TP + TN) / (TP + TN + FP + FN)
+ Where:
+TP: True positive
+TN: True negative
+FP: False positive
+FN: False negative
+
+
+citation: 
+@article{scikit-learn,
+  title={Scikit-learn: Machine Learning in {P}ython},
+  author={Pedregosa, F. and Varoquaux, G. and Gramfort, A. and Michel, V.
+         and Thirion, B. and Grisel, O. and Blondel, M. and Prettenhofer, P.
+         and Weiss, R. and Dubourg, V. and Vanderplas, J. and Passos, A. and
+         Cournapeau, D. and Brucher, M. and Perrot, M. and Duchesnay, E.},
+  journal={Journal of Machine Learning Research},
+  volume={12},
+  pages={2825--2830},
+  year={2011}
+}
+
+
+features: {'predictions': Value(dtype='int32', id=None), 'references': Value(dtype='int32', id=None)}
+
+inputs_description: 
+Args:
+    predictions (`list` of `int`): Predicted labels.
+    references (`list` of `int`): Ground truth labels.
+    normalize (`boolean`): If set to False, returns the number of correctly classified samples. Otherwise, returns the fraction of correctly classified samples. Defaults to True.
+    sample_weight (`list` of `float`): Sample weights Defaults to None.
+
+Returns:
+    accuracy (`float` or `int`): Accuracy score. Minimum possible value is 0. Maximum possible value is 1.0, or the number of examples input, if `normalize` is set to `True`.. A higher score means higher accuracy.
+
+Examples:
+
+    Example 1-A simple example
+        &gt;&gt;&gt; accuracy_metric = evaluate.load("accuracy")
+        &gt;&gt;&gt; results = accuracy_metric.compute(references=[0, 1, 2, 0, 1, 2], predictions=[0, 1, 1, 2, 1, 0])
+        &gt;&gt;&gt; print(results)
+        {'accuracy': 0.5}
+
+    Example 2-The same as Example 1, except with `normalize` set to `False`.
+        &gt;&gt;&gt; accuracy_metric = evaluate.load("accuracy")
+        &gt;&gt;&gt; results = accuracy_metric.compute(references=[0, 1, 2, 0, 1, 2], predictions=[0, 1, 1, 2, 1, 0], normalize=False)
+        &gt;&gt;&gt; print(results)
+        {'accuracy': 3.0}
+
+    Example 3-The same as Example 1, except with `sample_weight` set.
+        &gt;&gt;&gt; accuracy_metric = evaluate.load("accuracy")
+        &gt;&gt;&gt; results = accuracy_metric.compute(references=[0, 1, 2, 0, 1, 2], predictions=[0, 1, 1, 2, 1, 0], sample_weight=[0.5, 2, 0.7, 0.5, 9, 0.4])
+        &gt;&gt;&gt; print(results)
+        {'accuracy': 0.8778625954198473}
+
+
+homepage: 
+
+license: 
+
+codebase_urls: []
+
+reference_urls: ['https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html']
+</output_code>
+  <markdown>## Execução</markdown>
+  <markdown>Agora que sabemos como o módulo de avaliação funciona e o que ele deve conter, vamos usá-lo. Quando se trata de calcular a avaliação, há duas maneiras principais de fazer isso:
+
+ * Tudo em um
+ * Incremental
+
+Na abordagem incremental, as entradas necessárias são adicionadas ao módulo com `EvaluationModule.add()` ou `EvaluationModule.add_batch()` e a pontuação é calculada no final com `EvaluationModule.compute()`. Como alternativa, todas as entradas podem ser passadas de uma só vez para `compute()`.
+
+Vamos dar uma olhada nessas duas abordagens.</markdown>
+  <markdown>### Tudo em um</markdown>
+  <markdown>Quando tivermos todas as previsões e a verdade básica, poderemos calcular a métrica. Assim que tivermos um módulo definido, passaremos a ele as previsões e a verdade fundamental usando o método `compute()`.</markdown>
+  <input_code>accuracy = evaluate.load("accuracy")</input_code>
+  <input_code>predictions = [1, 0, 0, 1]
+targets = [0, 1, 0, 1]
+
+accuracy_value = accuracy.compute(predictions=predictions, references=targets)
+accuracy_value</input_code>
+  <output_code>{'accuracy': 0.5}</output_code>
+  <markdown>### Incremental</markdown>
+  <markdown>Em muitos processos de avaliação, as previsões são criadas iterativamente, como em um loop for. Nesse caso, você poderia armazenar os predicados e a verdade básica em uma lista e, em seguida, passá-los para `compute()`.
+
+No entanto, com os métodos `add()` e `add_batch()`, você pode evitar a etapa de armazenamento de previsões.</markdown>
+  <markdown>Se você tiver todas as previsões em um único lote, use o método `add()`.</markdown>
+  <input_code>for ref, pred in zip([0,1,0,1], [1,0,0,1]):
+    accuracy.add(references=ref, predictions=pred)
+accuracy_value = accuracy.compute()
+accuracy_value</input_code>
+  <output_code>{'accuracy': 0.5}</output_code>
+  <markdown>No entanto, quando você tem previsões para vários lotes, é necessário usar o método `add_batch()`.</markdown>
+  <input_code>for refs, preds in zip([[0,1],[0,1]], [[1,0],[0,1]]):
+    accuracy.add_batch(references=refs, predictions=preds)
+accuracy_value = accuracy.compute()
+accuracy_value</input_code>
+  <output_code>{'accuracy': 0.5}</output_code>
+  <markdown>## Combinação de várias avaliações</markdown>
+  <markdown>Geralmente, deseja-se avaliar não apenas uma única métrica, mas também uma variedade de métricas diferentes que capturam diferentes aspectos de um modelo. Por exemplo, para a classificação, geralmente é uma boa ideia calcular `F1`, `recall` e `accuracy` além da `accuracy` para obter uma visão melhor do desempenho do modelo. No entanto, a maneira mais conveniente é usar a função `combine()` para agrupá-las.</markdown>
+  <input_code>clasification_metrics = evaluate.combine(["accuracy", "f1", "precision", "recall"])</input_code>
+  <input_code>predictions=[0, 1, 0]
+targets=[0, 1, 1]
+
+clasification_metrics.compute(predictions=predictions, references=targets)</input_code>
+  <output_code>{'accuracy': 0.6666666666666666,
+ 'f1': 0.6666666666666666,
+ 'precision': 1.0,
+ 'recall': 0.5}</output_code>
+  <markdown>## Salvar resultados</markdown>
+  <markdown>Podemos salvar os resultados da avaliação em um arquivo com o método `save()` passando um nome de arquivo. Podemos passar parâmetros como o número do experimento</markdown>
+  <input_code>references=[0,1,0,1]
+targets=[1,0,0,1]
+
+result = accuracy.compute(references=references, predictions=targets)
+
+hyperparams = {"model": "bert-base-uncased"}
+evaluate.save("./results/", experiment="run 42", **result, **hyperparams)</input_code>
+  <output_code>PosixPath('results/result-2024_04_25-17_45_41.json')</output_code>
+  <markdown>Como podemos ver, tivemos que criar uma variável `hyperparams` para passá-la para o método `save()`. Normalmente, isso não será necessário porque já teremos as variáveis do modelo que estamos treinando.</markdown>
+  <markdown>Isso criará um `json` com todas as informações.</markdown>
+  <input_code>import pathlib
+
+path = pathlib.Path("./results/")
+files = list(path.glob("*"))
+files</input_code>
+  <output_code>[PosixPath('results/result-2024_04_25-17_45_41.json')]</output_code>
+  <input_code>import json
+result_file = files[0]
+result_json = pathlib.Path(result_file).read_text()
+result_dict = json.loads(result_json)
+result_dict</input_code>
+  <output_code>{'experiment': 'run 42',
+ 'accuracy': 0.5,
+ 'model': 'bert-base-uncased',
+ '_timestamp': '2024-04-25T17:45:41.218287',
+ '_git_commit_hash': '8725338b6bf9c97274685df41b2ee6e11319a735',
+ '_evaluate_version': '0.4.1',
+ '_python_version': '3.11.7 (main, Dec 15 2023, 18:12:31) [GCC 11.2.0]',
+ '_interpreter_path': '/home/maximo.fernandez/miniconda3/envs/nlp/bin/python'}</output_code>
+  <markdown>## Fazer upload dos resultados para o hub</markdown>
+  <markdown>Caso estejamos treinando um modelo, podemos carregar no cartão do modelo os resultados da avaliação com o método `push_to_hub()`. Dessa forma, eles aparecerão na página do modelo.</markdown>
+  <markdown>## Avaliador</markdown>
+  <markdown>Se tivermos um modelo, um conjunto de dados e uma métrica, poderemos fazer inferência em todo o conjunto de dados e passar as previsões e os rótulos reais para o avaliador para retornar a métrica e obter as métricas do modelo.
+
+Ou podemos fornecer tudo à biblioteca e deixar que ela faça o trabalho por nós. Usando o método `evaluator()`, passamos a ela o modelo, o conjunto de dados e a métrica, e o método faz tudo por nós.</markdown>
+  <markdown>Primeiro, definimos o modelo, o conjunto de dados e as métricas.</markdown>
+  <input_code>from transformers import pipeline
+from datasets import load_dataset
+from evaluate import evaluator
+import evaluate
+
+model_pipeline = pipeline("text-classification", model="lvwerra/distilbert-imdb", device=0)
+dataset = load_dataset("imdb", split="test").shuffle().select(range(1000))
+metric = evaluate.load("accuracy")</input_code>
+  <markdown>Agora passamos tudo para `evaluator()`.</markdown>
+  <input_code>task_evaluator = evaluator("text-classification")
+
+results = task_evaluator.compute(model_or_pipeline=model_pipeline, data=dataset, metric=metric,
+                       label_mapping={"NEGATIVE": 0, "POSITIVE": 1},)
+results</input_code>
+  <output_code>{'accuracy': 0.933,
+ 'total_time_in_seconds': 29.43192940400013,
+ 'samples_per_second': 33.97670557962431,
+ 'latency_in_seconds': 0.02943192940400013}</output_code>
+  <markdown>Graças ao avaliador, conseguimos obter as métricas do modelo sem precisar fazer a inferência por conta própria.</markdown>
+  <markdown>## Visualização</markdown>
+  <markdown>Às vezes, obtemos métricas diferentes para modelos diferentes, o que dificulta a comparação entre eles, por isso os gráficos facilitam essa tarefa.
+
+A biblioteca `Evaluate` oferece diferentes visualizações por meio do método `visualization()`. Temos que passar os dados para ela como uma lista de dicionários, em que cada dicionário deve ter as mesmas chaves</markdown>
+  <markdown>Para usar essa função, você precisa ter a biblioteca `matplotlib` instalada.
+
+``` bash
+pip install matplotlib
+```</markdown>
+  <input_code>import evaluate
+from evaluate.visualization import radar_plot
+
+data = [
+   {"accuracy": 0.99, "precision": 0.8, "f1": 0.95, "latency_in_seconds": 33.6},
+   {"accuracy": 0.98, "precision": 0.87, "f1": 0.91, "latency_in_seconds": 11.2},
+   {"accuracy": 0.98, "precision": 0.78, "f1": 0.88, "latency_in_seconds": 87.6}, 
+   {"accuracy": 0.88, "precision": 0.78, "f1": 0.81, "latency_in_seconds": 101.6}
+   ]
+
+model_names = ["Model 1", "Model 2", "Model 3", "Model 4"]
+
+plot = radar_plot(data=data, model_names=model_names)
+plot.show()</input_code>
+  <output_code>/tmp/ipykernel_10271/263559674.py:14: UserWarning: FigureCanvasAgg is non-interactive, and thus cannot be shown
+  plot.show()
+</output_code>
+  <output_code>&lt;Figure size 640x480 with 5 Axes&gt;</output_code>
+  <markdown>Agora podemos comparar visualmente os quatro modelos e escolher o melhor, com base em uma ou várias métricas</markdown>
+  <markdown>## Avaliando o modelo em um conjunto de tarefas</markdown>
+  <markdown>Podemos avaliar um modelo, por exemplo, para diferentes conjuntos de dados. Para isso, podemos usar o método `evaluation_suite`. Por exemplo, vamos criar um avaliador que avalia um modelo nos conjuntos de dados `imdb` e `sst2`. Vamos dar uma olhada nesses conjuntos de dados e, para isso, usaremos o método `load_dataset_builder` para não precisarmos fazer download de todo o conjunto de dados.</markdown>
+  <input_code>from datasets import load_dataset_builder
+imdb = load_dataset_builder("imdb")
+imdb.info.features</input_code>
+  <output_code>{'text': Value(dtype='string', id=None),
+ 'label': ClassLabel(names=['neg', 'pos'], id=None)}</output_code>
+  <input_code>from datasets import load_dataset_builder
+sst2 = load_dataset_builder("sst2")
+sst2.info.features</input_code>
+  <output_code>{'idx': Value(dtype='int32', id=None),
+ 'sentence': Value(dtype='string', id=None),
+ 'label': ClassLabel(names=['negative', 'positive'], id=None)}</output_code>
+  <markdown>Como podemos ver, com o conjunto de dados `imdb`, precisamos pegar a coluna `text` para obter o texto e a coluna `label` para obter o destino. Com o conjunto de dados `sst2`, precisamos pegar a coluna `sentence` para obter o texto e a coluna `label` para obter o destino.</markdown>
+  <markdown>Criamos o avaliador para os dois conjuntos de dados</markdown>
+  <input_code>import evaluate
+from evaluate.evaluation_suite import SubTask
+
+class Suite(evaluate.EvaluationSuite):
+
+    def __init__(self, name):
+        super().__init__(name)
+
+        self.suite = [
+            SubTask(
+                task_type="text-classification",
+                data="imdb",
+                split="test[:1]",
+                args_for_task={
+                    "metric": "accuracy",
+                    "input_column": "text",
+                    "label_column": "label",
+                    "label_mapping": {
+                        "LABEL_0": 0.0,
+                        "LABEL_1": 1.0
+                    }
+                }
+            ),
+            SubTask(
+                task_type="text-classification",
+                data="sst2",
+                split="test[:1]",
+                args_for_task={
+                    "metric": "accuracy",
+                    "input_column": "sentence",
+                    "label_column": "label",
+                    "label_mapping": {
+                        "LABEL_0": 0.0,
+                        "LABEL_1": 1.0
+                    }
+                }
+            )
+        ]</input_code>
+  <markdown>Você pode ver em `split="test[:1]",` que só pegamos um exemplo do subconjunto de teste para esse notebook e que a execução não demora muito.</markdown>
+  <markdown>Agora avaliamos com o modelo `huggingface/prunebert-base-uncased-6-finepruned-w-distil-mnli`</markdown>
+  <input_code>from evaluate import EvaluationSuite
+suite = EvaluationSuite.load('mathemakitten/sentiment-evaluation-suite')
+results = suite.run("huggingface/prunebert-base-uncased-6-finepruned-w-distil-mnli")
+results</input_code>
+  <output_code>`data` is a preloaded Dataset! Ignoring `subset` and `split`.
+`data` is a preloaded Dataset! Ignoring `subset` and `split`.
+</output_code>
+  <output_code>[{'accuracy': 0.3,
+  'total_time_in_seconds': 1.4153412349987775,
+  'samples_per_second': 7.06543394110088,
+  'latency_in_seconds': 0.14153412349987776,
+  'task_name': 'imdb',
+  'data_preprocessor': '&lt;function Suite.__init__.&lt;locals&gt;.&lt;lambda&gt; at 0x7f3ff27a5080&gt;'},
+ {'accuracy': 0.0,
+  'total_time_in_seconds': 0.1323430729971733,
+  'samples_per_second': 75.56118936586572,
+  'latency_in_seconds': 0.013234307299717328,
+  'task_name': 'sst2',
+  'data_preprocessor': '&lt;function Suite.__init__.&lt;locals&gt;.&lt;lambda&gt; at 0x7f3f2a9cc720&gt;'}]</output_code>
+</notebook>

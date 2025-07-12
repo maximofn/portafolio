@@ -1,114 +1,108 @@
 <section class="section-block-markdown-cell">
-<h1 id="LoRA---low-rank-adaptation-of-large-language-models">LoRA - low rank adaptation of large language models<a class="anchor-link" href="#LoRA---low-rank-adaptation-of-large-language-models">¶</a></h1>
+<h1 id="LoRA - low rank adaptation of large language models">LoRA - low rank adaptation of large language models<a class="anchor-link" href="#LoRA - low rank adaptation of large language models">¶</a></h1>
 </section>
 <section class="section-block-markdown-cell">
-<p>This notebook has been automatically translated to make it accessible to more people, please let me know if you see any typos.</p>
+<blockquote>
+<p>Disclaimer: This post has been translated to English using a machine translation model. Please, let me know if you find any mistakes.</p>
+</blockquote>
 </section>
 <section class="section-block-markdown-cell">
-<p>The increasing size of language models makes it more and more expensive to train them because more and more VRAM is needed to store all their parameters and the gradients derived from training</p>
-<p>In the paper <a href="https://arxiv.org/abs/2106.09685">LoRA - Low rank adaption of large language models</a> they propose to freeze the model weights and train two matrices called A and B greatly reducing the number of parameters to be trained.</p>
-<p><img alt="LoRA" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/LoRA_adapat.webp"/></p>
+<p>The increase in the size of language models makes them increasingly expensive to train due to the fact that more and more VRAM is required to store all their parameters and the gradients derived from training.</p>
+<p>In the paper <a href="https://arxiv.org/abs/2106.09685">LoRA - Low rank adaption of large language models</a> they propose to freeze the model weights and train two matrices called A and B, significantly reducing the number of parameters that need to be trained.</p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/LoRA_adapat.webp" alt="LoRA">
 <p>Let's see how this is done</p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="LoRA-explanation">LoRA explanation<a class="anchor-link" href="#LoRA-explanation">¶</a></h2>
+<h2 id="Explanation of LoRA">Explanation of LoRA<a class="anchor-link" href="#Explanation of LoRA">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Updating-of-weights-in-a-neural-network">Updating of weights in a neural network<a class="anchor-link" href="#Updating-of-weights-in-a-neural-network">¶</a></h3>
+<h3 id="Weight Update in a Neural Network">Weight Update in a Neural Network<a class="anchor-link" href="#Weight Update in a Neural Network">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>To understand how LoRA works, we first have to remember what happens when we train a model. Let's go back to the most basic part of deep learning, we have a dense layer of a neural network that is defined as:</p>
-$$
-y = Wx + b
-$$<p>Where $W$ is the weights matrix and $b$ is the bias vector.</p>
-<p>For the sake of simplicity we will assume that there is no bias, so it would look like this</p>
-$$
-y = Wx
-$$<p>Suppose that for an input $x$ we want it to have an output $ŷ$.</p>
+<p>To understand how LoRA works, we first need to recall what happens when we train a model. Let's go back to the most basic part of deep learning; we have a dense layer of a neural network defined as:</p>
+<p><span class="math-display">y = Wx + b</span></p>
+<p>Where <span class="math-inline">W</span> is the weight matrix and <span class="math-inline">b</span> is the bias vector.</p>
+<p>To simplify, let's assume there is no bias, so it would be like this</p>
+<p><span class="math-display">y = Wx</span></p>
+<p>Suppose for an input <span class="math-inline">x</span> we want it to have an output <span class="math-inline">ŷ</span></p>
 <ul>
-<li>First what we do is to calculate the output we get with our current value of pesos $W$, i.e. we get the value $y$.</li>
-<li>Next we calculate the error that exists between the value of $y$ that we have obtained and the value that we wanted to obtain $ŷ$. We call this error $loss$, and we calculate it with some mathematical function, now it does not matter which one.</li>
-<li>We compute the gardient (the derivative) of the error $loss$ with respect to the weights matrix $W$, i.e. $$Delta W = \frac{dloss}{dW}$.</li>
-<li>We update the weights $W$ by subtracting from each of their values the value of the gradient multiplied by a learning factor $alpha$, i.e. $W = W - \alpha \Delta W$.</li>
+  <li>First, what we do is calculate the output we get with our current weight value $W$, that is, we obtain the value $y$</li>
+  <li>Next, we calculate the error that exists between the value of $y$ that we have obtained and the value that we wanted to obtain $ŷ$. We call this error $loss$, and we calculate it with some mathematical function, which does not matter now.</li>
+  <li>We calculate the gradient (the derivative) of the loss with respect to the weight matrix $W$, that is $\Delta W = \frac{dloss}{dW}$</li>
+  <li>We update the weights $W$ by subtracting from each of their values the gradient value multiplied by a learning rate $\alpha$, that is $W = W - \alpha \Delta W$</li>
 </ul>
 </section>
 <section class="section-block-markdown-cell">
 <h3 id="LoRA">LoRA<a class="anchor-link" href="#LoRA">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>The authors of LoRA propose that the weights matrix $W$ can be decomposed into</p>
-$$
-W \sim W + \Delta W
-$$<p>So, by freezing the $W$ matrix and training only the $"Delta W$ matrix, it is possible to obtain a model that fits new data without having to retrain the whole model.</p>
-<p>But you may think that $$Delta W$ is a matrix of size equal to $W$ so nothing has been gained, but here the authors rely on <code>Aghajanyan et al. (2020)</code>, a paper in which they showed that although the language models are large and their parameters are matrices with very large dimensions, to adapt them to new tasks it is not necessary to change all the values of the matrices, but changing a few values is enough, which in technical terms, is called Low Rank Adaptation. Hence the name LoRA (Low Rank Adaptation).</p>
+<p>The authors of LoRA propose that the weight matrix <span class="math-inline">W</span> can be decomposed into</p>
+<p><span class="math-display">W \sim W + \Delta W</span></p>
+<p>So by freezing the matrix <span class="math-inline">W</span> and training only the matrix <span class="math-inline">\Delta W</span>, one can obtain a model that adapts to new data without having to retrain the entire model.</p>
+<p>But you might think that <span class="math-inline">\Delta W</span> is a matrix of the same size as <span class="math-inline">W</span>, so nothing has been gained, but here the authors draw on <code>Aghajanyan et al. (2020)</code>, a paper in which they demonstrated that although language models are large and their parameters are matrices with very high dimensions, to adapt them to new tasks it is not necessary to change all the values of the matrices; changing just a few values is sufficient, which technically is called low-rank adaptation. Hence the name LoRA (Low Rank Adaptation).</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>We have frozen the model and now we want to train the $\Delta W$ matrix, let's assume that both $W$ and $\Delta W$ are matrices of size $20 \times 10$, so we have 200 trainable parameters</p>
-<p>Now suppose that the matrix $\Delta W$ can be decomposed into the product of two matrices $A$ and $B$, i.e.</p>
-$$
-\Delta W = A \cdot B
-$$<p>For this multiplication to occur the sizes of the matrices $A$ and $B$ have to be $20 \times n$ and $n \times 10$ respectively. Suppose $n = 5$, so $A$ would be of size $20 \times 5$, i.e. 100 parameters, and $B$ of size $5 \times 10$, i.e. 50 parameters, so we would have 100+50=150 trainable parameters. We already have less trainable parameters than before</p>
-<p>Now let's suppose that $W$ is actually a matrix of size $10.000 \times 10.000$, so we would have 100.000.000 trainable parameters, but if we decompose $\Delta W$ in $A$ and $B$ with $n = 5$, we would have a matrix of size $10.000 \times 5$ and another one of size $5 \times 10.000$, so we would have 50.000 parameters of one and another 50.000 parameters of the other, in total 100.000 trainable parameters, that is to say we have reduced the number of parameters 1000 times.</p>
-<p>You can already see the power of LoRA, when you have very large models, the number of trainable parameters can be greatly reduced.</p>
-<p>If we look again at the image of the LoRA architecture, we will understand it better.</p>
-<p><img alt="LoRA adapt" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/LoRA_adapat.webp"/></p>
-<p>But it looks even better, the savings in number of trainable parameters with this image</p>
-<p><img alt="LoRA matmul" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/Lora_matmul.webp"/></p>
+<p>We have frozen the model and now we want to train the matrix <span class="math-inline">\Delta W</span>. Let's assume that both <span class="math-inline">W</span> and <span class="math-inline">\Delta W</span> are matrices of size <span class="math-inline">20 &times; 10</span>, so we have 200 trainable parameters.</p>
+<p>Now suppose that the matrix <span class="math-inline">\Delta W</span> can be decomposed into the product of two matrices <span class="math-inline">A</span> and <span class="math-inline">B</span>, that is</p>
+<p><span class="math-display">\Delta W = A · B</span></p>
+<p>For this multiplication to occur, the sizes of matrices <span class="math-inline">A</span> and <span class="math-inline">B</span> must be <span class="math-inline">20 &times; n</span> and <span class="math-inline">n &times; 10</span>, respectively. Suppose that <span class="math-inline">n = 5</span>, so <span class="math-inline">A</span> would be of size <span class="math-inline">20 &times; 5</span>, which is 100 parameters, and <span class="math-inline">B</span> of size <span class="math-inline">5 &times; 10</span>, which is 50 parameters, resulting in 100+50=150 trainable parameters. We now have fewer trainable parameters than before.</p>
+<p>Now suppose that <span class="math-inline">W</span> is actually a matrix of size <span class="math-inline">10.000 &times; 10.000</span>, so we would have 100.000.000 trainable parameters, but if we decompose <span class="math-inline">\Delta W</span> into <span class="math-inline">A</span> and <span class="math-inline">B</span> with <span class="math-inline">n = 5</span>, we would have a matrix of size <span class="math-inline">10.000 &times; 5</span> and another of size <span class="math-inline">5 &times; 10.000</span>, so we would have 50.000 parameters from one and 50.000 parameters from the other, in total 100.000 trainable parameters, that is, we have reduced the number of parameters 1000 times.</p>
+<p>You can already see the power of LoRA, when dealing with very large models, the number of trainable parameters can be drastically reduced.</p>
+<p>If we look back at the image of the LoRA architecture, we will understand it better</p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/LoRA_adapat.webp" alt="LoRA adapt">
+<p>But it looks even better, the savings in the number of trainable parameters with this image</p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/Lora_matmul.webp" alt="LoRA matmul">
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Implementation-of-LoRA-in-transformers">Implementation of LoRA in transformers<a class="anchor-link" href="#Implementation-of-LoRA-in-transformers">¶</a></h3>
+<h3 id="Implementation of LoRA in transformers">Implementation of LoRA in transformers<a class="anchor-link" href="#Implementation of LoRA in transformers">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>Since language models are implementations of transformers, let's see how LoRA is implemented in transformers. In the transformer architecture there are linear layers in the $Q$, $K$ and $V$ attention matrices, and in the feedforward layers, so LoRA can be applied to all these linear layers. In the paper they say that for simplicity they apply it only to the linear layers of the $Q$, $K$ and $V$ attention matrices.</p>
-<p>These layers have a size $d_{model} \times d_{model}$, where $d_{model}$ is the embedding dimension of the model.</p>
+<p>Since language models are implementations of transformers, we will see how LoRA is implemented in transformers. In the transformer architecture, there are linear layers in the attention matrices <span class="math-inline">Q</span>, <span class="math-inline">K</span>, and <span class="math-inline">V</span>, and in the feedforward layers, so LoRA can be applied to all these linear layers. The paper mentions that for simplicity, they apply it only to the linear layers of the attention matrices <span class="math-inline">Q</span>, <span class="math-inline">K</span>, and <span class="math-inline">V</span>.</p>
+<p>These layers have a size of <span class="math-inline">d<sub>model</sub> &times; d<sub>model</sub></span>, where <span class="math-inline">d<sub>model</sub></span> is the model's embedding dimension.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Range-size-r">Range size r<a class="anchor-link" href="#Range-size-r">¶</a></h3>
+<h3 id="Size of range r">Size of range r<a class="anchor-link" href="#Size of range r">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>In order to have these benefits, the size of the range $r$ have to be smaller than the size of the linear layers. Since we have said that they only implemented it in the linear layers of attention, which have a size $d_{model} \times d_{model}$, the rank size $r$ has to be smaller than $d_{model}$.</p>
+<p>To be able to have these benefits, the size of the range <span class="math-inline">r</span> has to be smaller than the size of the linear layers. As we mentioned that they only implemented it in the attention linear layers, which have a size of <span class="math-inline">d<sub>model</sub> &times; d<sub>model</sub></span>, the size of the range <span class="math-inline">r</span> has to be smaller than <span class="math-inline">d<sub>model</sub></span>.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Initialization-of-matrices-A-and-B">Initialization of matrices A and B<a class="anchor-link" href="#Initialization-of-matrices-A-and-B">¶</a></h3>
+<h3 id="Initialization of matrices A and B">Initialization of matrices A and B<a class="anchor-link" href="#Initialization of matrices A and B">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>The matrices $A$ and $B$ are initialized with a random Gaussian distribution for $A$ and zero for $B$, so the product of both matrices will be zero at the beginning, i.e.</p>
-$$
-\Delta W = A \cdot B = 0
-$$
+<p>The matrices <span class="math-inline">A</span> and <span class="math-inline">B</span> are initialized with a random Gaussian distribution for <span class="math-inline">A</span> and zero for <span class="math-inline">B</span>, so the product of both matrices will be zero at the beginning, that is</p>
+<p><span class="math-display">\Delta W = A · B = 0</span></p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Influence-of-LoRA-through-the-parameter-$alpha$">Influence of LoRA through the parameter $alpha$<a class="anchor-link" href="#Influence-of-LoRA-through-the-parameter-$alpha$">¶</a></h3>
+<h3 id="Influence of LoRA through the parameter $\alpha$">Influence of LoRA through the parameter $\alpha$<a class="anchor-link" href="#Influence of LoRA through the parameter $\alpha$">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>Finally, in the LoRA implementation, a $alpha$ parameter is added to establish the degree of influence of LoRA on training. It is similar to the learning rate in normal fine tuning, but in this case it is used to establish the influence of LoRA on the training. Thus the LoRA formula would look like this</p>
-$$
-W = W + \alpha \Delta W = W + \alpha A \cdot B
-$$
+<p>Finally, in the implementation of LoRA, a parameter <span class="math-inline">&alpha;</span> is added to set the degree of influence of LoRA in the training. It is similar to the learning rate in normal fine-tuning, but in this case it is used to set the influence of LoRA in the training. In this way, the LoRA formula would be as follows</p>
+<p><span class="math-display">W = W + &alpha; \Delta W = W + &alpha; A · B</span></p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Advantages-of-LoRA">Advantages of LoRA<a class="anchor-link" href="#Advantages-of-LoRA">¶</a></h2><p>Now that we understand how it works, let's take a look at the advantages of this approach</p>
+<h2 id="Advantages of LoRA">Advantages of LoRA<a class="anchor-link" href="#Advantages of LoRA">¶</a></h2>
+<p>Now that we have understood how it works, let's look at the advantages of this method</p>
 <ul>
-<li>Reduction of the number of trainable parameters. As we have seen, the number of trainable parameters is drastically reduced, which makes training much faster and less VRAM is needed, thus saving a lot of costs.</li>
-<li>Adapters in production. We can have in production a single language model and several adapters, each one for a different task, instead of having several models trained for each task, thus saving storage and computational costs. Moreover, this method does not have to add latency in the inference because we can merge the original weight matrix with the adapter, since we have seen that $W \sim W + \Delta W = W + A \cdot B$, so the inference time would be the same as using the original language model.</li>
-<li>Buying and sharing adapters. If we train an adapter, we can share only the adapter. That is, in production, everyone can have the original model and every time we train an adapter we can share only the adapter, so as much smaller arrays would be shared, the size of the files to be shared would be much smaller.</li>
+  <li>Reduction of trainable parameters. As we have seen, the number of trainable parameters is drastically reduced, which makes training much faster and requires less VRAM, thus saving many costs.* Adapters in production. We can have a single language model in production and several adapters, each for a different task, instead of having multiple models trained for each task, thus saving storage and computation costs. Additionally, this method does not necessarily add latency to inference because the original weight matrix can be fused with the adapter, as we have seen that $W \sim W + \Delta W = W + A \cdot B$, so the inference time would be the same as using the original language model.</li>
+  <li>Share adapters. If we train an adapter, we can share only the adapter. That is, in production, everyone can have the original model and every time we train an adapter, we can share only the adapter, so as smaller matrices would be shared, the size of the files that are shared would be much smaller</li>
 </ul>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Implementation-of-LoRA-in-an-LLM">Implementation of LoRA in an LLM<a class="anchor-link" href="#Implementation-of-LoRA-in-an-LLM">¶</a></h2>
+<h2 id="Implementation of LoRA in an LLM">Implementation of LoRA in an LLM<a class="anchor-link" href="#Implementation of LoRA in an LLM">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<p>We are going to repeat the training code of the post <a href="https://maximofn.com/fine-tuning-sml/">Fine tuning SLMs</a>, specifically the training for text classification with the Hugging Face libraries, but this time we are going to do it with LoRA. In the previous post we used a batch size of 28 for the training loop and 40 for the evaluation loop, however, as now we are not going to train all the weights of the model, but only the LoRA matrices, we will be able to use a bigger batch size</p>
+<p>We are going to repeat the training code from the post <a href="https://maximofn.com/fine-tuning-sml/">Fine tuning SLMs</a>, specifically the text classification training with Hugging Face libraries, but this time we will do it with LoRA. In the previous post, we used a batch size of 28 for the training loop and 40 for the evaluation loop. However, since we are not going to train all the model's weights this time, but only the LoRA matrices, we will be able to use a larger batch size.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Login-to-the-Hub">Login to the Hub<a class="anchor-link" href="#Login-to-the-Hub">¶</a></h3>
+<h3 id="Login in the Hub">Login in the Hub<a class="anchor-link" href="#Login in the Hub">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>We log in to upload the model to the Hub</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">notebook_login</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">notebook_login</span>
 <span class="n">notebook_login</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -117,68 +111,74 @@ $$
 <h3 id="Dataset">Dataset<a class="anchor-link" href="#Dataset">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>We download the dataset we are going to use, which is a dataset of reviews from <a href="https://huggingface.co/datasets/mteb/amazon_reviews_multi">Amazon</a></p>
+<p>We download the dataset we are going to use, which is a review dataset from <a href="https://huggingface.co/datasets/mteb/amazon_reviews_multi">Amazon</a></p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">datasets</span> <span class="kn">import</span> <span class="n">load_dataset</span>
-
-<span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"mteb/amazon_reviews_multi"</span><span class="p">,</span> <span class="s2">"en"</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+<span class="w"> </span>
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;mteb/amazon_reviews_multi&quot;</span><span class="p">,</span> <span class="s2">&quot;en&quot;</span><span class="p">)</span>
 <span class="n">dataset</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[1]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>DatasetDict({
-    train: Dataset({
-        features: ['id', 'text', 'label', 'label_text'],
-        num_rows: 200000
-    })
-    validation: Dataset({
-        features: ['id', 'text', 'label', 'label_text'],
-        num_rows: 5000
-    })
-    test: Dataset({
-        features: ['id', 'text', 'label', 'label_text'],
-        num_rows: 5000
-    })
-})</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>DatasetDict(&#x7B;
+&#x20;&#x20;&#x20;&#x20;train: Dataset(&#x7B;
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;features: [&#x27;id&#x27;, &#x27;text&#x27;, &#x27;label&#x27;, &#x27;label_text&#x27;],
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;num_rows: 200000
+&#x20;&#x20;&#x20;&#x20;&#x7D;)
+&#x20;&#x20;&#x20;&#x20;validation: Dataset(&#x7B;
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;features: [&#x27;id&#x27;, &#x27;text&#x27;, &#x27;label&#x27;, &#x27;label_text&#x27;],
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;num_rows: 5000
+&#x20;&#x20;&#x20;&#x20;&#x7D;)
+&#x20;&#x20;&#x20;&#x20;test: Dataset(&#x7B;
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;features: [&#x27;id&#x27;, &#x27;text&#x27;, &#x27;label&#x27;, &#x27;label_text&#x27;],
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;num_rows: 5000
+&#x20;&#x20;&#x20;&#x20;&#x7D;)
+&#x7D;)
+</pre>
 </div>
 </div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>We create a subset in case you want to test the code with a smaller dataset. In my case I will use 100% of the dataset</p>
+<p>We create a subset in case you want to test the code with a smaller dataset. In my case, I will use 100% of the dataset.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">percentage</span> <span class="o">=</span> <span class="mi">1</span>
-
-<span class="n">subset_dataset_train</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s1">'train'</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s1">'train'</span><span class="p">])</span> <span class="o">*</span> <span class="n">percentage</span><span class="p">)))</span>
-<span class="n">subset_dataset_validation</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s1">'validation'</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s1">'validation'</span><span class="p">])</span> <span class="o">*</span> <span class="n">percentage</span><span class="p">)))</span>
-<span class="n">subset_dataset_test</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s1">'test'</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s1">'test'</span><span class="p">])</span> <span class="o">*</span> <span class="n">percentage</span><span class="p">)))</span>
-
+<span class="w"> </span>
+<span class="n">subset_dataset_train</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s1">&#39;train&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s1">&#39;train&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="n">percentage</span><span class="p">)))</span>
+<span class="n">subset_dataset_validation</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s1">&#39;validation&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s1">&#39;validation&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="n">percentage</span><span class="p">)))</span>
+<span class="n">subset_dataset_test</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s1">&#39;test&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s1">&#39;test&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="n">percentage</span><span class="p">)))</span>
+<span class="w"> </span>
 <span class="n">subset_dataset_train</span><span class="p">,</span> <span class="n">subset_dataset_validation</span><span class="p">,</span> <span class="n">subset_dataset_test</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[2]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>(Dataset({
-     features: ['id', 'text', 'label', 'label_text'],
-     num_rows: 200000
- }),
- Dataset({
-     features: ['id', 'text', 'label', 'label_text'],
-     num_rows: 5000
- }),
- Dataset({
-     features: ['id', 'text', 'label', 'label_text'],
-     num_rows: 5000
- }))</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>(Dataset(&#x7B;
+&#x20;&#x20;&#x20;&#x20;&#x20;features: [&#x27;id&#x27;, &#x27;text&#x27;, &#x27;label&#x27;, &#x27;label_text&#x27;],
+&#x20;&#x20;&#x20;&#x20;&#x20;num_rows: 200000
+ &#x7D;),
+ Dataset(&#x7B;
+&#x20;&#x20;&#x20;&#x20;&#x20;features: [&#x27;id&#x27;, &#x27;text&#x27;, &#x27;label&#x27;, &#x27;label_text&#x27;],
+&#x20;&#x20;&#x20;&#x20;&#x20;num_rows: 5000
+ &#x7D;),
+ Dataset(&#x7B;
+&#x20;&#x20;&#x20;&#x20;&#x20;features: [&#x27;id&#x27;, &#x27;text&#x27;, &#x27;label&#x27;, &#x27;label_text&#x27;],
+&#x20;&#x20;&#x20;&#x20;&#x20;num_rows: 5000
+ &#x7D;))
+</pre>
 </div>
 </div>
 </div>
@@ -188,50 +188,56 @@ $$
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">random</span> <span class="kn">import</span> <span class="n">randint</span>
-
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">random</span><span class="w"> </span><span class="kn">import</span> <span class="n">randint</span>
+<span class="w"> </span>
 <span class="n">idx</span> <span class="o">=</span> <span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">subset_dataset_train</span><span class="p">))</span>
 <span class="n">subset_dataset_train</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[3]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>{'id': 'en_0388304',
- 'text': 'The N was missing from on\n\nThe N was missing from on',
- 'label': 0,
- 'label_text': '0'}</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>&#x7B;&#x27;id&#x27;: &#x27;en_0388304&#x27;,
+ &#x27;text&#x27;: &#x27;The N was missing from on\n\nThe N was missing from on&#x27;,
+ &#x27;label&#x27;: 0,
+ &#x27;label_text&#x27;: &#x27;0&#x27;&#x7D;
+</pre>
 </div>
 </div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>We obtain the number of classes, to obtain the number of classes we use <code>dataset['train']</code> and not <code>subset_dataset_train</code> because if the subset is too small it is possible that there are no examples with all the possible classes of the original dataset.</p>
+<p>We get the number of classes. To obtain the number of classes, we use <code>dataset[&#x27;train&#x27;]</code> and not <code>subset_dataset_train</code> because if the subset is made too small, it's possible that there won't be examples with all the possible classes from the original dataset.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">num_classes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s1">'train'</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="s1">'label'</span><span class="p">))</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">num_classes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s1">&#39;train&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="s1">&#39;label&#39;</span><span class="p">))</span>
 <span class="n">num_classes</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[5]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>5</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>5
+</pre>
 </div>
 </div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>We create a function to create the <code>label</code> field in the dataset. The downloaded dataset has the <code>labels</code> field but the <code>transformers</code> library needs the field to be called <code>label</code> and not <code>labels</code>.</p>
+<p>We create a function to create the <code>label</code> field in the dataset. The downloaded dataset has the field <code>labels</code>, but the <code>transformers</code> library requires that the field be called <code>label</code> and not <code>labels</code>.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">set_labels</span><span class="p">(</span><span class="n">example</span><span class="p">):</span>
-    <span class="n">example</span><span class="p">[</span><span class="s1">'labels'</span><span class="p">]</span> <span class="o">=</span> <span class="n">example</span><span class="p">[</span><span class="s1">'label'</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">example</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">set_labels</span><span class="p">(</span><span class="n">example</span><span class="p">):</span>
+<span class="w">    </span><span class="n">example</span><span class="p">[</span><span class="s1">&#39;labels&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">example</span><span class="p">[</span><span class="s1">&#39;label&#39;</span><span class="p">]</span>
+<span class="w">    </span><span class="k">return</span> <span class="n">example</span>
 </pre></div>
 </div>
 </section>
@@ -243,47 +249,53 @@ $$
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">subset_dataset_train</span> <span class="o">=</span> <span class="n">subset_dataset_train</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">set_labels</span><span class="p">)</span>
 <span class="n">subset_dataset_validation</span> <span class="o">=</span> <span class="n">subset_dataset_validation</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">set_labels</span><span class="p">)</span>
 <span class="n">subset_dataset_test</span> <span class="o">=</span> <span class="n">subset_dataset_test</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">set_labels</span><span class="p">)</span>
-
+<span class="w"> </span>
 <span class="n">subset_dataset_train</span><span class="p">,</span> <span class="n">subset_dataset_validation</span><span class="p">,</span> <span class="n">subset_dataset_test</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[7]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>(Dataset({
-     features: ['id', 'text', 'label', 'label_text', 'labels'],
-     num_rows: 200000
- }),
- Dataset({
-     features: ['id', 'text', 'label', 'label_text', 'labels'],
-     num_rows: 5000
- }),
- Dataset({
-     features: ['id', 'text', 'label', 'label_text', 'labels'],
-     num_rows: 5000
- }))</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>(Dataset(&#x7B;
+&#x20;&#x20;&#x20;&#x20;&#x20;features: [&#x27;id&#x27;, &#x27;text&#x27;, &#x27;label&#x27;, &#x27;label_text&#x27;, &#x27;labels&#x27;],
+&#x20;&#x20;&#x20;&#x20;&#x20;num_rows: 200000
+ &#x7D;),
+ Dataset(&#x7B;
+&#x20;&#x20;&#x20;&#x20;&#x20;features: [&#x27;id&#x27;, &#x27;text&#x27;, &#x27;label&#x27;, &#x27;label_text&#x27;, &#x27;labels&#x27;],
+&#x20;&#x20;&#x20;&#x20;&#x20;num_rows: 5000
+ &#x7D;),
+ Dataset(&#x7B;
+&#x20;&#x20;&#x20;&#x20;&#x20;features: [&#x27;id&#x27;, &#x27;text&#x27;, &#x27;label&#x27;, &#x27;label_text&#x27;, &#x27;labels&#x27;],
+&#x20;&#x20;&#x20;&#x20;&#x20;num_rows: 5000
+ &#x7D;))
+</pre>
 </div>
 </div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Here is a sample again</p>
+<p>We see a sample again</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">subset_dataset_train</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[8]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>{'id': 'en_0388304',
- 'text': 'The N was missing from on\n\nThe N was missing from on',
- 'label': 0,
- 'label_text': '0',
- 'labels': 0}</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>&#x7B;&#x27;id&#x27;: &#x27;en_0388304&#x27;,
+ &#x27;text&#x27;: &#x27;The N was missing from on\n\nThe N was missing from on&#x27;,
+ &#x27;label&#x27;: 0,
+ &#x27;label_text&#x27;: &#x27;0&#x27;,
+ &#x27;labels&#x27;: 0&#x7D;
+</pre>
 </div>
 </div>
 </div>
@@ -296,69 +308,75 @@ $$
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span>
-
-<span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2"</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span>
+<span class="w"> </span>
+<span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">&quot;openai-community/gpt2&quot;</span>
 <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
 <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>We create a function for tokenizing the dataset</p>
+<p>We create a function to tokenize the dataset</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">tokenize_function</span><span class="p">(</span><span class="n">examples</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">examples</span><span class="p">[</span><span class="s2">"text"</span><span class="p">],</span> <span class="n">padding</span><span class="o">=</span><span class="s2">"max_length"</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">768</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">tokenize_function</span><span class="p">(</span><span class="n">examples</span><span class="p">):</span>
+<span class="w">    </span><span class="k">return</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">examples</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">],</span> <span class="n">padding</span><span class="o">=</span><span class="s2">&quot;max_length&quot;</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">768</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>We apply the function to the dataset and remove the columns that we do not need</p>
+<p>We apply the function to the dataset and, at the same time, remove the columns we don't need.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">subset_dataset_train</span> <span class="o">=</span> <span class="n">subset_dataset_train</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">tokenize_function</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">remove_columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'text'</span><span class="p">,</span> <span class="s1">'label'</span><span class="p">,</span> <span class="s1">'id'</span><span class="p">,</span> <span class="s1">'label_text'</span><span class="p">])</span>
-<span class="n">subset_dataset_validation</span> <span class="o">=</span> <span class="n">subset_dataset_validation</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">tokenize_function</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">remove_columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'text'</span><span class="p">,</span> <span class="s1">'label'</span><span class="p">,</span> <span class="s1">'id'</span><span class="p">,</span> <span class="s1">'label_text'</span><span class="p">])</span>
-<span class="n">subset_dataset_test</span> <span class="o">=</span> <span class="n">subset_dataset_test</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">tokenize_function</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">remove_columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'text'</span><span class="p">,</span> <span class="s1">'label'</span><span class="p">,</span> <span class="s1">'id'</span><span class="p">,</span> <span class="s1">'label_text'</span><span class="p">])</span>
-
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">subset_dataset_train</span> <span class="o">=</span> <span class="n">subset_dataset_train</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">tokenize_function</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">remove_columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;label_text&#39;</span><span class="p">])</span>
+<span class="n">subset_dataset_validation</span> <span class="o">=</span> <span class="n">subset_dataset_validation</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">tokenize_function</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">remove_columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;label_text&#39;</span><span class="p">])</span>
+<span class="n">subset_dataset_test</span> <span class="o">=</span> <span class="n">subset_dataset_test</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">tokenize_function</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">remove_columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;label_text&#39;</span><span class="p">])</span>
+<span class="w"> </span>
 <span class="n">subset_dataset_train</span><span class="p">,</span> <span class="n">subset_dataset_validation</span><span class="p">,</span> <span class="n">subset_dataset_test</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[12]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>(Dataset({
-     features: ['labels', 'input_ids', 'attention_mask'],
-     num_rows: 200000
- }),
- Dataset({
-     features: ['labels', 'input_ids', 'attention_mask'],
-     num_rows: 5000
- }),
- Dataset({
-     features: ['labels', 'input_ids', 'attention_mask'],
-     num_rows: 5000
- }))</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>(Dataset(&#x7B;
+&#x20;&#x20;&#x20;&#x20;&#x20;features: [&#x27;labels&#x27;, &#x27;input_ids&#x27;, &#x27;attention_mask&#x27;],
+&#x20;&#x20;&#x20;&#x20;&#x20;num_rows: 200000
+ &#x7D;),
+ Dataset(&#x7B;
+&#x20;&#x20;&#x20;&#x20;&#x20;features: [&#x27;labels&#x27;, &#x27;input_ids&#x27;, &#x27;attention_mask&#x27;],
+&#x20;&#x20;&#x20;&#x20;&#x20;num_rows: 5000
+ &#x7D;),
+ Dataset(&#x7B;
+&#x20;&#x20;&#x20;&#x20;&#x20;features: [&#x27;labels&#x27;, &#x27;input_ids&#x27;, &#x27;attention_mask&#x27;],
+&#x20;&#x20;&#x20;&#x20;&#x20;num_rows: 5000
+ &#x7D;))
+</pre>
 </div>
 </div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>We see again a sample, but in this case we only see the <code>keys</code>.</p>
+<p>We see a sample again, but in this case we only see the <code>keys</code></p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">subset_dataset_train</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[13]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>dict_keys(['labels', 'input_ids', 'attention_mask'])</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>dict_keys([&#x27;labels&#x27;, &#x27;input_ids&#x27;, &#x27;attention_mask&#x27;])
+</pre>
 </div>
 </div>
 </div>
@@ -367,21 +385,23 @@ $$
 <h3 id="Model">Model<a class="anchor-link" href="#Model">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>We instantiate the model. Also, in order to avoid errors, we assign the end of string token to the padding token.</p>
+<p>We instantiate the model. Also, to avoid errors, we assign the end of string token to the padding token.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForSequenceClassification</span>
-
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoModelForSequenceClassification</span>
+<span class="w"> </span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForSequenceClassification</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">num_labels</span><span class="o">=</span><span class="n">num_classes</span><span class="p">)</span>
 <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">eos_token_id</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
-<div class="output-subarea-output-stream-output-stderr-output-text">
-<pre>Some weights of GPT2ForSequenceClassification were not initialized from the model checkpoint at openai-community/gpt2 and are newly initialized: ['score.weight']
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>Some weights of GPT2ForSequenceClassification were not initialized from the model checkpoint at openai-community/gpt2 and are newly initialized: [&#x27;score.weight&#x27;]
 You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
 </pre>
 </div>
@@ -389,20 +409,22 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>As we have already seen in the post <a href="https://maximofn.com/fine-tuning-sml/">Fine tuning SLMs</a> we get a warning that some layers have not been initialized. This is because in this case, as it is a classification problem and when we have instantiated the model we have told it that we want it to be a classification model with 5 classes, the library has removed the last layer and replaced it with a 5 neuron one at the output. If you do not understand this well go to the post that I quote that is better eplicado</p>
+<p>As we saw in the post <a href="https://maximofn.com/fine-tuning-sml/">Fine tuning SLMs</a> we get a warning that says some layers have not been initialized. This is because, in this case, as it is a classification problem and when we instantiated the model we specified that we want it to be a classification model with 5 classes, the library has removed the last layer and replaced it with one that has 5 neurons at the output. If you don't fully understand this, check out the post I cited for a better explanation.</p>
 </section>
 <section class="section-block-markdown-cell">
 <h3 id="LoRA">LoRA<a class="anchor-link" href="#LoRA">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>Before implementing LoRA, we look at the number of trainable parameters that the model has</p>
+<p>Before implementing LoRA, we check the number of trainable parameters that the model has</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">total_params</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">()</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">requires_grad</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Total trainable parameters before: </span><span class="si">{</span><span class="n">total_params</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total trainable parameters before: </span><span class="si">{</span><span class="n">total_params</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
@@ -414,17 +436,19 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>We see that it has 124M trainable parameters. Now let's freeze them</p>
+<p>We see that it has 124M trainable parameters. Now we are going to freeze them.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
 <div class="highlight hl-ipython3"><pre><span></span><span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">():</span>
-    <span class="n">param</span><span class="o">.</span><span class="n">requires_grad</span> <span class="o">=</span> <span class="kc">False</span>
-
+<span class="w">    </span><span class="n">param</span><span class="o">.</span><span class="n">requires_grad</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="w"> </span>
 <span class="n">total_params</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">()</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">requires_grad</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Total trainable parameters after: </span><span class="si">{</span><span class="n">total_params</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total trainable parameters after: </span><span class="si">{</span><span class="n">total_params</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
@@ -436,120 +460,123 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>After freezing there are no more trainable parameters</p>
+<p>After freezing, there are no trainable parameters left.</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Let's see what the model looks like before applying LoRA</p>
+<p>Let's see how the model looks before applying LoRA</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">model</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[16]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
 <pre>GPT2ForSequenceClassification(
-  (transformer): GPT2Model(
-    (wte): Embedding(50257, 768)
-    (wpe): Embedding(1024, 768)
-    (drop): Dropout(p=0.1, inplace=False)
-    (h): ModuleList(
-      (0-11): 12 x GPT2Block(
-        (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
-        (attn): GPT2Attention(
-          (c_attn): Conv1D()
-          (c_proj): Conv1D()
-          (attn_dropout): Dropout(p=0.1, inplace=False)
-          (resid_dropout): Dropout(p=0.1, inplace=False)
-        )
-        (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
-        (mlp): GPT2MLP(
-          (c_fc): Conv1D()
-          (c_proj): Conv1D()
-          (act): NewGELUActivation()
-          (dropout): Dropout(p=0.1, inplace=False)
-        )
-      )
-    )
-    (ln_f): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
-  )
-  (score): Linear(in_features=768, out_features=5, bias=False)
-)</pre>
+&#x20;&#x20;(transformer): GPT2Model(
+&#x20;&#x20;&#x20;&#x20;(wte): Embedding(50257, 768)
+&#x20;&#x20;&#x20;&#x20;(wpe): Embedding(1024, 768)
+&#x20;&#x20;&#x20;&#x20;(drop): Dropout(p=0.1, inplace=False)
+&#x20;&#x20;&#x20;&#x20;(h): ModuleList(
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(0-11): 12 x GPT2Block(
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(attn): GPT2Attention(
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(c_attn): Conv1D()
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(c_proj): Conv1D()
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(attn_dropout): Dropout(p=0.1, inplace=False)
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(resid_dropout): Dropout(p=0.1, inplace=False)
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;)
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(mlp): GPT2MLP(
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(c_fc): Conv1D()
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(c_proj): Conv1D()
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(act): NewGELUActivation()
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(dropout): Dropout(p=0.1, inplace=False)
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;)
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;)
+&#x20;&#x20;&#x20;&#x20;)
+&#x20;&#x20;&#x20;&#x20;(ln_f): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+&#x20;&#x20;)
+&#x20;&#x20;(score): Linear(in_features=768, out_features=5, bias=False)
+)
+</pre>
 </div>
 </div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
 <p>First we create the LoRA layer.</p>
-<p>It has to inherit from <code>torch.nn.Module</code> so that it can act as a layer of a neural network.</p>
-<p>In the <code>_init_</code> method we create the <code>A</code> and <code>B</code> matrices initialized as explained before, the <code>A</code> matrix with a random Gaussian distribution and the <code>B</code> matrix with zeros. We also create the parameters <code>rank</code> and <code>alpha</code>.</p>
-<p>In the <code>forward</code> method we calculate LoRA as explained above.</p>
+<p>It has to inherit from <code>torch.nn.Module</code> so that it can act as a layer of a neural network</p>
+<p>In the <code>_init_</code> method we create the matrices <code>A</code> and <code>B</code> initialized as explained before, matrix <code>A</code> with a random Gaussian distribution and matrix <code>B</code> with zeros. We also create the parameters <code>rank</code> and <code>alpha</code>.</p>
+<p>In the <code>forward</code> method we calculate LoRA as explained.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
-
-<span class="k">class</span> <span class="nc">LoRALayer</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_dim</span><span class="p">,</span> <span class="n">out_dim</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">alpha</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">A</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">in_dim</span><span class="p">,</span> <span class="n">rank</span><span class="p">))</span>
-        <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">kaiming_uniform_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">5.</span><span class="p">))</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>  <span class="c1"># similar to standard weight initialization</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">B</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">rank</span><span class="p">,</span> <span class="n">out_dim</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span>
-
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">@</span> <span class="bp">self</span><span class="o">.</span><span class="n">A</span> <span class="o">@</span> <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">x</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="w"> </span>
+<span class="k">class</span><span class="w"> </span><span class="nc">LoRALayer</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_dim</span><span class="p">,</span> <span class="n">out_dim</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">alpha</span><span class="p">):</span>
+<span class="w">        </span><span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+<span class="w">        </span><span class="bp">self</span><span class="o">.</span><span class="n">A</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">in_dim</span><span class="p">,</span> <span class="n">rank</span><span class="p">))</span>
+<span class="w">        </span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">kaiming_uniform_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">5.</span><span class="p">))</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>  <span class="c1"># similar to standard weight initialization</span>
+<span class="w">        </span><span class="bp">self</span><span class="o">.</span><span class="n">B</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">rank</span><span class="p">,</span> <span class="n">out_dim</span><span class="p">))</span>
+<span class="w">        </span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span>
+<span class="w"> </span>
+<span class="w">    </span><span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<span class="w">        </span><span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">@</span> <span class="bp">self</span><span class="o">.</span><span class="n">A</span> <span class="o">@</span> <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">)</span>
+<span class="w">        </span><span class="k">return</span> <span class="n">x</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
 <p>Now we create a linear class with LoRA.</p>
-<p>As before, it inherits from <code>torch.nn.Module</code> so that it can act as a layer of a neural network.</p>
-<p>In the <code>_init_</code> method we create a variable with the original linear layer of the network and we create another variable with the new LoRA layer that we had implemented before</p>
-<p>In the <code>forward</code> method we add the outputs of the original linear layer and the LoRA layer.</p>
+<p>Just like before, inherit from <code>torch.nn.Module</code> so it can act as a layer of a neural network.</p>
+<p>In the <code>init</code> method, we create a variable with the original linear layer of the network and another variable with the new LoRA layer that we had implemented earlier.</p>
+<p>In the <code>forward</code> method, we add the outputs of the original linear layer and the LoRA layer.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="k">class</span> <span class="nc">LoRALinear</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linear</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">alpha</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">linear</span> <span class="o">=</span> <span class="n">linear</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">lora</span> <span class="o">=</span> <span class="n">LoRALayer</span><span class="p">(</span>
-            <span class="n">linear</span><span class="o">.</span><span class="n">in_features</span><span class="p">,</span> <span class="n">linear</span><span class="o">.</span><span class="n">out_features</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">alpha</span>
-        <span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">lora</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">LoRALinear</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linear</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">alpha</span><span class="p">):</span>
+<span class="w">        </span><span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+<span class="w">        </span><span class="bp">self</span><span class="o">.</span><span class="n">linear</span> <span class="o">=</span> <span class="n">linear</span>
+<span class="w">        </span><span class="bp">self</span><span class="o">.</span><span class="n">lora</span> <span class="o">=</span> <span class="n">LoRALayer</span><span class="p">(</span>
+<span class="w">            </span><span class="n">linear</span><span class="o">.</span><span class="n">in_features</span><span class="p">,</span> <span class="n">linear</span><span class="o">.</span><span class="n">out_features</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">alpha</span>
+<span class="w">        </span><span class="p">)</span>
+<span class="w"> </span>
+<span class="w">    </span><span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<span class="w">        </span><span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">lora</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Finally we create a function that replaces the linear layers by the new linear layer with LoRA that we have created. What it does is that if it finds a linear layer in the model, it replaces it with the linear layer with LoRA, if not, it applies the function within the sublayers of the layer.</p>
+<p>Finally, we create a function that replaces the linear layers with the new linear layer with LoRA that we have created. What it does is if it finds a linear layer in the model, it replaces it with the linear layer with LoRA; otherwise, it applies the function within the sublayers of the layer.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">replace_linear_with_lora</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">alpha</span><span class="p">):</span>
-    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">named_children</span><span class="p">():</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">):</span>
-            <span class="c1"># Replace the Linear layer with LinearWithLoRA</span>
-            <span class="nb">setattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">LoRALinear</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">alpha</span><span class="p">))</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># Recursively apply the same function to child modules</span>
-            <span class="n">replace_linear_with_lora</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">alpha</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">replace_linear_with_lora</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">alpha</span><span class="p">):</span>
+<span class="w">    </span><span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">named_children</span><span class="p">():</span>
+<span class="w">        </span><span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">):</span>
+<span class="w">            </span><span class="c1"># Replace the Linear layer with LinearWithLoRA</span>
+<span class="w">            </span><span class="nb">setattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">LoRALinear</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">alpha</span><span class="p">))</span>
+<span class="w">        </span><span class="k">else</span><span class="p">:</span>
+<span class="w">            </span><span class="c1"># Recursively apply the same function to child modules</span>
+<span class="w">            </span><span class="n">replace_linear_with_lora</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">alpha</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>We apply the function to the model to replace the linear layers of the model by the new linear layer with LoRA</p>
+<p>We apply the function to the model to replace the linear layers of the model with the new linear layer using LoRA</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">rank</span> <span class="o">=</span> <span class="mi">16</span>
 <span class="n">alpha</span> <span class="o">=</span> <span class="mi">16</span>
-
+<span class="w"> </span>
 <span class="n">replace_linear_with_lora</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -560,9 +587,11 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 <section class="section-block-code-cell-">
 <div class="input-code">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">total_params</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">()</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">requires_grad</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Total trainable LoRA parameters: </span><span class="si">{</span><span class="n">total_params</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total trainable LoRA parameters: </span><span class="si">{</span><span class="n">total_params</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
@@ -574,50 +603,53 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>We have gone from 124M trainable parameters to 12k trainable parameters, i.e. we have reduced the number of trainable parameters 10,000 times!</p>
+<p>We have gone from 124M trainable parameters to 12k trainable parameters, that is, we have reduced the number of trainable parameters by 10,000 times!</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>We see the model again</p>
+<p>We revisit the model</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">model</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[22]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
 <pre>GPT2ForSequenceClassification(
-  (transformer): GPT2Model(
-    (wte): Embedding(50257, 768)
-    (wpe): Embedding(1024, 768)
-    (drop): Dropout(p=0.1, inplace=False)
-    (h): ModuleList(
-      (0-11): 12 x GPT2Block(
-        (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
-        (attn): GPT2Attention(
-          (c_attn): Conv1D()
-          (c_proj): Conv1D()
-          (attn_dropout): Dropout(p=0.1, inplace=False)
-          (resid_dropout): Dropout(p=0.1, inplace=False)
-        )
-        (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
-        (mlp): GPT2MLP(
-          (c_fc): Conv1D()
-          (c_proj): Conv1D()
-          (act): NewGELUActivation()
-          (dropout): Dropout(p=0.1, inplace=False)
-        )
-      )
-    )
-    (ln_f): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
-  )
-  (score): LoRALinear(
-    (linear): Linear(in_features=768, out_features=5, bias=False)
-    (lora): LoRALayer()
-  )
-)</pre>
+&#x20;&#x20;(transformer): GPT2Model(
+&#x20;&#x20;&#x20;&#x20;(wte): Embedding(50257, 768)
+&#x20;&#x20;&#x20;&#x20;(wpe): Embedding(1024, 768)
+&#x20;&#x20;&#x20;&#x20;(drop): Dropout(p=0.1, inplace=False)
+&#x20;&#x20;&#x20;&#x20;(h): ModuleList(
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(0-11): 12 x GPT2Block(
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(attn): GPT2Attention(
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(c_attn): Conv1D()
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(c_proj): Conv1D()
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(attn_dropout): Dropout(p=0.1, inplace=False)
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(resid_dropout): Dropout(p=0.1, inplace=False)
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;)
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(mlp): GPT2MLP(
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(c_fc): Conv1D()
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(c_proj): Conv1D()
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(act): NewGELUActivation()
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(dropout): Dropout(p=0.1, inplace=False)
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;)
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;)
+&#x20;&#x20;&#x20;&#x20;)
+&#x20;&#x20;&#x20;&#x20;(ln_f): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+&#x20;&#x20;)
+&#x20;&#x20;(score): LoRALinear(
+&#x20;&#x20;&#x20;&#x20;(linear): Linear(in_features=768, out_features=5, bias=False)
+&#x20;&#x20;&#x20;&#x20;(lora): LoRALayer()
+&#x20;&#x20;)
+)
+</pre>
 </div>
 </div>
 </div>
@@ -625,205 +657,201 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 <section class="section-block-markdown-cell">
 <p>Let's compare them layer by layer</p>
 <table>
-<thead>
-<tr>
-<th>Original Model</th>
-<th>Model with LoRA</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>GPT2ForSequenceClassification(</td>
-<td>GPT2ForSequenceClassification(</td>
-</tr>
-<tr>
-<td>(transformer): GPT2Model(</td>
-<td>(transformer): GPT2Model(</td>
-</tr>
-<tr>
-<td>(wte): Embedding(50257, 768)</td>
-<td>(wte): Embedding(50257, 768)</td>
-</tr>
-<tr>
-<td>(wpe): Embedding(1024, 768)</td>
-<td>(wpe): Embedding(1024, 768)</td>
-</tr>
-<tr>
-<td>(drop): Dropout(p=0.1, inplace=False)</td>
-<td>(drop): Dropout(p=0.1, inplace=False)</td>
-</tr>
-<tr>
-<td>(h): ModuleList(</td>
-<td>(h): ModuleList(</td>
-</tr>
-<tr>
-<td>(0-11): 12 x GPT2Block(</td>
-<td>(0-11): 12 x GPT2Block(</td>
-</tr>
-<tr>
-<td>(ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)</td>
-<td>(ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)</td>
-</tr>
-<tr>
-<td>(attn): GPT2Attention(</td>
-<td>(attn): GPT2Attention(</td>
-</tr>
-<tr>
-<td>(c_attn): Conv1D()</td>
-<td>(c_attn): Conv1D()</td>
-</tr>
-<tr>
-<td>(c_proj): Conv1D()</td>
-<td>(c_proj): Conv1D()</td>
-</tr>
-<tr>
-<td>(attn_dropout): Dropout(p=0.1, inplace=False)</td>
-<td>(attn_dropout): Dropout(p=0.1, inplace=False)</td>
-</tr>
-<tr>
-<td>(resid_dropout): Dropout(p=0.1, inplace=False)</td>
-<td>(resid_dropout): Dropout(p=0.1, inplace=False)</td>
-</tr>
-<tr>
-<td>)</td>
-<td>)</td>
-</tr>
-<tr>
-<td>(ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)</td>
-<td>(ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)</td>
-</tr>
-<tr>
-<td>(mlp): GPT2MLP(</td>
-<td>(mlp): GPT2MLP(</td>
-</tr>
-<tr>
-<td>(c_fc): Conv1D()</td>
-<td>(c_fc): Conv1D()</td>
-</tr>
-<tr>
-<td>(c_proj): Conv1D()</td>
-<td>(c_proj): Conv1D()</td>
-</tr>
-<tr>
-<td>(act): NewGELUActivation()</td>
-<td>(act): NewGELUActivation()</td>
-</tr>
-<tr>
-<td>(dropout): Dropout(p=0.1, inplace=False)</td>
-<td>(dropout): Dropout(p=0.1, inplace=False)</td>
-</tr>
-<tr>
-<td>)</td>
-<td>)</td>
-</tr>
-<tr>
-<td>)</td>
-<td>)</td>
-</tr>
-<tr>
-<td>)</td>
-<td>)</td>
-</tr>
-<tr>
-<td>(ln_f): LayerNorm((768,), eps=1e-05, elementwise_affine=True)</td>
-<td>(ln_f): LayerNorm((768,), eps=1e-05, elementwise_affine=True)</td>
-</tr>
-<tr>
-<td>)</td>
-<td>)</td>
-</tr>
-<tr>
-<td></td>
-<td>(score): LoRALinear()</td>
-</tr>
-<tr>
-<td>(score): Linear(in_features=768, out_features=5, bias=False)</td>
-<td>(linear): Linear(in_features=768, out_features=5, bias=False)</td>
-</tr>
-<tr>
-<td></td>
-<td>(lora): LoRALayer()</td>
-</tr>
-<tr>
-<td></td>
-<td>)</td>
-</tr>
-<tr>
-<td>)</td>
-<td>)</td>
-</tr>
-</tbody>
+  <thead>
+    <tr>
+      <th>Original Model</th>
+      <th>Model with LoRA</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>GPT2ForSequenceClassification(</td>
+      <td>GPT2ForSequenceClassification(</td>
+    </tr>
+    <tr>
+      <td>(transformer): GPT2Model(</td>
+      <td>(transformer): GPT2Model(</td>
+    </tr>
+    <tr>
+      <td>(wte): Embedding(50257, 768)</td>
+      <td>(wte): Embedding(50257, 768)</td>
+    </tr>
+    <tr>
+      <td>(wpe): Embedding(1024, 768)</td>
+      <td>(wpe): Embedding(1024, 768)</td>
+    </tr>
+    <tr>
+      <td>(drop): Dropout(p=0.1, inplace=False)</td>
+      <td>(drop): Dropout(p=0.1, inplace=False)</td>
+    </tr>
+    <tr>
+      <td>(h): ModuleList(</td>
+      <td>(h): ModuleList(</td>
+    </tr>
+    <tr>
+      <td>(0-11): 12 x GPT2Block(</td>
+      <td>(0-11): 12 x GPT2Block(</td>
+    </tr>
+    <tr>
+      <td>(ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)</td>
+      <td>(ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)</td>
+    </tr>
+    <tr>
+      <td>(attn): GPT2Attention(</td>
+      <td>(attn): GPT2Attention(</td>
+    </tr>
+    <tr>
+      <td>(c_attn): Conv1D()</td>
+      <td>(c_attn): Conv1D()</td>
+    </tr>
+    <tr>
+      <td>(c_proj): Conv1D()</td>
+      <td>(c_proj): Conv1D()</td>
+    </tr>
+    <tr>
+      <td>(attn_dropout): Dropout(p=0.1, inplace=False)</td>
+      <td>(attn_dropout): Dropout(p=0.1, inplace=False)</td>
+    </tr>
+    <tr>
+      <td>(resid_dropout): Dropout(p=0.1, inplace=False)</td>
+      <td>(resid_dropout): Dropout(p=0.1, inplace=False)</td>
+    </tr>
+    <tr>
+      <td>)</td>
+      <td>)</td>
+    </tr>
+    <tr>
+      <td>(ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)</td>
+      <td>(ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)</td>
+    </tr>
+    <tr>
+      <td>(c_fc): Conv1D()</td>
+      <td>(c_fc): Conv1D()</td>
+    </tr>
+    <tr>
+      <td>(c_proj): Conv1D()</td>
+      <td>(c_proj): Conv1D()</td>
+    </tr>
+    <tr>
+      <td>(act): NewGELUActivation()</td>
+      <td>(act): NewGELUActivation()</td>
+    </tr>
+    <tr>
+      <td>(dropout): Dropout(p=0.1, inplace=False)</td>
+      <td>(dropout): Dropout(p=0.1, inplace=False)</td>
+    </tr>
+    <tr>
+      <td>)</td>
+      <td>)</td>
+    </tr>
+    <tr>
+      <td>)</td>
+      <td>)</td>
+    </tr>
+    <tr>
+      <td>)</td>
+      <td>)</td>
+    </tr>
+    <tr>
+      <td>(ln_f): LayerNorm((768,), eps=1e-05, elementwise_affine=True)</td>
+      <td>(ln_f): LayerNorm((768,), eps=1e-05, elementwise_affine=True)</td>
+    </tr>
+    <tr>
+      <td>)</td>
+      <td>)</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>(score): LoRALinear()</td>
+    </tr>
+    <tr>
+      <td>(score): Linear(in_features=768, out_features=5, bias=False)</td>
+      <td>(linear): Linear(in_features=768, out_features=5, bias=False)</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>(lora): LoRALayer()</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>)</td>
+    </tr>
+    <tr>
+      <td>)</td>
+      <td>)</td>
+    </tr>
+  </tbody>
 </table>
-<p>We see that they are the same except at the end, where in the original model there was a normal linear layer and in the model with LoRA there is a <code>LoRALinear</code> layer that inside has the linear layer of the original model and a <code>LoRALayer</code> layer.</p>
+<p>We see that they are the same except at the end, where in the original model there was a normal linear layer and in the model with LoRA there is a <code>LoRALinear</code> layer which inside has the original model's linear layer and a <code>LoRALayer</code>.</p>
 </section>
 <section class="section-block-markdown-cell">
 <h3 id="Training">Training<a class="anchor-link" href="#Training">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>Once the model has been instantiated with LoRA, let's train it as usual</p>
+<p>Once the model has been instantiated with LoRA, we are going to train it as usual</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>As we have said, in the post <a href="https://maximofn.com/fine-tuning-sml/">Fine tuning SLMs</a> we used a batch size of 28 for the training loop and 40 for the evaluation loop, while now that there are fewer trainable parameters we can use a larger batch size.</p>
-<p>Why does this happen? When training a model, the model and its gradients must be saved in the GPU memory, so both with LoRA and without LoRA the model must be saved, but in the case of LoRA only the gradients of 12k parameters are saved, while with LoRA the gradients of 128M parameters are saved, so with LoRA less GPU memory is needed, so a larger batch size can be used.</p>
+<p>As we mentioned, in the post <a href="https://maximofn.com/fine-tuning-sml/">Fine tuning SLMs</a> we used a batch size of 28 for the training loop and 40 for the evaluation loop, while now that there are fewer trainable parameters we can use a larger batch size.</p>
+<p>Why does this happen? When training a model, you need to store the model and its gradients in the GPU memory. Therefore, whether using LoRA or not, the model itself still needs to be stored. However, with LoRA, only the gradients of 12k parameters are stored, whereas without LoRA, the gradients of 128M parameters are stored. This means that with LoRA, less GPU memory is required, allowing for a larger batch size.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">TrainingArguments</span>
-
-<span class="n">metric_name</span> <span class="o">=</span> <span class="s2">"accuracy"</span>
-<span class="n">model_name</span> <span class="o">=</span> <span class="s2">"GPT2-small-LoRA-finetuned-amazon-reviews-en-classification"</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainingArguments</span>
+<span class="w"> </span>
+<span class="n">metric_name</span> <span class="o">=</span> <span class="s2">&quot;accuracy&quot;</span>
+<span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;GPT2-small-LoRA-finetuned-amazon-reviews-en-classification&quot;</span>
 <span class="n">LR</span> <span class="o">=</span> <span class="mf">2e-5</span>
 <span class="n">BS_TRAIN</span> <span class="o">=</span> <span class="mi">400</span>
 <span class="n">BS_EVAL</span> <span class="o">=</span> <span class="mi">400</span>
 <span class="n">EPOCHS</span> <span class="o">=</span> <span class="mi">3</span>
 <span class="n">WEIGHT_DECAY</span> <span class="o">=</span> <span class="mf">0.01</span>
-
+<span class="w"> </span>
 <span class="n">training_args</span> <span class="o">=</span> <span class="n">TrainingArguments</span><span class="p">(</span>
-    <span class="n">model_name</span><span class="p">,</span>
-    <span class="n">eval_strategy</span><span class="o">=</span><span class="s2">"epoch"</span><span class="p">,</span>
-    <span class="n">save_strategy</span><span class="o">=</span><span class="s2">"epoch"</span><span class="p">,</span>
-    <span class="n">learning_rate</span><span class="o">=</span><span class="n">LR</span><span class="p">,</span>
-    <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="n">BS_TRAIN</span><span class="p">,</span>
-    <span class="n">per_device_eval_batch_size</span><span class="o">=</span><span class="n">BS_EVAL</span><span class="p">,</span>
-    <span class="n">num_train_epochs</span><span class="o">=</span><span class="n">EPOCHS</span><span class="p">,</span>
-    <span class="n">weight_decay</span><span class="o">=</span><span class="n">WEIGHT_DECAY</span><span class="p">,</span>
-    <span class="n">lr_scheduler_type</span><span class="o">=</span><span class="s2">"cosine"</span><span class="p">,</span>
-    <span class="n">warmup_ratio</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
-    <span class="n">fp16</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">load_best_model_at_end</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">metric_for_best_model</span><span class="o">=</span><span class="n">metric_name</span><span class="p">,</span>
-    <span class="n">push_to_hub</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">logging_dir</span><span class="o">=</span><span class="s2">"./runs"</span><span class="p">,</span>
+<span class="w">    </span><span class="n">model_name</span><span class="p">,</span>
+<span class="w">    </span><span class="n">eval_strategy</span><span class="o">=</span><span class="s2">&quot;epoch&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">save_strategy</span><span class="o">=</span><span class="s2">&quot;epoch&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">learning_rate</span><span class="o">=</span><span class="n">LR</span><span class="p">,</span>
+<span class="w">    </span><span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="n">BS_TRAIN</span><span class="p">,</span>
+<span class="w">    </span><span class="n">per_device_eval_batch_size</span><span class="o">=</span><span class="n">BS_EVAL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">num_train_epochs</span><span class="o">=</span><span class="n">EPOCHS</span><span class="p">,</span>
+<span class="w">    </span><span class="n">weight_decay</span><span class="o">=</span><span class="n">WEIGHT_DECAY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">lr_scheduler_type</span><span class="o">=</span><span class="s2">&quot;cosine&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">warmup_ratio</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+<span class="w">    </span><span class="n">fp16</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="w">    </span><span class="n">load_best_model_at_end</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="w">    </span><span class="n">metric_for_best_model</span><span class="o">=</span><span class="n">metric_name</span><span class="p">,</span>
+<span class="w">    </span><span class="n">push_to_hub</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="w">    </span><span class="n">logging_dir</span><span class="o">=</span><span class="s2">&quot;./runs&quot;</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">evaluate</span> <span class="kn">import</span> <span class="n">load</span>
-
-<span class="n">metric</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s2">"accuracy"</span><span class="p">)</span>
-
-<span class="k">def</span> <span class="nf">compute_metrics</span><span class="p">(</span><span class="n">eval_pred</span><span class="p">):</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">eval_pred</span><span class="p">)</span>
-    <span class="n">predictions</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">eval_pred</span>
-    <span class="n">predictions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">metric</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">evaluate</span><span class="w"> </span><span class="kn">import</span> <span class="n">load</span>
+<span class="w"> </span>
+<span class="n">metric</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s2">&quot;accuracy&quot;</span><span class="p">)</span>
+<span class="w"> </span>
+<span class="k">def</span><span class="w"> </span><span class="nf">compute_metrics</span><span class="p">(</span><span class="n">eval_pred</span><span class="p">):</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="n">eval_pred</span><span class="p">)</span>
+<span class="w">    </span><span class="n">predictions</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">eval_pred</span>
+<span class="w">    </span><span class="n">predictions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span> <span class="n">metric</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">Trainer</span>
-
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span>
+<span class="w"> </span>
 <span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span>
-    <span class="n">model</span><span class="p">,</span>
-    <span class="n">training_args</span><span class="p">,</span>
-    <span class="n">train_dataset</span><span class="o">=</span><span class="n">subset_dataset_train</span><span class="p">,</span>
-    <span class="n">eval_dataset</span><span class="o">=</span><span class="n">subset_dataset_validation</span><span class="p">,</span>
-    <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span>
-    <span class="n">compute_metrics</span><span class="o">=</span><span class="n">compute_metrics</span><span class="p">,</span>
+<span class="w">    </span><span class="n">model</span><span class="p">,</span>
+<span class="w">    </span><span class="n">training_args</span><span class="p">,</span>
+<span class="w">    </span><span class="n">train_dataset</span><span class="o">=</span><span class="n">subset_dataset_train</span><span class="p">,</span>
+<span class="w">    </span><span class="n">eval_dataset</span><span class="o">=</span><span class="n">subset_dataset_validation</span><span class="p">,</span>
+<span class="w">    </span><span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span>
+<span class="w">    </span><span class="n">compute_metrics</span><span class="o">=</span><span class="n">compute_metrics</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -833,58 +861,38 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
-<div class="output-html-rendered-html-output-subarea">
-<div>
-<progress max="1500" style="width:300px; height:20px; vertical-align: middle;" value="1500"></progress>
-      [1500/1500 42:41, Epoch 3/3]
-    </div>
-<table border="1" class="dataframe">
-<thead>
-<tr style="text-align: left;">
-<th>Epoch</th>
-<th>Training Loss</th>
-<th>Validation Loss</th>
-<th>Accuracy</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>1</td>
-<td>2.396400</td>
-<td>1.602937</td>
-<td>0.269400</td>
-</tr>
-<tr>
-<td>2</td>
-<td>1.572700</td>
-<td>1.531719</td>
-<td>0.320800</td>
-</tr>
-<tr>
-<td>3</td>
-<td>1.534400</td>
-<td>1.511815</td>
-<td>0.335800</td>
-</tr>
-</tbody>
-</table><p></p></div>
-</div>
-<div class="output-area">
-<div class="prompt"></div>
 <div class="output-subarea-output-stream-output-stdout-output-text">
-<pre>&lt;transformers.trainer_utils.EvalPrediction object at 0x7cd07be46440&gt;
-&lt;transformers.trainer_utils.EvalPrediction object at 0x7cd07be45c30&gt;
-&lt;transformers.trainer_utils.EvalPrediction object at 0x7cd07be8b970&gt;
+<pre>&amp;lt;IPython.core.display.HTML object&amp;gt;
 </pre>
 </div>
 </div>
+</div>
+</section>
+<section class="section-block-code-cell-">
+<div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[27]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>TrainOutput(global_step=1500, training_loss=1.8345018310546874, metrics={'train_runtime': 2565.4667, 'train_samples_per_second': 233.876, 'train_steps_per_second': 0.585, 'total_flos': 2.352076406784e+17, 'train_loss': 1.8345018310546874, 'epoch': 3.0})</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>&amp;lt;transformers.trainer_utils.EvalPrediction object at 0x7cd07be46440&amp;gt;
+&amp;lt;transformers.trainer_utils.EvalPrediction object at 0x7cd07be45c30&amp;gt;
+&amp;lt;transformers.trainer_utils.EvalPrediction object at 0x7cd07be8b970&amp;gt;
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-code-cell-">
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>TrainOutput(global_step=1500, training_loss=1.8345018310546874, metrics=&#x7B;&#x27;train_runtime&#x27;: 2565.4667, &#x27;train_samples_per_second&#x27;: 233.876, &#x27;train_steps_per_second&#x27;: 0.585, &#x27;total_flos&#x27;: 2.352076406784e+17, &#x27;train_loss&#x27;: 1.8345018310546874, &#x27;epoch&#x27;: 3.0&#x7D;)
+</pre>
 </div>
 </div>
 </div>
@@ -893,48 +901,57 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 <h3 id="Evaluation">Evaluation<a class="anchor-link" href="#Evaluation">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>Once trained we evaluate on the test dataset</p>
+<p>Once trained, we evaluate on the test dataset</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">trainer</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">eval_dataset</span><span class="o">=</span><span class="n">subset_dataset_test</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
-<div class="output-html-rendered-html-output-subarea">
-<div>
-<progress max="13" style="width:300px; height:20px; vertical-align: middle;" value="13"></progress>
-      [13/13 00:17]
-    </div>
-</div>
-</div>
-<div class="output-area">
-<div class="prompt"></div>
 <div class="output-subarea-output-stream-output-stdout-output-text">
-<pre>&lt;transformers.trainer_utils.EvalPrediction object at 0x7cd07be8bbe0&gt;
+<pre>&amp;lt;IPython.core.display.HTML object&amp;gt;
 </pre>
 </div>
 </div>
+</div>
+</section>
+<section class="section-block-code-cell-">
+<div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[28]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>{'eval_loss': 1.5203168392181396,
- 'eval_accuracy': 0.3374,
- 'eval_runtime': 19.3843,
- 'eval_samples_per_second': 257.94,
- 'eval_steps_per_second': 0.671,
- 'epoch': 3.0}</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>&amp;lt;transformers.trainer_utils.EvalPrediction object at 0x7cd07be8bbe0&amp;gt;
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-code-cell-">
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>&#x7B;&#x27;eval_loss&#x27;: 1.5203168392181396,
+ &#x27;eval_accuracy&#x27;: 0.3374,
+ &#x27;eval_runtime&#x27;: 19.3843,
+ &#x27;eval_samples_per_second&#x27;: 257.94,
+ &#x27;eval_steps_per_second&#x27;: 0.671,
+ &#x27;epoch&#x27;: 3.0&#x7D;
+</pre>
 </div>
 </div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Publish-the-model">Publish the model<a class="anchor-link" href="#Publish-the-model">¶</a></h3>
+<h3 id="Publish the model">Publish the model<a class="anchor-link" href="#Publish the model">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>Now that we have our model trained, we can share it with the world, so first we create a model card.</p>
+<p>We already have our model trained, so we can share it with the world. First, we create a **model card**.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -943,7 +960,7 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>And now we can publish it. As the first thing we have done is to log in with the huggingface hub, we can upload it to our hub without any problem.</p>
+<p>And now we can publish it. Since the first thing we did was log in to the Hugging Face hub, we can upload it to our hub without any issues.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
@@ -952,23 +969,23 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Model-test">Model test<a class="anchor-link" href="#Model-test">¶</a></h2>
+<h2 id="Test of the model">Test of the model<a class="anchor-link" href="#Test of the model">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<p>We clean as much as possible</p>
+<p>We clean everything as much as possible</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">import</span> <span class="nn">gc</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">gc</span>
+<span class="w"> </span>
 
-
-<span class="k">def</span> <span class="nf">clear_hardwares</span><span class="p">():</span>
-    <span class="n">torch</span><span class="o">.</span><span class="n">clear_autocast_cache</span><span class="p">()</span>
-    <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">ipc_collect</span><span class="p">()</span>
-    <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">empty_cache</span><span class="p">()</span>
-    <span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
-
+<span class="k">def</span><span class="w"> </span><span class="nf">clear_hardwares</span><span class="p">():</span>
+<span class="w">    </span><span class="n">torch</span><span class="o">.</span><span class="n">clear_autocast_cache</span><span class="p">()</span>
+<span class="w">    </span><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">ipc_collect</span><span class="p">()</span>
+<span class="w">    </span><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">empty_cache</span><span class="p">()</span>
+<span class="w">    </span><span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
+<span class="w"> </span>
 
 <span class="n">clear_hardwares</span><span class="p">()</span>
 <span class="n">clear_hardwares</span><span class="p">()</span>
@@ -976,137 +993,149 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>As we have uploaded the model to our hub we can download it and use it.</p>
+<p>Since we have uploaded the model to our hub, we can download and use it</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">pipeline</span>
-
-<span class="n">user</span> <span class="o">=</span> <span class="s2">"maximofn"</span>
-<span class="n">checkpoints</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">user</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">"</span>
-<span class="n">task</span> <span class="o">=</span> <span class="s2">"text-classification"</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
+<span class="w"> </span>
+<span class="n">user</span> <span class="o">=</span> <span class="s2">&quot;maximofn&quot;</span>
+<span class="n">checkpoints</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">user</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="n">task</span> <span class="o">=</span> <span class="s2">&quot;text-classification&quot;</span>
 <span class="n">classifier</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">checkpoints</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">checkpoints</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Now if we want to return the probability of all classes, we simply use the classifier we just instantiated, with the parameter <code>top_k=None</code>.</p>
+<p>Now if we want it to return the probability of all classes, we simply use the classifier we just instantiated, with the parameter <code>top_k=None</code></p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">labels</span> <span class="o">=</span> <span class="n">classifier</span><span class="p">(</span><span class="s2">"I love this product"</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">labels</span> <span class="o">=</span> <span class="n">classifier</span><span class="p">(</span><span class="s2">&quot;I love this product&quot;</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 <span class="n">labels</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[33]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>[{'label': 'LABEL_0', 'score': 0.8419149518013},
- {'label': 'LABEL_1', 'score': 0.09386005252599716},
- {'label': 'LABEL_3', 'score': 0.03624210134148598},
- {'label': 'LABEL_2', 'score': 0.02049318142235279},
- {'label': 'LABEL_4', 'score': 0.0074898069724440575}]</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>[&#x7B;&#x27;label&#x27;: &#x27;LABEL_0&#x27;, &#x27;score&#x27;: 0.8419149518013&#x7D;,
+ &#x7B;&#x27;label&#x27;: &#x27;LABEL_1&#x27;, &#x27;score&#x27;: 0.09386005252599716&#x7D;,
+ &#x7B;&#x27;label&#x27;: &#x27;LABEL_3&#x27;, &#x27;score&#x27;: 0.03624210134148598&#x7D;,
+ &#x7B;&#x27;label&#x27;: &#x27;LABEL_2&#x27;, &#x27;score&#x27;: 0.02049318142235279&#x7D;,
+ &#x7B;&#x27;label&#x27;: &#x27;LABEL_4&#x27;, &#x27;score&#x27;: 0.0074898069724440575&#x7D;]
+</pre>
 </div>
 </div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>If we only want the class with the highest probability we do the same but with the parameter <code>top_k=1</code>.</p>
+<p>If we only want the class with the highest probability, we do the same but with the parameter <code>top_k=1</code></p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">label</span> <span class="o">=</span> <span class="n">classifier</span><span class="p">(</span><span class="s2">"I love this product"</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">label</span> <span class="o">=</span> <span class="n">classifier</span><span class="p">(</span><span class="s2">&quot;I love this product&quot;</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="n">label</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[34]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>[{'label': 'LABEL_0', 'score': 0.8419149518013}]</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>[&#x7B;&#x27;label&#x27;: &#x27;LABEL_0&#x27;, &#x27;score&#x27;: 0.8419149518013&#x7D;]
+</pre>
 </div>
 </div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>And if we want n classes we do the same but with the parameter <code>top_k=n</code>.</p>
+<p>And if we want n classes, we do the same but with the parameter <code>top_k=n</code></p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">two_labels</span> <span class="o">=</span> <span class="n">classifier</span><span class="p">(</span><span class="s2">"I love this product"</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">two_labels</span> <span class="o">=</span> <span class="n">classifier</span><span class="p">(</span><span class="s2">&quot;I love this product&quot;</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 <span class="n">two_labels</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[35]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>[{'label': 'LABEL_0', 'score': 0.8419149518013},
- {'label': 'LABEL_1', 'score': 0.09386005252599716}]</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>[&#x7B;&#x27;label&#x27;: &#x27;LABEL_0&#x27;, &#x27;score&#x27;: 0.8419149518013&#x7D;,
+ &#x7B;&#x27;label&#x27;: &#x27;LABEL_1&#x27;, &#x27;score&#x27;: 0.09386005252599716&#x7D;]
+</pre>
 </div>
 </div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>We can also test the model with Automodel and AutoTokenizer.</p>
+<p>We can also test the model with Automodel and AutoTokenizer</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForSequenceClassification</span>
-<span class="kn">import</span> <span class="nn">torch</span>
-
-<span class="n">model_name</span> <span class="o">=</span> <span class="s2">"GPT2-small-finetuned-amazon-reviews-en-classification"</span>
-<span class="n">user</span> <span class="o">=</span> <span class="s2">"maximofn"</span>
-<span class="n">checkpoint</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">user</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">"</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForSequenceClassification</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="w"> </span>
+<span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;GPT2-small-finetuned-amazon-reviews-en-classification&quot;</span>
+<span class="n">user</span> <span class="o">=</span> <span class="s2">&quot;maximofn&quot;</span>
+<span class="n">checkpoint</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">user</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">&quot;</span>
 <span class="n">num_classes</span> <span class="o">=</span> <span class="n">num_classes</span>
-
+<span class="w"> </span>
 <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForSequenceClassification</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">num_labels</span><span class="o">=</span><span class="n">num_classes</span><span class="p">)</span><span class="o">.</span><span class="n">half</span><span class="p">()</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">"cuda"</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForSequenceClassification</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">num_labels</span><span class="o">=</span><span class="n">num_classes</span><span class="p">)</span><span class="o">.</span><span class="n">half</span><span class="p">()</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"I love this product"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;I love this product&quot;</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
 <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
-    <span class="n">output</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+<span class="w">    </span><span class="n">output</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
 <span class="n">logits</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">logits</span>
 <span class="n">lables</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
 <span class="n">lables</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[37]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
 <pre>[0.003940582275390625,
  0.00266265869140625,
  0.013946533203125,
  0.1544189453125,
- 0.8251953125]</pre>
+ 0.8251953125]
+</pre>
 </div>
 </div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>If you want to test the model further you can see it in <a href="https://huggingface.co/Maximofn/GPT2-small-LoRA-finetuned-amazon-reviews-en-classification">Maximofn/GPT2-small-LoRA-finetuned-amazon-reviews-en-classification</a></p>
+<p>If you want to try the model further, you can see it at <a href="https://huggingface.co/Maximofn/GPT2-small-LoRA-finetuned-amazon-reviews-en-classification">Maximofn/GPT2-small-LoRA-finetuned-amazon-reviews-en-classification</a></p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Implementation-of-LoRA-in-an-LLM-with-PEFT-from-Hugging-Face">Implementation of LoRA in an LLM with PEFT from Hugging Face<a class="anchor-link" href="#Implementation-of-LoRA-in-an-LLM-with-PEFT-from-Hugging-Face">¶</a></h2>
+<h2 id="Implementation of LoRA in a LLM with PEFT from Hugging Face">Implementation of LoRA in a LLM with PEFT from Hugging Face<a class="anchor-link" href="#Implementation of LoRA in a LLM with PEFT from Hugging Face">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<p>We can do the same with the <code>PEFT</code> library of Hugging Face. Let's take a look at it</p>
+<p>We can do the same with the <code>PEFT</code> library from Hugging Face. Let's see it.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Login-to-the-Hub">Login to the Hub<a class="anchor-link" href="#Login-to-the-Hub">¶</a></h3>
+<h3 id="Login to the Hub">Login to the Hub<a class="anchor-link" href="#Login to the Hub">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>We log in to upload the model to the Hub</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">notebook_login</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">notebook_login</span>
 <span class="n">notebook_login</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -1115,98 +1144,107 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 <h3 id="Dataset">Dataset<a class="anchor-link" href="#Dataset">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>We re-download the dataset</p>
+<p>We download the dataset again</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">datasets</span> <span class="kn">import</span> <span class="n">load_dataset</span>
-
-<span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"mteb/amazon_reviews_multi"</span><span class="p">,</span> <span class="s2">"en"</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+<span class="w"> </span>
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;mteb/amazon_reviews_multi&quot;</span><span class="p">,</span> <span class="s2">&quot;en&quot;</span><span class="p">)</span>
 <span class="n">dataset</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[1]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>DatasetDict({
-    train: Dataset({
-        features: ['id', 'text', 'label', 'label_text'],
-        num_rows: 200000
-    })
-    validation: Dataset({
-        features: ['id', 'text', 'label', 'label_text'],
-        num_rows: 5000
-    })
-    test: Dataset({
-        features: ['id', 'text', 'label', 'label_text'],
-        num_rows: 5000
-    })
-})</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>DatasetDict(&#x7B;
+&#x20;&#x20;&#x20;&#x20;train: Dataset(&#x7B;
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;features: [&#x27;id&#x27;, &#x27;text&#x27;, &#x27;label&#x27;, &#x27;label_text&#x27;],
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;num_rows: 200000
+&#x20;&#x20;&#x20;&#x20;&#x7D;)
+&#x20;&#x20;&#x20;&#x20;validation: Dataset(&#x7B;
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;features: [&#x27;id&#x27;, &#x27;text&#x27;, &#x27;label&#x27;, &#x27;label_text&#x27;],
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;num_rows: 5000
+&#x20;&#x20;&#x20;&#x20;&#x7D;)
+&#x20;&#x20;&#x20;&#x20;test: Dataset(&#x7B;
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;features: [&#x27;id&#x27;, &#x27;text&#x27;, &#x27;label&#x27;, &#x27;label_text&#x27;],
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;num_rows: 5000
+&#x20;&#x20;&#x20;&#x20;&#x7D;)
+&#x7D;)
+</pre>
 </div>
 </div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>We create a subset in case you want to test the code with a smaller dataset. In my case I will use 100% of the dataset</p>
+<p>We create a subset in case you want to test the code with a smaller dataset. In my case, I will use 100% of the dataset.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">percentage</span> <span class="o">=</span> <span class="mi">1</span>
-
-<span class="n">subset_dataset_train</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s1">'train'</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s1">'train'</span><span class="p">])</span> <span class="o">*</span> <span class="n">percentage</span><span class="p">)))</span>
-<span class="n">subset_dataset_validation</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s1">'validation'</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s1">'validation'</span><span class="p">])</span> <span class="o">*</span> <span class="n">percentage</span><span class="p">)))</span>
-<span class="n">subset_dataset_test</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s1">'test'</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s1">'test'</span><span class="p">])</span> <span class="o">*</span> <span class="n">percentage</span><span class="p">)))</span>
-
+<span class="w"> </span>
+<span class="n">subset_dataset_train</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s1">&#39;train&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s1">&#39;train&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="n">percentage</span><span class="p">)))</span>
+<span class="n">subset_dataset_validation</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s1">&#39;validation&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s1">&#39;validation&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="n">percentage</span><span class="p">)))</span>
+<span class="n">subset_dataset_test</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s1">&#39;test&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s1">&#39;test&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="n">percentage</span><span class="p">)))</span>
+<span class="w"> </span>
 <span class="n">subset_dataset_train</span><span class="p">,</span> <span class="n">subset_dataset_validation</span><span class="p">,</span> <span class="n">subset_dataset_test</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[2]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>(Dataset({
-     features: ['id', 'text', 'label', 'label_text'],
-     num_rows: 200000
- }),
- Dataset({
-     features: ['id', 'text', 'label', 'label_text'],
-     num_rows: 5000
- }),
- Dataset({
-     features: ['id', 'text', 'label', 'label_text'],
-     num_rows: 5000
- }))</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>(Dataset(&#x7B;
+&#x20;&#x20;&#x20;&#x20;&#x20;features: [&#x27;id&#x27;, &#x27;text&#x27;, &#x27;label&#x27;, &#x27;label_text&#x27;],
+&#x20;&#x20;&#x20;&#x20;&#x20;num_rows: 200000
+ &#x7D;),
+ Dataset(&#x7B;
+&#x20;&#x20;&#x20;&#x20;&#x20;features: [&#x27;id&#x27;, &#x27;text&#x27;, &#x27;label&#x27;, &#x27;label_text&#x27;],
+&#x20;&#x20;&#x20;&#x20;&#x20;num_rows: 5000
+ &#x7D;),
+ Dataset(&#x7B;
+&#x20;&#x20;&#x20;&#x20;&#x20;features: [&#x27;id&#x27;, &#x27;text&#x27;, &#x27;label&#x27;, &#x27;label_text&#x27;],
+&#x20;&#x20;&#x20;&#x20;&#x20;num_rows: 5000
+ &#x7D;))
+</pre>
 </div>
 </div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>We obtain the number of classes, to obtain the number of classes we use <code>dataset['train']</code> and not <code>subset_dataset_train</code> because if the subset is too small it is possible that there are no examples with all the possible classes of the original dataset.</p>
+<p>We get the number of classes. To obtain the number of classes, we use <code>dataset[&#x27;train&#x27;]</code> and not <code>subset_dataset_train</code> because if the subset is very small, it's possible that there are no examples with all the possible classes from the original dataset.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">num_classes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s1">'train'</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="s1">'label'</span><span class="p">))</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">num_classes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s1">&#39;train&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="s1">&#39;label&#39;</span><span class="p">))</span>
 <span class="n">num_classes</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[3]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>5</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>5
+</pre>
 </div>
 </div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>We create a function to create the <code>label</code> field in the dataset. The downloaded dataset has the <code>labels</code> field but the <code>transformers</code> library needs the field to be called <code>label</code> and not <code>labels</code>.</p>
+<p>We create a function to create the <code>label</code> field in the dataset. The downloaded dataset has the <code>labels</code> field, but the <code>transformers</code> library requires that the field be named <code>label</code> and not <code>labels</code>.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">set_labels</span><span class="p">(</span><span class="n">example</span><span class="p">):</span>
-    <span class="n">example</span><span class="p">[</span><span class="s1">'labels'</span><span class="p">]</span> <span class="o">=</span> <span class="n">example</span><span class="p">[</span><span class="s1">'label'</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">example</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">set_labels</span><span class="p">(</span><span class="n">example</span><span class="p">):</span>
+<span class="w">    </span><span class="n">example</span><span class="p">[</span><span class="s1">&#39;labels&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">example</span><span class="p">[</span><span class="s1">&#39;label&#39;</span><span class="p">]</span>
+<span class="w">    </span><span class="k">return</span> <span class="n">example</span>
 </pre></div>
 </div>
 </section>
@@ -1218,26 +1256,29 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">subset_dataset_train</span> <span class="o">=</span> <span class="n">subset_dataset_train</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">set_labels</span><span class="p">)</span>
 <span class="n">subset_dataset_validation</span> <span class="o">=</span> <span class="n">subset_dataset_validation</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">set_labels</span><span class="p">)</span>
 <span class="n">subset_dataset_test</span> <span class="o">=</span> <span class="n">subset_dataset_test</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">set_labels</span><span class="p">)</span>
-
+<span class="w"> </span>
 <span class="n">subset_dataset_train</span><span class="p">,</span> <span class="n">subset_dataset_validation</span><span class="p">,</span> <span class="n">subset_dataset_test</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[5]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>(Dataset({
-     features: ['id', 'text', 'label', 'label_text', 'labels'],
-     num_rows: 200000
- }),
- Dataset({
-     features: ['id', 'text', 'label', 'label_text', 'labels'],
-     num_rows: 5000
- }),
- Dataset({
-     features: ['id', 'text', 'label', 'label_text', 'labels'],
-     num_rows: 5000
- }))</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>(Dataset(&#x7B;
+&#x20;&#x20;&#x20;&#x20;&#x20;features: [&#x27;id&#x27;, &#x27;text&#x27;, &#x27;label&#x27;, &#x27;label_text&#x27;, &#x27;labels&#x27;],
+&#x20;&#x20;&#x20;&#x20;&#x20;num_rows: 200000
+ &#x7D;),
+ Dataset(&#x7B;
+&#x20;&#x20;&#x20;&#x20;&#x20;features: [&#x27;id&#x27;, &#x27;text&#x27;, &#x27;label&#x27;, &#x27;label_text&#x27;, &#x27;labels&#x27;],
+&#x20;&#x20;&#x20;&#x20;&#x20;num_rows: 5000
+ &#x7D;),
+ Dataset(&#x7B;
+&#x20;&#x20;&#x20;&#x20;&#x20;features: [&#x27;id&#x27;, &#x27;text&#x27;, &#x27;label&#x27;, &#x27;label_text&#x27;, &#x27;labels&#x27;],
+&#x20;&#x20;&#x20;&#x20;&#x20;num_rows: 5000
+ &#x7D;))
+</pre>
 </div>
 </div>
 </div>
@@ -1246,56 +1287,59 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 <h3 id="Tokenizer">Tokenizer<a class="anchor-link" href="#Tokenizer">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>We instantiate the tokenizer. To avoid errors, we assign the token of end of string to the token of padding</p>
+<p>We instantiate the tokenizer. To avoid errors, we assign the end of string token to the padding token.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span>
-
-<span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"openai-community/gpt2"</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span>
+<span class="w"> </span>
+<span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">&quot;openai-community/gpt2&quot;</span>
 <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
 <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>We create a function for tokenizing the dataset</p>
+<p>We create a function to tokenize the dataset</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">tokenize_function</span><span class="p">(</span><span class="n">examples</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">examples</span><span class="p">[</span><span class="s2">"text"</span><span class="p">],</span> <span class="n">padding</span><span class="o">=</span><span class="s2">"max_length"</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">768</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">tokenize_function</span><span class="p">(</span><span class="n">examples</span><span class="p">):</span>
+<span class="w">    </span><span class="k">return</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">examples</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">],</span> <span class="n">padding</span><span class="o">=</span><span class="s2">&quot;max_length&quot;</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">768</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>We apply the function to the dataset and remove the columns that we do not need</p>
+<p>We apply the function to the dataset and at the same time remove the columns we don't need.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">subset_dataset_train</span> <span class="o">=</span> <span class="n">subset_dataset_train</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">tokenize_function</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">remove_columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'text'</span><span class="p">,</span> <span class="s1">'label'</span><span class="p">,</span> <span class="s1">'id'</span><span class="p">,</span> <span class="s1">'label_text'</span><span class="p">])</span>
-<span class="n">subset_dataset_validation</span> <span class="o">=</span> <span class="n">subset_dataset_validation</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">tokenize_function</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">remove_columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'text'</span><span class="p">,</span> <span class="s1">'label'</span><span class="p">,</span> <span class="s1">'id'</span><span class="p">,</span> <span class="s1">'label_text'</span><span class="p">])</span>
-<span class="n">subset_dataset_test</span> <span class="o">=</span> <span class="n">subset_dataset_test</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">tokenize_function</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">remove_columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'text'</span><span class="p">,</span> <span class="s1">'label'</span><span class="p">,</span> <span class="s1">'id'</span><span class="p">,</span> <span class="s1">'label_text'</span><span class="p">])</span>
-
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">subset_dataset_train</span> <span class="o">=</span> <span class="n">subset_dataset_train</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">tokenize_function</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">remove_columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;label_text&#39;</span><span class="p">])</span>
+<span class="n">subset_dataset_validation</span> <span class="o">=</span> <span class="n">subset_dataset_validation</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">tokenize_function</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">remove_columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;label_text&#39;</span><span class="p">])</span>
+<span class="n">subset_dataset_test</span> <span class="o">=</span> <span class="n">subset_dataset_test</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">tokenize_function</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">remove_columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;label_text&#39;</span><span class="p">])</span>
+<span class="w"> </span>
 <span class="n">subset_dataset_train</span><span class="p">,</span> <span class="n">subset_dataset_validation</span><span class="p">,</span> <span class="n">subset_dataset_test</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[8]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>(Dataset({
-     features: ['labels', 'input_ids', 'attention_mask'],
-     num_rows: 200000
- }),
- Dataset({
-     features: ['labels', 'input_ids', 'attention_mask'],
-     num_rows: 5000
- }),
- Dataset({
-     features: ['labels', 'input_ids', 'attention_mask'],
-     num_rows: 5000
- }))</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>(Dataset(&#x7B;
+&#x20;&#x20;&#x20;&#x20;&#x20;features: [&#x27;labels&#x27;, &#x27;input_ids&#x27;, &#x27;attention_mask&#x27;],
+&#x20;&#x20;&#x20;&#x20;&#x20;num_rows: 200000
+ &#x7D;),
+ Dataset(&#x7B;
+&#x20;&#x20;&#x20;&#x20;&#x20;features: [&#x27;labels&#x27;, &#x27;input_ids&#x27;, &#x27;attention_mask&#x27;],
+&#x20;&#x20;&#x20;&#x20;&#x20;num_rows: 5000
+ &#x7D;),
+ Dataset(&#x7B;
+&#x20;&#x20;&#x20;&#x20;&#x20;features: [&#x27;labels&#x27;, &#x27;input_ids&#x27;, &#x27;attention_mask&#x27;],
+&#x20;&#x20;&#x20;&#x20;&#x20;num_rows: 5000
+ &#x7D;))
+</pre>
 </div>
 </div>
 </div>
@@ -1304,21 +1348,23 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 <h3 id="Model">Model<a class="anchor-link" href="#Model">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>We instantiate the model. Also, in order to avoid errors, we assign the end of string token to the padding token.</p>
+<p>We instantiate the model. Also, to avoid errors, we assign the end-of-string token to the padding token.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForSequenceClassification</span>
-
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoModelForSequenceClassification</span>
+<span class="w"> </span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForSequenceClassification</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">num_labels</span><span class="o">=</span><span class="n">num_classes</span><span class="p">)</span>
 <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">eos_token_id</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
-<div class="output-subarea-output-stream-output-stderr-output-text">
-<pre>Some weights of GPT2ForSequenceClassification were not initialized from the model checkpoint at openai-community/gpt2 and are newly initialized: ['score.weight']
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>Some weights of GPT2ForSequenceClassification were not initialized from the model checkpoint at openai-community/gpt2 and are newly initialized: [&#x27;score.weight&#x27;]
 You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
 </pre>
 </div>
@@ -1326,7 +1372,7 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="LoRA-with-PEFT">LoRA with PEFT<a class="anchor-link" href="#LoRA-with-PEFT">¶</a></h3>
+<h3 id="LoRA with PEFT">LoRA with PEFT<a class="anchor-link" href="#LoRA with PEFT">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>Before creating the model with LoRA, let's take a look at its layers</p>
@@ -1336,83 +1382,88 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">model</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[10]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
 <pre>GPT2ForSequenceClassification(
-  (transformer): GPT2Model(
-    (wte): Embedding(50257, 768)
-    (wpe): Embedding(1024, 768)
-    (drop): Dropout(p=0.1, inplace=False)
-    (h): ModuleList(
-      (0-11): 12 x GPT2Block(
-        (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
-        (attn): GPT2Attention(
-          (c_attn): Conv1D()
-          (c_proj): Conv1D()
-          (attn_dropout): Dropout(p=0.1, inplace=False)
-          (resid_dropout): Dropout(p=0.1, inplace=False)
-        )
-        (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
-        (mlp): GPT2MLP(
-          (c_fc): Conv1D()
-          (c_proj): Conv1D()
-          (act): NewGELUActivation()
-          (dropout): Dropout(p=0.1, inplace=False)
-        )
-      )
-    )
-    (ln_f): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
-  )
-  (score): Linear(in_features=768, out_features=5, bias=False)
-)</pre>
+&#x20;&#x20;(transformer): GPT2Model(
+&#x20;&#x20;&#x20;&#x20;(wte): Embedding(50257, 768)
+&#x20;&#x20;&#x20;&#x20;(wpe): Embedding(1024, 768)
+&#x20;&#x20;&#x20;&#x20;(drop): Dropout(p=0.1, inplace=False)
+&#x20;&#x20;&#x20;&#x20;(h): ModuleList(
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(0-11): 12 x GPT2Block(
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(attn): GPT2Attention(
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(c_attn): Conv1D()
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(c_proj): Conv1D()
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(attn_dropout): Dropout(p=0.1, inplace=False)
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(resid_dropout): Dropout(p=0.1, inplace=False)
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;)
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(mlp): GPT2MLP(
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(c_fc): Conv1D()
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(c_proj): Conv1D()
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(act): NewGELUActivation()
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(dropout): Dropout(p=0.1, inplace=False)
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;)
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;)
+&#x20;&#x20;&#x20;&#x20;)
+&#x20;&#x20;&#x20;&#x20;(ln_f): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+&#x20;&#x20;)
+&#x20;&#x20;(score): Linear(in_features=768, out_features=5, bias=False)
+)
+</pre>
 </div>
 </div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>As we can see there is only one <code>Linear</code> layer, which is <code>score</code> and that is the one we are going to replace.</p>
+<p>As we can see, there is only one <code>Linear</code> layer, which is <code>score</code> and that is the one we are going to replace.</p>
 </section>
 <section class="section-block-markdown-cell">
 <p>We can create a LoRA configuration with the PEFT library and then apply LoRA to the mo</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">peft</span> <span class="kn">import</span> <span class="n">LoraConfig</span><span class="p">,</span> <span class="n">TaskType</span>
-
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">peft</span><span class="w"> </span><span class="kn">import</span> <span class="n">LoraConfig</span><span class="p">,</span> <span class="n">TaskType</span>
+<span class="w"> </span>
 <span class="n">peft_config</span> <span class="o">=</span> <span class="n">LoraConfig</span><span class="p">(</span>
-    <span class="n">r</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
-    <span class="n">lora_alpha</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
-    <span class="n">lora_dropout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
-    <span class="n">task_type</span><span class="o">=</span><span class="n">TaskType</span><span class="o">.</span><span class="n">SEQ_CLS</span><span class="p">,</span>
-    <span class="n">target_modules</span><span class="o">=</span><span class="p">[</span><span class="s2">"score"</span><span class="p">],</span>
+<span class="w">    </span><span class="n">r</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+<span class="w">    </span><span class="n">lora_alpha</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+<span class="w">    </span><span class="n">lora_dropout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+<span class="w">    </span><span class="n">task_type</span><span class="o">=</span><span class="n">TaskType</span><span class="o">.</span><span class="n">SEQ_CLS</span><span class="p">,</span>
+<span class="w">    </span><span class="n">target_modules</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">],</span>
 <span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>With this configuration we have configured a rank of 16 and an alpha of 32. In addition we have added a dropout to the lora layers of 0.1. We have to indicate the task to the LoRA configuration, in this case it is a sequence classification task. Finally we indicate which layers we want to replace, in this case the <code>score</code> layer.</p>
+<p>With this configuration, we have set a rank of 16 and an alpha of 32. Additionally, we have added a dropout to the LoRA layers of 0.1. We need to specify the task for the LoRA configuration, in this case it is a sequence classification task. Finally, we indicate which layers we want to replace, in this case the <code>score</code> layer.</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>We now apply LoRA to the model</p>
+<p>Now we apply LoRA to the model</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">peft</span> <span class="kn">import</span> <span class="n">get_peft_model</span>
-
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">peft</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_peft_model</span>
+<span class="w"> </span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">get_peft_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">peft_config</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Let's see how many trainable parameters the model has now</p>
+<p>Let's see how many trainable parameters the model has now.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">print_trainable_parameters</span><span class="p">()</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
@@ -1430,66 +1481,66 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 <h3 id="Training">Training<a class="anchor-link" href="#Training">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>Once the model has been instantiated with LoRA, let's train it as usual</p>
+<p>Once the model has been instantiated with LoRA, we are going to train it as usual</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">TrainingArguments</span>
-
-<span class="n">metric_name</span> <span class="o">=</span> <span class="s2">"accuracy"</span>
-<span class="n">model_name</span> <span class="o">=</span> <span class="s2">"GPT2-small-PEFT-LoRA-finetuned-amazon-reviews-en-classification"</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainingArguments</span>
+<span class="w"> </span>
+<span class="n">metric_name</span> <span class="o">=</span> <span class="s2">&quot;accuracy&quot;</span>
+<span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;GPT2-small-PEFT-LoRA-finetuned-amazon-reviews-en-classification&quot;</span>
 <span class="n">LR</span> <span class="o">=</span> <span class="mf">2e-5</span>
 <span class="n">BS_TRAIN</span> <span class="o">=</span> <span class="mi">400</span>
 <span class="n">BS_EVAL</span> <span class="o">=</span> <span class="mi">400</span>
 <span class="n">EPOCHS</span> <span class="o">=</span> <span class="mi">3</span>
 <span class="n">WEIGHT_DECAY</span> <span class="o">=</span> <span class="mf">0.01</span>
-
+<span class="w"> </span>
 <span class="n">training_args</span> <span class="o">=</span> <span class="n">TrainingArguments</span><span class="p">(</span>
-    <span class="n">model_name</span><span class="p">,</span>
-    <span class="n">eval_strategy</span><span class="o">=</span><span class="s2">"epoch"</span><span class="p">,</span>
-    <span class="n">save_strategy</span><span class="o">=</span><span class="s2">"epoch"</span><span class="p">,</span>
-    <span class="n">learning_rate</span><span class="o">=</span><span class="n">LR</span><span class="p">,</span>
-    <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="n">BS_TRAIN</span><span class="p">,</span>
-    <span class="n">per_device_eval_batch_size</span><span class="o">=</span><span class="n">BS_EVAL</span><span class="p">,</span>
-    <span class="n">num_train_epochs</span><span class="o">=</span><span class="n">EPOCHS</span><span class="p">,</span>
-    <span class="n">weight_decay</span><span class="o">=</span><span class="n">WEIGHT_DECAY</span><span class="p">,</span>
-    <span class="n">lr_scheduler_type</span><span class="o">=</span><span class="s2">"cosine"</span><span class="p">,</span>
-    <span class="n">warmup_ratio</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
-    <span class="n">fp16</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">load_best_model_at_end</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">metric_for_best_model</span><span class="o">=</span><span class="n">metric_name</span><span class="p">,</span>
-    <span class="n">push_to_hub</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">logging_dir</span><span class="o">=</span><span class="s2">"./runs"</span><span class="p">,</span>
+<span class="w">    </span><span class="n">model_name</span><span class="p">,</span>
+<span class="w">    </span><span class="n">eval_strategy</span><span class="o">=</span><span class="s2">&quot;epoch&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">save_strategy</span><span class="o">=</span><span class="s2">&quot;epoch&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">learning_rate</span><span class="o">=</span><span class="n">LR</span><span class="p">,</span>
+<span class="w">    </span><span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="n">BS_TRAIN</span><span class="p">,</span>
+<span class="w">    </span><span class="n">per_device_eval_batch_size</span><span class="o">=</span><span class="n">BS_EVAL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">num_train_epochs</span><span class="o">=</span><span class="n">EPOCHS</span><span class="p">,</span>
+<span class="w">    </span><span class="n">weight_decay</span><span class="o">=</span><span class="n">WEIGHT_DECAY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">lr_scheduler_type</span><span class="o">=</span><span class="s2">&quot;cosine&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">warmup_ratio</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+<span class="w">    </span><span class="n">fp16</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="w">    </span><span class="n">load_best_model_at_end</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="w">    </span><span class="n">metric_for_best_model</span><span class="o">=</span><span class="n">metric_name</span><span class="p">,</span>
+<span class="w">    </span><span class="n">push_to_hub</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="w">    </span><span class="n">logging_dir</span><span class="o">=</span><span class="s2">&quot;./runs&quot;</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">evaluate</span> <span class="kn">import</span> <span class="n">load</span>
-
-<span class="n">metric</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s2">"accuracy"</span><span class="p">)</span>
-
-<span class="k">def</span> <span class="nf">compute_metrics</span><span class="p">(</span><span class="n">eval_pred</span><span class="p">):</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">eval_pred</span><span class="p">)</span>
-    <span class="n">predictions</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">eval_pred</span>
-    <span class="n">predictions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">metric</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">evaluate</span><span class="w"> </span><span class="kn">import</span> <span class="n">load</span>
+<span class="w"> </span>
+<span class="n">metric</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s2">&quot;accuracy&quot;</span><span class="p">)</span>
+<span class="w"> </span>
+<span class="k">def</span><span class="w"> </span><span class="nf">compute_metrics</span><span class="p">(</span><span class="n">eval_pred</span><span class="p">):</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="n">eval_pred</span><span class="p">)</span>
+<span class="w">    </span><span class="n">predictions</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">eval_pred</span>
+<span class="w">    </span><span class="n">predictions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span> <span class="n">metric</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">Trainer</span>
-
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span>
+<span class="w"> </span>
 <span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span>
-    <span class="n">model</span><span class="p">,</span>
-    <span class="n">training_args</span><span class="p">,</span>
-    <span class="n">train_dataset</span><span class="o">=</span><span class="n">subset_dataset_train</span><span class="p">,</span>
-    <span class="n">eval_dataset</span><span class="o">=</span><span class="n">subset_dataset_validation</span><span class="p">,</span>
-    <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span>
-    <span class="n">compute_metrics</span><span class="o">=</span><span class="n">compute_metrics</span><span class="p">,</span>
+<span class="w">    </span><span class="n">model</span><span class="p">,</span>
+<span class="w">    </span><span class="n">training_args</span><span class="p">,</span>
+<span class="w">    </span><span class="n">train_dataset</span><span class="o">=</span><span class="n">subset_dataset_train</span><span class="p">,</span>
+<span class="w">    </span><span class="n">eval_dataset</span><span class="o">=</span><span class="n">subset_dataset_validation</span><span class="p">,</span>
+<span class="w">    </span><span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span>
+<span class="w">    </span><span class="n">compute_metrics</span><span class="o">=</span><span class="n">compute_metrics</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -1499,90 +1550,59 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
-<div class="output-html-rendered-html-output-subarea">
-<div>
-<progress max="1500" style="width:300px; height:20px; vertical-align: middle;" value="811"></progress>
-      [ 811/1500 22:43 &lt; 19:20, 0.59 it/s, Epoch 1.62/3]
-    </div>
-<table border="1" class="dataframe">
-<thead>
-<tr style="text-align: left;">
-<th>Epoch</th>
-<th>Training Loss</th>
-<th>Validation Loss</th>
-<th>Accuracy</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>1</td>
-<td>2.275100</td>
-<td>1.512476</td>
-<td>0.318200</td>
-</tr>
-</tbody>
-</table><p></p></div>
-</div>
-<div class="output-area">
-<div class="prompt"></div>
 <div class="output-subarea-output-stream-output-stdout-output-text">
-<pre>&lt;transformers.trainer_utils.EvalPrediction object at 0x7f774a50bbe0&gt;
+<pre>&amp;lt;IPython.core.display.HTML object&amp;gt;
 </pre>
 </div>
 </div>
-<div class="output-area">
-<div class="prompt"></div>
-<div class="output-html-rendered-html-output-subarea">
-<div>
-<progress max="1500" style="width:300px; height:20px; vertical-align: middle;" value="1500"></progress>
-      [1500/1500 42:28, Epoch 3/3]
-    </div>
-<table border="1" class="dataframe">
-<thead>
-<tr style="text-align: left;">
-<th>Epoch</th>
-<th>Training Loss</th>
-<th>Validation Loss</th>
-<th>Accuracy</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>1</td>
-<td>2.275100</td>
-<td>1.512476</td>
-<td>0.318200</td>
-</tr>
-<tr>
-<td>2</td>
-<td>1.515900</td>
-<td>1.417553</td>
-<td>0.373800</td>
-</tr>
-<tr>
-<td>3</td>
-<td>1.463500</td>
-<td>1.405058</td>
-<td>0.381400</td>
-</tr>
-</tbody>
-</table><p></p></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
+<div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
 <div class="output-subarea-output-stream-output-stdout-output-text">
-<pre>&lt;transformers.trainer_utils.EvalPrediction object at 0x7f77486a7c40&gt;
-&lt;transformers.trainer_utils.EvalPrediction object at 0x7f7749eb5690&gt;
+<pre>&amp;lt;transformers.trainer_utils.EvalPrediction object at 0x7f774a50bbe0&amp;gt;
 </pre>
 </div>
 </div>
+</div>
+</section>
+<section class="section-block-code-cell-">
+<div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
-<div class="output-text-output-subarea">
-<pre>TrainOutput(global_step=1500, training_loss=1.751504597981771, metrics={'train_runtime': 2551.7753, 'train_samples_per_second': 235.13, 'train_steps_per_second': 0.588, 'total_flos': 2.352524525568e+17, 'train_loss': 1.751504597981771, 'epoch': 3.0})</pre>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>&amp;lt;IPython.core.display.HTML object&amp;gt;
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-code-cell-">
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>&amp;lt;transformers.trainer_utils.EvalPrediction object at 0x7f77486a7c40&amp;gt;
+&amp;lt;transformers.trainer_utils.EvalPrediction object at 0x7f7749eb5690&amp;gt;
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-code-cell-">
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>TrainOutput(global_step=1500, training_loss=1.751504597981771, metrics=&#x7B;&#x27;train_runtime&#x27;: 2551.7753, &#x27;train_samples_per_second&#x27;: 235.13, &#x27;train_steps_per_second&#x27;: 0.588, &#x27;total_flos&#x27;: 2.352524525568e+17, &#x27;train_loss&#x27;: 1.751504597981771, &#x27;epoch&#x27;: 3.0&#x7D;)
+</pre>
 </div>
 </div>
 </div>
@@ -1591,45 +1611,54 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 <h3 id="Evaluation">Evaluation<a class="anchor-link" href="#Evaluation">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>Once trained we evaluate on the test dataset</p>
+<p>Once trained, we evaluate on the test dataset</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">trainer</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">eval_dataset</span><span class="o">=</span><span class="n">subset_dataset_test</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
-<div class="output-html-rendered-html-output-subarea">
-<div>
-<progress max="13" style="width:300px; height:20px; vertical-align: middle;" value="13"></progress>
-      [13/13 00:17]
-    </div>
-</div>
-</div>
-<div class="output-area">
-<div class="prompt"></div>
 <div class="output-subarea-output-stream-output-stdout-output-text">
-<pre>&lt;transformers.trainer_utils.EvalPrediction object at 0x7f77a1d1f7c0&gt;
+<pre>&amp;lt;IPython.core.display.HTML object&amp;gt;
 </pre>
 </div>
 </div>
+</div>
+</section>
+<section class="section-block-code-cell-">
+<div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
-<div class="output-text-output-subarea">
-<pre>{'eval_loss': 1.4127237796783447,
- 'eval_accuracy': 0.3862,
- 'eval_runtime': 19.3275,
- 'eval_samples_per_second': 258.699,
- 'eval_steps_per_second': 0.673,
- 'epoch': 3.0}</pre>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>&amp;lt;transformers.trainer_utils.EvalPrediction object at 0x7f77a1d1f7c0&amp;gt;
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-code-cell-">
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>&#x7B;&#x27;eval_loss&#x27;: 1.4127237796783447,
+ &#x27;eval_accuracy&#x27;: 0.3862,
+ &#x27;eval_runtime&#x27;: 19.3275,
+ &#x27;eval_samples_per_second&#x27;: 258.699,
+ &#x27;eval_steps_per_second&#x27;: 0.673,
+ &#x27;epoch&#x27;: 3.0&#x7D;
+</pre>
 </div>
 </div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Publish-the-model">Publish the model<a class="anchor-link" href="#Publish-the-model">¶</a></h3>
+<h3 id="Publish the model">Publish the model<a class="anchor-link" href="#Publish the model">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>We create a model card</p>
@@ -1648,33 +1677,36 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">trainer</span><span class="o">.</span><span class="n">push_to_hub</span><span class="p">()</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
-<div class="output-text-output-subarea">
-<pre>CommitInfo(commit_url='https://huggingface.co/Maximofn/GPT2-small-PEFT-LoRA-finetuned-amazon-reviews-en-classification/commit/839066c2bde02689a6b3f5624ac25f89c4de217d', commit_message='End of training', commit_description='', oid='839066c2bde02689a6b3f5624ac25f89c4de217d', pr_url=None, pr_revision=None, pr_num=None)</pre>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>CommitInfo(commit_url=&#x27;https://huggingface.co/Maximofn/GPT2-small-PEFT-LoRA-finetuned-amazon-reviews-en-classification/commit/839066c2bde02689a6b3f5624ac25f89c4de217d&#x27;, commit_message=&#x27;End of training&#x27;, commit_description=&#x27;&#x27;, oid=&#x27;839066c2bde02689a6b3f5624ac25f89c4de217d&#x27;, pr_url=None, pr_revision=None, pr_num=None)
+</pre>
 </div>
 </div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="PEFT-trained-model-test">PEFT-trained model test<a class="anchor-link" href="#PEFT-trained-model-test">¶</a></h2>
+<h2 id="Test of the model trained with PEFT">Test of the model trained with PEFT<a class="anchor-link" href="#Test of the model trained with PEFT">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<p>We clean as much as possible</p>
+<p>We clean everything as much as possible</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">import</span> <span class="nn">gc</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">gc</span>
+<span class="w"> </span>
 
-
-<span class="k">def</span> <span class="nf">clear_hardwares</span><span class="p">():</span>
-    <span class="n">torch</span><span class="o">.</span><span class="n">clear_autocast_cache</span><span class="p">()</span>
-    <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">ipc_collect</span><span class="p">()</span>
-    <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">empty_cache</span><span class="p">()</span>
-    <span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
-
+<span class="k">def</span><span class="w"> </span><span class="nf">clear_hardwares</span><span class="p">():</span>
+<span class="w">    </span><span class="n">torch</span><span class="o">.</span><span class="n">clear_autocast_cache</span><span class="p">()</span>
+<span class="w">    </span><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">ipc_collect</span><span class="p">()</span>
+<span class="w">    </span><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">empty_cache</span><span class="p">()</span>
+<span class="w">    </span><span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
+<span class="w"> </span>
 
 <span class="n">clear_hardwares</span><span class="p">()</span>
 <span class="n">clear_hardwares</span><span class="p">()</span>
@@ -1682,23 +1714,25 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>As we have uploaded the model to our hub we can download it and use it.</p>
+<p>Since we have uploaded the model to our hub, we can download and use it</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">pipeline</span>
-
-<span class="n">user</span> <span class="o">=</span> <span class="s2">"maximofn"</span>
-<span class="n">checkpoints</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">user</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">"</span>
-<span class="n">task</span> <span class="o">=</span> <span class="s2">"text-classification"</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">pipeline</span>
+<span class="w"> </span>
+<span class="n">user</span> <span class="o">=</span> <span class="s2">&quot;maximofn&quot;</span>
+<span class="n">checkpoints</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">user</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="n">task</span> <span class="o">=</span> <span class="s2">&quot;text-classification&quot;</span>
 <span class="n">classifier</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">checkpoints</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">checkpoints</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
-<div class="output-subarea-output-stream-output-stderr-output-text">
-<pre>Some weights of GPT2ForSequenceClassification were not initialized from the model checkpoint at openai-community/gpt2 and are newly initialized: ['score.weight']
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>Some weights of GPT2ForSequenceClassification were not initialized from the model checkpoint at openai-community/gpt2 and are newly initialized: [&#x27;score.weight&#x27;]
 You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
 </pre>
 </div>
@@ -1706,61 +1740,70 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Now if we want to return the probability of all classes, we simply use the classifier we just instantiated, with the parameter <code>top_k=None</code>.</p>
+<p>If we want to get the probability of all classes, we simply use the classifier we just instantiated, with the parameter <code>top_k=None</code></p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">labels</span> <span class="o">=</span> <span class="n">classifier</span><span class="p">(</span><span class="s2">"I love this product"</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">labels</span> <span class="o">=</span> <span class="n">classifier</span><span class="p">(</span><span class="s2">&quot;I love this product&quot;</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 <span class="n">labels</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[3]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>[{'label': 'LABEL_1', 'score': 0.9979197382926941},
- {'label': 'LABEL_0', 'score': 0.002080311067402363}]</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>[&#x7B;&#x27;label&#x27;: &#x27;LABEL_1&#x27;, &#x27;score&#x27;: 0.9979197382926941&#x7D;,
+ &#x7B;&#x27;label&#x27;: &#x27;LABEL_0&#x27;, &#x27;score&#x27;: 0.002080311067402363&#x7D;]
+</pre>
 </div>
 </div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>If we only want the class with the highest probability we do the same but with the parameter <code>top_k=1</code>.</p>
+<p>If we only want the class with the highest probability, we do the same but with the parameter <code>top_k=1</code></p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">label</span> <span class="o">=</span> <span class="n">classifier</span><span class="p">(</span><span class="s2">"I love this product"</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">label</span> <span class="o">=</span> <span class="n">classifier</span><span class="p">(</span><span class="s2">&quot;I love this product&quot;</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="n">label</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[4]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>[{'label': 'LABEL_1', 'score': 0.9979197382926941}]</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>[&#x7B;&#x27;label&#x27;: &#x27;LABEL_1&#x27;, &#x27;score&#x27;: 0.9979197382926941&#x7D;]
+</pre>
 </div>
 </div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>And if we want n classes we do the same but with the parameter <code>top_k=n</code>.</p>
+<p>And if we want n classes, we do the same but with the parameter <code>top_k=n</code></p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">two_labels</span> <span class="o">=</span> <span class="n">classifier</span><span class="p">(</span><span class="s2">"I love this product"</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">two_labels</span> <span class="o">=</span> <span class="n">classifier</span><span class="p">(</span><span class="s2">&quot;I love this product&quot;</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 <span class="n">two_labels</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
-<div class="prompt-output-prompt">Out[5]:</div>
-<div class="output-text-output-subareaoutput_execute_result">
-<pre>[{'label': 'LABEL_1', 'score': 0.9979197382926941},
- {'label': 'LABEL_0', 'score': 0.002080311067402363}]</pre>
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>[&#x7B;&#x27;label&#x27;: &#x27;LABEL_1&#x27;, &#x27;score&#x27;: 0.9979197382926941&#x7D;,
+ &#x7B;&#x27;label&#x27;: &#x27;LABEL_0&#x27;, &#x27;score&#x27;: 0.002080311067402363&#x7D;]
+</pre>
 </div>
 </div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>If you want to test the model further you can see it in <a href="https://huggingface.co/Maximofn/GPT2-small-PEFT-LoRA-finetuned-amazon-reviews-en-classification">Maximofn/GPT2-small-PEFT-LoRA-finetuned-amazon-reviews-en-classification</a></p>
+<p>If you want to try the model further, you can check it out at <a href="https://huggingface.co/Maximofn/GPT2-small-PEFT-LoRA-finetuned-amazon-reviews-en-classification">Maximofn/GPT2-small-PEFT-LoRA-finetuned-amazon-reviews-en-classification</a></p>
 </section>

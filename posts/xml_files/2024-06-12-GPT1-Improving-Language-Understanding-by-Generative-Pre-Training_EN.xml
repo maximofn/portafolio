@@ -6,24 +6,46 @@
   <markdown>[Improving Language Understanding by Generative Pre-Training](https://s3-us-west-2.amazonaws.com/openai-assets/research-covers/language-unsupervised/language_understanding_paper.pdf) is the GPT1 paper. Before reading the post, it's necessary to set the context: before GPT, language models were based on recurrent neural networks (RNNs), which worked relatively well for specific tasks but could not reuse pre-training for fine-tuning for other tasks. Additionally, they had limited memory, so if very long sentences were input, they wouldn't remember the beginning of the sentence very well.</markdown>
   <markdown>## Architecture</markdown>
   <markdown>Before discussing the architecture of GPT-1, let's recall how the architecture of transformers worked.
-![transformer architecture](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/transformer-scaled.webp)</markdown>
+
+![transformer architecture](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/transformer-scaled.webp)
+</markdown>
   <markdown>GPT1 is a model based on the decoders of transformers, so since we don't have an encoder, the architecture with a single decoder looks like this:
+
 ![decoder architecture](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/transformer_decoder_only-scaled.webp)
-The attention mechanism between the encoder and decoder sentence is removed.</markdown>
+
+The attention mechanism between the encoder and decoder sentence is removed.
+</markdown>
   <markdown>In the GPT-1 paper, they propose the following architecture
+
 ![gpt1 architecture](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/GPT1_architecture.webp)
-This corresponds to the decoder of a transformer as we have seen before, executed 12 times</markdown>
+
+This corresponds to the decoder of a transformer as we have seen before, executed 12 times
+</markdown>
   <markdown>## Summary of the paper</markdown>
   <markdown>The most interesting ideas from the paper are:
-* The model is trained on a large corpus of text without supervision. This results in the creation of a language model. A high-capacity language model is created from a large corpus of text.* Then fine-tuning is performed on supervised NLP tasks with labeled datasets. A fine adjustment is made in the target task with supervision. Additionally, when evaluating the model on the supervised task, it is not only evaluated for that task, but also for how well it predicts the next token, which helps improve the generalization of the supervised model and makes the model converge faster.* Although we have already mentioned it, the paper states that the transformer architecture is used, as RNNs were being used for language models up until that point. This led to an improvement in which what was learned during the first training (unsupervised training on the text corpus) is easier to transfer to supervised tasks. In other words, thanks to the use of transformers, it became possible to train on an entire text corpus and then perform fine-tunings on supervised tasks.* They evaluated the model on four types of language understanding tasks:* Natural language inference* Answers to questions* Semantic similarity* Text classification.* The general model (the one trained on the entire text corpus without supervision) outperforms discriminatively trained RNN models that use architectures specifically designed for each task, significantly improving the state of the art in 9 out of the 12 tasks studied. They also analyze the "zero-shot" behaviors of the pre-trained model in four different environments and demonstrated that it acquires useful linguistic knowledge for subsequent tasks.* In recent years, researchers had demonstrated the benefits of using embeddings, which are trained on unlabeled corpora, to improve performance across a variety of tasks. However, these approaches primarily transfer information at the word level, while the use of transformers trained on large unsupervised text corpora captures higher-level semantics at the phrase level.</markdown>
+
+* The model is trained on a large corpus of text without supervision. This results in the creation of a language model. A high-capacity language model is created from a large corpus of text.
+* Then fine-tuning is performed on supervised NLP tasks with labeled datasets. A fine adjustment is made in the target task with supervision. Additionally, when evaluating the model on the supervised task, it is not only evaluated for that task, but also for how well it predicts the next token, which helps improve the generalization of the supervised model and makes the model converge faster.
+* Although we have already mentioned it, the paper states that the transformer architecture is used, as RNNs were being used for language models up until that point. This led to an improvement in which what was learned during the first training (unsupervised training on the text corpus) is easier to transfer to supervised tasks. In other words, thanks to the use of transformers, it became possible to train on an entire text corpus and then perform fine-tunings on supervised tasks.
+* They evaluated the model on four types of language understanding tasks:
+* Natural language inference* Answers to questions
+* Semantic similarity
+* Text classification.
+* The general model (the one trained on the entire text corpus without supervision) outperforms discriminatively trained RNN models that use architectures specifically designed for each task, significantly improving the state of the art in 9 out of the 12 tasks studied. They also analyze the "zero-shot" behaviors of the pre-trained model in four different environments and demonstrated that it acquires useful linguistic knowledge for subsequent tasks.
+* In recent years, researchers had demonstrated the benefits of using embeddings, which are trained on unlabeled corpora, to improve performance across a variety of tasks. However, these approaches primarily transfer information at the word level, while the use of transformers trained on large unsupervised text corpora captures higher-level semantics at the phrase level.
+</markdown>
   <markdown>## Text Generation</markdown>
   <markdown>Let's see how to generate text with a pretrained GPT1</markdown>
   <markdown>First, you need to install `ftfy` and `spacy` via
+
 ```bash
-pip install ftfy spacy```</markdown>
+pip install ftfy spacy
+```</markdown>
   <markdown>Once installed, you should download the language model of spacy that you want to use. For example, to download the English model, you can run:
+
 ```bash
-python -m spacy download en_core_web_sm```</markdown>
+python -m spacy download en_core_web_sm
+```</markdown>
   <markdown>To generate text, we are going to use the model from the [GPT1](https://huggingface.co/openai-community/openai-gpt) repository of Hugging Face.</markdown>
   <markdown>We import the libraries</markdown>
   <input_code>import torch
@@ -165,15 +187,33 @@ outputs</input_code>
   <output_code>None
 </output_code>
   <markdown>Since we will need the loss to perform fine-tuning, let's see how to obtain it.
+
 If we go to the documentation of the [forward](https://huggingface.co/docs/transformers/model_doc/openai-gpt#transformers.OpenAIGPTLMHeadModel.forward) method of `OpenAIGPTLMHeadModel`, we can see that it states that the output is an object of type `transformers.modeling_outputs.CausalLMOutput`. So, if we go to the documentation of [transformers.modeling_outputs.CausalLMOutput](https://huggingface.co/docs/transformers/en/main_classes/output#transformers.modeling_outputs.CausalLMOutput), we can see that it states that it returns `loss` if `labels` are passed to the `forward` method.
+
 If we go to the source code of the [forward](https://github.com/huggingface/transformers/blob/main/src/transformers/models/openai/modeling_openai.py#L544) method, we see this block of code
+
 ```python
-loss = Noneif labels is not None:# Shift so that tokens &lt; n predict nshift_logits = lm_logits[..., :-1, :].contiguous()shift_labels = labels[..., 1:].contiguous()# Flatten the tokensloss_fct = CrossEntropyLoss()loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))```
+loss = None
+if labels is not None:
+# Shift so that tokens &lt; n predict n
+shift_logits = lm_logits[..., :-1, :].contiguous()
+shift_labels = labels[..., 1:].contiguous()
+# Flatten the tokens
+loss_fct = CrossEntropyLoss()
+loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
+```
 
 That is, the `loss` is calculated as follows
-* Logits and labels shift: The first part is to shift the logits (`lm_logits`) and the labels (`labels`) so that the `tokens &lt; n` predict `n`, meaning from position `n` it predicts the next token based on the previous ones.* CrossEntropyLoss: An instance of the loss function `CrossEntropyLoss()` is created.* Flatten tokens: Next, the logits and labels are flattened using `view(-1, shift_logits.size(-1))` and `view(-1)`, respectively. This is done to ensure that the logits and labels have the same shape for the loss function.* Calculation of the loss: Finally, the loss is calculated using the `CrossEntropyLoss()` function with the flattened logits and flattened labels as inputs.
+
+* Logits and labels shift: The first part is to shift the logits (`lm_logits`) and the labels (`labels`) so that the `tokens &lt; n` predict `n`, meaning from position `n` it predicts the next token based on the previous ones.
+* CrossEntropyLoss: An instance of the loss function `CrossEntropyLoss()` is created.
+* Flatten tokens: Next, the logits and labels are flattened using `view(-1, shift_logits.size(-1))` and `view(-1)`, respectively. This is done to ensure that the logits and labels have the same shape for the loss function.
+* Calculation of the loss: Finally, the loss is calculated using the `CrossEntropyLoss()` function with the flattened logits and flattened labels as inputs.
+
 In summary, the `loss` is calculated as the cross-entropy loss between the shifted and flattened logits and the shifted and flattened labels.
-Therefore, if we pass the labels to the `forward` method, it will return the `loss`.</markdown>
+
+Therefore, if we pass the labels to the `forward` method, it will return the `loss`.
+</markdown>
   <input_code>outputs = model(**input_tokens, labels=input_tokens.input_ids)
 
 outputs.loss</input_code>
@@ -197,7 +237,9 @@ jokes</input_code>
  'Joke': '[me narrating a documentary about narrators] "I can\'t hear what they\'re saying cuz I\'m talking"'}</output_code>
   <markdown>### Training with Pytorch</markdown>
   <markdown>First let's see how the training would be done with pure Pytorch
-&gt; We restart the notebook to avoid issues with GPU memory.</markdown>
+
+&gt; We restart the notebook to avoid issues with GPU memory.
+</markdown>
   <input_code>import torch
 from transformers import OpenAIGPTLMHeadModel, AutoTokenizer
 

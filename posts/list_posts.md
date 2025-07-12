@@ -34,7 +34,7 @@
      * -rw-r--r--@   1 macm1  staff    116282 11 jun 19:12 2024-07-09-GPT2-Language-Models-are-Unsupervised-Multitask-Learners.ipynb
      * -rw-r--r--@   1 macm1  staff    124963 29 ene 17:29 2021-04-23-Calculo-matricial-con-Numpy.ipynb
      * -rw-r--r--@   1 macm1  staff    146055 29 ene 17:29 2024-04-29-Hugging-Face-evaluate.ipynb
- * -rw-r--r--@   1 macm1  staff    152332 29 ene 17:29 2024-07-14-Fine-tuning-SLM.ipynb
+     * -rw-r--r--@   1 macm1  staff    152332 29 ene 17:29 2024-07-14-Fine-tuning-SLM.ipynb
  * -rw-r--r--@   1 macm1  staff    156689 29 ene 17:29 2023-12-06-openai_API.ipynb
  * -rw-r--r--@   1 macm1  staff    164417 29 ene 17:29 2024-04-24-Hugging-Face-datasets.ipynb
  * -rw-r--r--@   1 macm1  staff    167426 29 ene 17:29 2024-05-25-Ollama.ipynb

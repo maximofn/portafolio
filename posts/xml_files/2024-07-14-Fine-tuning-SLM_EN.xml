@@ -1,0 +1,1386 @@
+<?xml version='1.0' encoding='utf-8'?>
+<notebook>
+  <markdown># Fine tuning SMLs with Hugging Face</markdown>
+  <markdown> &gt; Disclaimer: This post has been translated to English using a machine translation model. Please, let me know if you find any mistakes.</markdown>
+  <markdown>In this post, we are going to see how to perform fine-tuning on small language models. We will explore how to do fine-tuning for text classification and text generation. First, we will look at how to do it using the Hugging Face libraries, as Hugging Face has become a very important player in the AI ecosystem at this moment.
+
+But although the Hugging Face libraries are very important and useful, it is very important to know how the training is actually done and what is happening underneath, so we are going to repeat the training for classification and text generation but with Pytorch.
+</markdown>
+  <markdown>## Fine tuning for text classification with Hugging Face</markdown>
+  <markdown>### Login</markdown>
+  <markdown>To be able to upload the training results to the hub, we need to log in first, for which we need a token
+
+To create a token, you need to go to the [settings/tokens](https://huggingface.co/settings/tokens) page of your account, and you will see something like this
+
+![User-Access-Token-dark](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/User-Access-Token-dark.webp)
+
+We click on `New token` and a window will appear to create a new token
+
+![new-token-dark](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/new-token-dark.webp)
+We give the token a name and create it with the `write` role, or with the `Fine-grained` role, which allows us to select exactly which permissions the token will have.
+
+Once created, we copy and paste it below.
+</markdown>
+  <input_code>from huggingface_hub import notebook_login
+notebook_login()</input_code>
+  <markdown>### Dataset</markdown>
+  <markdown>Now we download a dataset, in this case we are going to download one of Amazon reviews from [Amazon](https://huggingface.co/datasets/mteb/amazon_reviews_multi)</markdown>
+  <input_code>from datasets import load_dataset
+
+dataset = load_dataset("mteb/amazon_reviews_multi", "en")</input_code>
+  <markdown>Let's take a look at it a bit</markdown>
+  <input_code>dataset</input_code>
+  <output_code>DatasetDict({
+    train: Dataset({
+        features: ['id', 'text', 'label', 'label_text'],
+        num_rows: 200000
+    })
+    validation: Dataset({
+        features: ['id', 'text', 'label', 'label_text'],
+        num_rows: 5000
+    })
+    test: Dataset({
+        features: ['id', 'text', 'label', 'label_text'],
+        num_rows: 5000
+    })
+})</output_code>
+  <markdown>We see that you have a training set with 200,000 samples, a validation set with 5,000 samples, and a test set of 5,000 samples.</markdown>
+  <markdown>Let's take a look at an example from the training set</markdown>
+  <input_code>from random import randint
+
+idx = randint(0, len(dataset['train']) - 1)
+dataset['train'][idx]</input_code>
+  <output_code>{'id': 'en_0907914',
+ 'text': 'Mixed with fir it’s passable\n\nNot the scent I had hoped for . Love the scent of cedar, but this one missed',
+ 'label': 3,
+ 'label_text': '3'}</output_code>
+  <markdown>We see that the review is in the `text` field and the rating given by the user is in the `label` field.</markdown>
+  <markdown>As we are going to build a text classification model, we need to know how many classes we will have.</markdown>
+  <input_code>num_classes = len(dataset['train'].unique('label'))
+num_classes</input_code>
+  <output_code>5</output_code>
+  <markdown>We will have 5 classes, now we are going to see the minimum value of these classes to know if the score starts at 0 or 1. For this, we use the `unique` method.</markdown>
+  <input_code>dataset.unique('label')</input_code>
+  <output_code>{'train': [0, 1, 2, 3, 4],
+ 'validation': [0, 1, 2, 3, 4],
+ 'test': [0, 1, 2, 3, 4]}</output_code>
+  <markdown>The minimum value will be 0</markdown>
+  <markdown>To train, the labels need to be in a field called `labels`, while in our dataset it is in a field called `label`, so we create the new field `labels` with the same value as `label`</markdown>
+  <markdown>We create a function that does what we want</markdown>
+  <input_code>def set_labels(example):
+    example['labels'] = example['label']
+    return example</input_code>
+  <markdown>We apply the function to the dataset</markdown>
+  <input_code>dataset = dataset.map(set_labels)</input_code>
+  <markdown>Let's see how the dataset looks like</markdown>
+  <input_code>dataset['train'][idx]</input_code>
+  <output_code>{'id': 'en_0907914',
+ 'text': 'Mixed with fir it’s passable\n\nNot the scent I had hoped for . Love the scent of cedar, but this one missed',
+ 'label': 3,
+ 'label_text': '3',
+ 'labels': 3}</output_code>
+  <markdown>### Tokenizer</markdown>
+  <markdown>Since we have the reviews in text form in the dataset, we need to tokenize them so that we can feed the tokens into the model.</markdown>
+  <input_code>from transformers import AutoTokenizer
+
+checkpoint = "openai-community/gpt2"
+tokenizer = AutoTokenizer.from_pretrained(checkpoint)</input_code>
+  <markdown>Now we create a function to tokenize the text. We will do this in such a way that all statements have the same length, so the tokenizer will truncate when necessary and add padding tokens when necessary. Additionally, we specify that it should return pytorch tensors.</markdown>
+  <markdown>We make the length of each sentence 768 tokens because we are using the small GPT2 model, which as we saw in the [GPT2](https://maximofn.com/gpt2/#Arquitectura) post has an embedding dimension of 768 tokens.</markdown>
+  <input_code>def tokenize_function(examples):
+    return tokenizer(examples["text"], padding="max_length", truncation=True, max_length=768, return_tensors="pt")</input_code>
+  <markdown>Let's try to tokenize a text</markdown>
+  <input_code>tokens = tokenize_function(dataset['train'][idx])</input_code>
+  <output_code>---------------------------------------------------------------------------ValueError                                Traceback (most recent call last)Cell In[11], line 1
+----&gt; 1 tokens = tokenize_function(dataset['train'][idx])
+Cell In[10], line 2, in tokenize_function(examples)
+      1 def tokenize_function(examples):
+----&gt; 2     return tokenizer(examples["text"], padding="max_length", truncation=True, max_length=768, return_tensors="pt")
+File ~/miniconda3/envs/nlp_/lib/python3.11/site-packages/transformers/tokenization_utils_base.py:2883, in PreTrainedTokenizerBase.__call__(self, text, text_pair, text_target, text_pair_target, add_special_tokens, padding, truncation, max_length, stride, is_split_into_words, pad_to_multiple_of, return_tensors, return_token_type_ids, return_attention_mask, return_overflowing_tokens, return_special_tokens_mask, return_offsets_mapping, return_length, verbose, **kwargs)
+   2881     if not self._in_target_context_manager:
+   2882         self._switch_to_input_mode()
+-&gt; 2883     encodings = self._call_one(text=text, text_pair=text_pair, **all_kwargs)
+   2884 if text_target is not None:
+   2885     self._switch_to_target_mode()
+File ~/miniconda3/envs/nlp_/lib/python3.11/site-packages/transformers/tokenization_utils_base.py:2989, in PreTrainedTokenizerBase._call_one(self, text, text_pair, add_special_tokens, padding, truncation, max_length, stride, is_split_into_words, pad_to_multiple_of, return_tensors, return_token_type_ids, return_attention_mask, return_overflowing_tokens, return_special_tokens_mask, return_offsets_mapping, return_length, verbose, **kwargs)
+   2969     return self.batch_encode_plus(
+   2970         batch_text_or_text_pairs=batch_text_or_text_pairs,
+   2971         add_special_tokens=add_special_tokens,
+   (...)
+   2986         **kwargs,
+   2987     )
+   2988 else:
+-&gt; 2989     return self.encode_plus(
+   2990         text=text,
+   2991         text_pair=text_pair,
+   2992         add_special_tokens=add_special_tokens,
+   2993         padding=padding,
+   2994         truncation=truncation,
+   2995         max_length=max_length,
+   2996         stride=stride,
+   2997         is_split_into_words=is_split_into_words,
+   2998         pad_to_multiple_of=pad_to_multiple_of,
+   2999         return_tensors=return_tensors,
+   3000         return_token_type_ids=return_token_type_ids,
+   3001         return_attention_mask=return_attention_mask,
+   3002         return_overflowing_tokens=return_overflowing_tokens,
+   3003         return_special_tokens_mask=return_special_tokens_mask,
+   3004         return_offsets_mapping=return_offsets_mapping,
+   3005         return_length=return_length,
+   3006         verbose=verbose,
+   3007         **kwargs,
+   3008     )
+File ~/miniconda3/envs/nlp_/lib/python3.11/site-packages/transformers/tokenization_utils_base.py:3053, in PreTrainedTokenizerBase.encode_plus(self, text, text_pair, add_special_tokens, padding, truncation, max_length, stride, is_split_into_words, pad_to_multiple_of, return_tensors, return_token_type_ids, return_attention_mask, return_overflowing_tokens, return_special_tokens_mask, return_offsets_mapping, return_length, verbose, **kwargs)
+   3032 """
+   3033 Tokenize and prepare for the model a sequence or a pair of sequences.
+   3034 
+   (...)
+   3049         method).
+   3050 """
+   3052 # Backward compatibility for 'truncation_strategy', 'pad_to_max_length'
+-&gt; 3053 padding_strategy, truncation_strategy, max_length, kwargs = self._get_padding_truncation_strategies(
+   3054     padding=padding,
+   3055     truncation=truncation,
+   3056     max_length=max_length,
+   3057     pad_to_multiple_of=pad_to_multiple_of,
+   3058     verbose=verbose,
+   3059     **kwargs,
+   3060 )
+   3062 return self._encode_plus(
+   3063     text=text,
+   3064     text_pair=text_pair,
+   (...)
+   3080     **kwargs,
+   3081 )
+File ~/miniconda3/envs/nlp_/lib/python3.11/site-packages/transformers/tokenization_utils_base.py:2788, in PreTrainedTokenizerBase._get_padding_truncation_strategies(self, padding, truncation, max_length, pad_to_multiple_of, verbose, **kwargs)
+   2786 # Test if we have a padding token
+   2787 if padding_strategy != PaddingStrategy.DO_NOT_PAD and (self.pad_token is None or self.pad_token_id &lt; 0):
+-&gt; 2788     raise ValueError(
+   2789         "Asking to pad but the tokenizer does not have a padding token. "
+   2790         "Please select a token to use as `pad_token` `(tokenizer.pad_token = tokenizer.eos_token e.g.)` "
+   2791         "or add a new pad token via `tokenizer.add_special_tokens({'pad_token': '[PAD]'})`."
+   2792     )
+   2794 # Check that we will truncate to a multiple of pad_to_multiple_of if both are provided
+   2795 if (
+   2796     truncation_strategy != TruncationStrategy.DO_NOT_TRUNCATE
+   2797     and padding_strategy != PaddingStrategy.DO_NOT_PAD
+   (...)
+   2800     and (max_length % pad_to_multiple_of != 0)
+   2801 ):
+ValueError: Asking to pad but the tokenizer does not have a padding token. Please select a token to use as `pad_token` `(tokenizer.pad_token = tokenizer.eos_token e.g.)` or add a new pad token via `tokenizer.add_special_tokens({'pad_token': '[PAD]'})`.</output_code>
+  <markdown>We get an error because the GPT2 tokenizer does not have a token for padding and asks us to assign one, additionally it suggests doing `tokenizer.pad_token = tokenizer.eos_token`, so we do that.</markdown>
+  <input_code>tokenizer.pad_token = tokenizer.eos_token</input_code>
+  <markdown>We test the tokenization function again</markdown>
+  <input_code>tokens = tokenize_function(dataset['train'][idx])
+tokens['input_ids'].shape, tokens['attention_mask'].shape</input_code>
+  <output_code>(torch.Size([1, 768]), torch.Size([1, 768]))</output_code>
+  <markdown>Now that we have checked that the function tokenizes well, we apply this function to the dataset, but we also apply it in batches so that it executes faster
+
+Moreover, we take the opportunity to delete the columns that we won't need.
+</markdown>
+  <input_code>dataset = dataset.map(tokenize_function, batched=True, remove_columns=['text', 'label', 'id', 'label_text'])</input_code>
+  <markdown>We now see how the dataset looks.</markdown>
+  <input_code>dataset</input_code>
+  <output_code>DatasetDict({
+    train: Dataset({
+        features: ['id', 'text', 'label', 'label_text', 'labels'],
+        num_rows: 200000
+    })
+    validation: Dataset({
+        features: ['id', 'text', 'label', 'label_text', 'labels'],
+        num_rows: 5000
+    })
+    test: Dataset({
+        features: ['id', 'text', 'label', 'label_text', 'labels'],
+        num_rows: 5000
+    })
+})</output_code>
+  <markdown>We see that we have the fields 'labels', 'input_ids', and 'attention_mask', which is what we are interested in for training.</markdown>
+  <markdown>### Model</markdown>
+  <markdown>We instantiate a model for sequence classification and specify the number of classes we have</markdown>
+  <input_code>from transformers import AutoModelForSequenceClassification
+
+model = AutoModelForSequenceClassification.from_pretrained(checkpoint, num_labels=num_classes)</input_code>
+  <output_code>Some weights of GPT2ForSequenceClassification were not initialized from the model checkpoint at openai-community/gpt2 and are newly initialized: ['score.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+</output_code>
+  <markdown>It tells us that the weights of the `score` layer have been initialized randomly and that we need to retrain them, let's see why this happens.</markdown>
+  <markdown>The GPT2 model would be this</markdown>
+  <input_code>from transformers import AutoModelForCausalLM
+
+casual_model = AutoModelForCausalLM.from_pretrained(checkpoint)</input_code>
+  <markdown>While the GPT2 model for generating text is this</markdown>
+  <markdown>Let's see its architecture</markdown>
+  <input_code>casual_model</input_code>
+  <output_code>GPT2LMHeadModel(
+  (transformer): GPT2Model(
+    (wte): Embedding(50257, 768)
+    (wpe): Embedding(1024, 768)
+    (drop): Dropout(p=0.1, inplace=False)
+    (h): ModuleList(
+      (0-11): 12 x GPT2Block(
+        (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+        (attn): GPT2Attention(
+          (c_attn): Conv1D()
+          (c_proj): Conv1D()
+          (attn_dropout): Dropout(p=0.1, inplace=False)
+          (resid_dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+        (mlp): GPT2MLP(
+          (c_fc): Conv1D()
+          (c_proj): Conv1D()
+          (act): NewGELUActivation()
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+      )
+    )
+    (ln_f): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+  )
+  (lm_head): Linear(in_features=768, out_features=50257, bias=False)
+)</output_code>
+  <markdown>And now the architecture of the model we are going to use for classifying the reviews</markdown>
+  <input_code>model</input_code>
+  <output_code>GPT2ForSequenceClassification(
+  (transformer): GPT2Model(
+    (wte): Embedding(50257, 768)
+    (wpe): Embedding(1024, 768)
+    (drop): Dropout(p=0.1, inplace=False)
+    (h): ModuleList(
+      (0-11): 12 x GPT2Block(
+        (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+        (attn): GPT2Attention(
+          (c_attn): Conv1D()
+          (c_proj): Conv1D()
+          (attn_dropout): Dropout(p=0.1, inplace=False)
+          (resid_dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+        (mlp): GPT2MLP(
+          (c_fc): Conv1D()
+          (c_proj): Conv1D()
+          (act): NewGELUActivation()
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+      )
+    )
+    (ln_f): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+  )
+  (score): Linear(in_features=768, out_features=5, bias=False)
+)</output_code>
+  <markdown>There are two things to mention here.
+
++ The first is that in both, the first layer has dimensions of 50257x768, which corresponds to 50257 possible tokens from the GPT-2 vocabulary and 768 dimensions of the embedding, so we have done well in tokenizing the reviews with a size of 768 tokens
++ The second is that the `casual` model (the text generation one) has at the end a `Linear` layer that generates 50257 values, meaning it is responsible for predicting the next token and assigns a value to each possible token. On the other hand, the classification model has a `Linear` layer that only generates 5 values, one for each class, which will give us the probability that the review belongs to each class.
+That's why we were getting the message that the weights of the `score` layer had been initialized randomly, because the transformers library has removed the `Linear` layer of 768x50257 and added a `Linear` layer of 768x5, it has initialized it with random values and we need to train it for our specific problem.
+</markdown>
+  <markdown>We delete the casual model because we are not going to use it.</markdown>
+  <input_code>del casual_model</input_code>
+  <markdown>### Trainer</markdown>
+  <markdown>Let's now configure the training arguments</markdown>
+  <input_code>from transformers import TrainingArguments
+
+metric_name = "accuracy"
+model_name = "GPT2-small-finetuned-amazon-reviews-en-classification"
+LR = 2e-5
+BS_TRAIN = 28
+BS_EVAL = 40
+EPOCHS = 3
+WEIGHT_DECAY = 0.01
+
+training_args = TrainingArguments(
+    model_name,
+    eval_strategy="epoch",
+    save_strategy="epoch",
+    learning_rate=LR,
+    per_device_train_batch_size=BS_TRAIN,
+    per_device_eval_batch_size=BS_EVAL,
+    num_train_epochs=EPOCHS,
+    weight_decay=WEIGHT_DECAY,
+    lr_scheduler_type="cosine",
+    warmup_ratio = 0.1,
+    fp16=True,
+    load_best_model_at_end=True,
+    metric_for_best_model=metric_name,
+    push_to_hub=True,
+)</input_code>
+  <markdown>We define a metric for the validation dataloader</markdown>
+  <input_code>import numpy as np
+from evaluate import load
+
+metric = load("accuracy")
+
+def compute_metrics(eval_pred):
+    print(eval_pred)
+    predictions, labels = eval_pred
+    predictions = np.argmax(predictions, axis=1)
+    return metric.compute(predictions=predictions, references=labels)</input_code>
+  <markdown>We now define the trainer</markdown>
+  <input_code>from transformers import Trainer
+
+trainer = Trainer(
+    model,
+    training_args,
+    train_dataset=dataset['train'],
+    eval_dataset=dataset['validation'],
+    tokenizer=tokenizer,
+    compute_metrics=compute_metrics,
+)</input_code>
+  <markdown>We train</markdown>
+  <input_code>trainer.train()</input_code>
+  <output_code>  0%|          | 0/600000 [00:00&lt;?, ?it/s]</output_code>
+  <output_code>---------------------------------------------------------------------------ValueError                                Traceback (most recent call last)Cell In[21], line 1
+----&gt; 1 trainer.train()
+File ~/miniconda3/envs/nlp_/lib/python3.11/site-packages/transformers/trainer.py:1876, in Trainer.train(self, resume_from_checkpoint, trial, ignore_keys_for_eval, **kwargs)
+   1873 try:
+   1874     # Disable progress bars when uploading models during checkpoints to avoid polluting stdout
+   1875     hf_hub_utils.disable_progress_bars()
+-&gt; 1876     return inner_training_loop(
+   1877         args=args,
+   1878         resume_from_checkpoint=resume_from_checkpoint,
+   1879         trial=trial,
+   1880         ignore_keys_for_eval=ignore_keys_for_eval,
+   1881     )
+   1882 finally:
+   1883     hf_hub_utils.enable_progress_bars()
+File ~/miniconda3/envs/nlp_/lib/python3.11/site-packages/transformers/trainer.py:2178, in Trainer._inner_training_loop(self, batch_size, args, resume_from_checkpoint, trial, ignore_keys_for_eval)
+   2175     rng_to_sync = True
+   2177 step = -1
+-&gt; 2178 for step, inputs in enumerate(epoch_iterator):
+   2179     total_batched_samples += 1
+   2181     if self.args.include_num_input_tokens_seen:
+File ~/miniconda3/envs/nlp_/lib/python3.11/site-packages/accelerate/data_loader.py:454, in DataLoaderShard.__iter__(self)
+    452 # We iterate one batch ahead to check when we are at the end
+    453 try:
+--&gt; 454     current_batch = next(dataloader_iter)
+    455 except StopIteration:
+    456     yield
+File ~/miniconda3/envs/nlp_/lib/python3.11/site-packages/torch/utils/data/dataloader.py:631, in _BaseDataLoaderIter.__next__(self)
+    628 if self._sampler_iter is None:
+    629     # TODO(https://github.com/pytorch/pytorch/issues/76750)
+    630     self._reset()  # type: ignore[call-arg]
+--&gt; 631 data = self._next_data()
+    632 self._num_yielded += 1
+    633 if self._dataset_kind == _DatasetKind.Iterable and \
+    634         self._IterableDataset_len_called is not None and \
+    635         self._num_yielded &gt; self._IterableDataset_len_called:
+File ~/miniconda3/envs/nlp_/lib/python3.11/site-packages/torch/utils/data/dataloader.py:675, in _SingleProcessDataLoaderIter._next_data(self)
+    673 def _next_data(self):
+    674     index = self._next_index()  # may raise StopIteration
+--&gt; 675     data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
+    676     if self._pin_memory:
+    677         data = _utils.pin_memory.pin_memory(data, self._pin_memory_device)
+File ~/miniconda3/envs/nlp_/lib/python3.11/site-packages/torch/utils/data/_utils/fetch.py:54, in _MapDatasetFetcher.fetch(self, possibly_batched_index)
+     52 else:
+     53     data = self.dataset[possibly_batched_index]
+---&gt; 54 return self.collate_fn(data)
+File ~/miniconda3/envs/nlp_/lib/python3.11/site-packages/transformers/data/data_collator.py:271, in DataCollatorWithPadding.__call__(self, features)
+    270 def __call__(self, features: List[Dict[str, Any]]) -&gt; Dict[str, Any]:
+--&gt; 271     batch = pad_without_fast_tokenizer_warning(
+    272         self.tokenizer,
+    273         features,
+    274         padding=self.padding,
+    275         max_length=self.max_length,
+    276         pad_to_multiple_of=self.pad_to_multiple_of,
+    277         return_tensors=self.return_tensors,
+    278     )
+    279     if "label" in batch:
+    280         batch["labels"] = batch["label"]
+File ~/miniconda3/envs/nlp_/lib/python3.11/site-packages/transformers/data/data_collator.py:66, in pad_without_fast_tokenizer_warning(tokenizer, *pad_args, **pad_kwargs)
+     63 tokenizer.deprecation_warnings["Asking-to-pad-a-fast-tokenizer"] = True
+     65 try:
+---&gt; 66     padded = tokenizer.pad(*pad_args, **pad_kwargs)
+     67 finally:
+     68     # Restore the state of the warning.
+     69     tokenizer.deprecation_warnings["Asking-to-pad-a-fast-tokenizer"] = warning_state
+File ~/miniconda3/envs/nlp_/lib/python3.11/site-packages/transformers/tokenization_utils_base.py:3299, in PreTrainedTokenizerBase.pad(self, encoded_inputs, padding, max_length, pad_to_multiple_of, return_attention_mask, return_tensors, verbose)
+   3297 # The model's main input name, usually `input_ids`, has be passed for padding
+   3298 if self.model_input_names[0] not in encoded_inputs:
+-&gt; 3299     raise ValueError(
+   3300         "You should supply an encoding or a list of encodings to this method "
+   3301         f"that includes {self.model_input_names[0]}, but you provided {list(encoded_inputs.keys())}"
+   3302     )
+   3304 required_input = encoded_inputs[self.model_input_names[0]]
+   3306 if required_input is None or (isinstance(required_input, Sized) and len(required_input) == 0):
+ValueError: You should supply an encoding or a list of encodings to this method that includes input_ids, but you provided ['label', 'labels']</output_code>
+  <markdown>We get the error again because the model does not have a padding token assigned, so just like with the tokenizer, we assign it.</markdown>
+  <input_code>model.config.pad_token_id = model.config.eos_token_id</input_code>
+  <markdown>We recreate the trainer arguments with the new model, which now has a padding token, the trainer, and we retrain.</markdown>
+  <input_code>training_args = TrainingArguments(
+    model_name,
+    eval_strategy="epoch",
+    save_strategy="epoch",
+    learning_rate=LR,
+    per_device_train_batch_size=BS_TRAIN,
+    per_device_eval_batch_size=BS_EVAL,
+    num_train_epochs=EPOCHS,
+    weight_decay=WEIGHT_DECAY,
+    lr_scheduler_type="cosine",
+    warmup_ratio = 0.1,
+    fp16=True,
+    load_best_model_at_end=True,
+    metric_for_best_model=metric_name,
+    push_to_hub=True,
+    logging_dir="./runs",
+)
+
+trainer = Trainer(
+    model,
+    training_args,
+    train_dataset=dataset['train'],
+    eval_dataset=dataset['validation'],
+    tokenizer=tokenizer,
+    compute_metrics=compute_metrics,
+)</input_code>
+  <markdown>Now that we've seen everything is in order, we can train</markdown>
+  <input_code>trainer.train()</input_code>
+  <output_code>&lt;IPython.core.display.HTML object&gt;</output_code>
+  <output_code>&lt;IPython.core.display.HTML object&gt;</output_code>
+  <output_code>&lt;transformers.trainer_utils.EvalPrediction object at 0x782767ea1450&gt;
+&lt;transformers.trainer_utils.EvalPrediction object at 0x782767eeefe0&gt;
+&lt;transformers.trainer_utils.EvalPrediction object at 0x782767eecfd0&gt;
+</output_code>
+  <output_code>TrainOutput(global_step=21429, training_loss=0.7846888848762739, metrics={'train_runtime': 26367.7801, 'train_samples_per_second': 22.755, 'train_steps_per_second': 0.813, 'total_flos': 2.35173445632e+17, 'train_loss': 0.7846888848762739, 'epoch': 3.0})</output_code>
+  <markdown>### Evaluation</markdown>
+  <markdown>Once trained, we evaluate on the test dataset</markdown>
+  <input_code>trainer.evaluate(eval_dataset=dataset['test'])</input_code>
+  <output_code>&lt;IPython.core.display.HTML object&gt;</output_code>
+  <output_code>&lt;transformers.trainer_utils.EvalPrediction object at 0x7826ddfded40&gt;
+</output_code>
+  <output_code>{'eval_loss': 0.7973636984825134,
+ 'eval_accuracy': 0.6626,
+ 'eval_runtime': 76.3016,
+ 'eval_samples_per_second': 65.529,
+ 'eval_steps_per_second': 1.638,
+ 'epoch': 3.0}</output_code>
+  <markdown>### Publish the model</markdown>
+  <markdown>We already have our model trained, so we can share it with the world. First, we create a **model card**.</markdown>
+  <input_code>trainer.create_model_card()</input_code>
+  <markdown>And we can publish it now. Since the first thing we did was log in to the Hugging Face Hub, we can upload it to our hub without any issues.</markdown>
+  <input_code>trainer.push_to_hub()</input_code>
+  <markdown>### Usage of the model</markdown>
+  <markdown>We clean everything as much as possible</markdown>
+  <input_code>import torch
+import gc
+
+
+def clear_hardwares():
+    torch.clear_autocast_cache()
+    torch.cuda.ipc_collect()
+    torch.cuda.empty_cache()
+    gc.collect()
+
+
+clear_hardwares()
+clear_hardwares()</input_code>
+  <markdown>Since we have uploaded the model to our hub, we can download and use it</markdown>
+  <input_code>from transformers import pipeline
+
+user = "maximofn"
+checkpoints = f"{user}/{model_name}"
+task = "text-classification"
+classifier = pipeline(task, model=checkpoints, tokenizer=checkpoints)</input_code>
+  <markdown>If we want it to return the probability of all classes, we simply use the classifier we just instantiated, with the parameter `top_k=None`</markdown>
+  <input_code>labels = classifier("I love this product", top_k=None)
+labels</input_code>
+  <output_code>[{'label': 'LABEL_4', 'score': 0.8253807425498962},
+ {'label': 'LABEL_3', 'score': 0.15411493182182312},
+ {'label': 'LABEL_2', 'score': 0.013907806016504765},
+ {'label': 'LABEL_0', 'score': 0.003939222544431686},
+ {'label': 'LABEL_1', 'score': 0.0026572425849735737}]</output_code>
+  <markdown>If we only want the class with the highest probability, we do the same but with the parameter `top_k=1`</markdown>
+  <input_code>label = classifier("I love this product", top_k=1)
+label</input_code>
+  <output_code>[{'label': 'LABEL_4', 'score': 0.8253807425498962}]</output_code>
+  <markdown>And if we want n classes, we do the same but with the parameter `top_k=n`</markdown>
+  <input_code>two_labels = classifier("I love this product", top_k=2)
+two_labels</input_code>
+  <output_code>[{'label': 'LABEL_4', 'score': 0.8253807425498962},
+ {'label': 'LABEL_3', 'score': 0.15411493182182312}]</output_code>
+  <markdown>We can also test the model with Automodel and AutoTokenizer</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import torch
+
+model_name = "GPT2-small-finetuned-amazon-reviews-en-classification"
+user = "maximofn"
+checkpoint = f"{user}/{model_name}"
+num_classes = 5
+
+tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+model = AutoModelForSequenceClassification.from_pretrained(checkpoint, num_labels=num_classes).half().eval().to("cuda")</input_code>
+  <input_code>tokens = tokenizer.encode("I love this product", return_tensors="pt").to(model.device)
+with torch.no_grad():
+    output = model(tokens)
+logits = output.logits
+lables = torch.softmax(logits, dim=1).cpu().numpy().tolist()
+lables[0]</input_code>
+  <output_code>[0.003963470458984375,
+ 0.0026721954345703125,
+ 0.01397705078125,
+ 0.154541015625,
+ 0.82470703125]</output_code>
+  <markdown>If you want to try the model further, you can check it out at [Maximofn/GPT2-small-finetuned-amazon-reviews-en-classification](https://huggingface.co/Maximofn/GPT2-small-finetuned-amazon-reviews-en-classification)</markdown>
+  <markdown>## Fine-tuning for Text Generation with Hugging Face</markdown>
+  <markdown>To make sure I don't have VRAM memory issues, I restart the notebook</markdown>
+  <markdown>### Login</markdown>
+  <markdown>To be able to upload the training results to the hub, we need to log in first, for which we need a token
+
+To create a token, you need to go to the [settings/tokens](https://huggingface.co/settings/tokens) page of your account, and you will see something like this
+
+![User-Access-Token-dark](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/User-Access-Token-dark.webp)
+
+We click on `New token` and a window will appear to create a new token
+
+![new-token-dark](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/new-token-dark.webp)
+We give the token a name and create it with the `write` role, or with the `Fine-grained` role, which allows us to select exactly which permissions the token will have.
+
+Once created, we copy and paste it below.
+</markdown>
+  <input_code>from huggingface_hub import notebook_login
+notebook_login()</input_code>
+  <markdown>### Dataset</markdown>
+  <markdown>We are going to use an [English jokes dataset](https://huggingface.co/datasets/Maximofn/short-jokes-dataset)</markdown>
+  <input_code>from datasets import load_dataset
+
+jokes = load_dataset("Maximofn/short-jokes-dataset")
+jokes</input_code>
+  <output_code>DatasetDict({
+    train: Dataset({
+        features: ['ID', 'Joke'],
+        num_rows: 231657
+    })
+})</output_code>
+  <markdown>Let's take a look at it a bit</markdown>
+  <input_code>jokes</input_code>
+  <output_code>DatasetDict({
+    train: Dataset({
+        features: ['ID', 'Joke'],
+        num_rows: 231657
+    })
+})</output_code>
+  <markdown>We see that it is a single training set of more than 200 thousand jokes. So later we will have to split it into train and evaluation.</markdown>
+  <markdown>Let's see a sample</markdown>
+  <input_code>from random import randint
+
+idx = randint(0, len(jokes['train']) - 1)
+jokes['train'][idx]</input_code>
+  <output_code>{'ID': 198387,
+ 'Joke': 'My hot dislexic co-worker said she had an important massage to give me in her office... When I got there, she told me it can wait until I put on some clothes.'}</output_code>
+  <markdown>We see that it has a joke ID that we are not interested in at all and the joke itself</markdown>
+  <markdown>In case you have limited GPU memory, I will create a subset of the dataset, choose the percentage of jokes you want to use</markdown>
+  <input_code>percent_of_train_dataset = 1    # If you want 50% of the dataset, set this to 0.5
+
+subset_dataset = jokes["train"].select(range(int(len(jokes["train"]) * percent_of_train_dataset)))
+subset_dataset</input_code>
+  <output_code>Dataset({
+    features: ['ID', 'Joke'],
+    num_rows: 231657
+})</output_code>
+  <markdown>Now we divide the subset into a training set and a validation set</markdown>
+  <input_code>percent_of_train_dataset = 0.90
+
+split_dataset = subset_dataset.train_test_split(train_size=int(subset_dataset.num_rows * percent_of_train_dataset), seed=19, shuffle=False)
+train_dataset = split_dataset["train"]
+validation_test_dataset = split_dataset["test"]
+
+split_dataset = validation_test_dataset.train_test_split(train_size=int(validation_test_dataset.num_rows * 0.5), seed=19, shuffle=False)
+validation_dataset = split_dataset["train"]
+test_dataset = split_dataset["test"]
+
+print(f"Size of the train set: {len(train_dataset)}. Size of the validation set: {len(validation_dataset)}. Size of the test set: {len(test_dataset)}")</input_code>
+  <output_code>Size of the train set: 208491. Size of the validation set: 11583. Size of the test set: 11583
+</output_code>
+  <markdown>### Tokenizer</markdown>
+  <markdown>We instantiate the tokenizer. We instantiate the padding token of the tokenizer so that we don't get an error as before.</markdown>
+  <input_code>from transformers import AutoTokenizer
+
+checkpoints = "openai-community/gpt2"
+
+tokenizer = AutoTokenizer.from_pretrained(checkpoints)
+tokenizer.pad_token = tokenizer.eos_token
+tokenizer.padding_side = "right"</input_code>
+  <markdown>Let's add two new joke start and end tokens to have more control</markdown>
+  <input_code>new_tokens = ['&lt;SJ&gt;', '&lt;EJ&gt;']   # Start and end of joke tokens
+
+num_added_tokens = tokenizer.add_tokens(new_tokens)
+print(f"Added {num_added_tokens} tokens")</input_code>
+  <output_code>Added 2 tokens
+</output_code>
+  <markdown>We create a function to add the new tokens to the sentences</markdown>
+  <input_code>joke_column = "Joke"
+
+def format_joke(example):
+    example[joke_column] = '&lt;SJ&gt; ' + example['Joke'] + ' &lt;EJ&gt;'
+    return example</input_code>
+  <markdown>We select the columns that we don't need</markdown>
+  <input_code>remove_columns = [column for column in train_dataset.column_names if column != joke_column]
+remove_columns</input_code>
+  <output_code>['ID']</output_code>
+  <markdown>We format the dataset and remove the columns we don't need</markdown>
+  <input_code>train_dataset = train_dataset.map(format_joke, remove_columns=remove_columns)
+validation_dataset = validation_dataset.map(format_joke, remove_columns=remove_columns)
+test_dataset = test_dataset.map(format_joke, remove_columns=remove_columns)
+train_dataset, validation_dataset, test_dataset</input_code>
+  <output_code>(Dataset({
+     features: ['Joke'],
+     num_rows: 208491
+ }),
+ Dataset({
+     features: ['Joke'],
+     num_rows: 11583
+ }),
+ Dataset({
+     features: ['Joke'],
+     num_rows: 11583
+ }))</output_code>
+  <markdown>Now we create a function to tokenize the jokes</markdown>
+  <input_code>def tokenize_function(examples):
+    return tokenizer(examples[joke_column], padding="max_length", truncation=True, max_length=768, return_tensors="pt")</input_code>
+  <markdown>We tokenize the dataset and remove the column with the text</markdown>
+  <input_code>train_dataset = train_dataset.map(tokenize_function, batched=True, remove_columns=[joke_column])
+validation_dataset = validation_dataset.map(tokenize_function, batched=True, remove_columns=[joke_column])
+test_dataset = test_dataset.map(tokenize_function, batched=True, remove_columns=[joke_column])
+train_dataset, validation_dataset, test_dataset</input_code>
+  <output_code>(Dataset({
+     features: ['input_ids', 'attention_mask'],
+     num_rows: 208491
+ }),
+ Dataset({
+     features: ['input_ids', 'attention_mask'],
+     num_rows: 11583
+ }),
+ Dataset({
+     features: ['input_ids', 'attention_mask'],
+     num_rows: 11583
+ }))</output_code>
+  <markdown>### Model</markdown>
+  <markdown>Now we instantiate the model for text generation and assign the padding token to the end of string token.</markdown>
+  <input_code>from transformers import AutoModelForCausalLM
+
+model = AutoModelForCausalLM.from_pretrained(checkpoints)
+model.config.pad_token_id = model.config.eos_token_id</input_code>
+  <markdown>We see the size of the model's vocabulary</markdown>
+  <input_code>vocab_size = model.config.vocab_size
+vocab_size</input_code>
+  <output_code>50257</output_code>
+  <markdown>It has 50257 tokens, which is the size of the GPT2 vocabulary. But as we said we were going to create two new tokens for the start of a joke and the end of a joke, we add them to the model.</markdown>
+  <input_code>model.resize_token_embeddings(len(tokenizer))
+
+new_vocab_size = model.config.vocab_size
+print(f"Old vocab size: {vocab_size}. New vocab size: {new_vocab_size}. Added {new_vocab_size - vocab_size} tokens")</input_code>
+  <output_code>Old vocab size: 50257. New vocab size: 50259. Added 2 tokens
+</output_code>
+  <markdown>The two new tokens have been added.</markdown>
+  <markdown>### Training</markdown>
+  <markdown>We set the training parameters</markdown>
+  <input_code>from transformers import TrainingArguments
+
+metric_name = "accuracy"
+model_name = "GPT2-small-finetuned-Maximofn-short-jokes-dataset-casualLM"
+output_dir = f"./training_results"
+LR = 2e-5
+BS_TRAIN = 28
+BS_EVAL = 32
+EPOCHS = 3
+WEIGHT_DECAY = 0.01
+WARMUP_STEPS = 100
+
+training_args = TrainingArguments(
+    model_name,
+    eval_strategy="epoch",
+    save_strategy="epoch",
+    learning_rate=LR,
+    per_device_train_batch_size=BS_TRAIN,
+    per_device_eval_batch_size=BS_EVAL,
+    warmup_steps=WARMUP_STEPS,
+    num_train_epochs=EPOCHS,
+    weight_decay=WEIGHT_DECAY,
+    lr_scheduler_type="cosine",
+    warmup_ratio = 0.1,
+    fp16=True,
+    load_best_model_at_end=True,
+    # metric_for_best_model=metric_name,
+    push_to_hub=True,
+)</input_code>
+  <markdown>Now we don't use `metric_for_best_model`, after defining the trainer we explain why</markdown>
+  <markdown>We define the trainer</markdown>
+  <input_code>from transformers import Trainer
+
+trainer = Trainer(
+    model,
+    training_args,
+    train_dataset=train_dataset,
+    eval_dataset=validation_dataset,
+    tokenizer=tokenizer,
+    # compute_metrics=compute_metrics,
+)</input_code>
+  <markdown>In this case, we don't pass a `compute_metrics` function; instead, during evaluation, the `loss` will be used to evaluate the model. That's why when defining the arguments, we don't define `metric_for_best_model`, because we won't be using a metric to evaluate the model, but rather the `loss`.</markdown>
+  <markdown>We train</markdown>
+  <input_code>trainer.train()</input_code>
+  <output_code>  0%|          | 0/625473 [00:00&lt;?, ?it/s]</output_code>
+  <output_code>---------------------------------------------------------------------------ValueError                                Traceback (most recent call last)Cell In[19], line 1
+----&gt; 1 trainer.train()
+File ~/miniconda3/envs/nlp_/lib/python3.11/site-packages/transformers/trainer.py:1885, in Trainer.train(self, resume_from_checkpoint, trial, ignore_keys_for_eval, **kwargs)
+   1883         hf_hub_utils.enable_progress_bars()
+   1884 else:
+-&gt; 1885     return inner_training_loop(
+   1886         args=args,
+   1887         resume_from_checkpoint=resume_from_checkpoint,
+   1888         trial=trial,
+   1889         ignore_keys_for_eval=ignore_keys_for_eval,
+   1890     )
+File ~/miniconda3/envs/nlp_/lib/python3.11/site-packages/transformers/trainer.py:2216, in Trainer._inner_training_loop(self, batch_size, args, resume_from_checkpoint, trial, ignore_keys_for_eval)
+   2213     self.control = self.callback_handler.on_step_begin(args, self.state, self.control)
+   2215 with self.accelerator.accumulate(model):
+-&gt; 2216     tr_loss_step = self.training_step(model, inputs)
+   2218 if (
+   2219     args.logging_nan_inf_filter
+   2220     and not is_torch_xla_available()
+   2221     and (torch.isnan(tr_loss_step) or torch.isinf(tr_loss_step))
+   2222 ):
+   2223     # if loss is nan or inf simply add the average of previous logged losses
+   2224     tr_loss += tr_loss / (1 + self.state.global_step - self._globalstep_last_logged)
+File ~/miniconda3/envs/nlp_/lib/python3.11/site-packages/transformers/trainer.py:3238, in Trainer.training_step(self, model, inputs)
+   3235     return loss_mb.reduce_mean().detach().to(self.args.device)
+   3237 with self.compute_loss_context_manager():
+-&gt; 3238     loss = self.compute_loss(model, inputs)
+   3240 del inputs
+   3241 torch.cuda.empty_cache()
+File ~/miniconda3/envs/nlp_/lib/python3.11/site-packages/transformers/trainer.py:3282, in Trainer.compute_loss(self, model, inputs, return_outputs)
+   3280 else:
+   3281     if isinstance(outputs, dict) and "loss" not in outputs:
+-&gt; 3282         raise ValueError(
+   3283             "The model did not return a loss from the inputs, only the following keys: "
+   3284             f"{','.join(outputs.keys())}. For reference, the inputs it received are {','.join(inputs.keys())}."
+   3285         )
+   3286     # We don't use .loss here since the model may return tuples instead of ModelOutput.
+   3287     loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
+ValueError: The model did not return a loss from the inputs, only the following keys: logits,past_key_values. For reference, the inputs it received are input_ids,attention_mask.</output_code>
+  <markdown>As we can see, it gives us an error, telling us that the model does not return the loss value, which is key to being able to train. Let's see why.</markdown>
+  <markdown>Let's first see what an example from the dataset looks like</markdown>
+  <input_code>idx = randint(0, len(train_dataset) - 1)
+sample = train_dataset[idx]
+sample</input_code>
+  <output_code>{'input_ids': [50257,
+  4162,
+  750,
+  262,
+  18757,
+  6451,
+  2245,
+  2491,
+  30,
+  4362,
+  340,
+  373,
+  734,
+  10032,
+  13,
+  220,
+  50258,
+  50256,
+  50256,
+  ...,
+  50256,
+  50256,
+  50256],
+ 'attention_mask': [1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  0,
+  0,
+  0,
+  ...,
+  0,
+  0,
+  0]}</output_code>
+  <markdown>As we can see, we have a dictionary with the `input_ids` and the `attention_mask`. If we pass it to the model, we get this</markdown>
+  <input_code>import torch
+
+output = model(
+    input_ids=torch.Tensor(sample["input_ids"]).long().unsqueeze(0).to(model.device),
+    attention_mask=torch.Tensor(sample["attention_mask"]).long().unsqueeze(0).to(model.device),
+)
+print(output.loss)</input_code>
+  <output_code>None
+</output_code>
+  <markdown>As we can see, it does not return the loss value because it is waiting for a value for `labels`, which we have not provided. In the previous example, where we were doing fine-tuning for text classification, we mentioned that the labels should be passed to a field in the dataset called `labels`, but in this case, we do not have that field in the dataset.
+
+If we now assign the `labels` to the `input_ids` and look at the loss again
+</markdown>
+  <input_code>import torch
+
+output = model(
+    input_ids=torch.Tensor(sample["input_ids"]).long().unsqueeze(0).to(model.device),
+    attention_mask=torch.Tensor(sample["attention_mask"]).long().unsqueeze(0).to(model.device),
+    labels=torch.Tensor(sample["input_ids"]).long().unsqueeze(0).to(model.device)
+)
+print(output.loss)</input_code>
+  <output_code>tensor(102.1873, device='cuda:0', grad_fn=&lt;NllLossBackward0&gt;)
+</output_code>
+  <markdown>Now we get a `loss`
+
+Therefore, we have two options: add a `labels` field to the dataset with the values of `input_ids` or use a function from the `transformers` library called `data_collator`, in this case we will use `DataCollatorForLanguageModeling`. Let's take a look at it.
+</markdown>
+  <input_code>from transformers import DataCollatorForLanguageModeling
+
+my_data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)</input_code>
+  <markdown>We pass the `sample` through this `data_collator`</markdown>
+  <input_code>collated_sample = my_data_collator([sample]).to(model.device)</input_code>
+  <markdown>We see what the output is</markdown>
+  <input_code>for key, value in collated_sample.items():
+    print(f"{key} ({value.shape}): {value}")</input_code>
+  <output_code>input_ids (torch.Size([1, 768])): tensor([[50257,  4162,   750,   262, 18757,  6451,  2245,  2491,    30,  4362,
+           340,   373,   734, 10032,    13,   220, 50258, 50256, ..., 50256, 50256]],
+       device='cuda:0')
+attention_mask (torch.Size([1, 768])): tensor([[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, ..., 0, 0]],
+       device='cuda:0')
+labels (torch.Size([1, 768])): tensor([[50257,  4162,   750,   262, 18757,  6451,  2245,  2491,    30,  4362,
+           340,   373,   734, 10032,    13,   220, 50258,  -100,  ...,  -100,  -100]],
+       device='cuda:0')
+</output_code>
+  <markdown>As can be seen, the `data_collator` has created a `labels` field and assigned it the values of `input_ids`. The masked tokens have been assigned the value -100. This is because when we defined the `data_collator`, we passed the parameter `mlm=False`, which means that we are not performing `Masked Language Modeling`, but rather `Language Modeling`, hence no original token is masked.</markdown>
+  <markdown>Let's see if we get a `loss` with this `data_collator`</markdown>
+  <input_code>output = model(**collated_sample)
+output.loss</input_code>
+  <output_code>tensor(102.7181, device='cuda:0', grad_fn=&lt;NllLossBackward0&gt;)</output_code>
+  <markdown>So we redefine the `trainer` with the `data_collator` and train again.</markdown>
+  <input_code>from transformers import DataCollatorForLanguageModeling
+
+trainer = Trainer(
+    model,
+    training_args,
+    train_dataset=train_dataset,
+    eval_dataset=validation_dataset,
+    tokenizer=tokenizer,
+    data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
+)</input_code>
+  <input_code>trainer.train()</input_code>
+  <output_code>&lt;IPython.core.display.HTML object&gt;</output_code>
+  <output_code>There were missing keys in the checkpoint model loaded: ['lm_head.weight'].
+</output_code>
+  <output_code>TrainOutput(global_step=22341, training_loss=3.505178199598342, metrics={'train_runtime': 9209.5353, 'train_samples_per_second': 67.916, 'train_steps_per_second': 2.426, 'total_flos': 2.45146666696704e+17, 'train_loss': 3.505178199598342, 'epoch': 3.0})</output_code>
+  <markdown>### Evaluation</markdown>
+  <markdown>Once trained, we evaluate the model on the test dataset</markdown>
+  <input_code>trainer.evaluate(eval_dataset=test_dataset)</input_code>
+  <output_code>&lt;IPython.core.display.HTML object&gt;</output_code>
+  <output_code>{'eval_loss': 3.201305866241455,
+ 'eval_runtime': 65.0033,
+ 'eval_samples_per_second': 178.191,
+ 'eval_steps_per_second': 5.569,
+ 'epoch': 3.0}</output_code>
+  <markdown>### Publish the model</markdown>
+  <markdown>We create the model card</markdown>
+  <input_code>trainer.create_model_card()</input_code>
+  <markdown>We publish it</markdown>
+  <input_code>trainer.push_to_hub()</input_code>
+  <output_code>events.out.tfevents.1720875425.8de3af1b431d.6946.1:   0%|          | 0.00/364 [00:00&lt;?, ?B/s]</output_code>
+  <output_code>CommitInfo(commit_url='https://huggingface.co/Maximofn/GPT2-small-finetuned-Maximofn-short-jokes-dataset-casualLM/commit/d107b3bb0e02076483238f9975697761015ec390', commit_message='End of training', commit_description='', oid='d107b3bb0e02076483238f9975697761015ec390', pr_url=None, pr_revision=None, pr_num=None)</output_code>
+  <markdown>### Usage of the model</markdown>
+  <markdown>We clean everything as much as possible</markdown>
+  <input_code>import torch
+import gc
+
+
+def clear_hardwares():
+    torch.clear_autocast_cache()
+    torch.cuda.ipc_collect()
+    torch.cuda.empty_cache()
+    gc.collect()
+
+
+clear_hardwares()
+clear_hardwares()</input_code>
+  <markdown>We download the model and the tokenizer</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
+
+user = "maximofn"
+checkpoints = f"{user}/{model_name}"
+
+tokenizer = AutoTokenizer.from_pretrained(checkpoints)
+tokenizer.pad_token = tokenizer.eos_token
+tokenizer.padding_side = "right"
+
+model = AutoModelForCausalLM.from_pretrained(checkpoints)
+model.config.pad_token_id = model.config.eos_token_id</input_code>
+  <output_code>Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.
+</output_code>
+  <markdown>We check that the tokenizer and the model have the 2 extra tokens we added</markdown>
+  <input_code>tokenizer_vocab = tokenizer.get_vocab()
+model_vocab = model.config.vocab_size
+print(f"tokenizer_vocab: {len(tokenizer_vocab)}. model_vocab: {model_vocab}")</input_code>
+  <output_code>tokenizer_vocab: 50259. model_vocab: 50259
+</output_code>
+  <markdown>We see that they have 50259 tokens, that is, the 50257 tokens of GPT2 plus the 2 that we have added.</markdown>
+  <markdown>We create a function to generate jokes</markdown>
+  <input_code>def generate_joke(prompt_text):
+    text = f"&lt;SJ&gt; {prompt_text}"
+    tokens = tokenizer(text, return_tensors="pt").to(model.device)
+    with torch.no_grad():
+        output = model.generate(**tokens, max_new_tokens=256, eos_token_id=tokenizer.encode("&lt;EJ&gt;")[-1])
+    return tokenizer.decode(output[0], skip_special_tokens=False)</input_code>
+  <markdown>We generate a joke</markdown>
+  <input_code>generate_joke("Why didn't the frog cross the road?")</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50258 for open-end generation.
+</output_code>
+  <output_code>"&lt;SJ&gt; Why didn't the frog cross the road? Because he was frog-in-the-face. &lt;EJ&gt;"</output_code>
+  <markdown>If you want to try the model further, you can check it out at [Maximofn/GPT2-small-finetuned-Maximofn-short-jokes-dataset-casualLM](https://huggingface.co/Maximofn/GPT2-small-finetuned-Maximofn-short-jokes-dataset-casualLM)</markdown>
+  <markdown>## Fine tuning for text classification with Pytorch</markdown>
+  <markdown>We repeat the training with Pytorch</markdown>
+  <markdown>We reset the notebook to make sure</markdown>
+  <markdown>### Dataset</markdown>
+  <markdown>We download the same dataset that we used when training with the Hugging Face libraries</markdown>
+  <input_code>from datasets import load_dataset
+
+dataset = load_dataset("mteb/amazon_reviews_multi", "en")</input_code>
+  <markdown>We create a variable with the number of classes</markdown>
+  <input_code>num_classes = len(dataset['train'].unique('label'))
+num_classes</input_code>
+  <output_code>5</output_code>
+  <markdown>We previously processed the entire dataset to create a field called `labels`, but now it's not necessary because, since we are going to program everything ourselves, we adapt to how the dataset is.</markdown>
+  <markdown>### Tokenizer</markdown>
+  <markdown>We create the tokenizer. We assign the padding token so that it doesn't give us an error like before.</markdown>
+  <input_code>from transformers import AutoTokenizer
+
+checkpoint = "openai-community/gpt2"
+tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+tokenizer.pad_token = tokenizer.eos_token</input_code>
+  <markdown>We create a function to tokenize the dataset</markdown>
+  <input_code>def tokenize_function(examples):
+    return tokenizer(examples["text"], padding="max_length", truncation=True, max_length=768, return_tensors="pt")</input_code>
+  <markdown>We tokenize it. We remove columns that we don't need, but now we keep the text column.</markdown>
+  <input_code>dataset = dataset.map(tokenize_function, batched=True, remove_columns=['id', 'label_text'])</input_code>
+  <input_code>dataset</input_code>
+  <output_code>DatasetDict({
+    train: Dataset({
+        features: ['text', 'label', 'input_ids', 'attention_mask'],
+        num_rows: 200000
+    })
+    validation: Dataset({
+        features: ['text', 'label', 'input_ids', 'attention_mask'],
+        num_rows: 5000
+    })
+    test: Dataset({
+        features: ['text', 'label', 'input_ids', 'attention_mask'],
+        num_rows: 5000
+    })
+})</output_code>
+  <input_code>percentage = 1
+subset_train = dataset['train'].select(range(int(len(dataset['train']) * percentage)))
+percentage = 1
+subset_validation = dataset['validation'].select(range(int(len(dataset['validation']) * percentage)))
+subset_test = dataset['test'].select(range(int(len(dataset['test']) * percentage)))
+print(f"len subset_train: {len(subset_train)}, len subset_validation: {len(subset_validation)}, len subset_test: {len(subset_test)}")</input_code>
+  <output_code>len subset_train: 200000, len subset_validation: 5000, len subset_test: 5000
+</output_code>
+  <markdown>### Model</markdown>
+  <markdown>We import the weights and assign the padding token</markdown>
+  <input_code>from transformers import AutoModelForSequenceClassification
+
+model = AutoModelForSequenceClassification.from_pretrained(checkpoint, num_labels=num_classes)
+model.config.pad_token_id = model.config.eos_token_id</input_code>
+  <output_code>Some weights of GPT2ForSequenceClassification were not initialized from the model checkpoint at openai-community/gpt2 and are newly initialized: ['score.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+</output_code>
+  <markdown>### Device</markdown>
+  <markdown>We create the device where everything will be executed</markdown>
+  <input_code>import torch
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')</input_code>
+  <markdown>While we're at it, we pass the model to the device and, while we're at it, we convert it to FP16 to use less memory.</markdown>
+  <input_code>model.half().to(device)
+print()</input_code>
+  <output_code>
+</output_code>
+  <markdown>### Pytorch Dataset</markdown>
+  <markdown>We create a PyTorch dataset</markdown>
+  <input_code>from torch.utils.data import Dataset
+
+class ReviewsDataset(Dataset):
+    def __init__(self, huggingface_dataset):
+        self.dataset = huggingface_dataset
+
+    def __getitem__(self, idx):
+        label = self.dataset[idx]['label']
+        input_ids = torch.tensor(self.dataset[idx]['input_ids'])
+        attention_mask = torch.tensor(self.dataset[idx]['attention_mask'])
+        return input_ids, attention_mask, label
+
+    def __len__(self):
+        return len(self.dataset)</input_code>
+  <markdown>We instantiate the datasets</markdown>
+  <input_code>train_dataset = ReviewsDataset(subset_train)
+validatation_dataset = ReviewsDataset(subset_validation)
+test_dataset = ReviewsDataset(subset_test)</input_code>
+  <markdown>Let's see a sample</markdown>
+  <input_code>input_ids, at_mask, label = train_dataset[0]
+input_ids.shape, at_mask.shape, label</input_code>
+  <output_code>(torch.Size([768]), torch.Size([768]), 0)</output_code>
+  <markdown>### Pytorch Dataloader</markdown>
+  <markdown>We now create a DataLoader from PyTorch</markdown>
+  <input_code>from torch.utils.data import DataLoader
+
+BS = 12
+
+train_loader = DataLoader(train_dataset, batch_size=BS, shuffle=True)
+validation_loader = DataLoader(validatation_dataset, batch_size=BS)
+test_loader = DataLoader(test_dataset, batch_size=BS)</input_code>
+  <markdown>Let's see a sample</markdown>
+  <input_code>input_ids, at_mask, labels = next(iter(train_loader))
+input_ids.shape, at_mask.shape, labels</input_code>
+  <output_code>(torch.Size([12, 768]),
+ torch.Size([12, 768]),
+ tensor([2, 1, 2, 0, 3, 3, 0, 4, 3, 3, 4, 2]))</output_code>
+  <markdown>To make sure everything is fine, we pass the sample to the model to see that everything works well. First, we pass the tokens to the device.</markdown>
+  <input_code>input_ids = input_ids.to(device)
+at_mask = at_mask.to(device)
+labels = labels.to(device)</input_code>
+  <markdown>Now we pass it to the model</markdown>
+  <input_code>output = model(input_ids=input_ids, attention_mask=at_mask, labels=labels)
+output.keys()</input_code>
+  <output_code>odict_keys(['loss', 'logits', 'past_key_values'])</output_code>
+  <markdown>As we can see, it gives us the loss and the logits</markdown>
+  <input_code>output['loss']</input_code>
+  <output_code>tensor(5.9414, device='cuda:0', dtype=torch.float16,
+       grad_fn=&lt;NllLossBackward0&gt;)</output_code>
+  <input_code>output['logits']</input_code>
+  <output_code>tensor([[ 6.1953e+00, -1.2275e+00, -2.4824e+00,  5.8867e+00, -1.4734e+01],
+        [ 5.4062e+00, -8.4570e-01, -2.3203e+00,  5.1055e+00, -1.1555e+01],
+        [ 6.1641e+00, -9.3066e-01, -2.5664e+00,  6.0039e+00, -1.4570e+01],
+        [ 5.2266e+00, -4.2358e-01, -2.0801e+00,  4.7461e+00, -1.1570e+01],
+        [ 3.8184e+00, -2.3460e-03, -1.7666e+00,  3.4160e+00, -7.7969e+00],
+        [ 4.1641e+00, -4.8169e-01, -1.6914e+00,  3.9941e+00, -8.7734e+00],
+        [ 4.6758e+00, -3.0298e-01, -2.1641e+00,  4.1055e+00, -9.3359e+00],
+        [ 4.1953e+00, -3.2471e-01, -2.1875e+00,  3.9375e+00, -8.3438e+00],
+        [-1.1650e+00,  1.3564e+00, -6.2158e-01, -6.8115e-01,  4.8672e+00],
+        [ 4.4961e+00, -8.7891e-02, -2.2793e+00,  4.2812e+00, -9.3359e+00],
+        [ 4.9336e+00, -2.6627e-03, -2.1543e+00,  4.3711e+00, -1.0742e+01],
+        [ 5.9727e+00, -4.3152e-02, -1.4551e+00,  4.3438e+00, -1.2117e+01]],
+       device='cuda:0', dtype=torch.float16, grad_fn=&lt;IndexBackward0&gt;)</output_code>
+  <markdown>### Metric</markdown>
+  <markdown>Let's create a function to get the metric, which in this case will be the accuracy</markdown>
+  <input_code>def predicted_labels(logits):
+    percent = torch.softmax(logits, dim=1)
+    predictions = torch.argmax(percent, dim=1)
+    return predictions</input_code>
+  <input_code>def compute_accuracy(logits, labels):
+    predictions = predicted_labels(logits)
+    correct = (predictions == labels).float()
+    return correct.mean()</input_code>
+  <markdown>Let's see if it calculates it correctly</markdown>
+  <input_code>compute_accuracy(output['logits'], labels).item()</input_code>
+  <output_code>0.1666666716337204</output_code>
+  <markdown>### Optimizer</markdown>
+  <markdown>Since we are going to need an optimizer, we create one</markdown>
+  <input_code>from transformers import AdamW
+
+LR = 2e-5
+optimizer = AdamW(model.parameters(), lr=LR)</input_code>
+  <output_code>/usr/local/lib/python3.10/dist-packages/transformers/optimization.py:588: FutureWarning: This implementation of AdamW is deprecated and will be removed in a future version. Use the PyTorch implementation torch.optim.AdamW instead, or set `no_deprecation_warning=True` to disable this warning
+  warnings.warn(
+</output_code>
+  <markdown>### Training</markdown>
+  <markdown>We create the training loop</markdown>
+  <input_code>from tqdm import tqdm
+
+EPOCHS = 3
+
+accuracy = 0
+
+for epoch in range(EPOCHS):
+    model.train()
+    train_loss = 0
+    progresbar = tqdm(train_loader, total=len(train_loader), desc=f'Epoch {epoch + 1}')
+    for input_ids, at_mask, labels in progresbar:
+        input_ids = input_ids.to(device)
+        at_mask = at_mask.to(device)
+        label = labels.to(device)
+
+        output = model(input_ids=input_ids, attention_mask=at_mask, labels=label)
+
+        loss = output['loss']
+        train_loss += loss.item()
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        progresbar.set_postfix({'train_loss': loss.item()})
+    train_loss /= len(train_loader)
+    progresbar.set_postfix({'train_loss': train_loss})
+
+    model.eval()
+    valid_loss = 0
+    progresbar = tqdm(validation_loader, total=len(validation_loader), desc=f'Epoch {epoch + 1}')
+    for input_ids, at_mask, labels in progresbar:
+        input_ids = input_ids.to(device)
+        at_mask = at_mask.to(device)
+        labels = labels.to(device)
+
+        output = model(input_ids=input_ids, attention_mask=at_mask, labels=labels)
+
+        loss = output['loss']
+        valid_loss += loss.item()
+
+        step_accuracy = compute_accuracy(output['logits'], labels)
+        accuracy += step_accuracy
+        progresbar.set_postfix({'valid_loss': loss.item(), 'accuracy': step_accuracy.item()})
+
+    valid_loss /= len(validation_loader)
+    accuracy /= len(validation_loader)
+    progresbar.set_postfix({'valid_loss': valid_loss, 'accuracy': accuracy})</input_code>
+  <output_code>Epoch 1: 100%|██████████| 16667/16667 [44:13&lt;00:00,  6.28it/s, train_loss=nan]
+Epoch 1: 100%|██████████| 417/417 [00:32&lt;00:00, 12.72it/s, valid_loss=nan, accuracy=0]
+Epoch 2: 100%|██████████| 16667/16667 [44:06&lt;00:00,  6.30it/s, train_loss=nan]
+Epoch 2: 100%|██████████| 417/417 [00:32&lt;00:00, 12.77it/s, valid_loss=nan, accuracy=0]
+Epoch 3: 100%|██████████| 16667/16667 [44:03&lt;00:00,  6.30it/s, train_loss=nan]
+Epoch 3: 100%|██████████| 417/417 [00:32&lt;00:00, 12.86it/s, valid_loss=nan, accuracy=0]
+</output_code>
+  <markdown>### Usage of the model</markdown>
+  <markdown>Let's test the model we have trained</markdown>
+  <markdown>First we tokenize a text</markdown>
+  <input_code>input_tokens = tokenize_function({"text": "I love this product. It is amazing."})
+input_tokens['input_ids'].shape, input_tokens['attention_mask'].shape</input_code>
+  <output_code>(torch.Size([1, 768]), torch.Size([1, 768]))</output_code>
+  <markdown>Now we pass it to the model</markdown>
+  <input_code>output = model(input_ids=input_tokens['input_ids'].to(device), attention_mask=input_tokens['attention_mask'].to(device))
+output['logits']</input_code>
+  <output_code>tensor([[nan, nan, nan, nan, nan]], device='cuda:0', dtype=torch.float16,
+       grad_fn=&lt;IndexBackward0&gt;)</output_code>
+  <markdown>We see the predictions of those logits</markdown>
+  <input_code>predicted = predicted_labels(output['logits'])
+predicted</input_code>
+  <output_code>tensor([0], device='cuda:0')</output_code>
+  <markdown>## Fine tuning for text generation with Pytorch</markdown>
+  <markdown>We repeat the training with Pytorch</markdown>
+  <markdown>We reset the notebook to make sure</markdown>
+  <markdown>### Dataset</markdown>
+  <markdown>We download the jokes dataset again</markdown>
+  <input_code>from datasets import load_dataset
+
+jokes = load_dataset("Maximofn/short-jokes-dataset")
+jokes</input_code>
+  <output_code>DatasetDict({
+    train: Dataset({
+        features: ['ID', 'Joke'],
+        num_rows: 231657
+    })
+})</output_code>
+  <markdown>We create a subset in case there is limited memory</markdown>
+  <input_code>percent_of_train_dataset = 1    # If you want 50% of the dataset, set this to 0.5
+
+subset_dataset = jokes["train"].select(range(int(len(jokes["train"]) * percent_of_train_dataset)))
+subset_dataset</input_code>
+  <output_code>Dataset({
+    features: ['ID', 'Joke'],
+    num_rows: 231657
+})</output_code>
+  <markdown>We divide the dataset into training, validation, and test subsets.</markdown>
+  <input_code>percent_of_train_dataset = 0.90
+
+split_dataset = subset_dataset.train_test_split(train_size=int(subset_dataset.num_rows * percent_of_train_dataset), seed=19, shuffle=False)
+train_dataset = split_dataset["train"]
+validation_test_dataset = split_dataset["test"]
+
+split_dataset = validation_test_dataset.train_test_split(train_size=int(validation_test_dataset.num_rows * 0.5), seed=19, shuffle=False)
+validation_dataset = split_dataset["train"]
+test_dataset = split_dataset["test"]
+
+print(f"Size of the train set: {len(train_dataset)}. Size of the validation set: {len(validation_dataset)}. Size of the test set: {len(test_dataset)}")</input_code>
+  <output_code>Size of the train set: 208491. Size of the validation set: 11583. Size of the test set: 11583
+</output_code>
+  <markdown>### Tokenizer</markdown>
+  <markdown>We initialize the tokenizer and assign the padding token to end of string</markdown>
+  <input_code>from transformers import AutoTokenizer
+
+checkpoints = "openai-community/gpt2"
+
+tokenizer = AutoTokenizer.from_pretrained(checkpoints)
+tokenizer.pad_token = tokenizer.eos_token
+tokenizer.padding_side = "right"</input_code>
+  <markdown>We add the special start of joke and end of joke tokens</markdown>
+  <input_code>new_tokens = ['&lt;SJ&gt;', '&lt;EJ&gt;']   # Start and end of joke tokens
+
+num_added_tokens = tokenizer.add_tokens(new_tokens)
+print(f"Added {num_added_tokens} tokens")</input_code>
+  <output_code>Added 2 tokens
+</output_code>
+  <markdown>We add them to the dataset</markdown>
+  <input_code>joke_column = "Joke"
+
+def format_joke(example):
+    example[joke_column] = '&lt;SJ&gt; ' + example['Joke'] + ' &lt;EJ&gt;'
+    return example
+
+remove_columns = [column for column in train_dataset.column_names if column != joke_column]
+
+train_dataset = train_dataset.map(format_joke, remove_columns=remove_columns)
+validation_dataset = validation_dataset.map(format_joke, remove_columns=remove_columns)
+test_dataset = test_dataset.map(format_joke, remove_columns=remove_columns)
+train_dataset, validation_dataset, test_dataset</input_code>
+  <output_code>(Dataset({
+     features: ['Joke'],
+     num_rows: 208491
+ }),
+ Dataset({
+     features: ['Joke'],
+     num_rows: 11583
+ }),
+ Dataset({
+     features: ['Joke'],
+     num_rows: 11583
+ }))</output_code>
+  <markdown>We tokenize the dataset</markdown>
+  <input_code>def tokenize_function(examples):
+    return tokenizer(examples[joke_column], padding="max_length", truncation=True, max_length=768, return_tensors="pt")
+
+train_dataset = train_dataset.map(tokenize_function, batched=True, remove_columns=[joke_column])
+validation_dataset = validation_dataset.map(tokenize_function, batched=True, remove_columns=[joke_column])
+test_dataset = test_dataset.map(tokenize_function, batched=True, remove_columns=[joke_column])
+train_dataset, validation_dataset, test_dataset</input_code>
+  <output_code>(Dataset({
+     features: ['input_ids', 'attention_mask'],
+     num_rows: 208491
+ }),
+ Dataset({
+     features: ['input_ids', 'attention_mask'],
+     num_rows: 11583
+ }),
+ Dataset({
+     features: ['input_ids', 'attention_mask'],
+     num_rows: 11583
+ }))</output_code>
+  <markdown>### Model</markdown>
+  <markdown>We instantiate the model, assign the padding token, and add the new joke start and end tokens.</markdown>
+  <input_code>from transformers import AutoModelForCausalLM
+
+model = AutoModelForCausalLM.from_pretrained(checkpoints)
+model.config.pad_token_id = model.config.eos_token_id
+model.resize_token_embeddings(len(tokenizer))</input_code>
+  <output_code>Embedding(50259, 768)</output_code>
+  <markdown>### Device</markdown>
+  <markdown>We create the device and pass the model to the device</markdown>
+  <input_code>import torch
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+model.half().to(device)
+print()</input_code>
+  <output_code>
+</output_code>
+  <markdown>### Pytorch Dataset</markdown>
+  <markdown>We create a PyTorch dataset</markdown>
+  <input_code>from torch.utils.data import Dataset
+
+class JokesDataset(Dataset):
+    def __init__(self, huggingface_dataset):
+        self.dataset = huggingface_dataset
+
+    def __getitem__(self, idx):
+        input_ids = torch.tensor(self.dataset[idx]['input_ids'])
+        attention_mask = torch.tensor(self.dataset[idx]['attention_mask'])
+        return input_ids, attention_mask
+
+    def __len__(self):
+        return len(self.dataset)</input_code>
+  <markdown>We instantiate the training, validation, and test datasets.</markdown>
+  <input_code>train_pytorch_dataset = JokesDataset(train_dataset)
+validation_pytorch_dataset = JokesDataset(validation_dataset)
+test_pytorch_dataset = JokesDataset(test_dataset)</input_code>
+  <markdown>Let's see a sample</markdown>
+  <input_code>input_ids, attention_mask = train_pytorch_dataset[0]
+input_ids.shape, attention_mask.shape</input_code>
+  <output_code>(torch.Size([768]), torch.Size([768]))</output_code>
+  <markdown>### Pytorch Dataloader</markdown>
+  <markdown>We create the dataloaders</markdown>
+  <input_code>from torch.utils.data import DataLoader
+
+BS = 28
+
+train_loader = DataLoader(train_pytorch_dataset, batch_size=BS, shuffle=True)
+validation_loader = DataLoader(validation_pytorch_dataset, batch_size=BS)
+test_loader = DataLoader(test_pytorch_dataset, batch_size=BS)</input_code>
+  <markdown>We see a sample</markdown>
+  <input_code>input_ids, attention_mask = next(iter(train_loader))
+input_ids.shape, attention_mask.shape</input_code>
+  <output_code>(torch.Size([28, 768]), torch.Size([28, 768]))</output_code>
+  <markdown>We pass it to the model</markdown>
+  <input_code>output = model(input_ids.to(device), attention_mask=attention_mask.to(device))
+output.keys()</input_code>
+  <output_code>odict_keys(['logits', 'past_key_values'])</output_code>
+  <markdown>As we can see, we don't have a `loss` value. As we've seen, we need to pass it the `input_ids` and the `labels`.</markdown>
+  <input_code>output = model(input_ids.to(device), attention_mask=attention_mask.to(device), labels=input_ids.to(device))
+output.keys()</input_code>
+  <output_code>odict_keys(['loss', 'logits', 'past_key_values'])</output_code>
+  <markdown>Now we have `loss`</markdown>
+  <input_code>output['loss'].item()</input_code>
+  <output_code>80.5625</output_code>
+  <markdown>### Optimizer</markdown>
+  <markdown>We create an optimizer</markdown>
+  <input_code>from transformers import AdamW
+
+LR = 2e-5
+optimizer = AdamW(model.parameters(), lr=5e-5)</input_code>
+  <output_code>/usr/local/lib/python3.10/dist-packages/transformers/optimization.py:588: FutureWarning: This implementation of AdamW is deprecated and will be removed in a future version. Use the PyTorch implementation torch.optim.AdamW instead, or set `no_deprecation_warning=True` to disable this warning
+  warnings.warn(
+</output_code>
+  <markdown>### Training</markdown>
+  <markdown>We create the training loop</markdown>
+  <input_code>from tqdm import tqdm
+
+EPOCHS = 3
+
+for epoch in range(EPOCHS):
+    model.train()
+    train_loss = 0
+    progresbar = tqdm(train_loader, total=len(train_loader), desc=f'Epoch {epoch + 1}')
+    for input_ids, at_mask in progresbar:
+        input_ids = input_ids.to(device)
+        at_mask = at_mask.to(device)
+
+        output = model(input_ids=input_ids, attention_mask=at_mask, labels=input_ids)
+
+        loss = output['loss']
+        train_loss += loss.item()
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        progresbar.set_postfix({'train_loss': loss.item()})
+    train_loss /= len(train_loader)
+    progresbar.set_postfix({'train_loss': train_loss})</input_code>
+  <output_code>Epoch 1: 100%|██████████| 7447/7447 [51:07&lt;00:00,  2.43it/s, train_loss=nan]
+Epoch 2: 100%|██████████| 7447/7447 [51:06&lt;00:00,  2.43it/s, train_loss=nan]
+Epoch 3: 100%|██████████| 7447/7447 [51:07&lt;00:00,  2.43it/s, train_loss=nan]
+</output_code>
+  <markdown>### Usage of the model</markdown>
+  <markdown>We test the model</markdown>
+  <input_code>def generate_text(decoded_joke, max_new_tokens=100, stop_token='&lt;EJ&gt;', top_k=0, temperature=1.0):
+    input_tokens = tokenize_function({'Joke': decoded_joke})
+    output = model(input_tokens['input_ids'].to(device), attention_mask=input_tokens['attention_mask'].to(device))
+    nex_token = torch.argmax(output['logits'][:, -1, :], dim=-1).item()
+    nex_token_decoded = tokenizer.decode(nex_token)
+    decoded_joke = decoded_joke + nex_token_decoded
+    for _ in range(max_new_tokens):
+        nex_token = torch.argmax(output['logits'][:, -1, :], dim=-1).item()
+        nex_token_decoded = tokenizer.decode(nex_token)
+        if nex_token_decoded == stop_token:
+            break
+        decoded_joke = decoded_joke + nex_token_decoded
+        input_tokens = tokenize_function({'Joke': decoded_joke})
+        output = model(input_tokens['input_ids'].to(device), attention_mask=input_tokens['attention_mask'].to(device))
+    return decoded_joke</input_code>
+  <input_code>generated_text = generate_text("&lt;SJ&gt; Why didn't the frog cross the road")
+generated_text</input_code>
+  <output_code>"&lt;SJ&gt; Why didn't the frog cross the road!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"</output_code>
+</notebook>

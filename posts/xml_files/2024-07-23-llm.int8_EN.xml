@@ -3,40 +3,67 @@
   <markdown># llm.int8() - 8-bit Matrix Multiplication for Transformers at Scale</markdown>
   <markdown> &gt; Disclaimer: This post has been translated to English using a machine translation model. Please, let me know if you find any mistakes.</markdown>
   <markdown>In the post [LLMs quantization](https://maximofn.com/llms-quantization/) we explain the importance of LLMs quantization to save memory. Additionally, we explain that there is a type of quantization called [zero-point quantization](https://maximofn.com/llms-quantization/#Cuantizaci%C3%B3n-de-punto-cero) which involves transforming the values of the parameters linearly, but this has the problem of language model degradation once they exceed 2.7B parameters.
-![llm.int8()-degradation](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-degradation.webp)</markdown>
+
+![llm.int8()-degradation](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-degradation.webp)
+</markdown>
   <markdown>## Vector Quantization</markdown>
   <markdown>Since the quantization of all parameters in models introduces errors in large language models, what is proposed in the paper [llm.int8()](https://arxiv.org/abs/2208.07339) is to perform vector quantization, which means separating weight matrices into vectors so that some of these vectors can be quantized to 8 bits, while others cannot. Therefore, those that can be quantized to 8 bits are quantized and matrix multiplications are performed in INT8 format, while the vectors that cannot be quantized remain in FP16 format and multiplications are performed in FP16 format.</markdown>
   <markdown>Let's see it with an example
+
 Suppose we have the matrix
+
 ![llm.int8()-A](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-A.webp)
+
 and we want to multiply it by the matrix
+
 ![llm.int8()-B](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-B.webp)
+
 We set a threshold value and all columns of the first matrix that have a value greater than this threshold are kept in FP16 format. The corresponding rows in the second matrix, equivalent to the rows of the first matrix, are also kept in FP16 format.
+
 To make it clearer, since the second and fourth columns of the first matrix (yellow columns) have values greater than a certain threshold, then the second and fourth rows of the second matrix (yellow rows) are kept in FP16 format.
+
 If there are threshold values in the second matrix, the same would be done, for example, if a row in the second matrix had a value greater than a threshold it would be kept in FP16 format, and that column in the first matrix would be kept in FP16 format.
+
 The rest of the rows and columns that are not kept in FP16 format are quantized to 8 bits, and the multiplications are performed in INT8 format.
 So we separate the first matrix into the two submatrices
+
 ![llm.int8()-A_separated](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-A_separated_.webp)
+
 And the second matrix in the two matrices
-![llm.int8()-B_separated](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-B_separated_.webp)</markdown>
+
+![llm.int8()-B_separated](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-B_separated_.webp)
+</markdown>
   <markdown>We multiply the matrices in INT8 on one side
+
 ![llm.int8()-AxB-int8](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB-int8_.webp)
+
 And those that are in FP16 format on the other hand
+
 ![llm.int8()-AxB-fp16](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB-fp16_.webp)
+
 As can be seen, multiplying the matrices in INT8 format gives us a result of a 3x2 matrix, and multiplying the matrices in FP16 format also gives us another 3x2 matrix, so if we add them together
+
 ![llm.int8()-fp16+int8](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-fp16int8_.webp)
+
 Interestingly, it gives us the same result as if we had multiplied the original matrices
-![llm.int8()-AxB](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB_.webp)</markdown>
+
+![llm.int8()-AxB](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB_.webp)
+</markdown>
   <markdown>To understand why this happens, if we develop the cross product of the two original matrices
+
 ![llm.int8()-AxB-explained](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB-explained.webp)
-We see that the separation we have made does not cause any problems</markdown>
+
+We see that the separation we have made does not cause any problems
+</markdown>
   <markdown>Therefore, we can conclude that we can separate rows and columns of matrices to perform matrix multiplications. This separation will occur when some element of the row or column is greater than a threshold value, so that rows or columns that do not have a value greater than this threshold will be encoded in INT8 occupying only one byte, and rows or columns that have an element greater than this threshold will be converted to FP16 occupying 2 bytes. This way, we won't have rounding issues, as the calculations we perform in INT8 will be with values that ensure the multiplications do not exceed the range of 8 bits.</markdown>
   <markdown>## Threshold value α</markdown>
   <markdown>As we have said, we are going to split into rows and columns that have some element greater than a threshold value, but what threshold value should we choose? The authors of the paper conducted experiments with several values and determined that this threshold value should be α=6. Above this value, they started to observe degradations in the language models.</markdown>
   <markdown>## Use of llm.int8()</markdown>
   <markdown>Let's see how to quantize a model with llm.int8() using the transformers library. For this, you need to have `bitsandbytes` installed.
+
 ```bash
-pip install bitsandbytes```</markdown>
+pip install bitsandbytes
+```</markdown>
   <markdown>We load a 1B parameter model twice, once in the usual way and the second time quantizing it with llm.int8()</markdown>
   <input_code>from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
@@ -87,5 +114,7 @@ print(time.time() - t0)</input_code>
 9.100712776184082
 </output_code>
   <markdown>We see two things: on the one hand, that the output we get is the same text; so with a much smaller model we can obtain the same output. However, the quantized model takes much longer to run, so if it needs to be used in real time, it would not be advisable.
-This is contradictory, because we might think that a smaller model would run faster, but we have to consider that in reality both models, the normal and the quantized one, perform the same operations; it's just that one performs all operations in FP32 while the other does them in INT8 and FP16. However, the quantized model has to find rows and columns with values greater than the threshold value, separate them, perform the operations in INT8 and FP16, and then recombine the results, which is why the quantized model takes longer to run.</markdown>
+
+This is contradictory, because we might think that a smaller model would run faster, but we have to consider that in reality both models, the normal and the quantized one, perform the same operations; it's just that one performs all operations in FP32 while the other does them in INT8 and FP16. However, the quantized model has to find rows and columns with values greater than the threshold value, separate them, perform the operations in INT8 and FP16, and then recombine the results, which is why the quantized model takes longer to run.
+</markdown>
 </notebook>

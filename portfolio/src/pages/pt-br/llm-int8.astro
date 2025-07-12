@@ -36,8 +36,8 @@ const closing_brace = '}';
 
 
     <aside class="post-index">
-      <a class="anchor-link" href="#Cuantizacion vectorial"><h2>Cuantización vectorial</h2></a>
-      <a class="anchor-link" href="#Valor umbral α"><h2>Valor umbral α</h2></a>
+      <a class="anchor-link" href="#Quantizacao vetorial"><h2>Quantização vetorial</h2></a>
+      <a class="anchor-link" href="#Valor limiar α"><h2>Valor limiar α</h2></a>
       <a class="anchor-link" href="#Uso de llm.int8()"><h2>Uso de llm.int8()</h2></a>
     </aside>
 
@@ -45,65 +45,70 @@ const closing_brace = '}';
     <div class="post-body-content">
       
       <section class="section-block-markdown-cell">
-      <h1 id="llm.int8() - 8-bit Matrix Multiplication for Transformers at Scale">llm.int8() - 8-bit Matrix Multiplication for Transformers at Scale<a class="anchor-link" href="#llm.int8() - 8-bit Matrix Multiplication for Transformers at Scale"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 8" src={svg_paths.link_svg_path}/></a></h1>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>En el post <a href="https://maximofn.com/llms-quantization/">LLMs quantization</a> explicamos la importancia de la cuantización de los LLMs para ahorrar memoria. Además, explicamos que existe una manera de cuantización que es la <a href="https://maximofn.com/llms-quantization/#Cuantizaci%C3%B3n-de-punto-cero">cuantización de punto cero</a> que consiste en transformar los valores de los parámetros de los pesos linealmente, pero esto tiene el problema de la degradación de los modelos de lenguaje a partir del momento en que superan los 2.7B de parámetros</p>
-      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-degradation.webp" width="868" height="702" alt="llm.int8()-degradation">
+      <blockquote>
+      <p>Aviso: Este post foi traduzido para o português usando um modelo de tradução automática. Por favor, me avise se encontrar algum erro.</p>
+      </blockquote>
       </section>
       
       <section class="section-block-markdown-cell">
-      <h2 id="Cuantizacion vectorial">Cuantización vectorial<a class="anchor-link" href="#Cuantizacion vectorial"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 9" src={svg_paths.link_svg_path}/></a></h2>
+      <p>No post <a href="https://maximofn.com/llms-quantization/">LLMs quantization</a> explicamos a importância da quantização dos LLMs para economizar memória. Além disso, explicamos que existe uma maneira de quantização que é a <a href="https://maximofn.com/llms-quantization/#Cuantizaci%C3%B3n-de-punto-cero">cuantização de ponto zero</a> que consiste em transformar os valores dos parâmetros dos pesos linearmente, mas isso tem o problema da degradação dos modelos de linguagem a partir do momento em que eles ultrapassam 2,7B de parâmetros.</p>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-degradation.webp" alt="llm.int8()-degradação">
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>Como la cuantización de todos los parámetros de los modelos produce error en los grandes modelos de lenguaje, lo que proponen en el paper <a href="https://arxiv.org/abs/2208.07339" target="_blank" rel="nofollow noreferrer">llm.int8()</a> es realizar la cuantización vectorial, es decir, separar las matrices de los pesos en vectores, de manera que algunos de esos vectores se pueden cuantizar en 8 bits, mientras que otros no. Por lo que los que sí se pueden cuantizar en 8 bits se cuantizan y se realizan las multiplicaciones matriciales en formato INT8, mientras que los vectores que no pueden ser cuantizados se mantienen en formato FP16 y se realizan las multiplicaciones en formato FP16.</p>
+      <h2 id="Quantizacao vetorial">Quantização vetorial<a class="anchor-link" href="#Quantizacao vetorial"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 9" src={svg_paths.link_svg_path}/></a></h2>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>Veámoslo con un ejemplo</p>
-      <p>Supongamos que tenemos la matriz</p>
-      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-A.webp" width="378" height="227" alt="llm.int8()-A">
-      <p>y la queremos multiplicar por la matriz</p>
-      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-B.webp" width="151" height="378" alt="llm.int8()-B">
-      <p>Establecemos un valor umbral y todas las columnas de la primera matriz que tengan un valor mayor a ese umbral se dejan en formato FP16. Las filas equivalentes a las filas de la primera matriz, en la segunda matriz también se dejan en formato FP16.</p>
-      <p>Lo explico más claro, como la segunda y cuarta columna de la primera matriz (columnas amarillas) tienen valores mayores a un cierto umbral, entonces la segunda y la cuarta fila de la segunda matriz (filas amarillas) se dejan en formato FP16</p>
-      <p>En caso de tener valores umbrales en la segunda matriz se haría lo mismo, por ejemplo, si en la segunda matriz una fila tuviese un valor mayor a un umbral se dejaría en formato FP16, y esa columna en la primera matriz se dejaría en formato FP16</p>
-      <p>El resto de filas y columnas que no se dejan en formato FP16 se cuantizan en 8 bits y se realizan las multiplicaciones en formato INT8</p>
-      <p>Así que separamos la primera matriz en las dos submatrices</p>
-      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-A_separated_.webp" width="794" height="487" alt="llm.int8()-A_separated">
-      <p>Y la segunda matriz en las dos matrices</p>
-      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-B_separated_.webp" width="518" height="454" alt="llm.int8()-B_separated">
+      <p>Como a quantização de todos os parâmetros dos modelos produz erro nos grandes modelos de linguagem, o que propõem no paper <a href="https://arxiv.org/abs/2208.07339" target="_blank" rel="nofollow noreferrer">llm.int8()</a> é realizar a quantização vetorial, ou seja, separar as matrizes de pesos em vetores, de maneira que alguns desses vetores podem ser quantizados em 8 bits, enquanto outros não. Portanto, os que podem ser quantizados em 8 bits são quantizados e as multiplicações matriciais são realizadas no formato INT8, enquanto os vetores que não podem ser quantizados permanecem no formato FP16 e as multiplicações são realizadas no formato FP16.</p>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>Multiplicamos las matrices en INT8 por un lado</p>
-      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB-int8_.webp" width="680" height="227" alt="llm.int8()-AxB-int8">
-      <p>Y las que están en formato FP16 por otro lado</p>
-      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB-fp16_.webp" width="605" height="227" alt="llm.int8()-AxB-fp16">
-      <p>Como se puede ver, multiplicar las matrices en formato INT8 nos da como resultado una matriz de tamaño 3x2, y multiplicar las matrices en formato FP16 nos da como resultado otra matriz de tamaño 3x2, por lo que si las sumamos</p>
-      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-fp16int8_.webp" width="605" height="227" alt="llm.int8()-fp16+int8">
-      <p>Curiosamente, nos da el mismo resultado que si hubiésemos multiplicado las matrices originales</p>
-      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB_.webp" width="832" height="378" alt="llm.int8()-AxB">
+      <p>Vamos vê-lo com um exemplo</p>
+      <p>Suponhamos que temos a matriz</p>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-A.webp" alt="llm.int8()-A">
+      <p>e queremos multiplicá-la pela matriz</p>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-B.webp" alt="llm.int8()-B">
+      <p>Estabelecemos um valor limiar e todas as colunas da primeira matriz que tenham um valor maior que esse limiar são deixadas no formato FP16. As linhas equivalentes às linhas da primeira matriz, na segunda matriz também são deixadas no formato FP16.</p>
+      <p>Como as colunas segunda e quarta da primeira matriz (colunas amarelas) têm valores maiores que um certo limiar, então as linhas segunda e quarta da segunda matriz (linhas amarelas) são mantidas no formato FP16.</p>
+      <p>Em caso de ter valores limiares na segunda matriz, far-se-ia o mesmo. Por exemplo, se uma linha da segunda matriz tivesse um valor maior que um limiar, ela seria deixada no formato FP16, e essa coluna na primeira matriz seria deixada no formato FP16.</p>
+      <p>O restante das linhas e colunas que não são deixadas no formato FP16 é quantizado em 8 bits e as multiplicações são realizadas no formato INT8</p>
+      <p>Então, separamos a primeira matriz em duas submatrizes</p>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-A_separated_.webp" alt="llm.int8()-A_separated">
+      <p>E a segunda matriz nas duas matrizes</p>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-B_separated_.webp" alt="llm.int8()-B_separated">
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>Para poder ver por qué ocurre esto, si desarrollamos el producto vectorial de las dos matrices originales</p>
-      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB-explained.webp" width="1020" height="490" alt="llm.int8()-AxB-explained">
-      <p>Vemos que la separación que hemos hecho no da problemas</p>
+      <p>Multiplicamos as matrizes em INT8 de um lado</p>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB-int8_.webp" alt="llm.int8()-AxB-int8">
+      <p>E as que estão em formato FP16 por outro lado</p>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB-fp16_.webp" alt="llm.int8()-AxB-fp16">
+      <p>Como se pode ver, multiplicar as matrizes no formato INT8 nos dá como resultado uma matriz de tamanho 3x2, e multiplicar as matrizes no formato FP16 nos dá como resultado outra matriz de tamanho 3x2, portanto, se as somarmos</p>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-fp16int8_.webp" alt="llm.int8()-fp16+int8">
+      <p>Curiosamente, nos dá o mesmo resultado que se tivéssemos multiplicado as matrizes originais</p>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB_.webp" alt="llm.int8()-AxB">
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>Por tanto, podemos concluir, que podemos separar filas y columnas de las matrices para realizar las multiplicaciones matriciales. Esta separación se hará cuando algún elemento de la fila o la columna sea mayor que un valor umbral, de manera que als filas o columnas que no tengan un valor mayor a ese umbral se codificarán en INT8 ocupando solo un byte y las filas o columnas que tengan algún elemento mayor que ese umbral se pasarán a FP16 ocupando 2 bytes. De esta manera no tendremos problemas de redondeo, ya que los cálculos que hagamos en INT8 los haremos con valores que hagan que las multiplicaciones no superen el rango de los 8 bits.</p>
+      <p>Para poder ver por que ocorre isso, se desenvolvermos o produto vetorial das duas matrizes originais</p>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB-explained.webp" alt="llm.int8()-AxB-explained">
+      <p>Vemos que a separação que fizemos não dá problemas</p>
       </section>
       
       <section class="section-block-markdown-cell">
-      <h2 id="Valor umbral α">Valor umbral α<a class="anchor-link" href="#Valor umbral α"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 10" src={svg_paths.link_svg_path}/></a></h2>
+      <p>Portanto, podemos concluir que podemos separar linhas e colunas das matrizes para realizar as multiplicações matriciais. Esta separação será feita quando algum elemento da linha ou coluna seja maior que um valor limite, de maneira que as linhas ou colunas que não tenham um valor maior que esse limite serão codificadas em INT8 ocupando apenas um byte e as linhas ou colunas que tenham algum elemento maior que esse limite serão convertidas para FP16 ocupando 2 bytes. Dessa forma, não teremos problemas de arredondamento, pois os cálculos que realizarmos em INT8 serão feitos com valores que garantam que as multiplicações não ultrapassem o intervalo dos 8 bits.</p>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>Como hemos dicho vamos a separar en filas y columnas que tengan algún elemento mayor que un valor umbral, pero ¿Qué valor umbral debemos elegir? Los autores del paper hicieron experimentos con varios valores y determinaron que ese valor umbral debía ser α=6. Por encima de ese valor empezaron a obtener degradaciones en los modelos de lenguaje</p>
+      <h2 id="Valor limiar α">Valor limiar α<a class="anchor-link" href="#Valor limiar α"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 10" src={svg_paths.link_svg_path}/></a></h2>
+      </section>
+      
+      <section class="section-block-markdown-cell">
+      <p>Como dissem, vamos a separar em linhas e colunas que tenham algum elemento maior que um valor limiar, mas ¿qual valor limiar devemos escolher? Os autores do paper realizaram experimentos com vários valores e determinaram que esse valor limiar deveria ser α=6. Acima desse valor começaram a obter degradações nos modelos de linguagem.</p>
       </section>
       
       <section class="section-block-markdown-cell">
@@ -111,12 +116,12 @@ const closing_brace = '}';
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>Vamos a ver cómo cuantizar un modelo con llm.int8() con la librería transformers. Para ello hay que tener instalado <code>bitsandbytes</code></p>
+      <p>Vamos ver como quantizar um modelo com llm.int8() com a biblioteca transformers. Para isso, é necessário ter o <code>bitsandbytes</code> instalado.</p>
       <div class='highlight'><pre><code class="language-bash">pip install bitsandbytes</code></pre></div>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>Cargamos un modelo de 1B de parámetros dos veces, una de manera normal y la segunda cuantizándolo con llm.int8()</p>
+      <p>Carregamos um modelo com 1B de parâmetros duas vezes, uma de maneira normal e a segunda quantizando-o com llm.int8()</p>
       </section>
       
       <CodeBlockInputCell
@@ -142,7 +147,7 @@ const closing_brace = '}';
       ></CodeBlockOutputCell>
       
       <section class="section-block-markdown-cell">
-      <p>Vemos cuánta memoria ocupa cada uno de los modelos</p>
+      <p>Vemos quanto memória ocupa cada um dos modelos</p>
       </section>
       
       <CodeBlockInputCell
@@ -160,11 +165,11 @@ const closing_brace = '}';
       ></CodeBlockOutputCell>
       
       <section class="section-block-markdown-cell">
-      <p>Como se puede ver, el modelo cuantizado ocupa mucha menos memoria</p>
+      <p>Como se pode ver, o modelo quantizado ocupa muito menos memória</p>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>Vamos ahora a hacer una prueba de generación de texto con los dos modelos</p>
+      <p>Vamos agora fazer um teste de geração de texto com os dois modelos</p>
       </section>
       
       <CodeBlockInputCell
@@ -178,13 +183,13 @@ const closing_brace = '}';
       <CodeBlockOutputCell
         text={[
           'tensor([[    1, 15043,   590,  1024,   338,  5918,  4200,   322,   306,   626,',
-          '263,  6189, 29257, 10863,   261]], device=&#x27;cuda:0&#x27;)',
+          '&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;263,  6189, 29257, 10863,   261]], device=&#x27;cuda:0&#x27;)',
         ]}
         languaje='python'
       ></CodeBlockOutputCell>
       
       <section class="section-block-markdown-cell">
-      <p>Vemos la salida con el modelo normal</p>
+      <p>Vemos a saída com o modelo normal</p>
       </section>
       
       <CodeBlockInputCell
@@ -213,7 +218,7 @@ const closing_brace = '}';
       ></CodeBlockOutputCell>
       
       <section class="section-block-markdown-cell">
-      <p>Y ahora con el modelo cuantizado</p>
+      <p>E agora com o modelo quantizado</p>
       </section>
       
       <CodeBlockInputCell
@@ -240,8 +245,8 @@ const closing_brace = '}';
       ></CodeBlockOutputCell>
       
       <section class="section-block-markdown-cell">
-      <p>Vemos dos cosas: por un lado, que a la salida obtenemos el mismo texto; por lo que con un modelo mucho más pequeño podemos obtener la misma salida. Sin embargo, el modelo cuantizado tarda mucho más en ejecutarse, por lo que si se necesita usar este modelo en tiempo real no sería recomendable.</p>
-      <p>Esto es contradictorio, porque podríamos pensar que un modelo más pequeño tendría que ejecutarse más rápido, pero hay que pensar que en realidad los dos modelos, el normal y el cuantizado, realizan las mismas operaciones, solo que uno realiza todas las operaciones en FP32 y el otro las hace en INT8 y FP16, sin embargo el modelo cuantizado tiene que buscar filas y columnas con valores mayores al valor umbral, separarlas, realizar las operaciones en INT8 y FP16 y luego volver a juntar los resultados, por lo que el modelo cuantizado tarda más en ejecutarse.</p>
+      <p>Vemos duas coisas: por um lado, que na saída obtemos o mesmo texto; portanto, com um modelo muito menor podemos obter a mesma saída. No entanto, o modelo quantizado leva muito mais tempo para ser executado, então se for necessário usar esse modelo em tempo real não seria recomendável.</p>
+      <p>Isso é contraditório, porque poderíamos pensar que um modelo menor teria que ser executado mais rapidamente, mas é preciso considerar que na realidade os dois modelos, o normal e o quantizado, realizam as mesmas operações, apenas um realiza todas as operações em FP32 e o outro as faz em INT8 e FP16, no entanto, o modelo quantizado precisa encontrar linhas e colunas com valores maiores que o valor de limiar, separá-las, realizar as operações em INT8 e FP16 e depois juntar os resultados novamente, por isso o modelo quantizado leva mais tempo para ser executado.</p>
       </section>
 
 

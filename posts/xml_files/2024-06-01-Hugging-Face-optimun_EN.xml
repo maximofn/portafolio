@@ -3,27 +3,60 @@
   <markdown># Hugging Face Optimum</markdown>
   <markdown> &gt; Disclaimer: This post has been translated to English using a machine translation model. Please, let me know if you find any mistakes.</markdown>
   <markdown>`Optimun` is an extension of the [Transformers](https://maximofn.com/hugging-face-transformers/) library that provides a set of performance optimization tools for training and inference of models, on specific hardware, with maximum efficiency.
-The AI ecosystem is evolving rapidly, and every day more specialized hardware emerges along with its own optimizations. Therefore, `Optimum` allows users to efficiently utilize any of this HW with the same ease as [Transformers](https://maximofn.com/hugging-face-transformers/).</markdown>
+
+The AI ecosystem is evolving rapidly, and every day more specialized hardware emerges along with its own optimizations. Therefore, `Optimum` allows users to efficiently utilize any of this HW with the same ease as [Transformers](https://maximofn.com/hugging-face-transformers/).
+</markdown>
   <markdown>`Optimun` allows optimization for the following HW platforms:
-* Nvidia* AMD* Intel* AWS* TPU* Havana* FuriousAI
+
+* Nvidia
+* AMD
+* Intel
+* AWS
+* TPU
+* Havana
+* FuriousAI
 In addition, it offers acceleration for the following open source integrations
-* ONNX runtime* Exporters: Export Pytorch or TensorFlow models to different formats such as ONNX or TFLite* BetterTransformer* Torch FX</markdown>
+
+* ONNX runtime
+* Exporters: Export Pytorch or TensorFlow models to different formats such as ONNX or TFLite
+* BetterTransformer
+* Torch FX
+</markdown>
   <markdown>## Installation</markdown>
   <markdown>To install `Optimun` simply run:
+
 ```bash
-pip install optimum```
+pip install optimum
+```
 
 But if you want to install with support for all HW platforms, you can do it like this
-|Accelerator|Installation||---|---||ONNX Runtime	|`pip install --upgrade --upgrade-strategy eager optimum[onnxruntime]`||Intel Neural Compressor	|`pip install --upgrade --upgrade-strategy eager optimum[neural-compressor]`||OpenVINO|`pip install --upgrade --upgrade-strategy eager optimum[openvino]`||NVIDIA TensorRT-LLM | `docker run -it --gpus all --ipc host huggingface/optimum-nvidia` ||AMD Instinct GPUs and Ryzen AI NPU|`pip install --upgrade --upgrade-strategy eager optimum[amd]`||AWS Trainum &amp; Inferentia	|`pip install --upgrade --upgrade-strategy eager optimum[neuronx]`||Habana Gaudi Processor (HPU)|`pip install --upgrade --upgrade-strategy eager optimum[habana]`||FuriosaAI	|`pip install --upgrade --upgrade-strategy eager optimum[furiosa]`|
-The flags `--upgrade --upgrade-strategy eager` are necessary to ensure that the different packages are updated to the latest possible version.</markdown>
+
+|Accelerator|Installation|
+|---|---|
+|ONNX Runtime	|`pip install --upgrade --upgrade-strategy eager optimum[onnxruntime]`|
+|Intel Neural Compressor	|`pip install --upgrade --upgrade-strategy eager optimum[neural-compressor]`|
+|OpenVINO|`pip install --upgrade --upgrade-strategy eager optimum[openvino]`||NVIDIA TensorRT-LLM | `docker run -it --gpus all --ipc host huggingface/optimum-nvidia` |
+|AMD Instinct GPUs and Ryzen AI NPU|`pip install --upgrade --upgrade-strategy eager optimum[amd]`|
+|AWS Trainum &amp; Inferentia	|`pip install --upgrade --upgrade-strategy eager optimum[neuronx]`|
+|Habana Gaudi Processor (HPU)|`pip install --upgrade --upgrade-strategy eager optimum[habana]`|
+|FuriosaAI	|`pip install --upgrade --upgrade-strategy eager optimum[furiosa]`|
+
+The flags `--upgrade --upgrade-strategy eager` are necessary to ensure that the different packages are updated to the latest possible version.
+</markdown>
   <markdown>Since most people use Pytorch on Nvidia GPUs, and especially since I have an Nvidia GPU, this post will only discuss the use of `Optimun` with Nvidia GPUs and Pytorch.</markdown>
   <markdown>## BetterTransformer</markdown>
   <markdown>BetterTransformer is a native PyTorch optimization to achieve an acceleration of x1.25 to x4 in the inference of Transformer-based models.</markdown>
   <markdown>BetterTransformer is an API that allows leveraging modern hardware features to accelerate the training and inference of transformer models in PyTorch, using more efficient attention implementations and the `fast path` of the native `nn.TransformerEncoderLayer`.
+
 BetterTransformer uses two types of accelerations:
-1. `Flash Attention`: This is an implementation of `attention` that uses `sparse` to reduce computational complexity. Attention is one of the most expensive operations in transformer models, and `Flash Attention` makes it more efficient.2. `Memory-Efficient Attention`: This is another implementation of attention that uses the `scaled_dot_product_attention` function from PyTorch. This function is more memory-efficient than the standard attention implementation in PyTorch.
+
+1. `Flash Attention`: This is an implementation of `attention` that uses `sparse` to reduce computational complexity. Attention is one of the most expensive operations in transformer models, and `Flash Attention` makes it more efficient.
+2. `Memory-Efficient Attention`: This is another implementation of attention that uses the `scaled_dot_product_attention` function from PyTorch. This function is more memory-efficient than the standard attention implementation in PyTorch.
+
 In addition, version 2.0 of PyTorch includes a native scaled dot product attention (SDPA) operator as part of `torch.nn.functional`
-`Optimun` provides this functionality with the library `Transformers`</markdown>
+
+`Optimun` provides this functionality with the library `Transformers`
+</markdown>
   <markdown>### Inference with Automodel</markdown>
   <markdown>First, let's see how normal inference would work with `Transformers` and `Automodel`</markdown>
   <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -43,7 +76,9 @@ sentence_output</input_code>
 </output_code>
   <output_code>'Me encanta aprender de la vie de la vie de la vie de la vie de la vie de la vie de la vie de la vie de la vie de la vie de la vie de'</output_code>
   <markdown>Now we see how it would be optimized with `BetterTransformer` and `Optimun`
-What we need to do is convert the model using the `transform` method of `BetterTransformer`</markdown>
+
+What we need to do is convert the model using the `transform` method of `BetterTransformer`
+</markdown>
   <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
 from optimum.bettertransformer import BetterTransformer
 
@@ -123,7 +158,9 @@ pipe("I am a student at [MASK] University.")</input_code>
   'sequence': 'i am a student at princeton university.'}]</output_code>
   <markdown>### Training</markdown>
   <markdown>For the training with `Optimun` we do the same as with the inference with Automodel, we convert the model using the `transform` method of `BeterTransformer`.
-When we finish the training, we revert the model back to its original form using the `reverse` method of `BetterTransformer`, so that we can save it and upload it to the Hugging Face hub.</markdown>
+
+When we finish the training, we revert the model back to its original form using the `reverse` method of `BetterTransformer`, so that we can save it and upload it to the Hugging Face hub.
+</markdown>
   <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
 from optimum.bettertransformer import BetterTransformer
 

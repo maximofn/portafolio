@@ -9,7 +9,7 @@
      * -rw-r--r--@   1 macm1  staff     13344 29 ene 17:29 2023-12-30-Mixtral-8x7B.ipynb
      * -rw-r--r--@   1 macm1  staff     15540 29 ene 17:29 2024-07-21-LLMs-quantization.ipynb
      * -rw-r--r--@   1 macm1  staff     17093 29 ene 17:29 2024-07-23-llm.int8.ipynb
-   * -rw-r--r--@   1 macm1  staff     18013 29 ene 17:29 2024-06-01-Hugging-Face-optimun.ipynb
+     * -rw-r--r--@   1 macm1  staff     18013 29 ene 17:29 2024-06-01-Hugging-Face-optimun.ipynb
  * -rw-r--r--@   1 macm1  staff     21489 25 feb 18:01 2025-02-25-Langchain-cadenas de extraccion.ipynb
    * -rw-r--r--@   1 macm1  staff     21746 11 jun 19:12 2024-08-01-DoLa.ipynb
    * -rw-r--r--@   1 macm1  staff     24294 11 jun 19:12 2025-03-08-FastRTC.ipynb

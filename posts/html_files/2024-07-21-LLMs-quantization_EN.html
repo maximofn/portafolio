@@ -2,97 +2,102 @@
 <h1 id="LLMs quantization">LLMs quantization<a class="anchor-link" href="#LLMs quantization">¶</a></h1>
 </section>
 <section class="section-block-markdown-cell">
-<p>Los modelos de lenguaje son cada vez más grandes, lo que hace que cada vez sean más costosos y caros de ejecutar.</p>
+<blockquote>
+<p>Disclaimer: This post has been translated to English using a machine translation model. Please, let me know if you find any mistakes.</p>
+</blockquote>
+</section>
+<section class="section-block-markdown-cell">
+<p>Language models are getting larger, which makes them increasingly expensive and costly to run.</p>
 <img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/LLMs-size-evolution.webp" alt="LLMs-size-evolution">
 <img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/Llama-size-evolution.webp" alt="Llama-size-evolution">
-<p>Por ejemplo, el modelo llama 3 400B, si sus parámetros están almacenados en formato FP32, cada parámetro ocupa por tanto 4 bytes, lo que supone que solo para almacenar el modelo hace falta 400*(10e9)*4 bytes = 1.6 TB de memoria VRAM. Esto supone 20 GPUs de 80GB de memoria VRAM cada una, las cuales además no son baratas.</p>
-<p>Pero si dejamos a un lado modelos gigantes y nos vamos a modelos con tamaños más comunes, por ejemplo, 70B de parámetros, solo almacenar el modelo supone 70*(10e9)*4 bytes = 280 GB de memoria VRAM, lo que supone 4 GPUs de 80GB de memoria VRAM cada una.</p>
-<p>Esto es porque almacenamos los pesos en formato FP32, es decir, que cada parámetro ocupa 4 bytes. Pero qué pasa si conseguimos que cada parámetro ocupe menos bytes? A esto se le llama cuantización.</p>
-<p>Por ejemplo, si conseguimos que un modelo de 70B de parámetros, sus parámetros ocupen medio byte, entonces solo necesitaríamos 70*(10e9)*0.5 bytes = 35 GB de memoria VRAM, lo que supone 2 GPUs de 24GB de memoria VRAM cada una, las cuales ya se pueden considerar GPUs de usuarios normales.</p>
+<p>For example, the Llama 3 400B model, if its parameters are stored in FP32 format, each parameter therefore occupies 4 bytes, which means that just to store the model requires 400*(10e9)*4 bytes = 1.6 TB of VRAM. This amounts to 20 GPUs with 80GB of VRAM each, which are not cheap either.</p>
+<p>But if we set aside giant models and move to more common sizes, for example, 70B parameters, just storing the model requires 70*(10e9)*4 bytes = 280 GB of VRAM, which means 4 GPUs with 80GB of VRAM each.</p>
+<p>This is because we store the weights in FP32 format, meaning that each parameter occupies 4 bytes. But what if we manage to make each parameter occupy fewer bytes? This is called quantization.</p>
+<p>For example, if we manage to make a 70B parameter model's parameters take up half a byte, then we would only need 70*(10e9)*0.5 bytes = 35 GB of VRAM memory, which means 2 GPUs with 24GB of VRAM each, which can already be considered normal user GPUs.</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Necesitamos por tanto maneras de poder reducir el tamaño de estos modelos. Existen tres formas de hacer eso, la destilación, la poda y la cuantización.</p>
-<p>La destilación consiste en entrenar un modelo más pequeño a partir de las salidas del grande. Es decir, una entrada se le mete al modelo pequeño y al grande, se considera que la salida correcta es la del modelo grande, por lo que se realiza el entrenamiento del modelo pequeño de acuerdo con la salida del modelo grande. Pero esto requiere tener almacenado el modelo grande, que no es lo que queremos o podemos hacer.</p>
-<p>La poda consiste en eliminar parámetros del modelo haciéndolo cada vez más pequeño. Este método se basa en la idea de que los modelos de lenguaje actuales están sobredimensionados y solo unos pocos parámetros son los que realmente aportan información. Por ello, si conseguimos eliminar los parámetros que no aportan información, conseguiremos un modelo más pequeño. Pero esto no es sencillo a día de hoy, porque no tenemos manera de saber bien qué parámetros son los importantes y cuales no.</p>
-<p>Por otro lado, la cuantización consiste en reducir el tamaño de cada uno de los parámetros del modelo. Y es lo que vamos a explicar en este post.</p>
+<p>We therefore need ways to reduce the size of these models. There are three ways to do this: distillation, pruning, and quantization.</p>
+<p>Distillation involves training a smaller model based on the outputs of the larger one. That is, an input is fed to both the small and large models, and it is considered that the correct output is that of the large model, so the small model is trained according to the output of the large model. However, this requires storing the large model, which is not what we want or can do.</p>
+<p>Pruning consists of eliminating parameters from the model, making it progressively smaller. This method is based on the idea that current language models are oversized and only a few parameters are the ones that truly provide information. Therefore, if we can eliminate the parameters that do not contribute information, we will achieve a smaller model. However, this is not straightforward today, as we do not have a good way of knowing which parameters are important and which are not.</p>
+<p>On the other hand, quantization consists of reducing the size of each of the model's parameters. And this is what we are going to explain in this post.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Formato de los parametros">Formato de los parámetros<a class="anchor-link" href="#Formato de los parametros">¶</a></h2>
+<h2 id="Format of the parameters">Format of the parameters<a class="anchor-link" href="#Format of the parameters">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<p>Los parámetros de los pesos se pueden almacenar en varios tipos de formatos</p>
+<p>The parameters of the weights can be stored in various types of formats</p>
 <img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/numbers-representation.webp" alt="numbers-representation">
-<p>Originalmente se usaba FP32 para almacenar los parámetros, pero debido a que empezamos a quedarnos sin memoria para almacenar los modelos, se empezaron a pasar a FP16, lo cual no daba malos resultados.</p>
-<p>Sin embargo el problema de FP16 es que no alcanza valores tan altos como FP32, por lo que puede darse el caso de desbordamiento de valores, es decir, al realizarse cálculos internos en la red, el resultado sea tan alto que no se pueda representar en FP16, lo que produce errores. Esto ocurre porque el modelo fue entrenado en FP32, lo que hace que todos los posibles cálculos internos sean posibles, pero al pasarse después a FP16 para poder hacer inferencias, algunos cálculos internos pueden producir desbordamientos.</p>
-<p>Debido a estos errores de desbordamiento se crearon TF32 y BF16, los cuales tienen la misma cantidad de bits de exponente, lo que hace que puedan llegar a valores tan altos como FP32, pero con la ventaja de ocupar menos memoria por tener menos bits. Sin embargo, ambos al tener menos bits de mantisa, no pueden representar números con tanta precisión como FP32, lo cual puede dar errores de redondeo, pero al menos no obtendremos un error al ejecutar la red. TF32 tiene en total 19 bits, mientras que BF16 tiene 16 bits. Se suele usar más BF16 porque se ahorra más memoria.</p>
-<p>Históricamente han existido los formatos INT8 y UINT8, que pueden representar números desde -128 a 127 y de 0 a 255 respectivamente. Aunque son formatos buenos porque permiten ahorrar menos memoria, ya que cada parámetro ocupa 1 byte en comparación de los 4 bytes de FP32, el problema que tienen es que solo pueden representar un rango pequeño de números y además solo enteros, por lo que pueden darse los dos problemas vistos antes, desbordamiento y falta de precisión.</p>
-<p>Para solucionar el problema de que los formatos INT8 y UINT8 solo representan números enteros se han creado los formatos FP8 y FP4, pero aún no están muy consolidados, ni tienen un formato muy estandarizado.</p>
+<p>Originally, FP32 was used to store the parameters, but due to running out of memory to store the models, they started switching to FP16, which did not yield bad results.</p>
+<p>However, the problem with FP16 is that it does not reach values as high as FP32, which can lead to overflow issues. This means that during internal calculations in the network, the result may be so high that it cannot be represented in FP16, leading to errors. This happens because the model was trained in FP32, allowing all possible internal calculations to be feasible. However, when switching to FP16 for inference, some internal calculations can produce overflows.</p>
+<p>Due to these overflow errors, TF32 and BF16 were created, which have the same number of exponent bits, allowing them to reach as high values as FP32, but with the advantage of using less memory due to having fewer bits. However, both, with fewer mantissa bits, cannot represent numbers with as much precision as FP32, which can lead to rounding errors, but at least we won't get an error when running the network. TF32 has a total of 19 bits, while BF16 has 16 bits. BF16 is more commonly used because it saves more memory.</p>
+<p>Historically, the INT8 and UINT8 formats have existed, which can represent numbers from -128 to 127 and from 0 to 255 respectively. Although these are good formats because they allow saving memory, as each parameter occupies 1 byte compared to the 4 bytes of FP32, the problem they have is that they can only represent a small range of numbers and also only integers, which can lead to the two problems seen earlier: overflow and lack of precision.</p>
+<p>To solve the problem that the INT8 and UINT8 formats only represent integers, the FP8 and FP4 formats have been created, but they are not yet well established, nor do they have a very standardized format.</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Aunque tengamos manera de poder almacenar los parámetros de los modelos en formatos más pequeños, y aunque consigamos resolver los problemas de desbordamiento y redondeo, tenemos otro problema, y es que no todas las GPUs son capaces de representar todos los formatos. Esto es porque estos problemas de memoria son relativamente nuevos, por lo que las GPUs más antiguas no se diseñaron para poder resolver estos problemas y por tanto no son capaces de representar todos los formatos.</p>
+<p>Although we have ways to store model parameters in smaller formats, and even if we manage to solve overflow and rounding issues, we have another problem: not all GPUs are capable of representing all formats. This is because these memory issues are relatively new, so older GPUs were not designed to address these problems and therefore cannot represent all formats.</p>
 <img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/GPUs-data-formating.webp" alt="GPUs-data-formating">
 </section>
 <section class="section-block-markdown-cell">
-<p>Como último detalle, como curiosidad, durante el entrenamiento de los modelos se utiliza lo que se llama precisión mixta. Los pesos del modelo se almacenan en formato FP32, sin embargo el <code>forward pass</code> y el <code>backward pass</code> se realizan en FP16 para que sea más rápido. Los gradientes resultantes del <code>backward pass</code> se almacenan en FP16 y se usan para modificar los valores FP32 de los pesos.</p>
+<p>As a final detail, as a curiosity, during the training of the models, what is called mixed precision is used. The model weights are stored in FP32 format, however, the <code>forward pass</code> and the <code>backward pass</code> are performed in FP16 to make it faster. The resulting gradients from the <code>backward pass</code> are stored in FP16 and are used to modify the FP32 values of the weights.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Tipos de cuantizacion">Tipos de cuantización<a class="anchor-link" href="#Tipos de cuantizacion">¶</a></h2>
+<h2 id="Types of Quantization">Types of Quantization<a class="anchor-link" href="#Types of Quantization">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Cuantizacion de punto cero">Cuantización de punto cero<a class="anchor-link" href="#Cuantizacion de punto cero">¶</a></h3>
+<h3 id="Zero-Point Quantization">Zero-Point Quantization<a class="anchor-link" href="#Zero-Point Quantization">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>Este es el tipo de cuantización más sencilla. Consiste en reducir el rango de valores de manera lineal, el mínimo valor de FP32 corresponde al mínimo valor del nuevo formato, el cero de FP32 corresponde al cero del nuevo formato y el máximo valor de FP32 corresponde al máximo valor del nuevo formato.</p>
-<p>Por ejemplo, si queremos pasar los números representados desde -1 hasta 1 en formato UINT8, como los límites de UINT8 son -127 y 127, si queremos representar el valor 0.3 lo que hacemos es multiplicar 0.3 por 127, que da 38.1 y redondearlo a 38, que es el valor que se almacenaría en UINT8.</p>
-<p>Si queremos hacer el paso contrario, para pasar 38 a formato de entre -1 y 1, lo que hacemos es dividir 38 entre 127, que da 0.2992, que es aproximadamente 0.3, y podemos ver que tenemos un error de 0.008</p>
-<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/quantization-zero-point.webp" alt="quantization-zero-point">
+<p>This is the simplest type of quantization. It consists of linearly reducing the range of values, the minimum value of FP32 corresponds to the minimum value of the new format, the zero of FP32 corresponds to the zero of the new format, and the maximum value of FP32 corresponds to the maximum value of the new format.</p>
+<p>For example, if we want to represent numbers from -1 to 1 in UINT8 format, since the limits of UINT8 are -127 and 127, if we want to represent the value 0.3, we multiply 0.3 by 127, which gives 38.1, and round it to 38, which is the value that would be stored in UINT8.</p>
+<p>If we want to do the opposite step, to convert 38 to a format between -1 and 1, what we do is divide 38 by 127, which gives 0.2992, which is approximately 0.3, and we can see that we have an error of 0.008</p>
+<p>!<a href="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/quantization-zero-point.webp">quantization-zero-point</a></p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Cuantizazion afin">Cuantizazión afin<a class="anchor-link" href="#Cuantizazion afin">¶</a></h3>
+<h3 id="Affine Quantization">Affine Quantization<a class="anchor-link" href="#Affine Quantization">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>En este tipo de cuantización, si se tiene un array de valores en un formato y se quiere pasar a otro, primero se divide el array entero por el máximo valor del array y luego se multiplica el array entero por el máximo valor del nuevo formato.</p>
+<p>In this type of quantization, if you have an array of values in one format and you want to convert it to another, first the entire array is divided by the maximum value of the array, and then the entire array is multiplied by the maximum value of the new format.</p>
 <img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/quantization-affine.webp" alt="quantization-affine">
-<p>Por ejemplo, en la imagen anterior tenemos el array</p>
+<p>For example, in the previous image we have the array</p>
 <div class='highlight'><pre><code>[1.2, -0.5, -4.3, 1.2, -3.1, 0.8, 2.4, 5.4]
 </code></pre></div>
-<p>Como su valor máximo es <code>5.4</code>, dividimos el array por ese valor y obtenemos</p>
+<p>As its maximum value is <code>5.4</code>, we divide the array by that value and obtain</p>
 <div class='highlight'><pre><code>[0.2222222222, -0.09259259259, -0.7962962963, 0.2222222222, -0.5740740741, 0.1481481481, 0.4444444444, 1]
 </code></pre></div>
-<p>Si ahora multiplicamos todos los valores por <code>127</code>, que es el máximo valor de UINT8, obtenemos</p>
+<p>If we now multiply all the values by <code>127</code>, which is the maximum value of UINT8, we get</p>
 <div class='highlight'><pre><code>[28,22222222, -11.75925926, -101.1296296, 28.22222222, -72.90740741, 18.81481481, 56.44444444, 127]
 </code></pre></div>
-<p>Que, redondeando, sería</p>
+<p>Which, rounding, would be</p>
 <div class='highlight'><pre><code>[28, -12, -101, 28, -73, 19, 56, 127]
 </code></pre></div>
-<p>Si ahora quisiésemos realizar el paso inverso tendríamos que dividir el array resultante por <code>127</code>, que daría</p>
-<div class='highlight'><pre><code>[0,2204724409, -0.09448818898, -0.7952755906, 0.2204724409, -0.5748031496, 0.1496062992, 0.4409448819, 1]
+<p>If we now wanted to perform the inverse step, we would have to divide the resulting array by <code>127</code>, which would give</p>
+<div class='highlight'><pre><code>[0, 0.2204724409, -0.09448818898, -0.7952755906, 0.2204724409, -0.5748031496, 0.1496062992, 0.4409448819, 1]
 </code></pre></div>
-<p>Y volver a multiplicar por <code>5.4</code>, con lo que obtendríamos</p>
-<div class='highlight'><pre><code>[1,190551181, -0.5102362205, -4.294488189, 1.190551181, -3.103937008, 0.8078740157, 2.381102362, 5.4]
+<p>And multiply by <code>5.4</code> again, which would give us</p>
+<div class='highlight'><pre><code>[1, 1.190551181, -0.5102362205, -4.294488189, 1.190551181, -3.103937008, 0.8078740157, 2.381102362, 5.4]
 </code></pre></div>
-<p>Si lo comparamos con el array original, vemos que tenemos un error</p>
+<p>If we compare it with the original array, we see that we have an error</p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Momentos de cuantizacion">Momentos de cuantización<a class="anchor-link" href="#Momentos de cuantizacion">¶</a></h2>
+<h2 id="Moments of Quantization">Moments of Quantization<a class="anchor-link" href="#Moments of Quantization">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Cuantizacion post entrenamiento">Cuantización post entrenamiento<a class="anchor-link" href="#Cuantizacion post entrenamiento">¶</a></h3>
+<h3 id="Post-training Quantization">Post-training Quantization<a class="anchor-link" href="#Post-training Quantization">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>Como su nombre indica, la cuantización se produce después del entrenamiento. Se entrena el modelo en FP32 y después se cuantiza a otro formato. Este método es el más sencillo, pero puede dar lugar a errores de precisión en la cuantización</p>
+<p>As the name suggests, quantization occurs after training. The model is trained in FP32 and then quantized to another format. This method is the simplest, but it can lead to precision errors in quantization.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Cuantizacion durante el entrenamiento">Cuantización durante el entrenamiento<a class="anchor-link" href="#Cuantizacion durante el entrenamiento">¶</a></h3>
+<h3 id="Quantization during training">Quantization during training<a class="anchor-link" href="#Quantization during training">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>Durante el entrenamiento se realiza el <code>forward pass</code> en el modelo original y en un modelo cuantizado y se ven los posibles errores derivados de la cuantización para poder mitigarlos. Este proceso hace que el entrenamiento sea más costoso, porque tienes que tener almacenado en memoria el modelo original y el cuantizado, y más lento, porque tienes que realizar el <code>forward pass</code> en dos modelos.</p>
+<p>During training, the <code>forward pass</code> is performed on both the original model and a quantized model to observe potential errors arising from quantization and mitigate them. This process makes training more expensive because you need to store both the original and quantized models in memory, and slower because you have to perform the <code>forward pass</code> on two models.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Metodos de cuantizacion">Métodos de cuantización<a class="anchor-link" href="#Metodos de cuantizacion">¶</a></h2>
+<h2 id="Quantization Methods">Quantization Methods<a class="anchor-link" href="#Quantization Methods">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<p>A continuación muestro los enlaces a los posts donde explico cada uno de los métodos para que este post no se haga muy largo</p>
+<p>Below I show the links to the posts where I explain each of the methods so that this post doesn't become too long</p>
 <ul>
   <li><a href="/llm-int8">LLM.int8()</a></li>
   <li><a href="/gptq">GPTQ</a></li>

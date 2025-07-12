@@ -7,50 +7,136 @@
   <markdown>## Desplegar backend com Gradio</markdown>
   <markdown>### Criar espaço</markdown>
   <markdown>Primeiro de tudo, criamos um novo espaço na Hugging Face.
-* Colocamos um nome, uma descrição e escolhemos a licença.* Escolhemos o Gradio como o tipo de SDK. Ao escolher o Gradio, serão exibidas algumas templates, então escolhemos a template do chatbot.* Selecionamos o HW no qual vamos a desdobrar o backend, eu vou escolher a CPU gratuita, mas você escolha o que melhor considerar.* E por último, temos que escolher se queremos criar o espaço público ou privado.
-![backend gradio - criar espaço](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-gradio-create-space.webp)</markdown>
+
+* Colocamos um nome, uma descrição e escolhemos a licença.
+* Escolhemos o Gradio como o tipo de SDK. Ao escolher o Gradio, serão exibidas algumas templates, então escolhemos a template do chatbot.
+* Selecionamos o HW no qual vamos a desdobrar o backend, eu vou escolher a CPU gratuita, mas você escolha o que melhor considerar.* E por último, temos que escolher se queremos criar o espaço público ou privado.
+
+![backend gradio - criar espaço](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-gradio-create-space.webp)
+</markdown>
   <markdown>### Código</markdown>
   <markdown>Ao criar o space, podemos cloná-lo ou podemos ver os arquivos na própria página do HuggingFace. Podemos ver que foram criados 3 arquivos, `app.py`, `requirements.txt` e `README.md`. Então, vamos ver o que colocar em cada um.</markdown>
   <markdown>#### app.py</markdown>
   <markdown>Aqui está o código do aplicativo. Como escolhemos o template de chatbot, já temos muito feito, mas vamos ter que mudar 2 coisas: primeiro, o modelo de linguagem e o system prompt.</markdown>
   <markdown>Como modelo de linguagem, vejo ``HuggingFaceH4/zephyr-7b-beta``, mas vamos utilizar ``Qwen/Qwen2.5-72B-Instruct``, que é um modelo muito capaz.
-Então, procure pelo texto ``client = InferenceClient("HuggingFaceH4/zephyr-7b-beta")`` e substitua-o por ``client = InferenceClient("Qwen/Qwen2.5-72B-Instruct")``, ou espere que colocarei todo o código mais tarde.</markdown>
+
+Então, procure pelo texto ``client = InferenceClient("HuggingFaceH4/zephyr-7b-beta")`` e substitua-o por ``client = InferenceClient("Qwen/Qwen2.5-72B-Instruct")``, ou espere que colocarei todo o código mais tarde.
+</markdown>
   <markdown>Também vamos alterar o system prompt, que por padrão é ``You are a friendly Chatbot.``, mas como o modelo foi treinado principalmente em inglês, é provável que se você falar com ele em outro idioma, ele responda em inglês. Então, vamos mudá-lo para ``You are a friendly Chatbot. Always reply in the language in which the user is writing to you.``.
-Então, procure pelo texto ``gr.Textbox(value="You are a friendly Chatbot.", label="System message"),`` e substitua-o por ``gr.Textbox(value="You are a friendly Chatbot. Always reply in the language in which the user is writing to you.", label="System message"),``, ou espere até eu colocar todo o código agora.</markdown>
+
+Então, procure pelo texto ``gr.Textbox(value="You are a friendly Chatbot.", label="System message"),`` e substitua-o por ``gr.Textbox(value="You are a friendly Chatbot. Always reply in the language in which the user is writing to you.", label="System message"),``, ou espere até eu colocar todo o código agora.
+</markdown>
   <markdown>``` python
-import gradio as grdo huggingface_hub import InferenceClient
-""""""Para mais informações sobre o suporte da API de Inferência do `huggingface_hub`, consulte a documentação: https://huggingface.co/docs/huggingface_hub/v0.22.2/en/guides/inference""""""client = InferenceClient("Qwen/Qwen2.5-72B-Instruct")
+import gradio as gr
+do huggingface_hub import InferenceClient
 
-def responder(mensagem,história: list[tuple[str, str]],Mensagem do sistema,max_tokens,temperatura,top_p,):mensagens = [{"papel": "sistema", "conteúdo": system_message}]
-for val in history:if val[0]:messages.append({"role": "user", "content": val[0]})if val[1]:messages.append({"role": "assistant", "content": val[1]})
+""""""
+Para mais informações sobre o suporte da API de Inferência do `huggingface_hub`, consulte a documentação: https://huggingface.co/docs/huggingface_hub/v0.22.2/en/guides/inference
+""""""
+client = InferenceClient("Qwen/Qwen2.5-72B-Instruct")
+
+
+def responder(
+mensagem,
+história: list[tuple[str, str]],
+Mensagem do sistema,
+max_tokens,
+temperatura,
+top_p,
+):
+mensagens = [{"papel": "sistema", "conteúdo": system_message}]
+
+for val in history:
+if val[0]:
+messages.append({"role": "user", "content": val[0]})
+if val[1]:
+messages.append({"role": "assistant", "content": val[1]})
+
 messages.append({"role": "user", "content": message})
+
 response = ""
-para mensagem em client.chat_completion(mensagens,max_tokens=max_tokens,stream=True,temperature=temperature,top_p=top_p,):token = message.choices[0].delta.content
-response += tokenyield response
 
-""""""Para informações sobre como personalizar a ChatInterface, consulte a documentação do gradio: https://www.gradio.app/docs/gradio/chatinterface""""""demo = gr.ChatInterface(responda,```markdown
+para mensagem em client.chat_completion(
+mensagens,
+max_tokens=max_tokens,
+stream=True,
+temperature=temperature,
+top_p=top_p,
+):
+token = message.choices[0].delta.content
+
+response += token
+yield response
+
+
+""""""
+Para informações sobre como personalizar a ChatInterface, consulte a documentação do gradio: https://www.gradio.app/docs/gradio/chatinterface
+""""""
+demo = gr.ChatInterface(
+responda,
+```markdown
 additional_inputs=[
-```gr.Textbox(value="Você é um chatbot amigável. Sempre responda na língua em que o usuário está escrevendo para você.", label="Mensagem do sistema"),gr.Slider(minimum=1, maximum=2048, value=512, step=1, label="Máximo de novos tokens"),gr.Slider(mínimo=0,1, máximo=4,0, valor=0,7, passo=0,1, rótulo="Temperatura"),gr.Slider(mínimo=0.1,máximo=1.0,value=0.95,passo=0.05,label="Top-p (amostragem do núcleo)"),],)
+```
+gr.Textbox(value="Você é um chatbot amigável. Sempre responda na língua em que o usuário está escrevendo para você.", label="Mensagem do sistema"),
+gr.Slider(minimum=1, maximum=2048, value=512, step=1, label="Máximo de novos tokens"),
+gr.Slider(mínimo=0,1, máximo=4,0, valor=0,7, passo=0,1, rótulo="Temperatura"),
+gr.Slider(
+mínimo=0.1,
+máximo=1.0,
+value=0.95,
+passo=0.05,
+label="Top-p (amostragem do núcleo)"
+),
+],
+)
 
-if __name__ == "__main__":demo.launch()```</markdown>
+
+if __name__ == "__main__":
+demo.launch()
+```
+</markdown>
   <markdown>#### requirements.txt</markdown>
   <markdown>Este é o arquivo onde serão escritas as dependências, mas para este caso vai ser muito simples:
+
 ``` txt
-huggingface_hub==0.25.2```</markdown>
+huggingface_hub==0.25.2```
+</markdown>
   <markdown>#### LEIA-ME.md</markdown>
   <markdown>Este é o arquivo no qual vamos colocar as informações do espaço. Nos spaces da HuggingFace, no início dos readmes, coloca-se um código para que a HuggingFace saiba como exibir a miniatura do espaço, qual arquivo deve ser usado para executar o código, versão do sdk, etc.
+
 ``` md
----título: SmolLM2emoji: 💬colorFrom: amarelocolorTo: roxosdk: gradiosdk_version: 5.0.1app_file: app.pypinned: falselicença: apache-2.0short_description: Bate-papo com o Gradio SmolLM2---
-Um exemplo de chatbot usando [Gradio](https://gradio.app), [`huggingface_hub`](https://huggingface.co/docs/huggingface_hub/v0.22.2/en/index) e a [Hugging Face Inference API](https://huggingface.co/docs/api-inference/index).```</markdown>
+---
+título: SmolLM2
+emoji: 💬
+colorFrom: amarelo
+colorTo: roxo
+sdk: gradio
+sdk_version: 5.0.1
+app_file: app.py
+pinned: false
+licença: apache-2.0
+short_description: Bate-papo com o Gradio SmolLM2
+---
+
+Um exemplo de chatbot usando [Gradio](https://gradio.app), [`huggingface_hub`](https://huggingface.co/docs/huggingface_hub/v0.22.2/en/index) e a [Hugging Face Inference API](https://huggingface.co/docs/api-inference/index).
+```
+</markdown>
   <markdown>### Implantação</markdown>
   <markdown>Se nós clonamos o espaço, temos que fazer um commit e um push. Se modificamos os arquivos no HuggingFace, basta salvá-los.
+
 Então, quando as alterações estiverem no HuggingFace, teremos que esperar alguns segundos para que o espaço seja construído e possamos usá-lo.
-![backend gradio - chatbot](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-gradio-chatbot.webp)</markdown>
+
+![backend gradio - chatbot](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-gradio-chatbot.webp)
+</markdown>
   <markdown>### Backend</markdown>
   <markdown>Muito bem, fizemos um chatbot, mas não era essa a intenção, aqui tínhamos vindo fazer um backend! Pára, pára, olha o que diz abaixo do chatbot
-![backend gradio - Use via API](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-gradio-chatbot-edited.webp)</markdown>
+
+![backend gradio - Use via API](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-gradio-chatbot-edited.webp)
+</markdown>
   <markdown>Podemos ver um texto ``Use via API``, onde se clicarmos, se abrirá um menu com uma API para poder usar o chatbot.
-![backend gradio - API](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend%20gradio%20-%20API.webp)</markdown>
+
+![backend gradio - API](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend%20gradio%20-%20API.webp)
+</markdown>
   <markdown>Vemos que nos dá uma documentação de como usar a API, tanto com Python, com JavaScript, quanto com bash.</markdown>
   <markdown>### Teste da API</markdown>
   <markdown>Usamos o código de exemplo de Python.</markdown>
@@ -115,221 +201,574 @@ print(result)</input_code>
   <markdown>Agora vamos a fazer o mesmo, criar um backend de um chatbot, com o mesmo modelo, mas nesse caso usando FastAPI, Langchain e Docker.</markdown>
   <markdown>### Criar espaço</markdown>
   <markdown>Temos que criar um novo espaço, mas nesse caso faremos de outra maneira
-* Colocamos um nome, uma descrição e escolhemos a licença.* Escolhemos Docker como o tipo de SDK. Ao escolher Docker, aparecerão modelos, então escolhemos um modelo em branco.* Selecionamos o HW no qual vamos a desdobrar o backend, eu vou escolher a CPU gratuita, mas você escolha o que melhor considerar.* E por fim, é preciso escolher se queremos criar o espaço público ou privado.
-![backend docker - criar espaço](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-create-space.webp)</markdown>
+
+* Colocamos um nome, uma descrição e escolhemos a licença.
+* Escolhemos Docker como o tipo de SDK. Ao escolher Docker, aparecerão modelos, então escolhemos um modelo em branco.
+* Selecionamos o HW no qual vamos a desdobrar o backend, eu vou escolher a CPU gratuita, mas você escolha o que melhor considerar.* E por fim, é preciso escolher se queremos criar o espaço público ou privado.
+
+![backend docker - criar espaço](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-create-space.webp)
+</markdown>
   <markdown>### Código</markdown>
   <markdown>Agora, ao criar o space, vemos que temos apenas um arquivo, o ``README.md``. Então vamos ter que criar todo o código nós mesmos.</markdown>
   <markdown>#### app.py</markdown>
   <markdown>Vamos a criar o código do aplicativo</markdown>
   <markdown>Começamos com as bibliotecas necessárias
+
 ``` python
-from fastapi import FastAPI, HTTPExceptionfrom pydantic import BaseModeldo huggingface_hub import InferenceClient
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+do huggingface_hub import InferenceClient
+
 ```markdown
 from langchain_core.messages import HumanMessage, AIMessage
-```from langgraph.checkpoint.memory import MemorySaverfrom langgraph.graph import START, MessagesState, StateGraph
-import osfrom dotenv import load_dotenvload_dotenv()```
+```
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import START, MessagesState, StateGraph
+
+import osfrom dotenv import load_dotenv
+load_dotenv()
+```
 
 Carregamos `fastapi` para poder criar as rotas da API, `pydantic` para criar o template das queries, `huggingface_hub` para poder criar um modelo de linguagem, `langchain` para indicar ao modelo se as mensagens são do chatbot ou do usuário e `langgraph` para criar o chatbot.
-Além disso, carregamos `os` e `dotenv` para poder carregar as variáveis de ambiente.</markdown>
+
+Além disso, carregamos `os` e `dotenv` para poder carregar as variáveis de ambiente.
+</markdown>
   <markdown>Carregamos o token do HuggingFace
+
 ``` python
-# Token da HuggingFaceHUGGINGFACE_TOKEN = os.environ.get("HUGGINGFACE_TOKEN", os.getenv("HUGGINGFACE_TOKEN"))```</markdown>
+# Token da HuggingFace
+HUGGINGFACE_TOKEN = os.environ.get("HUGGINGFACE_TOKEN", os.getenv("HUGGINGFACE_TOKEN"))
+```
+</markdown>
   <markdown>Criamos o modelo de linguagem
+
 ``` python
-# Inicializar o modelo da HuggingFacemodel = InferenceClient(model="Qwen/Qwen2.5-72B-Instruct",api_key=os.getenv("HUGGINGFACE_TOKEN"))```</markdown>
+# Inicializar o modelo da HuggingFace
+model = InferenceClient(
+model="Qwen/Qwen2.5-72B-Instruct",api_key=os.getenv("HUGGINGFACE_TOKEN")
+)
+```
+</markdown>
   <markdown>Criamos agora uma função para chamar o modelo
+
 ``` python
-# Defina a função que chama o modelodef chamar_modelo(estado: MessagesState):""""""Chame o modelo com as mensagens fornecidas
-Argumentos:estado: EstadoMensagens
-Retorna:um dicionário contendo o texto gerado e o ID do thread""""""# Converter mensagens do LangChain para o formato do HuggingFacehf_messages = []for msg in state["messages"]:Se `isinstance(msg, HumanMessage)`:hf_messages.append({"role": "user", "content": msg.content})elif isinstance(msg, AIMessage):hf_messages.append({"role": "assistant", "content": msg.content})    
-# Chamar a APIresposta = modelo.completar_chat(mensagens=hf_mensagens,temperature=0.5,max_tokens=64,top_p=0,7)    
-# Converter a resposta para o formato LangChain```python
+# Defina a função que chama o modelo
+def chamar_modelo(estado: MessagesState):
+""""""
+Chame o modelo com as mensagens fornecidas
+
+Argumentos:
+estado: EstadoMensagens
+
+Retorna:
+um dicionário contendo o texto gerado e o ID do thread
+""""""
+# Converter mensagens do LangChain para o formato do HuggingFace
+hf_messages = []
+for msg in state["messages"]:
+Se `isinstance(msg, HumanMessage)`:
+hf_messages.append({"role": "user", "content": msg.content})
+elif isinstance(msg, AIMessage):
+hf_messages.append({"role": "assistant", "content": msg.content})
+    
+# Chamar a API
+resposta = modelo.completar_chat(
+mensagens=hf_mensagens,
+temperature=0.5,
+max_tokens=64,
+top_p=0,7
+)
+    
+# Converter a resposta para o formato LangChain
+```python
 ai_message = AIMessage(content=response.choices[0].message.content)
-```return {"messages": state["messages"] + [ai_message]}```
+```
+return {"messages": state["messages"] + [ai_message]}
+```
 
-Convertemos as mensagens do formato LangChain para o formato HuggingFace, assim podemos usar o modelo de linguagem.</markdown>
+Convertemos as mensagens do formato LangChain para o formato HuggingFace, assim podemos usar o modelo de linguagem.
+</markdown>
   <markdown>Definimos uma template para as queries
-``` python
-class QueryRequest(BaseModel):query: strthread_id: str = "padrão"```
 
-As consultas terão um `query`, a mensagem do usuário, e um `thread_id`, que é o identificador do fio da conversação e mais adiante explicaremos para que o utilizamos.</markdown>
+``` python
+class QueryRequest(BaseModel):
+query: str
+thread_id: str = "padrão"```
+
+As consultas terão um `query`, a mensagem do usuário, e um `thread_id`, que é o identificador do fio da conversação e mais adiante explicaremos para que o utilizamos.
+</markdown>
   <markdown>Criamos um grafo de LangGraph
-``` python
-# Definir o gráficoworkflow = StateGraph(state_schema=MessagesState)
-# Defina o nódo na gráficoworkflow.add_edge(START, "model")workflow.add_node("modelo", call_model)
-# Adicionar memóriamemory = MemorySaver()graph_app = workflow.compile(checkpointer=memory)```
 
-Com isso, criamos um grafo de LangGraph, que é uma estrutura de dados que nos permite criar um chatbot e gerenciar o estado do chatbot para nós, ou seja, entre outras coisas, o histórico de mensagens. Dessa forma, não precisamos fazer isso nós mesmos.</markdown>
+``` python
+# Definir o gráfico
+workflow = StateGraph(state_schema=MessagesState)
+
+# Defina o nódo na gráfico
+workflow.add_edge(START, "model")
+workflow.add_node("modelo", call_model)
+
+# Adicionar memória
+memory = MemorySaver()
+graph_app = workflow.compile(checkpointer=memory)
+```
+
+Com isso, criamos um grafo de LangGraph, que é uma estrutura de dados que nos permite criar um chatbot e gerenciar o estado do chatbot para nós, ou seja, entre outras coisas, o histórico de mensagens. Dessa forma, não precisamos fazer isso nós mesmos.
+</markdown>
   <markdown>Criamos a aplicação de FastAPI
+
 ``` python
-app = FastAPI(title="LangChain FastAPI", description="API para gerar texto usando LangChain e LangGraph")```</markdown>
+app = FastAPI(title="LangChain FastAPI", description="API para gerar texto usando LangChain e LangGraph")```
+</markdown>
   <markdown>Criamos os endpoints da API
+
 ``` python
-# Ponto de entrada Bem-vindo@app.get("/")async def api_home():"""Ponto de entrada Welcome"""return {"detail": "Bem-vindo ao tutorial de FastAPI, Langchain, Docker"}
-# Gerar ponto final@app.post("/generate")async def gerar(request: QueryRequest):""""""Ponto final para gerar texto usando o modelo de linguagem    
-Argumentos:solicitação: QueryRequestquery: strthread_id: str = "padrão"
-Retorna:um dicionário contendo o texto gerado e o ID do thread""""""tente:# Configurar o ID da threadconfig = {"configurable": {"thread_id": request.thread_id}}        
-# Crie a mensagem de entradainput_messages = [HumanMessage(content=request.query)]        
-# Invocar o gráficooutput = graph_app.invoke({"messages": input_messages}, config)        
-# Obter a resposta do modeloresposta = output["messages"][-1].conteúdo        
-return {"generated_text": resposta,"thread_id": request.thread_id}except Exception as e:raise HTTPException(status_code=500, detail=f"Erro ao gerar texto: {str(e)}")```
+# Ponto de entrada Bem-vindo
+@app.get("/")
+async def api_home():
+"""Ponto de entrada Welcome"""
+return {"detail": "Bem-vindo ao tutorial de FastAPI, Langchain, Docker"}
+
+# Gerar ponto final
+@app.post("/generate")
+async def gerar(request: QueryRequest):
+""""""
+Ponto final para gerar texto usando o modelo de linguagem
+    
+Argumentos:
+solicitação: QueryRequest
+query: str
+thread_id: str = "padrão"
+
+Retorna:
+um dicionário contendo o texto gerado e o ID do thread
+""""""
+tente:
+# Configurar o ID da thread
+config = {"configurable": {"thread_id": request.thread_id}}
+        
+# Crie a mensagem de entrada
+input_messages = [HumanMessage(content=request.query)]
+        
+# Invocar o gráfico
+output = graph_app.invoke({"messages": input_messages}, config)
+        
+# Obter a resposta do modelo
+resposta = output["messages"][-1].conteúdo
+        
+return {
+"generated_text": resposta,
+"thread_id": request.thread_id
+}
+except Exception as e:
+raise HTTPException(status_code=500, detail=f"Erro ao gerar texto: {str(e)}")
+```
 
 Criamos o endpoint `/` que nos retornará um texto quando acessarmos a API, e o endpoint `/generate` que é o que usaremos para gerar o texto.
-Se nós olharmos para a função `generate`, temos a variável `config`, que é um dicionário que contém o `thread_id`. Este `thread_id` é o que nos permite ter um histórico de mensagens de cada usuário, desta forma, diferentes usuários podem usar o mesmo endpoint e ter seu próprio histórico de mensagens.</markdown>
+
+Se nós olharmos para a função `generate`, temos a variável `config`, que é um dicionário que contém o `thread_id`. Este `thread_id` é o que nos permite ter um histórico de mensagens de cada usuário, desta forma, diferentes usuários podem usar o mesmo endpoint e ter seu próprio histórico de mensagens.
+</markdown>
   <markdown>Por último, temos o código para que se possa executar a aplicação
+
 ``` python
-if __name__ == "__main__":import uvicornuvicorn.run(app, host="0.0.0.0", port=7860)```</markdown>
+if __name__ == "__main__":
+import uvicornuvicorn.run(app, host="0.0.0.0", port=7860)
+```
+</markdown>
   <markdown>Vamos escrever todo o código juntos
+
 ``` python
-from fastapi import FastAPI, HTTPExceptionfrom pydantic import BaseModeldo huggingface_hub import InferenceClient
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+do huggingface_hub import InferenceClient
+
 ```markdown
 from langchain_core.messages import HumanMessage, AIMessage
-```from langgraph.checkpoint.memory import MemorySaverfrom langgraph.graph import START, MessagesState, StateGraph
-import osfrom dotenv import load_dotenvload_dotenv()
-# Token da HuggingFaceHUGGINGFACE_TOKEN = os.environ.get("HUGGINGFACE_TOKEN", os.getenv("HUGGINGFACE_TOKEN"))
-# Inicialize o modelo do HuggingFacemodel = InferenceClient(model="Qwen/Qwen2.5-72B-Instruct",api_key=os.getenv("HUGGINGFACE_TOKEN"))
-# Defina a função que chama o modelodef chamar_modelo(estado: EstadoMensagens):""""""Chame o modelo com as mensagens fornecidas
-Argumentos:estado: MensagensState
-Retorna:um dicionário contendo o texto gerado e o ID do thread""""""# Converter mensagens do LangChain para o formato do HuggingFacehf_messages = []for msg in state["messages"]:if isinstance(msg, HumanMessage):hf_messages.append({"role": "user", "content": msg.content})elif isinstance(msg, AIMessage):hf_messages.append({"role": "assistant", "content": msg.content})    
-# Chame a APIresposta = modelo.completar_chat(mensagens=hf_mensagens,temperature=0.5,max_tokens=64,top_p=0,7)    
-# Converter a resposta para o formato LangChain```markdown
+```
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import START, MessagesState, StateGraph
+
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+# Token da HuggingFace
+HUGGINGFACE_TOKEN = os.environ.get("HUGGINGFACE_TOKEN", os.getenv("HUGGINGFACE_TOKEN"))
+
+# Inicialize o modelo do HuggingFace
+model = InferenceClient(
+model="Qwen/Qwen2.5-72B-Instruct",
+api_key=os.getenv("HUGGINGFACE_TOKEN")
+)
+
+# Defina a função que chama o modelo
+def chamar_modelo(estado: EstadoMensagens):
+""""""
+Chame o modelo com as mensagens fornecidas
+
+Argumentos:
+estado: MensagensState
+
+Retorna:
+um dicionário contendo o texto gerado e o ID do thread
+""""""
+# Converter mensagens do LangChain para o formato do HuggingFace
+hf_messages = []
+for msg in state["messages"]:
+if isinstance(msg, HumanMessage):
+hf_messages.append({"role": "user", "content": msg.content})
+elif isinstance(msg, AIMessage):
+hf_messages.append({"role": "assistant", "content": msg.content})
+    
+# Chame a API
+resposta = modelo.completar_chat(
+mensagens=hf_mensagens,
+temperature=0.5,
+max_tokens=64,
+top_p=0,7
+)
+    
+# Converter a resposta para o formato LangChain
+```markdown
 ai_message = AIMessage(content=response.choices[0].message.content)
-```return {"messages": state["messages"] + [ai_message]}
-# Definir o gráficoworkflow = StateGraph(state_schema=MessagesState)
-# Defina o nó no grafoworkflow.add_edge(START, "model")workflow.add_node("modelo", call_model)
-# Adicionar memóriamemory = MemorySaver()graph_app = workflow.compile(checkpointer=memory)
-# Defina o modelo de dados para o pedidoclass QueryRequest(BaseModel):query: strthread_id: str = "padrão"
-# Criar a aplicação FastAPIapp = FastAPI(title="LangChain FastAPI", description="API para gerar texto usando LangChain e LangGraph")
-# Ponto de entrada Bem-vindo@app.get("/")async def api_home():"""Ponto de entrada Welcome"""return {"detalhe": "Bem-vindo ao tutorial de FastAPI, Langchain, Docker"}
-# Gerar ponto final@app.post("/gerar")async def generate(request: QueryRequest):"""Ponto final para gerar texto usando o modelo de linguagem    
-Argumentos:solicitação: QueryRequestquery: strthread_id: str = "padrão"
-Retorna:um dicionário contendo o texto gerado e o ID do fio"""tente:# Configurar o ID da threadconfig = {"configurable": {"thread_id": request.thread_id}}        
-# Criar a mensagem de entradainput_messages = [HumanMessage(content=request.query)]        
-# Invocar o gráficooutput = graph_app.invoke({"messages": input_messages}, config)        
-# Obter a resposta do modeloresposta = output["messages"][-1].conteúdo        
-return {"generated_text": resposta,"thread_id": request.thread_id}except Exception as e:raise HTTPException(status_code=500, detail=f"Erro ao gerar texto: {str(e)}")
-if __name__ == "__main__":import uvicornuvicorn.run(app, host="0.0.0.0", port=7860)```</markdown>
+```
+return {"messages": state["messages"] + [ai_message]}
+
+# Definir o gráfico
+workflow = StateGraph(state_schema=MessagesState)
+
+# Defina o nó no grafo
+workflow.add_edge(START, "model")
+workflow.add_node("modelo", call_model)
+
+# Adicionar memória
+memory = MemorySaver()
+graph_app = workflow.compile(checkpointer=memory)
+
+# Defina o modelo de dados para o pedidoclass QueryRequest(BaseModel):
+query: str
+thread_id: str = "padrão"
+
+# Criar a aplicação FastAPI
+app = FastAPI(title="LangChain FastAPI", description="API para gerar texto usando LangChain e LangGraph")
+
+# Ponto de entrada Bem-vindo
+@app.get("/")
+async def api_home():
+"""Ponto de entrada Welcome"""
+return {"detalhe": "Bem-vindo ao tutorial de FastAPI, Langchain, Docker"}
+
+# Gerar ponto final
+@app.post("/gerar")
+async def generate(request: QueryRequest):
+"""
+Ponto final para gerar texto usando o modelo de linguagem
+    
+Argumentos:
+solicitação: QueryRequest
+query: str
+thread_id: str = "padrão"
+
+Retorna:
+um dicionário contendo o texto gerado e o ID do fio
+"""
+tente:
+# Configurar o ID da thread
+config = {"configurable": {"thread_id": request.thread_id}}
+        
+# Criar a mensagem de entrada
+input_messages = [HumanMessage(content=request.query)]
+        
+# Invocar o gráfico
+output = graph_app.invoke({"messages": input_messages}, config)
+        
+# Obter a resposta do modelo
+resposta = output["messages"][-1].conteúdo
+        
+return {
+"generated_text": resposta,
+"thread_id": request.thread_id
+}
+except Exception as e:
+raise HTTPException(status_code=500, detail=f"Erro ao gerar texto: {str(e)}")
+
+if __name__ == "__main__":
+import uvicorn
+uvicorn.run(app, host="0.0.0.0", port=7860)
+```
+</markdown>
   <markdown>#### Dockerfile</markdown>
   <markdown>Agora vemos como criar o Dockerfile</markdown>
   <markdown>Primeiro indicamos a partir de qual imagem vamos começar
+
 ``` dockerfile
-FROM python:3.13-slim```</markdown>
+FROM python:3.13-slim```
+</markdown>
   <markdown>Agora criamos o diretório de trabalho
+
 ``` dockerfile
-RUN useradd -m -u 1000 userWORKDIR /app```</markdown>
+RUN useradd -m -u 1000 user
+WORKDIR /app
+```
+</markdown>
   <markdown>Copiamos o arquivo com as dependências e instalamos
+
 ``` dockerfile
-COPY --chown=user ./requirements.txt requirements.txtRUN pip install --no-cache-dir --upgrade -r requirements.txt```</markdown>
+COPY --chown=user ./requirements.txt requirements.txt
+RUN pip install --no-cache-dir --upgrade -r requirements.txt
+```
+</markdown>
   <markdown>Copiamos o resto do código
+
 ``` dockerfile
-COPY --chown=user . /app```</markdown>
+COPY --chown=user . /app```
+</markdown>
   <markdown>Exponhamos o porto 7860
+
 ``` dockerfile
-EXPOSE 7860```</markdown>
+EXPOSE 7860```
+</markdown>
   <markdown>Criamos as variáveis de ambiente
+
 ``` dockerfile
-RUN --mount=type=secret,id=HUGGINGFACE_TOKEN,mode=0444,required=true \test -f /run/secrets/HUGGINGFACE_TOKEN &amp;&amp; echo "Segredo existe!"```</markdown>
+RUN --mount=type=secret,id=HUGGINGFACE_TOKEN,mode=0444,required=true \
+test -f /run/secrets/HUGGINGFACE_TOKEN &amp;&amp; echo "Segredo existe!"
+```
+</markdown>
   <markdown>Por último, indicamos o comando para executar a aplicação
+
 ``` dockerfile
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]```</markdown>
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]```
+</markdown>
   <markdown>Agora colocamos tudo junto
+
 ``` dockerfile
 FROM python:3.13-slim
-RUN useradd -m -u 1000 userWORKDIR /app
-COPY --chown=user ./requirements.txt requirements.txtRUN pip install --no-cache-dir --upgrade -r requirements.txt
+
+RUN useradd -m -u 1000 user
+WORKDIR /app
+
+COPY --chown=user ./requirements.txt requirements.txt
+RUN pip install --no-cache-dir --upgrade -r requirements.txt
+
 COPY --chown=user . /app
+
 EXPOSE 7860
-RUN --mount=type=secret,id=HUGGINGFACE_TOKEN,mode=0444,required=true \test -f /run/secrets/HUGGINGFACE_TOKEN &amp;&amp; echo "Segredo existe!"
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]```</markdown>
+
+RUN --mount=type=secret,id=HUGGINGFACE_TOKEN,mode=0444,required=true \
+test -f /run/secrets/HUGGINGFACE_TOKEN &amp;&amp; echo "Segredo existe!"
+
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]
+```
+</markdown>
   <markdown>#### requirements.txt</markdown>
   <markdown>Criamos o arquivo com as dependências
+
 ``` txt
-fastapiuvicornpedidospydantic&gt;=2.0.0langchainlangchain-huggingfacelangchain-corelanggraph &gt; 0.2.27python-dotenv.2.11```</markdown>
+fastapi
+uvicorn
+pedidos
+pydantic&gt;=2.0.0
+langchainlangchain-huggingface
+langchain-core
+langgraph &gt; 0.2.27
+python-dotenv.2.11
+```
+</markdown>
   <markdown>#### README.md</markdown>
   <markdown>Por fim, criamos o arquivo README.md com informações sobre o espaço e as instruções para o HuggingFace.
+
 ``` md
----título: Backend do SmolLM2emoji: 📊colorFrom: amarelocolorTo: vermelhosdk: dockerpinned: falselicença: apache-2.0short_description: Backend do chat SmolLM2app_port: 7860---
+---
+título: Backend do SmolLM2
+emoji: 📊
+colorFrom: amarelo
+colorTo: vermelho
+sdk: docker
+pinned: false
+licença: apache-2.0
+short_description: Backend do chat SmolLM2
+app_port: 7860
+---
+
 # Backend do SmolLM2
+
 Este projeto implementa uma API FastAPI que usa LangChain e LangGraph para gerar texto com o modelo Qwen2.5-72B-Instruct do HuggingFace.
+
 ## Configuração
+
 ### No HuggingFace Spaces
+
 Este projeto está projetado para ser executado em HuggingFace Spaces. Para configurá-lo:
-1. Crie um novo Espaço no HuggingFace com o SDK Docker2. Configure a variável de ambiente `HUGGINGFACE_TOKEN` ou `HF_TOKEN` na configuração do Space:- Vá para a aba "Configurações" do seu Espaço- Role para a seção "Secrets do repositório"- Adicione uma nova variável com o nome `HUGGINGFACE_TOKEN` e seu token como valor- Salve as alterações
+
+1. Crie um novo Espaço no HuggingFace com o SDK Docker
+2. Configure a variável de ambiente `HUGGINGFACE_TOKEN` ou `HF_TOKEN` na configuração do Space:
+- Vá para a aba "Configurações" do seu Espaço
+- Role para a seção "Secrets do repositório"
+- Adicione uma nova variável com o nome `HUGGINGFACE_TOKEN` e seu token como valor
+- Salve as alterações
+
 ### Desenvolvimento local
+
 Para o desenvolvimento local:
-1. Clone este repositório2. Crie um arquivo `.env` na raiz do projeto com seu token do HuggingFace:```
-```HUGGINGFACE_TOKEN=seu_token_aqui```
-```3. Instale as dependências:```
-```pip install -r requirements.txt```
+
+1. Clone este repositório
+2. Crie um arquivo `.env` na raiz do projeto com seu token do HuggingFace:
+```
+```
+HUGGINGFACE_TOKEN=seu_token_aqui
+```
+```
+3. Instale as dependências:
+```
+```
+pip install -r requirements.txt
+```
 Por favor, forneça o texto em Markdown que você gostaria de traduzir para o português.
 ```
+
 ## Execução local
-``bashuvicorn app:app --reload```
+
+``bash
+uvicorn app:app --reload
+```
 Por favor, forneça o texto em Markdown que você gostaria de traduzir para o português.
 ```
+
 A API estará disponível em `http://localhost:8000`.
+
 ## Endpoints
+
 ### GET `/`
+
 Ponto final de boas-vindas que retorna uma mensagem de saudação.
+
 ### POST `/gerar`
+
 Ponto final para gerar texto usando o modelo de linguagem.
-**Parâmetros da solicitação:**``json{"query": "Sua pergunta aqui","thread_id": "identificador_de_thread_opcional"}```
+
+**Parâmetros da solicitação:**
+``json
+{
+"query": "Sua pergunta aqui",
+"thread_id": "identificador_de_thread_opcional"
+}
+```
 Por favor, forneça o texto em markdown que você gostaria de traduzir para o português.
 ```
-**Resposta:**``json```{"Texto gerado pelo modelo""thread_id": "identificador do thread"}```
+
+**Resposta:**
+``json```
+{
+"Texto gerado pelo modelo"
+"thread_id": "identificador do thread"
+}
+```
 Por favor, forneça o texto em Markdown que deseja traduzir para o português.
 ```
+
 ## Docker
+
 Para executar a aplicação em um contêiner Docker:
-``bash# Construa a imagemdocker build -t smollm2-backend .
-# Executar o contêinerdocker run -p 8000:8000 --env-file .env smollm2-backend```
+
+``bash
+# Construa a imagem
+docker build -t smollm2-backend .
+
+# Executar o contêiner
+docker run -p 8000:8000 --env-file .env smollm2-backend
 ```
+```
+
 ## Documentação da API
-A documentação interativa da API está disponível em:- Swagger UI: `http://localhost:8000/docs`- ReDoc: `http://localhost:8000/redoc````</markdown>
+
+A documentação interativa da API está disponível em:
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
+```
+</markdown>
   <markdown>### Token do HuggingFace
+
 Se você notou no código e no Dockerfile, usamos um token do HuggingFace, então vamos ter que criar um. Em nossa conta do HuggingFace, criamos um [novo token](https://huggingface.co/settings/tokens/new?tokenType=fineGrained), damos um nome a ele e concedemos as seguintes permissões:
-* Acesso de leitura aos conteúdos de todos os repositórios sob o seu namespace pessoal* Acesso de leitura aos conteúdos de todos os repositórios sob seu namespace pessoal* Fazer chamadas para provedores de inferência* Fazer chamadas para Pontos de Extremidade de Inferência
-![backend docker - token](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-token.webp)</markdown>
+
+* Acesso de leitura aos conteúdos de todos os repositórios sob o seu namespace pessoal
+* Acesso de leitura aos conteúdos de todos os repositórios sob seu namespace pessoal
+* Fazer chamadas para provedores de inferência
+* Fazer chamadas para Pontos de Extremidade de Inferência
+
+![backend docker - token](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-token.webp)
+</markdown>
   <markdown>### Adicionar o token aos secrets do espaço</markdown>
   <markdown>Agora que já temos o token, precisamos adicioná-lo ao espaço. Na parte superior do aplicativo, poderemos ver um botão chamado `Settings`, clicamos nele e poderemos ver a seção de configuração do espaço.
+
 Se formos para baixo, poderemos ver uma seção onde podemos adicionar `Variables` e `Secrets`. Neste caso, como estamos adicionando um token, vamos adicioná-lo aos `Secrets`.
-Damos o nome `HUGGINGFACE_TOKEN` e o valor do token.</markdown>
+
+Damos o nome `HUGGINGFACE_TOKEN` e o valor do token.
+</markdown>
   <markdown>### Implantação</markdown>
   <markdown>Se nós clonamos o espaço, temos que fazer um commit e um push. Se modificamos os arquivos no HuggingFace, basta salvá-los.
+
 Então, quando as alterações estiverem no HuggingFace, teremos que esperar alguns segundos para que o espaço seja construído e possamos usá-lo.
+
 Neste caso, construímos apenas um backend, portanto o que vamos ver ao entrar no espaço é o que definimos no endpoint `/`
-![backend docker - espaço](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-space.webp)</markdown>
+![backend docker - espaço](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-space.webp)
+</markdown>
   <markdown>### URL do backend</markdown>
   <markdown>Precisamos saber a URL do backend para poder fazer chamadas à API. Para isso, temos que clicar nos três pontos no canto superior direito para ver as opções.
-![backend docker - opções](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-options.webp)</markdown>
+
+![backend docker - opções](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-options.webp)
+</markdown>
   <markdown>No menu suspenso, clicamos em `Embed this Spade`. Será aberta uma janela indicando como incorporar o espaço com um iframe e também fornecerá a URL do espaço.
-![backend docker - embed](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-embed.webp)</markdown>
+
+![backend docker - embed](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-embed.webp)
+</markdown>
   <markdown>Se agora formos para essa URL, veremos o mesmo que no espaço.</markdown>
   <markdown>### Documentação</markdown>
   <markdown>FastAPI, além de ser uma API extremamente rápida, tem outra grande vantagem: gera documentação automaticamente.</markdown>
   <markdown>Se adicionarmos `/docs` à URL que vimos anteriormente, poderemos visualizar a documentação da API com o `Swagger UI`.
-![backend docker - swagger doc](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-swagger-doc.webp)</markdown>
+
+![backend docker - swagger doc](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-swagger-doc.webp)
+</markdown>
   <markdown>Também podemos adicionar `/redoc` à URL para ver a documentação com `ReDoc`.
-![backend docker - redoc doc](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-redoc.webp)</markdown>
+
+![backend docker - redoc doc](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-redoc.webp)
+</markdown>
   <markdown>### Teste da API</markdown>
   <markdown>O bom da documentação `Swagger UI` é que nos permite testar a API diretamente do navegador.</markdown>
   <markdown>Adicionamos `/docs` à URL que obtivemos, abrimos o menu suspenso do endpoint `/generate` e clicamos em `Try it out`, modificamos o valor da `query` e do `thread_id` e clicamos em `Execute`.
+
 No primeiro caso vou colocar
-* **query**: Olá, como você está? Sou Máximo* **thread_id**: user1
-![backend docker - test API](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-test-API.webp)</markdown>
+
+* **query**: Olá, como você está? Sou Máximo
+* **thread_id**: user1
+
+![backend docker - test API](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-test-API.webp)
+</markdown>
   <markdown>Recebemos a seguinte resposta `Olá Máximo! Estou muito bem, obrigado por perguntar. Como você está? Em que posso ajudar hoje?`
-![backend docker -response 1 - user1](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-response1-user1.webp)</markdown>
+
+![backend docker -response 1 - user1](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-response1-user1.webp)
+</markdown>
   <markdown>Vamos testar agora a mesma pergunta, mas com um `thread_id` diferente, neste caso `user2`.
-![backend docker - query 1 - user2](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-query1-user2.webp)</markdown>
+
+![backend docker - query 1 - user2](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-query1-user2.webp)
+</markdown>
   <markdown>E nos responde isso `Olá Luis! Estou muito bem, obrigado por perguntar. Como você está? No que posso ajudar hoje?`
-![backend docker - response 1 - user2](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-response1-user2.webp)</markdown>
+
+![backend docker - response 1 - user2](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-response1-user2.webp)
+</markdown>
   <markdown>Agora pedimos nosso nome com os dois usuários e obtemos isso
-* Para o usuário **user1**: `Você se chama Máximo. Há algo mais em que eu possa ajudar você?`* Para o usuário **user2**: `Você se chama Luis. Há mais alguma coisa em que eu possa ajudá-lo hoje, Luis?`
+
+* Para o usuário **user1**: `Você se chama Máximo. Há algo mais em que eu possa ajudar você?`
+* Para o usuário **user2**: `Você se chama Luis. Há mais alguma coisa em que eu possa ajudá-lo hoje, Luis?`
+
 ![backend docker - response 2 - user1](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-response2-user1.webp)
-![backend docker - response 2 - user2](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-response2-user2.webp)</markdown>
+
+![backend docker - response 2 - user2](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-response2-user2.webp)
+</markdown>
   <markdown>## Deploy do backend com Gradio e modelo rodando no servidor</markdown>
   <markdown>Os dois backends que criamos na verdade não estão executando um modelo, mas sim fazendo chamadas para Inference Endpoints da HuggingFace. Mas pode ser que queiramos que tudo rode no servidor, inclusive o modelo. Pode ser que você tenha feito um fine-tuning de um LLM para seu caso de uso, por isso já não pode fazer chamadas para Inference Endpoints.
-Então vamos ver como modificar o código dos dois backends para executar um modelo no servidor e não fazer chamadas para Inference Endpoints.</markdown>
+
+Então vamos ver como modificar o código dos dois backends para executar um modelo no servidor e não fazer chamadas para Inference Endpoints.
+</markdown>
   <markdown>### Criar Espaço</markdown>
   <markdown>Na hora de criar o space no HuggingFace fazemos o mesmo que antes, criamos um novo space, colocamos um nome e uma descrição, selecionamos Gradio como SDK, selecionamos o HW em que vamos deployar, no meu caso selecionei o HW mais básico e gratuito, e selecionamos se o faremos privado ou público.</markdown>
   <markdown>### Código</markdown>
@@ -337,46 +776,171 @@ Então vamos ver como modificar o código dos dois backends para executar um mod
   <markdown>#### app.py</markdown>
   <markdown>As mudanças que temos que fazer são</markdown>
   <markdown>Importar `AutoModelForCausalLM` e `AutoTokenizer` da biblioteca `transformers` e importar `torch`
-``` python
-from transformers import AutoModelForCausalLM, AutoTokenizerimport torch```</markdown>
-  <markdown>Em vez de criar um modelo com `InferenceClient`, criamos com `AutoModelForCausalLM` e `AutoTokenizer`.
-``` python
-# Carregar o modelo e o tokenizermodel_name = "HuggingFaceTB/SmolLM2-1.7B-Instruct"tokenizer = AutoTokenizer.from_pretrained(model_name)model = AutoModelForCausalLM.from_pretrained(nome_do_modelo,torch_dtype=torch.float16,device_map="auto")```
 
-Utilizo `HuggingFaceTB/SmolLM2-1.7B-Instruct` porque é um modelo bastante capaz com apenas 1.7B de parâmetros. Como escolhi o hardware mais básico, não posso usar modelos muito grandes. Você, se quiser usar um modelo maior, tem duas opções: usar o hardware gratuito e aceitar que a inferência será mais lenta, ou usar um hardware mais potente, mas pago.</markdown>
+``` python
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
+```
+</markdown>
+  <markdown>Em vez de criar um modelo com `InferenceClient`, criamos com `AutoModelForCausalLM` e `AutoTokenizer`.
+
+``` python
+# Carregar o modelo e o tokenizer
+model_name = "HuggingFaceTB/SmolLM2-1.7B-Instruct"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(
+nome_do_modelo,
+torch_dtype=torch.float16,
+device_map="auto"
+)
+```
+
+Utilizo `HuggingFaceTB/SmolLM2-1.7B-Instruct` porque é um modelo bastante capaz com apenas 1.7B de parâmetros. Como escolhi o hardware mais básico, não posso usar modelos muito grandes. Você, se quiser usar um modelo maior, tem duas opções: usar o hardware gratuito e aceitar que a inferência será mais lenta, ou usar um hardware mais potente, mas pago.
+</markdown>
   <markdown>Modificar a função `respond` para que construa o prompt com a estrutura necessária pela biblioteca `transformers`, tokenizar o prompt, fazer a inferência e destokenizar a resposta.
+
 ``` python
-def responder(mensagem,histórico: list[tuple[str, str]],Mensagem do sistema,max_tokens,temperatura,top_p,):# Construir o prompt com o formato corretoprompt = f"&lt;|system|&gt;\n{system_message}&lt;/s&gt;\n"    
-for val in history:if val[0]:prompt += f"&lt;|user|&gt;\n{val[0]}&lt;/s&gt;\n"if val[1]:prompt += f"&lt;|assistant|&gt;\n{val[1]}&lt;/s&gt;\n"    
-prompt += f"&lt;|user|&gt;\n{message}&lt;/s&gt;\n&lt;|assistant|&gt;\n"    
-# Tokenizar o promptinputs = tokenizer(prompt, return_tensors="pt").to(model.device)    
-# Gerar a respostaoutputs = model.generate(**entradas,**max_new_tokens=max_tokens,temperature=temperature,top_p=top_p,do_sample=True,pad_token_id=tokenizer.eos_token_id)    
-# Decodificar a respostaresponse = tokenizer.decode(outputs[0], skip_special_tokens=True)    
-# Extrair apenas a parte da resposta do assistenteresponse = response.split("&lt;|assistant|&gt;\n")[-1].strip()    
-yield response```</markdown>
+def responder(
+mensagem,
+histórico: list[tuple[str, str]],
+Mensagem do sistema,
+max_tokens,
+temperatura,
+top_p,
+):
+# Construir o prompt com o formato correto
+prompt = f"&lt;|system|&gt;\n{system_message}&lt;/s&gt;\n"
+    
+for val in history:
+if val[0]:
+prompt += f"&lt;|user|&gt;\n{val[0]}&lt;/s&gt;\n"
+if val[1]:
+prompt += f"&lt;|assistant|&gt;\n{val[1]}&lt;/s&gt;\n"
+    
+prompt += f"&lt;|user|&gt;\n{message}&lt;/s&gt;\n&lt;|assistant|&gt;\n"
+    
+# Tokenizar o prompt
+inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+    
+# Gerar a resposta
+outputs = model.generate(
+**entradas,**
+max_new_tokens=max_tokens,
+temperature=temperature,
+top_p=top_p,
+do_sample=True,
+pad_token_id=tokenizer.eos_token_id
+)
+    
+# Decodificar a resposta
+response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    
+# Extrair apenas a parte da resposta do assistente
+response = response.split("&lt;|assistant|&gt;\n")[-1].strip()
+    
+yield response
+```
+</markdown>
   <markdown>A seguir deixo todo o código
+
 ``` python
-import gradio as grfrom transformers import AutoModelForCausalLM, AutoTokenizerimport torch
-""""""Para mais informações sobre o suporte à API de Inferência do `huggingface_hub`, consulte a documentação: https://huggingface.co/docs/huggingface_hub/v0.22.2/en/guides/inference""""""
-# Carregar o modelo e o tokenizermodel_name = "HuggingFaceTB/SmolLM2-1.7B-Instruct"tokenizer = AutoTokenizer.from_pretrained(model_name)model = AutoModelForCausalLM.from_pretrained(nome_do_modelo,torch_dtype=torch.float16,device_map="auto")
-def responder(mensagem,história: list[tuple[str, str]],Mensagem do sistema,max_tokens,temperatura,top_p,):# Construir o prompt com o formato corretoprompt = f"&lt;|system|&gt;\n{system_message}&lt;/s&gt;\n"    
-for val in history:if val[0]:prompt += f"&lt;|user|&gt;\n{val[0]}&lt;/s&gt;\n"if val[1]:prompt += f"&lt;|assistant|&gt;\n{val[1]}&lt;/s&gt;\n"    
-prompt += f"&lt;|user|&gt;\n{message}&lt;/s&gt;\n&lt;|assistant|&gt;\n"    
-# Tokenizar o promptinputs = tokenizer(prompt, return_tensors="pt").to(model.device)    
-# Gerar a respostasaídas = modelo.gerar(**entradas,**max_new_tokens=max_tokens,temperature=temperature,top_p=top_p,do_sample=True,pad_token_id=tokenizer.eos_token_id)    
-# Decodificar a respostaresponse = tokenizer.decode(outputs[0], skip_special_tokens=True)    
-# Extrair apenas a parte da resposta do assistenteresponse = response.split("&lt;|assistant|&gt;\n")[-1].strip()    
+import gradio as gr
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
+
+""""""
+Para mais informações sobre o suporte à API de Inferência do `huggingface_hub`, consulte a documentação: https://huggingface.co/docs/huggingface_hub/v0.22.2/en/guides/inference
+""""""
+
+# Carregar o modelo e o tokenizer
+model_name = "HuggingFaceTB/SmolLM2-1.7B-Instruct"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(
+nome_do_modelo,
+torch_dtype=torch.float16,
+device_map="auto"
+)
+
+def responder(
+mensagem,
+história: list[tuple[str, str]],
+Mensagem do sistema,
+max_tokens,
+temperatura,
+top_p,
+):
+# Construir o prompt com o formato correto
+prompt = f"&lt;|system|&gt;\n{system_message}&lt;/s&gt;\n"
+    
+for val in history:
+if val[0]:
+prompt += f"&lt;|user|&gt;\n{val[0]}&lt;/s&gt;\n"
+if val[1]:
+prompt += f"&lt;|assistant|&gt;\n{val[1]}&lt;/s&gt;\n"
+    
+prompt += f"&lt;|user|&gt;\n{message}&lt;/s&gt;\n&lt;|assistant|&gt;\n"
+    
+# Tokenizar o prompt
+inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+    
+# Gerar a resposta
+saídas = modelo.gerar(
+**entradas,**
+max_new_tokens=max_tokens,
+temperature=temperature,
+top_p=top_p,
+do_sample=True,
+pad_token_id=tokenizer.eos_token_id
+)
+    
+# Decodificar a resposta
+response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    
+# Extrair apenas a parte da resposta do assistente
+response = response.split("&lt;|assistant|&gt;\n")[-1].strip()
+    
 yield response
 
-""""""Para informações sobre como personalizar o ChatInterface, consulte a documentação do Gradio: https://www.gradio.app/docs/gradio/chatinterface""""""demo = gr.ChatInterface(responda,```markdown
-additional_inputs=[
-```gr.Textbox(value="Você é um Chatbot amigável. Sempre responda na língua em que o usuário está escrevendo para você."rótulo="Mensagem do sistema"),gr.Slider(minimum=1, maximum=2048, value=512, step=1, label="Máximo de novos tokens"),gr.Slider(mínimo=0,1, máximo=4,0, valor=0,7, passo=0,1, rótulo="Temperatura"),gr.Slider()mínimo=0.1,máximo=1.0,value=0.95,passo=0.05,label="Top-p (amostragem do núcleo)"),],)
 
-if __name__ == "__main__":demo.launch()```</markdown>
+""""""
+Para informações sobre como personalizar o ChatInterface, consulte a documentação do Gradio: https://www.gradio.app/docs/gradio/chatinterface
+""""""
+demo = gr.ChatInterface(
+responda,
+```markdown
+additional_inputs=[
+```
+gr.Textbox(
+value="Você é um Chatbot amigável. Sempre responda na língua em que o usuário está escrevendo para você."
+rótulo="Mensagem do sistema"
+),
+gr.Slider(minimum=1, maximum=2048, value=512, step=1, label="Máximo de novos tokens"),
+gr.Slider(mínimo=0,1, máximo=4,0, valor=0,7, passo=0,1, rótulo="Temperatura"),
+gr.Slider()
+mínimo=0.1,
+máximo=1.0,
+value=0.95,
+passo=0.05,
+label="Top-p (amostragem do núcleo)"
+),
+],
+)
+
+
+if __name__ == "__main__":
+demo.launch()
+```
+</markdown>
   <markdown>#### requirements.txt</markdown>
   <markdown>Neste arquivo, devemos adicionar as novas bibliotecas que vamos utilizar, neste caso `transformers`, `accelerate` e `torch`. O arquivo completo ficaria:
+
 ``` txt
-huggingface_hub==0.25.2gradio&gt;=4.0.0transformers&gt;=4.36.0torch&gt;=2.0.0accelerate&gt;=0.25.0```</markdown>
+huggingface_hub==0.25.2
+gradio&gt;=4.0.0
+transformers&gt;=4.36.0torch&gt;=2.0.0
+accelerate&gt;=0.25.0
+```
+</markdown>
   <markdown>#### Teste da API</markdown>
   <markdown>Desplegamos o space e testamos diretamente a API.</markdown>
   <input_code>from gradio_client import Client
@@ -402,38 +966,128 @@ Hola Máximo, soy su Chatbot amable y estoy funcionando bien. Gracias por tu men
   <markdown>### Código</markdown>
   <markdown>#### app.py</markdown>
   <markdown>Já não importamos `InferenceClient` e agora importamos `AutoModelForCausalLM` e `AutoTokenizer` da biblioteca `transformers` e importamos `torch`.
+
 ``` python
-from transformers import AutoModelForCausalLM, AutoTokenizerimport torch```</markdown>
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
+```
+</markdown>
   <markdown>Instanciamos o modelo e o tokenizer com `AutoModelForCausalLM` e `AutoTokenizer`.
+
 ``` python
-# Inicialize o modelo e o tokenizadorprint("Carregando modelo e tokenizer...")dispositivo = "cuda" if torch.cuda.is_available() else "cpu"model_name = "HuggingFaceTB/SmolLM2-1.7B-Instruct"
-tente:# Carregar o modelo no formato BF16 para melhor desempenho e menor uso de memóriatokenizer = AutoTokenizer.from_pretrained(model_name)    
-if device == "cuda":print("Usando GPU para o modelo...")model = AutoModelForCausalLM.from_pretrained(nome_do_modelo,torch_dtype=torch.bfloat16,device_map="auto",low_cpu_mem_usage=True)else:print("Usando CPU para o modelo...")model = AutoModelForCausalLM.from_pretrained(nome_do_modelo,device_map={"": device},torch_dtype=torch.float32)
-print(f"Modelo carregado com sucesso em: {device}")except Exception as e:print(f"Erro ao carregar o modelo: {str(e)}")aumentar```</markdown>
+# Inicialize o modelo e o tokenizador
+print("Carregando modelo e tokenizer...")
+dispositivo = "cuda" if torch.cuda.is_available() else "cpu"
+model_name = "HuggingFaceTB/SmolLM2-1.7B-Instruct"
+
+tente:
+# Carregar o modelo no formato BF16 para melhor desempenho e menor uso de memória
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+    
+if device == "cuda":
+print("Usando GPU para o modelo...")
+model = AutoModelForCausalLM.from_pretrained(
+nome_do_modelo,
+torch_dtype=torch.bfloat16,
+device_map="auto",
+low_cpu_mem_usage=True)
+else:
+print("Usando CPU para o modelo...")
+model = AutoModelForCausalLM.from_pretrained(
+nome_do_modelo,
+device_map={"": device},
+torch_dtype=torch.float32
+)
+
+print(f"Modelo carregado com sucesso em: {device}")
+except Exception as e:
+print(f"Erro ao carregar o modelo: {str(e)}")
+aumentar
+```
+</markdown>
   <markdown>Re definimos a função `call_model` para que faça a inferência com o modelo local.
+
 ``` python
-# Defina a função que chama o modelodef chamar_modelo(estado: EstadoMensagens):"""Chame o modelo com as mensagens fornecidas
-Argumentos:estado: EstadoMensagens
-Retorna:dicionário: Um dicionário contendo o texto gerado e o ID do thread""""""# Converter mensagens LangChain para formato de bate-papomensagens = []for msg in state["messages"]:if isinstance(msg, HumanMessage):messages.append({"role": "user", "content": msg.content})elif isinstance(msg, AIMessage):messages.append({"role": "assistant", "content": msg.content})    
-# Prepare o input usando o modelo de bate-papoinput_text = tokenizer.apply_chat_template(messages, tokenize=False)inputs = tokenizer.encode(input_text, return_tensors="pt").to(device)    
-# Gerar respostasaídas = modelo.gerar(entradas,max_new_tokens=512,  # Aumente o número de tokens para respostas mais longastemperature=0.7,top_p=0,9,do_sample=True,pad_token_id=tokenizer.eos_token_id)    
-# Decodificar e limpar a respostaresponse = tokenizer.decode(outputs[0], skip_special_tokens=True)# Extrair apenas a resposta do assistente (após a última mensagem do usuário)response = response.split("Assistant:")[-1].strip()    
-# Converter a resposta para o formato LangChain```markdown
+# Defina a função que chama o modelo
+def chamar_modelo(estado: EstadoMensagens):
+"""
+Chame o modelo com as mensagens fornecidas
+
+Argumentos:
+estado: EstadoMensagens
+
+Retorna:
+dicionário: Um dicionário contendo o texto gerado e o ID do thread
+""""""
+# Converter mensagens LangChain para formato de bate-papo
+mensagens = []
+for msg in state["messages"]:
+if isinstance(msg, HumanMessage):
+messages.append({"role": "user", "content": msg.content})
+elif isinstance(msg, AIMessage):
+messages.append({"role": "assistant", "content": msg.content})
+    
+# Prepare o input usando o modelo de bate-papo
+input_text = tokenizer.apply_chat_template(messages, tokenize=False)
+inputs = tokenizer.encode(input_text, return_tensors="pt").to(device)
+    
+# Gerar resposta
+saídas = modelo.gerar(
+entradas,
+max_new_tokens=512,  # Aumente o número de tokens para respostas mais longas
+temperature=0.7,
+top_p=0,9,
+do_sample=True,
+pad_token_id=tokenizer.eos_token_id
+)
+    
+# Decodificar e limpar a resposta
+response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+# Extrair apenas a resposta do assistente (após a última mensagem do usuário)
+response = response.split("Assistant:")[-1].strip()
+    
+# Converter a resposta para o formato LangChain
+```markdown
 ai_message = AIMessage(content=response)
-```return {"messages": state["messages"] + [ai_message]}```</markdown>
+```
+return {"messages": state["messages"] + [ai_message]}
+```
+</markdown>
   <markdown>#### requirements.txt</markdown>
   <markdown>Temos que remover `langchain-huggingface` e adicionar `transformers`, `accelerate` e `torch` no arquivo `requirements.txt`. O arquivo ficaria:
+
 ``` txt
-fastapiuvicornsolicitaçõespydantic&gt;=2.0.0langchain&gt;=0.1.0langchain-core&gt;=0.1.10langgraph&gt;=0.2.27python-dotenv&gt;=1.0.0transformers&gt;=4.36.0torch&gt;=2.0.0accelerate&gt;=0.26.0```</markdown>
+fastapi
+uvicorn
+solicitações
+pydantic&gt;=2.0.0
+langchain&gt;=0.1.0
+langchain-core&gt;=0.1.10langgraph&gt;=0.2.27
+python-dotenv&gt;=1.0.0
+transformers&gt;=4.36.0
+torch&gt;=2.0.0
+accelerate&gt;=0.26.0
+```
+</markdown>
   <markdown>#### Dockerfile</markdown>
   <markdown>Já não precisamos ter `RUN --mount=type=secret,id=HUGGINGFACE_TOKEN,mode=0444,required=true` porque como o modelo vai estar no servidor e não vamos fazer chamadas para Inference Endpoints, não precisamos do token. O arquivo ficaria:
+
 ``` dockerfile
 FROM python:3.13-slim
-RUN useradd -m -u 1000 userWORKDIR /app
-COPY --chown=user ./requirements.txt requirements.txtRUN pip install --no-cache-dir --upgrade -r requirements.txt
+
+RUN useradd -m -u 1000 user
+WORKDIR /app
+
+COPY --chown=user ./requirements.txt requirements.txt
+RUN pip install --no-cache-dir --upgrade -r requirements.txt
+
 COPY --chown=user . /app
+
 EXPOSE 7860
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]```</markdown>
+
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]
+```
+</markdown>
   <markdown>### Teste da API</markdown>
   <markdown>Deployamos o space e testamos a API. Neste caso, vou testar diretamente do Python.</markdown>
   <input_code>import requests

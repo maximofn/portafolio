@@ -1,0 +1,376 @@
+<?xml version='1.0' encoding='utf-8'?>
+<notebook>
+  <markdown># Hugging Face tokenizers</markdown>
+  <markdown>La librería `tokenizers` de Hugging Face proporciona una implementación de los tokenizadores más utilizados en la actualidad, centrándose en el rendimiento y la versatilidad. En el post [tokens](https://maximofn.com/tokens/) ya vimos la importancia de los tokens a la hora de procesar textos, ya que los ordenadores no entienden de palabras, sino de números. Por tanto, es necesario convertir las palabras a números para que los modelos de lenguaje puedan procesarlos.</markdown>
+  <markdown>## Instalación</markdown>
+  <markdown>Para instalar `tokenizers` con pip:
+
+```bash
+pip install tokenizers
+```
+
+Para instalar `tokenizers` con conda:
+
+```bash
+conda install conda-forge::tokenizers
+```</markdown>
+  <markdown>## El pipeline de tokenización</markdown>
+  <markdown>Para tokenizar una secuencia se usa `Tokenizer.encode`, el cual realiza los siguientes pasos:
+
+ * Normalización
+ * pre-tokenización
+ * Tokenización
+ * Post-tokenización
+
+Vamos a ver cada una</markdown>
+  <markdown>Para realizar el post vamos a usar el dataset [wikitext-103](https://blog.einstein.ai/the-wikitext-long-term-dependency-language-modeling-dataset/)</markdown>
+  <input_code>!wget https://dax-cdn.cdn.appdomain.cloud/dax-wikitext-103/1.0.1/wikitext-103.tar.gz</input_code>
+  <output_code>--2024-02-26 08:14:11--  https://dax-cdn.cdn.appdomain.cloud/dax-wikitext-103/1.0.1/wikitext-103.tar.gz
+Resolving dax-cdn.cdn.appdomain.cloud (dax-cdn.cdn.appdomain.cloud)... 23.200.169.125
+Connecting to dax-cdn.cdn.appdomain.cloud (dax-cdn.cdn.appdomain.cloud)|23.200.169.125|:443... connected.
+HTTP request sent, awaiting response... </output_code>
+  <output_code>200 OK
+Length: 189603606 (181M) [application/x-gzip]
+Saving to: ‘wikitext-103.tar.gz’
+
+wikitext-103.tar.gz 100%[===================&gt;] 180,82M  6,42MB/s    in 30s     
+
+2024-02-26 08:14:42 (5,95 MB/s) - ‘wikitext-103.tar.gz’ saved [189603606/189603606]
+
+</output_code>
+  <input_code>!tar -xvzf wikitext-103.tar.gz</input_code>
+  <output_code>wikitext-103/
+wikitext-103/wiki.test.tokens
+wikitext-103/wiki.valid.tokens
+wikitext-103/README.txt
+wikitext-103/LICENSE.txt
+wikitext-103/wiki.train.tokens
+</output_code>
+  <input_code>!rm wikitext-103.tar.gz</input_code>
+  <markdown>### Normalización</markdown>
+  <markdown>La normalización son operaciones que se aplican al texto antes de la tokenización, como la eliminación de espacios en blanco, la conversión a minúsculas, la eliminación de caracteres especiales, etc. En Hugging Face están implementadas las siguientes normalizaciones:
+
+|Normalización|Descripción|Ejemplo|
+|---|---|---|
+|NFD (Normalization for D)|Los caracteres se descomponen por equivalencia canónica|`â` (U+00E2) se descompone en `a` (U+0061) + `^` (U+0302)|
+|NFKD (Normalization Form KD)|Los caracteres se descomponen por compatibilidad|`ﬁ` (U+FB01) se descompone en `f` (U+0066) + `i` (U+0069)|
+|NFC (Normalization Form C)|Los caracteres se descomponen y luego se recomponen por equivalencia canónica|`â` (U+00E2) se descompone en `a` (U+0061) + `^` (U+0302) y luego se recompone en `â` (U+00E2)|
+|NFKC (Normalization Form KC)|Los caracteres se descomponen por compatibilidad y luego se recomponen por equivalencia canónica|`ﬁ` (U+FB01) se descompone en `f` (U+0066) + `i` (U+0069) y luego se recompone en `f` (U+0066) + `i` (U+0069)|
+|Lowercase|Convierte el texto a minúsculas|`Hello World` se convierte en `hello world`|
+|Strip|Elimina todos los espacios en blanco de los lados especificados (izquierdo, derecho o ambos) del texto|`  Hello World  ` se convierte en `Hello World`|
+|StripAccents|Elimina todos los símbolos de acento en unicode (se utilizará con NFD por coherencia)|`á` (U+00E1) se convierte en `a` (U+0061)|
+|Replace|Sustituye una cadena personalizada o [regex](https://maximofn.com/regular-expressions/) y la cambia por el contenido dado|`Hello World` se convierte en `Hello Universe`|
+|BertNormalizer|Proporciona una implementación del Normalizador utilizado en el BERT original. Las opciones que se pueden configurar son `clean_text`, `handle_chinese_chars`, `strip_accents` y `lowercase`|`Hello World` se convierte en `hello world`|</markdown>
+  <markdown>Vamos a crear un normalizador para ver cómo funciona</markdown>
+  <input_code>from tokenizers import normalizers
+
+bert_normalizer = normalizers.BertNormalizer()
+
+input_text = "Héllò hôw are ü?"
+normalized_text = bert_normalizer.normalize_str(input_text)
+normalized_text</input_code>
+  <output_code>'hello how are u?'</output_code>
+  <markdown>Para usar varios normalizadores podemos usar el método `Sequence`</markdown>
+  <input_code>custom_normalizer = normalizers.Sequence([normalizers.NFKC(), normalizers.BertNormalizer()])
+
+normalized_text = custom_normalizer.normalize_str(input_text)
+normalized_text</input_code>
+  <output_code>'hello how are u?'</output_code>
+  <markdown>Para modificar el normalizador de un tokenizador</markdown>
+  <input_code>import tokenizers
+
+tokenizer = tokenizers.BertWordPieceTokenizer() # or any other tokenizer</input_code>
+  <input_code>tokenizer.normalizer = custom_normalizer</input_code>
+  <markdown>### Pre-tokenización</markdown>
+  <markdown>La pretokenización es el acto de dividir un texto en objetos más pequeños. El pretokenizador dividirá el texto en "palabras" y los tokens finales serán partes de esas palabras.
+
+El PreTokenizer se encarga de dividir la entrada según un conjunto de reglas. Este preprocesamiento le permite asegurarse de que el tokenizador no construye tokens a través de múltiples "divisiones". Por ejemplo, si no quieres tener espacios en blanco dentro de un token, entonces puedes tener un pre tokenizer que divide en las palabras a partir de espacios en blanco.
+
+En Hugging Face están implementados los siguientes pre-tokenizadores
+
+|PreTokenizer|Descripción|Ejemplo|
+|---|---|---|
+|ByteLevel|Divide en espacios en blanco mientras reasigna todos los bytes a un conjunto de caracteres visibles. Esta técnica fue introducida por OpenAI con GPT-2 y tiene algunas propiedades más o menos buenas: Como mapea sobre bytes, un tokenizador que utilice esto sólo requiere 256 caracteres como alfabeto inicial (el número de valores que puede tener un byte), frente a los más de 130.000 caracteres Unicode. Una consecuencia del punto anterior es que es absolutamente innecesario tener un token desconocido usando esto ya que podemos representar cualquier cosa con 256 tokens. Para caracteres no ascii, se vuelve completamente ilegible, ¡pero funciona!|`Hello my friend, how are you?` se divide en `Hello`, `Ġmy`, `Ġfriend`, `,`, `Ġhow`, `Ġare`, `Ġyou`, `?`|
+|Whitespace|Divide en límites de palabra usando la siguiente expresión regular: `\w+[^\w\s]+`. En mi post sobre [expresiones regulares](https://maximofn.com/regular-expressions/) puedes entender qué hace|`Hello there!` se divide en `Hello`, `there`, `!`|
+|WhitespaceSplit|Se divide en cualquier carácter de espacio en blanco|`Hello there!` se divide en `Hello`, `there!`|
+|Punctuation|Aislará todos los caracteres de puntuación|`Hello?` se divide en `Hello`, `?`|
+|Metaspace|Separa los espacios en blanco y los sustituye por un carácter especial "▁" (U+2581)|`Hello there` se divide en `Hello`, `▁there`|
+|CharDelimiterSplit|Divisiones en un carácter determinado|Ejemplo con el caracter `x`: `Helloxthere` se divide en `Hello`, `there`|
+|Digits|Divide los números de cualquier otro carácter|`Hello123there` se divide en `Hello`, `123`, `there`|
+|Split|Pretokenizador versátil que divide según el patrón y el comportamiento proporcionados. El patrón se puede invertir si es necesario. El patrón debe ser una cadena personalizada o una [regex](https://maximofn.com/regular-expressions/). El comportamiento debe ser `removed`, `isolated`, `merged_with_previous`, `merged_with_next`, `contiguous`. Para invertir se indica con un booleano|Ejemplo con pattern=`" "`, behavior=`isolated`, invert=`False`: `Hello, how are you?` se divide en `Hello,`, ` `, `how`, ` `, `are`, ` `, `you?`|</markdown>
+  <markdown>Vamos a crear un pre tokenizador para ver cómo funciona</markdown>
+  <input_code>from tokenizers import pre_tokenizers
+
+pre_tokenizer = pre_tokenizers.Digits(individual_digits=True)
+
+input_text = "I paid $30 for the car"
+pre_tokenized_text = pre_tokenizer.pre_tokenize_str(input_text)
+pre_tokenized_text</input_code>
+  <output_code>[('I paid $', (0, 8)),
+ ('3', (8, 9)),
+ ('0', (9, 10)),
+ (' for the car', (10, 22))]</output_code>
+  <markdown>Para usar varios pre tokenizadores podemos usar el método `Sequence`</markdown>
+  <input_code>custom_pre_tokenizer = pre_tokenizers.Sequence([pre_tokenizers.Whitespace(), pre_tokenizers.Digits(individual_digits=True)])
+
+pre_tokenized_text = custom_pre_tokenizer.pre_tokenize_str(input_text)
+pre_tokenized_text</input_code>
+  <output_code>[('I', (0, 1)),
+ ('paid', (2, 6)),
+ ('$', (7, 8)),
+ ('3', (8, 9)),
+ ('0', (9, 10)),
+ ('for', (11, 14)),
+ ('the', (15, 18)),
+ ('car', (19, 22))]</output_code>
+  <markdown>Para modificar el pre-tokenizador de un tokenizador</markdown>
+  <input_code>tokenizer.pre_tokenizer = custom_pre_tokenizer</input_code>
+  <markdown>### Tokenización</markdown>
+  <markdown>Una vez normalizados y pretokenizados los textos de entrada, el tokenizador aplica el modelo a los pretokens. Esta es la parte del proceso que debe entrenarse con el corpus (o que ya se ha entrenado si se utiliza un tokenizador preentrenado).
+
+La función del modelo es dividir las "palabras" en tokens utilizando las reglas que ha aprendido. También es responsable de asignar esos tokens a sus ID correspondientes en el vocabulario del modelo.
+
+El modelo tiene un tamaño de vocabulario, es decir, tiene una cantidad finita de tokens, por lo que tiene que descomponer las palabras y asignarlas a uno de esos tokens.
+
+Este modelo se pasa al inicializar el Tokenizer. Actualmente, la librería 🤗 Tokenizers soporta:
+
+|Modelo|Descripción|
+|---|---|
+|WordLevel|Este es el algoritmo "clásico" de tokenización. Te permite simplemente asignar palabras a IDs sin nada sofisticado. Tiene la ventaja de ser muy fácil de usar y entender, pero requiere vocabularios extremadamente grandes para una buena cobertura. El uso de este modelo requiere el uso de un PreTokenizer. Este modelo no realiza ninguna elección directamente, simplemente asigna tokens de entrada a IDs.|
+|BPE (Byte Pair Encoding)|Uno de los algoritmos de tokenización de subpalabras más populares. El Byte-Pair-Encoding funciona empezando con caracteres y fusionando los que se ven juntos con más frecuencia, creando así nuevos tokens. A continuación, trabaja de forma iterativa para construir nuevos tokens a partir de los pares más frecuentes que ve en un corpus. BPE es capaz de construir palabras que nunca ha visto utilizando múltiples subpalabras y, por tanto, requiere vocabularios más pequeños, con menos posibilidades de tener palabras `unk` (desconocidas).|
+|WordPiece|Se trata de un algoritmo de tokenización de subpalabras bastante similar a BPE, utilizado principalmente por Google en modelos como BERT. Utiliza un algoritmo codicioso que intenta construir primero palabras largas, dividiéndolas en varios tokens cuando no existen palabras completas en el vocabulario. A diferencia de BPE, que parte de los caracteres y construye tokens lo más grandes posible. Utiliza el famoso prefijo ## para identificar los tokens que forman parte de una palabra (es decir, que no empiezan una palabra).|
+|Unigram|Unigram es también un algoritmo de tokenización de subpalabras, y funciona tratando de identificar el mejor conjunto de tokens de subpalabras para maximizar la probabilidad de una frase dada. Se diferencia de BPE en que no es un algoritmo determinista basado en un conjunto de reglas aplicadas secuencialmente. En su lugar, Unigram podrá calcular múltiples formas de tokenizar, eligiendo la más probable.|</markdown>
+  <markdown>Cuando se crea un tokenizador, se le tiene que pasar el modelo</markdown>
+  <input_code>from tokenizers import Tokenizer, models
+
+tokenizer = Tokenizer(models.Unigram())</input_code>
+  <markdown>Vamos a pasarle el normalizador y el pre tokenizador que hemos creado</markdown>
+  <input_code>tokenizer.normalizer = custom_normalizer
+tokenizer.pre_tokenizer = custom_pre_tokenizer</input_code>
+  <markdown>Ahora hay que entrenar el modelo o cargar uno preentrenado. En este caso vamos a entrenar uno con el corpus que nos hemos descargado.</markdown>
+  <markdown>#### Entrenamiento del modelo</markdown>
+  <markdown>Para entrenar el modelo tenemos varios tipos de `Trainer`s
+
+|Trainer|Descripción|
+|---|---|
+|WordLevelTrainer|Entrena un tokenizador WordLevel|
+|BpeTrainer|Entrena un tokenizador BPE|
+|WordPieceTrainer|Entrena un tokenizador WordPiece|
+|UnigramTrainer|Entrena un tokenizador Unigram|
+
+Casi todos los trainers tienen los mismos parámetros, que son:
+
+ * vocab_size: El tamaño del vocabulario final, incluidos todos los tokens y el alfabeto.
+ * show_progress: Mostrar o no barras de progreso durante el entrenamiento
+ * special_tokens: Una lista de tokens especiales que el modelo debe conocer
+
+A parte de estos parámetros, cada trainer tiene sus propios parámetros, para verlos mira la documentación de los [Trainers](https://huggingface.co/docs/tokenizers/api/trainers)</markdown>
+  <markdown>Para entrenar tenemos que crear un `Trainer`, como el modelo que hemos creado es un `Unigram` vamos a crear un `UnigramTrainer`</markdown>
+  <input_code>from tokenizers.trainers import trainers
+
+trainer = trainers.UnigramTrainer(
+    vocab_size=20000,
+    initial_alphabet=pre_tokenizers.ByteLevel.alphabet(),
+    special_tokens=["&lt;PAD&gt;", "&lt;BOS&gt;", "&lt;EOS&gt;"],
+)</input_code>
+  <markdown>Una vez hemos creado el `Trainer` hay dos maneras de entrenar, mediante el método `train`, al que se le pasa una lista de archivos, o mediante el método `train_from_iterator` al que se le pasa un iterador</markdown>
+  <markdown>##### Entrenamiento del modelo con el método `train`</markdown>
+  <markdown>Primero creamos una lista de archivos con el corpus</markdown>
+  <input_code>files = [f"wikitext-103/wiki.{split}.tokens" for split in ["test", "train", "valid"]]
+files</input_code>
+  <output_code>['wikitext-103/wiki.test.tokens',
+ 'wikitext-103/wiki.train.tokens',
+ 'wikitext-103/wiki.valid.tokens']</output_code>
+  <markdown>Y ahora entrenamos el modelo</markdown>
+  <input_code>tokenizer.train(files, trainer)</input_code>
+  <output_code>
+
+</output_code>
+  <markdown>##### Entrenamiento del modelo con el método `train_from_iterator`</markdown>
+  <markdown>Primero creamos una función que nos devuelva un iterador</markdown>
+  <input_code>def iterator():
+    for file in files:
+        with open(file, "r") as f:
+            for line in f:
+                yield line</input_code>
+  <markdown>Ahora volvemos a entrenar el modelo</markdown>
+  <input_code>tokenizer.train_from_iterator(iterator(), trainer)</input_code>
+  <output_code>
+
+</output_code>
+  <markdown>##### Entrenamiento del modelo con el método `train_from_iterator` desde un dataset de Hugging Face</markdown>
+  <markdown>Si nos hubiéramos descargado el dataset de Hugging Face, podríamos haber entrenado el modelo directamente desde el dataset</markdown>
+  <input_code>import datasets
+
+dataset = datasets.load_dataset("wikitext", "wikitext-103-raw-v1", split="train+test+validation")</input_code>
+  <markdown>Ahora podemos crear un iterador</markdown>
+  <input_code>def batch_iterator(batch_size=1000):
+    for i in range(0, len(dataset), batch_size):
+        yield dataset[i : i + batch_size]["text"]</input_code>
+  <markdown>Volvemos a entrenar el modelo</markdown>
+  <input_code>tokenizer.train_from_iterator(batch_iterator(), trainer=trainer, length=len(dataset))</input_code>
+  <output_code>
+
+</output_code>
+  <markdown>#### Guardando el modelo</markdown>
+  <markdown>Una vez se ha entrenado el modelo, se puede guardar para usarlo en el futuro. Para guardar el modelo hay que hacerlo en un archivo `JSON`</markdown>
+  <input_code>tokenizer.save("wikitext-103-tokenizer.json")</input_code>
+  <markdown>#### Cargando el modelo pre-entrenado</markdown>
+  <markdown>Podemos cargar un modelo preentrenado a partir de un `json` en lugar de tener que entrenarlo</markdown>
+  <input_code>tokenizer.from_file("wikitext-103-tokenizer.json")</input_code>
+  <output_code>&lt;tokenizers.Tokenizer at 0x7f1dd7784a30&gt;</output_code>
+  <markdown>También podemos cargar un modelo preentrenado disponible en el Hub de Hugging Face</markdown>
+  <input_code>tokenizer.from_pretrained('bert-base-uncased')</input_code>
+  <output_code>&lt;tokenizers.Tokenizer at 0x7f1d64a75e30&gt;</output_code>
+  <markdown>### Post-procesamiento</markdown>
+  <markdown>Es posible que queramos que nuestro tokenizador añada automáticamente tokens especiales, como `[CLS]` o `[SEP]`.
+
+En Hugging Face están implementados los siguientes post procesadores
+
+|PostProcesador|Descripción|Ejemplo|
+|---|---|---|
+|BertProcessing|Este post-procesador se encarga de añadir los tokens especiales que necesita un modelo Bert (`SEP` y `CLS`)|`Hello, how are you?` se convierte en `[CLS]`, `Hello`, `,`, `how`, `are`, `you`, `?`, `[SEP]`|
+|RobertaProcessing|Este post-procesador se encarga de añadir los tokens especiales que necesita un modelo Roberta (`SEP` y `CLS`). También se encarga de recortar los offsets. Por defecto, el ByteLevel BPE puede incluir espacios en blanco en los tokens producidos. Si no desea que las compensaciones incluyan estos espacios en blanco, hay que inicializar este PostProcessor con `trim_offsets=True`.|`Hello, how are you?` se convierte en `&lt;s&gt;`, `Hello`, `,`, `how`, `are`, `you`, `?`, `&lt;/s&gt;`|
+|ElectraProcessing|Añade tokens especiales para ELECTRA|`Hello, how are you?` se convierte en `[CLS]`, `Hello`, `,`, `how`, `are`, `you`, `?`, `[SEP]`|
+|TemplateProcessing|Permite crear fácilmente una plantilla para el postprocesamiento, añadiendo tokens especiales y especificando el type_id de cada secuencia/token especial. La plantilla recibe dos cadenas que representan la secuencia única y el par de secuencias, así como un conjunto de tokens especiales a utilizar|Example, when specifying a template with these values: single:`[CLS] $A [SEP]`, pair: `[CLS] $A [SEP] $B [SEP]`, special tokens: `[CLS]`, `[SEP]`. Input: (`I like this`, `but not this`), Output: `[CLS] I like this [SEP] but not this [SEP]`|</markdown>
+  <markdown>Vamos a crear un post tokenizador para ver cómo funciona</markdown>
+  <input_code>from tokenizers.processors import TemplateProcessing
+
+post_processor = TemplateProcessing(
+    single="[CLS] $A [SEP]",
+    pair="[CLS] $A [SEP] $B:1 [SEP]:1",
+    special_tokens=[("[CLS]", 1), ("[SEP]", 2)],
+)</input_code>
+  <markdown>Para modificar el post tokenizador de un tokenizador</markdown>
+  <input_code>tokenizer.post_processor = post_processor</input_code>
+  <markdown>Veamos cómo funciona</markdown>
+  <input_code>input_text = "I paid $30 for the car"
+decoded_text = tokenizer.encode(input_text)
+
+decoded_text.tokens</input_code>
+  <output_code>['[CLS]', 'i', 'paid', '$', '3', '0', 'for', 'the', 'car', '[SEP]']</output_code>
+  <input_code>input_text1 = "Hello, y'all!"
+input_text2 = "How are you?"
+decoded_text = tokenizer.encode(input_text1, input_text2)
+
+print(decoded_text.tokens)</input_code>
+  <output_code>['[CLS]', 'hell', 'o', ',', 'y', "'", 'all', '!', '[SEP]', 'how', 'are', 'you', '?', '[SEP]']
+</output_code>
+  <markdown>Si ahora guardásemos el tokenizador, el post tokenizador se guardaría con él</markdown>
+  <markdown>### Encoding</markdown>
+  <markdown>Una vez tenemos el tokenizador entrenado, podemos usarlo para tokenizar textos</markdown>
+  <input_code>input_text = "I love tokenizers!"
+encoded_text = tokenizer.encode(input_text)</input_code>
+  <markdown>Vamos a ver qué obtenemos al tokenizar un texto</markdown>
+  <input_code>type(encoded_text)</input_code>
+  <output_code>tokenizers.Encoding</output_code>
+  <markdown>Obtenemos un objeto de tipo [Encoding](https://huggingface.co/docs/tokenizers/api/encoding#tokenizers.Encoding), que contiene los tokens y los IDs de los tokens</markdown>
+  <markdown>Los `ids` son los `id`s de los tokens en el vocabulario del tokenizador</markdown>
+  <input_code>encoded_text.ids</input_code>
+  <output_code>[1, 17, 383, 10694, 17, 3533, 3, 586, 2]</output_code>
+  <markdown>Los `tokens` son los tokens a los que equivalen los `ids`</markdown>
+  <input_code>encoded_text.tokens</input_code>
+  <output_code>['[CLS]', 'i', 'love', 'token', 'i', 'zer', 's', '!', '[SEP]']</output_code>
+  <markdown>Si tenemos varias secuencias, podemos codificarlas todas a la vez</markdown>
+  <input_code>encoded_texts = tokenizer.encode(input_text1, input_text2)
+
+print(encoded_texts.tokens)
+print(encoded_texts.ids)
+print(encoded_texts.type_ids)</input_code>
+  <output_code>['[CLS]', 'hell', 'o', ',', 'y', "'", 'all', '!', '[SEP]', 'how', 'are', 'you', '?', '[SEP]']
+[1, 2215, 7, 5, 22, 26, 81, 586, 2, 98, 59, 213, 902, 2]
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1]
+</output_code>
+  <markdown>Sin embargo, cuando se tengan varias secuencias es mejor usar el método `encode_batch`</markdown>
+  <input_code>encoded_texts = tokenizer.encode_batch([input_text1, input_text2])
+
+type(encoded_texts)</input_code>
+  <output_code>list</output_code>
+  <markdown>Vemos que obtenemos una lista</markdown>
+  <input_code>print(encoded_texts[0].tokens)
+print(encoded_texts[0].ids)
+print(encoded_texts[1].tokens)
+print(encoded_texts[1].ids)</input_code>
+  <output_code>['[CLS]', 'hell', 'o', ',', 'y', "'", 'all', '!', '[SEP]']
+[1, 2215, 7, 5, 22, 26, 81, 586, 2]
+['[CLS]', 'how', 'are', 'you', '?', '[SEP]']
+[1, 98, 59, 213, 902, 2]
+</output_code>
+  <markdown>### Decoding</markdown>
+  <markdown>Además de codificar los textos de entrada, un Tokenizer también tiene un método para decodificar, es decir, convertir los ID generados por su modelo de nuevo a un texto. Esto se hace mediante los métodos `Tokenizer.decode` (para un texto predicho) y `Tokenizer.decode_batch` (para un lote de predicciones).
+
+Los tipos de decodificación que se pueden usar son:
+
+|Decodificación|Descripción|
+|---|---|
+|BPEDecoder|Revierte el modelo BPE|
+|ByteLevel|Revierte el ByteLevel PreTokenizer. Este PreTokenizer codifica a nivel de byte, utilizando un conjunto de caracteres Unicode visibles para representar cada byte, por lo que necesitamos un Decoder para revertir este proceso y obtener algo legible de nuevo.|
+|CTC|Revierte el modelo CTC|
+|Metaspace|Revierte el PreTokenizer de Metaspace. Este PreTokenizer utiliza un identificador especial ▁ para identificar los espacios en blanco, por lo que este Decoder ayuda con la decodificación de estos.|
+|WordPiece|Revierte el modelo WordPiece. Este modelo utiliza un identificador especial ## para las subpalabras continuas, por lo que este decodificador ayuda a decodificarlas.|
+
+El decodificador convertirá primero los IDs en tokens (usando el vocabulario del tokenizador) y eliminará todos los tokens especiales, después unirá esos tokens con espacios en blanco.</markdown>
+  <markdown>Vamos a crear un decoder</markdown>
+  <input_code>from tokenizers import decoders
+
+decoder = decoders.ByteLevel()</input_code>
+  <markdown>Lo añadimos al tokenizador</markdown>
+  <input_code>tokenizer.decoder = decoder</input_code>
+  <markdown>Decodificamos</markdown>
+  <input_code>decoded_text = tokenizer.decode(encoded_text.ids)
+
+input_text, decoded_text</input_code>
+  <output_code>('I love tokenizers!', 'ilovetokenizers!')</output_code>
+  <input_code>decoded_texts = tokenizer.decode_batch([encoded_texts[0].ids, encoded_texts[1].ids])
+
+print(input_text1, decoded_texts[0])
+print(input_text2, decoded_texts[1])</input_code>
+  <output_code>Hello, y'all! hello,y'all!
+How are you? howareyou?
+</output_code>
+  <markdown>## BERT tokenizer</markdown>
+  <markdown>Con todo lo aprendido vamos a crear el tokenizador de BERT desde cero, primero creamos el tokenizador. BERT usa `WordPiece` como modelo, por lo que lo pasamos al inicializar del tokenizador</markdown>
+  <input_code>from tokenizers import Tokenizer
+from tokenizers.models import WordPiece
+
+bert_tokenizer = Tokenizer(WordPiece(unk_token="[UNK]"))</input_code>
+  <markdown>BERT preprocesa los textos eliminando los acentos y las minúsculas. También utilizamos un normalizador unicode</markdown>
+  <input_code>from tokenizers import normalizers
+from tokenizers.normalizers import NFD, Lowercase, StripAccents
+
+bert_tokenizer.normalizer = normalizers.Sequence([NFD(), Lowercase(), StripAccents()])</input_code>
+  <markdown>El pretokenizador solo divide los espacios en blanco y los signos de puntuación.</markdown>
+  <input_code>from tokenizers.pre_tokenizers import Whitespace
+
+bert_tokenizer.pre_tokenizer = Whitespace()</input_code>
+  <markdown>Y el post-procesamiento utiliza la plantilla que vimos en la sección anterior</markdown>
+  <input_code>from tokenizers.processors import TemplateProcessing
+
+bert_tokenizer.post_processor = TemplateProcessing(
+    single="[CLS] $A [SEP]",
+    pair="[CLS] $A [SEP] $B:1 [SEP]:1",
+    special_tokens=[
+        ("[CLS]", 1),
+        ("[SEP]", 2),
+    ],
+)</input_code>
+  <markdown>Entrenamos el tokenizador con el dataset de wikitext-103</markdown>
+  <input_code>from tokenizers.trainers import WordPieceTrainer
+
+trainer = WordPieceTrainer(vocab_size=30522, special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"])</input_code>
+  <input_code>files = [f"wikitext-103/wiki.{split}.tokens" for split in ["test", "train", "valid"]]
+bert_tokenizer.train(files, trainer)</input_code>
+  <output_code>
+
+
+</output_code>
+  <markdown>Ahora lo probamos</markdown>
+  <input_code>input_text = "I love tokenizers!"
+
+encoded_text = bert_tokenizer.encode(input_text)
+decoded_text = bert_tokenizer.decode(encoded_text.ids)
+
+print(f"El texto de entrada '{input_text}' se convierte en los tokens {encoded_text.tokens}, que tienen las ids {encoded_text.ids} y luego se decodifica como '{decoded_text}'")</input_code>
+  <output_code>El texto de entrada 'I love tokenizers!' se convierte en los tokens ['[CLS]', 'i', 'love', 'token', '##izers', '!', '[SEP]'], que tienen las ids [1, 51, 2867, 25791, 12213, 5, 2] y luego se decodifica como 'i love token ##izers !'
+</output_code>
+</notebook>

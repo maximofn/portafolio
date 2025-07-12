@@ -1,5 +1,5 @@
 <section class="section-block-markdown-cell">
-<h1 id="Desplegar-backend-en-HuggingFace">Desplegar backend en HuggingFace<a class="anchor-link" href="#Desplegar-backend-en-HuggingFace">¶</a></h1>
+<h1 id="Desplegar backend en HuggingFace">Desplegar backend en HuggingFace<a class="anchor-link" href="#Desplegar backend en HuggingFace">¶</a></h1>
 </section>
 <section class="section-block-markdown-cell">
 <p>En este post vamos a ver cómo desplegar un backend en HuggingFace. Vamos a ver cómo hacerlo de dos maneras, mediante la forma común, creando una aplicación con Gradio, y mediante una opción diferente usando FastAPI, Langchain y Docker</p>
@@ -8,23 +8,23 @@
 <p>Para ambos casos va a ser necesario tener una cuenta en HuggingFace, ya que vamos a desplegar el backend en un space de HuggingFace.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Desplegar-backend-con-Gradio">Desplegar backend con Gradio<a class="anchor-link" href="#Desplegar-backend-con-Gradio">¶</a></h2>
+<h2 id="Desplegar backend con Gradio">Desplegar backend con Gradio<a class="anchor-link" href="#Desplegar backend con Gradio">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Crear-space">Crear space<a class="anchor-link" href="#Crear-space">¶</a></h3>
+<h3 id="Crear space">Crear space<a class="anchor-link" href="#Crear space">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>Primero de todo, creamos un nuevo espacio en Hugging Face.</p>
 <ul>
-<li>Ponemos un nombre, una descripción y elegimos la licencia.</li>
-<li>Elegimos Gradio como el tipo de SDK. Al elegir Gradio, nos aparecerán plantillas, así que elegimos la plantilla de chatbot.</li>
-<li>Seleccionamos el HW en el que vamos a desplegar el backend, yo voy a elegir la CPU gratuita, pero tú elige lo que mejor consideres.</li>
-<li>Y por último hay que elegir si queremos crear el espacio público o privado.</li>
+  <li>Ponemos un nombre, una descripción y elegimos la licencia.</li>
+  <li>Elegimos Gradio como el tipo de SDK. Al elegir Gradio, nos aparecerán plantillas, así que elegimos la plantilla de chatbot.</li>
+  <li>Seleccionamos el HW en el que vamos a desplegar el backend, yo voy a elegir la CPU gratuita, pero tú elige lo que mejor consideres.</li>
+  <li>Y por último hay que elegir si queremos crear el espacio público o privado.</li>
 </ul>
-<p><img alt="backend gradio - create space" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-gradio-create-space.webp"/></p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-gradio-create-space.webp" alt="backend gradio - create space">
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="C%C3%B3digo">Código<a class="anchor-link" href="#C%C3%B3digo">¶</a></h3>
+<h3 id="Codigo">Código<a class="anchor-link" href="#Codigo">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>Al crear el space, podemos clonarlo o podemos ver los archivos en la propia página de HuggingFace. Podemos ver que se han creado 3 archivos, <code>app.py</code>, <code>requirements.txt</code> y <code>README.md</code>. Así que vamos a ver qué poner en cada uno</p>
@@ -37,94 +37,31 @@
 </section>
 <section class="section-block-markdown-cell">
 <p>Como modelo de lenguaje veo <code>HuggingFaceH4/zephyr-7b-beta</code>, pero vamos a usar <code>Qwen/Qwen2.5-72B-Instruct</code>, que es un modelo muy capaz.</p>
-<p>Así que busca el texto <code>client = InferenceClient("HuggingFaceH4/zephyr-7b-beta")</code> y reemplázalo por <code>client = InferenceClient("Qwen/Qwen2.5-72B-Instruct")</code>, o espera que más adelante pondré todo el código.</p>
+<p>Así que busca el texto <code>client = InferenceClient(&quot;HuggingFaceH4/zephyr-7b-beta&quot;)</code> y reemplázalo por <code>client = InferenceClient(&quot;Qwen/Qwen2.5-72B-Instruct&quot;)</code>, o espera que más adelante pondré todo el código.</p>
 </section>
 <section class="section-block-markdown-cell">
 <p>También vamos a cambiar el system prompt, que por defecto es <code>You are a friendly Chatbot.</code>, pero como es un modelo entrenado en su mayoría en inglés, es probable que si le hablas en otro idioma te responda en inglés, así que vamos a cambiarlo por <code>You are a friendly Chatbot. Always reply in the language in which the user is writing to you.</code>.</p>
-<p>Así que busca el texto <code>gr.Textbox(value="You are a friendly Chatbot.", label="System message"),</code> y reemplázalo por <code>gr.Textbox(value="You are a friendly Chatbot. Always reply in the language in which the user is writing to you.", label="System message"),</code>, o espera a que ahora voy a poner todo el código.</p>
+<p>Así que busca el texto <code>gr.Textbox(value=&quot;You are a friendly Chatbot.&quot;, label=&quot;System message&quot;),</code> y reemplázalo por <code>gr.Textbox(value=&quot;You are a friendly Chatbot. Always reply in the language in which the user is writing to you.&quot;, label=&quot;System message&quot;),</code>, o espera a que ahora voy a poner todo el código.</p>
 </section>
 <section class="section-block-markdown-cell">
-<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">gradio</span> <span class="k">as</span> <span class="nn">gr</span>
-<span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">InferenceClient</span>
-
-<span class="sd">"""</span>
-<span class="sd">For more information on `huggingface_hub` Inference API support, please check the docs: https://huggingface.co/docs/huggingface_hub/v0.22.2/en/guides/inference</span>
-<span class="sd">"""</span>
-<span class="n">client</span> <span class="o">=</span> <span class="n">InferenceClient</span><span class="p">(</span><span class="s2">"Qwen/Qwen2.5-72B-Instruct"</span><span class="p">)</span>
-
-
-<span class="k">def</span> <span class="nf">respond</span><span class="p">(</span>
-    <span class="n">message</span><span class="p">,</span>
-    <span class="n">history</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>
-    <span class="n">system_message</span><span class="p">,</span>
-    <span class="n">max_tokens</span><span class="p">,</span>
-    <span class="n">temperature</span><span class="p">,</span>
-    <span class="n">top_p</span><span class="p">,</span>
-<span class="p">):</span>
-    <span class="n">messages</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"system"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">system_message</span><span class="p">}]</span>
-
-    <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">history</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-            <span class="n">messages</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">]})</span>
-        <span class="k">if</span> <span class="n">val</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
-            <span class="n">messages</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"assistant"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">val</span><span class="p">[</span><span class="mi">1</span><span class="p">]})</span>
-
-    <span class="n">messages</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">message</span><span class="p">})</span>
-
-    <span class="n">response</span> <span class="o">=</span> <span class="s2">""</span>
-
-    <span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">client</span><span class="o">.</span><span class="n">chat_completion</span><span class="p">(</span>
-        <span class="n">messages</span><span class="p">,</span>
-        <span class="n">max_tokens</span><span class="o">=</span><span class="n">max_tokens</span><span class="p">,</span>
-        <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
-        <span class="n">top_p</span><span class="o">=</span><span class="n">top_p</span><span class="p">,</span>
-    <span class="p">):</span>
-        <span class="n">token</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">delta</span><span class="o">.</span><span class="n">content</span>
-
-        <span class="n">response</span> <span class="o">+=</span> <span class="n">token</span>
-        <span class="k">yield</span> <span class="n">response</span>
-
-
-<span class="sd">"""</span>
-<span class="sd">For information on how to customize the ChatInterface, peruse the gradio docs: https://www.gradio.app/docs/gradio/chatinterface</span>
-<span class="sd">"""</span>
-<span class="n">demo</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">ChatInterface</span><span class="p">(</span>
-    <span class="n">respond</span><span class="p">,</span>
-    <span class="n">additional_inputs</span><span class="o">=</span><span class="p">[</span>
-        <span class="n">gr</span><span class="o">.</span><span class="n">Textbox</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">"You are a friendly Chatbot. Always reply in the language in which the user is writing to you."</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"System message"</span><span class="p">),</span>
-        <span class="n">gr</span><span class="o">.</span><span class="n">Slider</span><span class="p">(</span><span class="n">minimum</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">maximum</span><span class="o">=</span><span class="mi">2048</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Max new tokens"</span><span class="p">),</span>
-        <span class="n">gr</span><span class="o">.</span><span class="n">Slider</span><span class="p">(</span><span class="n">minimum</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">maximum</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Temperature"</span><span class="p">),</span>
-        <span class="n">gr</span><span class="o">.</span><span class="n">Slider</span><span class="p">(</span>
-            <span class="n">minimum</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
-            <span class="n">maximum</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
-            <span class="n">value</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
-            <span class="n">step</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
-            <span class="n">label</span><span class="o">=</span><span class="s2">"Top-p (nucleus sampling)"</span><span class="p">,</span>
-        <span class="p">),</span>
-    <span class="p">],</span>
-<span class="p">)</span>
-
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
-    <span class="n">demo</span><span class="o">.</span><span class="n">launch</span><span class="p">()</span>
-</pre></div>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python">import gradio as gr<br>from huggingface_hub import InferenceClient<br><br>"""<br>For more information on `huggingface_hub` Inference API support, please check the docs: https://huggingface.co/docs/huggingface_hub/v0.22.2/en/guides/inference<br>"""<br>client = InferenceClient("Qwen/Qwen2.5-72B-Instruct")<br><br><br>def respond(<br>&#x20;&#x20;message,<br>&#x20;&#x20;history: list[tuple[str, str]],<br>&#x20;&#x20;system_message,<br>&#x20;&#x20;max_tokens,<br>&#x20;&#x20;temperature,<br>&#x20;&#x20;top_p,<br>):<br>&#x20;&#x20;messages = [{"role": "system", "content": system_message}]<br><br>&#x20;&#x20;for val in history:<br>&#x20;&#x20;&#x20;&#x20;if val[0]:<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;messages.append({"role": "user", "content": val[0]})<br>&#x20;&#x20;&#x20;&#x20;if val[1]:<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;messages.append({"role": "assistant", "content": val[1]})<br><br>&#x20;&#x20;messages.append({"role": "user", "content": message})<br><br>&#x20;&#x20;response = ""<br><br>&#x20;&#x20;for message in client.chat_completion(<br>&#x20;&#x20;&#x20;&#x20;messages,<br>&#x20;&#x20;&#x20;&#x20;max_tokens=max_tokens,<br>&#x20;&#x20;&#x20;&#x20;stream=True,<br>&#x20;&#x20;&#x20;&#x20;temperature=temperature,<br>&#x20;&#x20;&#x20;&#x20;top_p=top_p,<br>&#x20;&#x20;):<br>&#x20;&#x20;&#x20;&#x20;token = message.choices[0].delta.content<br><br>&#x20;&#x20;&#x20;&#x20;response += token<br>&#x20;&#x20;&#x20;&#x20;yield response<br><br><br>"""<br>For information on how to customize the ChatInterface, peruse the gradio docs: https://www.gradio.app/docs/gradio/chatinterface<br>"""<br>demo = gr.ChatInterface(<br>&#x20;&#x20;respond,<br>&#x20;&#x20;additional_inputs=[<br>&#x20;&#x20;&#x20;&#x20;gr.Textbox(value="You are a friendly Chatbot. Always reply in the language in which the user is writing to you.", label="System message"),<br>&#x20;&#x20;&#x20;&#x20;gr.Slider(minimum=1, maximum=2048, value=512, step=1, label="Max new tokens"),<br>&#x20;&#x20;&#x20;&#x20;gr.Slider(minimum=0.1, maximum=4.0, value=0.7, step=0.1, label="Temperature"),<br>&#x20;&#x20;&#x20;&#x20;gr.Slider(<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;minimum=0.1,<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;maximum=1.0,<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;value=0.95,<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;step=0.05,<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;label="Top-p (nucleus sampling)",<br>&#x20;&#x20;&#x20;&#x20;),<br>&#x20;&#x20;],<br>)<br><br><br>if __name__ == "__main__":<br>&#x20;&#x20;demo.launch()</code></pre></div>
+      </section>
 </section>
 <section class="section-block-markdown-cell">
 <h4 id="requirements.txt">requirements.txt<a class="anchor-link" href="#requirements.txt">¶</a></h4>
 </section>
 <section class="section-block-markdown-cell">
 <p>Este es el archivo en el que estarán escritas las dependencias, pero para este caso va a ser muy sencillo:</p>
-<pre><code class="language-txt">txt
-huggingface_hub==0.25.2
-</code></pre>
+<div class='highlight'><pre><code class="language-txt">huggingface_hub==0.25.2
+</code></pre></div>
 </section>
 <section class="section-block-markdown-cell">
 <h4 id="README.md">README.md<a class="anchor-link" href="#README.md">¶</a></h4>
 </section>
 <section class="section-block-markdown-cell">
 <p>Este es el archivo en el que vamos a poner la información del espacio. En los spaces de HuggingFace, al inicio de los readmes, se pone un código para que HuggingFace sepa cómo mostrar la miniatura del espacio, qué fichero tiene que usar para ejecutar el código, versión del sdk, etc.</p>
-<div class="highlight"><pre><span></span>---
+<div class='highlight'><pre><code class="language-md">---
 title: SmolLM2
 emoji: 💬
 colorFrom: yellow
@@ -134,11 +71,11 @@ sdk_version: 5.0.1
 app_file: app.py
 pinned: false
 license: apache-2.0
-<span class="gu">short_description: Gradio SmolLM2 chat</span>
-<span class="gu">---</span>
+short_description: Gradio SmolLM2 chat
+---
 
-An example chatbot using [<span class="nt">Gradio</span>](<span class="na">https://gradio.app</span>), [<span class="sb">`huggingface_hub`</span>](https://huggingface.co/docs/huggingface_hub/v0.22.2/en/index), and the [<span class="nt">Hugging Face Inference API</span>](<span class="na">https://huggingface.co/docs/api-inference/index</span>).
-</pre></div>
+An example chatbot using [Gradio](https://gradio.app), [`huggingface_hub`](https://huggingface.co/docs/huggingface_hub/v0.22.2/en/index), and the [Hugging Face Inference API](https://huggingface.co/docs/api-inference/index).
+</code></pre></div>
 </section>
 <section class="section-block-markdown-cell">
 <h3 id="Despliegue">Despliegue<a class="anchor-link" href="#Despliegue">¶</a></h3>
@@ -146,44 +83,46 @@ An example chatbot using [<span class="nt">Gradio</span>](<span class="na">https
 <section class="section-block-markdown-cell">
 <p>Si hemos clonado el espacio, tenemos que hacer un commit y un push. Si hemos modificado los archivos en HuggingFace, con guardarlos es suficiente.</p>
 <p>Así que cuando estén los cambios en HuggingFace, tendremos que esperar unos segundos para que se construya el espacio y podremos usarlo.</p>
-<p><img alt="backend gradio - chatbot" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-gradio-chatbot.webp"/></p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-gradio-chatbot.webp" alt="backend gradio - chatbot">
 </section>
 <section class="section-block-markdown-cell">
 <h3 id="Backend">Backend<a class="anchor-link" href="#Backend">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>Muy bien, hemos hecho un chatbot, pero no era la intención, aquí habíamos venido a hacer un backend! Para, para, fíjate lo que pone debajo del chatbot</p>
-<p><img alt="backend gradio - Use via API" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-gradio-chatbot-edited.webp"/></p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-gradio-chatbot-edited.webp" alt="backend gradio - Use via API">
 </section>
 <section class="section-block-markdown-cell">
 <p>Podemos ver un texto <code>Use via API</code>, donde si pulsamos se nos abre un menú con una API para poder usar el chatbot.</p>
-<p><img alt="backend gradio - API" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend%20gradio%20-%20API.webp"/></p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend%20gradio%20-%20API.webp" alt="backend gradio - API">
 </section>
 <section class="section-block-markdown-cell">
 <p>Vemos que nos da una documentación de cómo usar la API, tanto con Python, con JavaScript, como con bash.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Prueba-de-la-API">Prueba de la API<a class="anchor-link" href="#Prueba-de-la-API">¶</a></h3>
+<h3 id="Prueba de la API">Prueba de la API<a class="anchor-link" href="#Prueba de la API">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>Usamos el código de ejemplo de Python.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">gradio_client</span> <span class="kn">import</span> <span class="n">Client</span>
-
-<span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="s2">"Maximofn/SmolLM2"</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gradio_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
+<span class="w"> </span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="s2">&quot;Maximofn/SmolLM2&quot;</span><span class="p">)</span>
 <span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
-		<span class="n">message</span><span class="o">=</span><span class="s2">"Hola, ¿cómo estás? Me llamo Máximo"</span><span class="p">,</span>
-		<span class="n">system_message</span><span class="o">=</span><span class="s2">"You are a friendly Chatbot. Always reply in the language in which the user is writing to you."</span><span class="p">,</span>
-		<span class="n">max_tokens</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
-		<span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
-		<span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
-		<span class="n">api_name</span><span class="o">=</span><span class="s2">"/chat"</span>
+<span class="w">	</span><span class="w">	</span><span class="n">message</span><span class="o">=</span><span class="s2">&quot;Hola, ¿cómo estás? Me llamo Máximo&quot;</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">system_message</span><span class="o">=</span><span class="s2">&quot;You are a friendly Chatbot. Always reply in the language in which the user is writing to you.&quot;</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">max_tokens</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">api_name</span><span class="o">=</span><span class="s2">&quot;/chat&quot;</span>
 <span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
@@ -201,16 +140,18 @@ An example chatbot using [<span class="nt">Gradio</span>](<span class="na">https
 <section class="section-block-code-cell-">
 <div class="input-code">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
-		<span class="n">message</span><span class="o">=</span><span class="s2">"¿Cómo me llamo?"</span><span class="p">,</span>
-		<span class="n">system_message</span><span class="o">=</span><span class="s2">"You are a friendly Chatbot. Always reply in the language in which the user is writing to you."</span><span class="p">,</span>
-		<span class="n">max_tokens</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
-		<span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
-		<span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
-		<span class="n">api_name</span><span class="o">=</span><span class="s2">"/chat"</span>
+<span class="w">	</span><span class="w">	</span><span class="n">message</span><span class="o">=</span><span class="s2">&quot;¿Cómo me llamo?&quot;</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">system_message</span><span class="o">=</span><span class="s2">&quot;You are a friendly Chatbot. Always reply in the language in which the user is writing to you.&quot;</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">max_tokens</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">api_name</span><span class="o">=</span><span class="s2">&quot;/chat&quot;</span>
 <span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
@@ -229,20 +170,22 @@ An example chatbot using [<span class="nt">Gradio</span>](<span class="na">https
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">gradio_client</span> <span class="kn">import</span> <span class="n">Client</span>
-
-<span class="n">new_client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="s2">"Maximofn/SmolLM2"</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gradio_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
+<span class="w"> </span>
+<span class="n">new_client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="s2">&quot;Maximofn/SmolLM2&quot;</span><span class="p">)</span>
 <span class="n">result</span> <span class="o">=</span> <span class="n">new_client</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
-		<span class="n">message</span><span class="o">=</span><span class="s2">"Hola, ¿cómo estás? Me llamo Luis"</span><span class="p">,</span>
-		<span class="n">system_message</span><span class="o">=</span><span class="s2">"You are a friendly Chatbot. Always reply in the language in which the user is writing to you."</span><span class="p">,</span>
-		<span class="n">max_tokens</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
-		<span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
-		<span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
-		<span class="n">api_name</span><span class="o">=</span><span class="s2">"/chat"</span>
+<span class="w">	</span><span class="w">	</span><span class="n">message</span><span class="o">=</span><span class="s2">&quot;Hola, ¿cómo estás? Me llamo Luis&quot;</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">system_message</span><span class="o">=</span><span class="s2">&quot;You are a friendly Chatbot. Always reply in the language in which the user is writing to you.&quot;</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">max_tokens</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">api_name</span><span class="o">=</span><span class="s2">&quot;/chat&quot;</span>
 <span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
@@ -260,16 +203,18 @@ Hola Luis, estoy muy bien, gracias por preguntar. ¿Cómo estás tú? Es un gust
 <section class="section-block-code-cell-">
 <div class="input-code">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">new_client</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
-		<span class="n">message</span><span class="o">=</span><span class="s2">"¿Cómo me llamo?"</span><span class="p">,</span>
-		<span class="n">system_message</span><span class="o">=</span><span class="s2">"You are a friendly Chatbot. Always reply in the language in which the user is writing to you."</span><span class="p">,</span>
-		<span class="n">max_tokens</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
-		<span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
-		<span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
-		<span class="n">api_name</span><span class="o">=</span><span class="s2">"/chat"</span>
+<span class="w">	</span><span class="w">	</span><span class="n">message</span><span class="o">=</span><span class="s2">&quot;¿Cómo me llamo?&quot;</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">system_message</span><span class="o">=</span><span class="s2">&quot;You are a friendly Chatbot. Always reply in the language in which the user is writing to you.&quot;</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">max_tokens</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">api_name</span><span class="o">=</span><span class="s2">&quot;/chat&quot;</span>
 <span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
@@ -284,26 +229,26 @@ Hola Luis, estoy muy bien, gracias por preguntar. ¿Cómo estás tú? Es un gust
 <p>Como vemos, tenemos dos clientes, cada uno con su propio hilo de conversación.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Desplegar-backend-con-FastAPI,-Langchain-y-Docker">Desplegar backend con FastAPI, Langchain y Docker<a class="anchor-link" href="#Desplegar-backend-con-FastAPI,-Langchain-y-Docker">¶</a></h2>
+<h2 id="Desplegar backend con FastAPI, Langchain y Docker">Desplegar backend con FastAPI, Langchain y Docker<a class="anchor-link" href="#Desplegar backend con FastAPI, Langchain y Docker">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
 <p>Ahora vamos a hacer lo mismo, crear un backend de un chatbot, con el mismo modelo, pero en este caso usando FastAPI, Langchain y Docker.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Crear-space">Crear space<a class="anchor-link" href="#Crear-space">¶</a></h3>
+<h3 id="Crear space">Crear space<a class="anchor-link" href="#Crear space">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>Tenemos que crear un nuevo espacio, pero en este caso lo haremos de otra manera</p>
 <ul>
-<li>Ponemos un nombre, una descripción y elegimos la licencia.</li>
-<li>Elegimos Docker como el tipo de SDK. Al elegir Docker, nos aparecerán plantillas, así que elegimos una plantilla en blanco.</li>
-<li>Seleccionamos el HW en el que vamos a desplegar el backend, yo voy a elegir la CPU gratuita, pero tú elige lo que mejor consideres.</li>
-<li>Y por último hay que elegir si queremos crear el espacio público o privado.</li>
+  <li>Ponemos un nombre, una descripción y elegimos la licencia.</li>
+  <li>Elegimos Docker como el tipo de SDK. Al elegir Docker, nos aparecerán plantillas, así que elegimos una plantilla en blanco.</li>
+  <li>Seleccionamos el HW en el que vamos a desplegar el backend, yo voy a elegir la CPU gratuita, pero tú elige lo que mejor consideres.</li>
+  <li>Y por último hay que elegir si queremos crear el espacio público o privado.</li>
 </ul>
-<p><img alt="backend docker - create space" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-create-space.webp"/></p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-create-space.webp" alt="backend docker - create space">
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="C%C3%B3digo">Código<a class="anchor-link" href="#C%C3%B3digo">¶</a></h3>
+<h3 id="Codigo">Código<a class="anchor-link" href="#Codigo">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>Ahora, al crear el space, vemos que solo tenemos un archivo, el <code>README.md</code>. Así que vamos a tener que crear todo el código nosotros.</p>
@@ -316,268 +261,69 @@ Hola Luis, estoy muy bien, gracias por preguntar. ¿Cómo estás tú? Es un gust
 </section>
 <section class="section-block-markdown-cell">
 <p>Empezamos con las librerías necesarias</p>
-<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">fastapi</span> <span class="kn">import</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">HTTPException</span>
-<span class="kn">from</span> <span class="nn">pydantic</span> <span class="kn">import</span> <span class="n">BaseModel</span>
-<span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">InferenceClient</span>
-
-<span class="kn">from</span> <span class="nn">langchain_core.messages</span> <span class="kn">import</span> <span class="n">HumanMessage</span><span class="p">,</span> <span class="n">AIMessage</span>
-<span class="kn">from</span> <span class="nn">langgraph.checkpoint.memory</span> <span class="kn">import</span> <span class="n">MemorySaver</span>
-<span class="kn">from</span> <span class="nn">langgraph.graph</span> <span class="kn">import</span> <span class="n">START</span><span class="p">,</span> <span class="n">MessagesState</span><span class="p">,</span> <span class="n">StateGraph</span>
-
-<span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">from</span> <span class="nn">dotenv</span> <span class="kn">import</span> <span class="n">load_dotenv</span>
-<span class="n">load_dotenv</span><span class="p">()</span>
-</pre></div>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python">from fastapi import FastAPI, HTTPException<br>from pydantic import BaseModel<br>from huggingface_hub import InferenceClient<br><br>from langchain_core.messages import HumanMessage, AIMessage<br>from langgraph.checkpoint.memory import MemorySaver<br>from langgraph.graph import START, MessagesState, StateGraph<br><br>import os<br>from dotenv import load_dotenv<br>load_dotenv()</code></pre></div>
+      </section>
 <p>Cargamos <code>fastapi</code> para poder crear las rutas de la API, <code>pydantic</code> para crear la plantilla de las querys, <code>huggingface_hub</code> para poder crear un modelo de lenguaje, <code>langchain</code> para poder indicarle al modelo si los mensajes son del chatbot o del usuario y <code>langgraph</code> para poder crear el chatbot.</p>
 <p>Además cargamos <code>os</code> y <code>dotenv</code> para poder cargar las variables de entorno.</p>
 </section>
 <section class="section-block-markdown-cell">
 <p>Cargamos el token de HuggingFace</p>
-<div class="highlight"><pre><span></span><span class="c1"># HuggingFace token</span>
-<span class="n">HUGGINGFACE_TOKEN</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"HUGGINGFACE_TOKEN"</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"HUGGINGFACE_TOKEN"</span><span class="p">))</span>
-</pre></div>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python"># HuggingFace token<br>HUGGINGFACE_TOKEN = os.environ.get("HUGGINGFACE_TOKEN", os.getenv("HUGGINGFACE_TOKEN"))</code></pre></div>
+      </section>
 </section>
 <section class="section-block-markdown-cell">
 <p>Creamos el modelo de lenguaje</p>
-<div class="highlight"><pre><span></span><span class="c1"># Initialize the HuggingFace model</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">InferenceClient</span><span class="p">(</span>
-    <span class="n">model</span><span class="o">=</span><span class="s2">"Qwen/Qwen2.5-72B-Instruct"</span><span class="p">,</span>
-    <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"HUGGINGFACE_TOKEN"</span><span class="p">)</span>
-<span class="p">)</span>
-</pre></div>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python"># Initialize the HuggingFace model<br>model = InferenceClient(<br>&#x20;&#x20;model="Qwen/Qwen2.5-72B-Instruct",<br>&#x20;&#x20;api_key=os.getenv("HUGGINGFACE_TOKEN")<br>)</code></pre></div>
+      </section>
 </section>
 <section class="section-block-markdown-cell">
 <p>Creamos ahora una función para llamar al modelo</p>
-<div class="highlight"><pre><span></span><span class="c1"># Define the function that calls the model</span>
-<span class="k">def</span> <span class="nf">call_model</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">MessagesState</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Call the model with the given messages</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        state: MessagesState</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        dict: A dictionary containing the generated text and the thread ID</span>
-<span class="sd">    """</span>
-    <span class="c1"># Convert LangChain messages to HuggingFace format</span>
-    <span class="n">hf_messages</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">state</span><span class="p">[</span><span class="s2">"messages"</span><span class="p">]:</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">HumanMessage</span><span class="p">):</span>
-            <span class="n">hf_messages</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">msg</span><span class="o">.</span><span class="n">content</span><span class="p">})</span>
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">AIMessage</span><span class="p">):</span>
-            <span class="n">hf_messages</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"assistant"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">msg</span><span class="o">.</span><span class="n">content</span><span class="p">})</span>
-
-    <span class="c1"># Call the API</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">chat_completion</span><span class="p">(</span>
-        <span class="n">messages</span><span class="o">=</span><span class="n">hf_messages</span><span class="p">,</span>
-        <span class="n">temperature</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
-        <span class="n">max_tokens</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
-        <span class="n">top_p</span><span class="o">=</span><span class="mf">0.7</span>
-    <span class="p">)</span>
-
-    <span class="c1"># Convert the response to LangChain format</span>
-    <span class="n">ai_message</span> <span class="o">=</span> <span class="n">AIMessage</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">"messages"</span><span class="p">:</span> <span class="n">state</span><span class="p">[</span><span class="s2">"messages"</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">ai_message</span><span class="p">]}</span>
-</pre></div>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python"># Define the function that calls the model<br>def call_model(state: MessagesState):<br>&#x20;&#x20;"""<br>&#x20;&#x20;Call the model with the given messages<br><br>&#x20;&#x20;Args:<br>&#x20;&#x20;&#x20;&#x20;state: MessagesState<br><br>&#x20;&#x20;Returns:<br>&#x20;&#x20;&#x20;&#x20;dict: A dictionary containing the generated text and the thread ID<br>&#x20;&#x20;"""<br>&#x20;&#x20;# Convert LangChain messages to HuggingFace format<br>&#x20;&#x20;hf_messages = []<br>&#x20;&#x20;for msg in state["messages"]:<br>&#x20;&#x20;&#x20;&#x20;if isinstance(msg, HumanMessage):<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;hf_messages.append({"role": "user", "content": msg.content})<br>&#x20;&#x20;&#x20;&#x20;elif isinstance(msg, AIMessage):<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;hf_messages.append({"role": "assistant", "content": msg.content})<br>&#x20;&#x20;<br>&#x20;&#x20;# Call the API<br>&#x20;&#x20;response = model.chat_completion(<br>&#x20;&#x20;&#x20;&#x20;messages=hf_messages,<br>&#x20;&#x20;&#x20;&#x20;temperature=0.5,<br>&#x20;&#x20;&#x20;&#x20;max_tokens=64,<br>&#x20;&#x20;&#x20;&#x20;top_p=0.7<br>&#x20;&#x20;)<br>&#x20;&#x20;<br>&#x20;&#x20;# Convert the response to LangChain format<br>&#x20;&#x20;ai_message = AIMessage(content=response.choices[0].message.content)<br>&#x20;&#x20;return {"messages": state["messages"] + [ai_message]}</code></pre></div>
+      </section>
 <p>Convertimos los mensajes de formato LangChain a formato HuggingFace, así podemos usar el modelo de lenguaje.</p>
 </section>
 <section class="section-block-markdown-cell">
 <p>Definimos una plantilla para las queries</p>
-<div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">QueryRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">query</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">thread_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"default"</span>
-</pre></div>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python">class QueryRequest(BaseModel):<br>&#x20;&#x20;query: str<br>&#x20;&#x20;thread_id: str = "default"</code></pre></div>
+      </section>
 <p>Las queries van a tener un <code>query</code>, el mensaje del usuario, y un <code>thread_id</code>, que es el identificador del hilo de la conversación y más adelante explicaremos para qué lo usamos.</p>
 </section>
 <section class="section-block-markdown-cell">
 <p>Creamos un grafo de LangGraph</p>
-<div class="highlight"><pre><span></span><span class="c1"># Define the graph</span>
-<span class="n">workflow</span> <span class="o">=</span> <span class="n">StateGraph</span><span class="p">(</span><span class="n">state_schema</span><span class="o">=</span><span class="n">MessagesState</span><span class="p">)</span>
-
-<span class="c1"># Define the node in the graph</span>
-<span class="n">workflow</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">START</span><span class="p">,</span> <span class="s2">"model"</span><span class="p">)</span>
-<span class="n">workflow</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">"model"</span><span class="p">,</span> <span class="n">call_model</span><span class="p">)</span>
-
-<span class="c1"># Add memory</span>
-<span class="n">memory</span> <span class="o">=</span> <span class="n">MemorySaver</span><span class="p">()</span>
-<span class="n">graph_app</span> <span class="o">=</span> <span class="n">workflow</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">checkpointer</span><span class="o">=</span><span class="n">memory</span><span class="p">)</span>
-</pre></div>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python"># Define the graph<br>workflow = StateGraph(state_schema=MessagesState)<br><br># Define the node in the graph<br>workflow.add_edge(START, "model")<br>workflow.add_node("model", call_model)<br><br># Add memory<br>memory = MemorySaver()<br>graph_app = workflow.compile(checkpointer=memory)</code></pre></div>
+      </section>
 <p>Con esto lo que hacemos es crear un grafo de LangGraph, que es una estructura de datos que nos permite crear un chatbot y que gestiona por nosotros el estado del chatbot, es decir, entre otras cosas, el historial de mensajes. Así no lo tenemos que hacer nosotros.</p>
 </section>
 <section class="section-block-markdown-cell">
 <p>Creamos la aplicación de FastAPI</p>
-<div class="highlight"><pre><span></span><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"LangChain FastAPI"</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"API to generate text using LangChain and LangGraph"</span><span class="p">)</span>
-</pre></div>
+<div class='highlight'><pre><code class="language-python">app = FastAPI(title="LangChain FastAPI", description="API to generate text using LangChain and LangGraph")
+</code></pre></div>
 </section>
 <section class="section-block-markdown-cell">
 <p>Creamos los endpoints de la API</p>
-<div class="highlight"><pre><span></span><span class="c1"># Welcome endpoint</span>
-<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span> <span class="nf">api_home</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">"""Welcome endpoint"""</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">"detail"</span><span class="p">:</span> <span class="s2">"Welcome to FastAPI, Langchain, Docker tutorial"</span><span class="p">}</span>
-
-<span class="c1"># Generate endpoint</span>
-<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/generate"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">QueryRequest</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Endpoint to generate text using the language model</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        request: QueryRequest</span>
-<span class="sd">        query: str</span>
-<span class="sd">        thread_id: str = "default"</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        dict: A dictionary containing the generated text and the thread ID</span>
-<span class="sd">    """</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="c1"># Configure the thread ID</span>
-        <span class="n">config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"configurable"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"thread_id"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">thread_id</span><span class="p">}}</span>
-
-        <span class="c1"># Create the input message</span>
-        <span class="n">input_messages</span> <span class="o">=</span> <span class="p">[</span><span class="n">HumanMessage</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">query</span><span class="p">)]</span>
-
-        <span class="c1"># Invoke the graph</span>
-        <span class="n">output</span> <span class="o">=</span> <span class="n">graph_app</span><span class="o">.</span><span class="n">invoke</span><span class="p">({</span><span class="s2">"messages"</span><span class="p">:</span> <span class="n">input_messages</span><span class="p">},</span> <span class="n">config</span><span class="p">)</span>
-
-        <span class="c1"># Get the model response</span>
-        <span class="n">response</span> <span class="o">=</span> <span class="n">output</span><span class="p">[</span><span class="s2">"messages"</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">content</span>
-
-        <span class="k">return</span> <span class="p">{</span>
-            <span class="s2">"generated_text"</span><span class="p">:</span> <span class="n">response</span><span class="p">,</span>
-            <span class="s2">"thread_id"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">thread_id</span>
-        <span class="p">}</span>
-    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Error al generar texto: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</pre></div>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python"># Welcome endpoint<br>@app.get("/")<br>async def api_home():<br>&#x20;&#x20;"""Welcome endpoint"""<br>&#x20;&#x20;return {"detail": "Welcome to FastAPI, Langchain, Docker tutorial"}<br><br># Generate endpoint<br>@app.post("/generate")<br>async def generate(request: QueryRequest):<br>&#x20;&#x20;"""<br>&#x20;&#x20;Endpoint to generate text using the language model<br>&#x20;&#x20;<br>&#x20;&#x20;Args:<br>&#x20;&#x20;&#x20;&#x20;request: QueryRequest<br>&#x20;&#x20;&#x20;&#x20;query: str<br>&#x20;&#x20;&#x20;&#x20;thread_id: str = "default"<br><br>&#x20;&#x20;Returns:<br>&#x20;&#x20;&#x20;&#x20;dict: A dictionary containing the generated text and the thread ID<br>&#x20;&#x20;"""<br>&#x20;&#x20;try:<br>&#x20;&#x20;&#x20;&#x20;# Configure the thread ID<br>&#x20;&#x20;&#x20;&#x20;config = {"configurable": {"thread_id": request.thread_id}}<br>&#x20;&#x20;&#x20;&#x20;<br>&#x20;&#x20;&#x20;&#x20;# Create the input message<br>&#x20;&#x20;&#x20;&#x20;input_messages = [HumanMessage(content=request.query)]<br>&#x20;&#x20;&#x20;&#x20;<br>&#x20;&#x20;&#x20;&#x20;# Invoke the graph<br>&#x20;&#x20;&#x20;&#x20;output = graph_app.invoke({"messages": input_messages}, config)<br>&#x20;&#x20;&#x20;&#x20;<br>&#x20;&#x20;&#x20;&#x20;# Get the model response<br>&#x20;&#x20;&#x20;&#x20;response = output["messages"][-1].content<br>&#x20;&#x20;&#x20;&#x20;<br>&#x20;&#x20;&#x20;&#x20;return {<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;"generated_text": response,<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;"thread_id": request.thread_id<br>&#x20;&#x20;&#x20;&#x20;}<br>&#x20;&#x20;except Exception as e:<br>&#x20;&#x20;&#x20;&#x20;raise HTTPException(status_code=500, detail=f"Error al generar texto: {str(e)}")</code></pre></div>
+      </section>
 <p>Hemos creado el endpoint <code>/</code> que nos devolverá un texto cuando accedamos a la API, y el endpoint <code>/generate</code> que es el que usaremos para generar el texto.</p>
 <p>Si nos fijamos en la función <code>generate</code> tenemos la variable <code>config</code>, que es un diccionario que contiene el <code>thread_id</code>. Este <code>thread_id</code> es el que nos permite tener un historial de mensajes de cada usuario, de esta manera, diferentes usuarios pueden usar el mismo endpoint y tener su propio historial de mensajes.</p>
 </section>
 <section class="section-block-markdown-cell">
 <p>Por último, tenemos el código para que se pueda ejecutar la aplicación</p>
-<div class="highlight"><pre><span></span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
-    <span class="kn">import</span> <span class="nn">uvicorn</span>
-    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s2">"0.0.0.0"</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">7860</span><span class="p">)</span>
-</pre></div>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python">if __name__ == "__main__":<br>&#x20;&#x20;import uvicorn<br>&#x20;&#x20;uvicorn.run(app, host="0.0.0.0", port=7860)</code></pre></div>
+      </section>
 </section>
 <section class="section-block-markdown-cell">
 <p>Vamos a escribir todo el código junto</p>
-<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">fastapi</span> <span class="kn">import</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">HTTPException</span>
-<span class="kn">from</span> <span class="nn">pydantic</span> <span class="kn">import</span> <span class="n">BaseModel</span>
-<span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">InferenceClient</span>
-
-<span class="kn">from</span> <span class="nn">langchain_core.messages</span> <span class="kn">import</span> <span class="n">HumanMessage</span><span class="p">,</span> <span class="n">AIMessage</span>
-<span class="kn">from</span> <span class="nn">langgraph.checkpoint.memory</span> <span class="kn">import</span> <span class="n">MemorySaver</span>
-<span class="kn">from</span> <span class="nn">langgraph.graph</span> <span class="kn">import</span> <span class="n">START</span><span class="p">,</span> <span class="n">MessagesState</span><span class="p">,</span> <span class="n">StateGraph</span>
-
-<span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">from</span> <span class="nn">dotenv</span> <span class="kn">import</span> <span class="n">load_dotenv</span>
-<span class="n">load_dotenv</span><span class="p">()</span>
-
-<span class="c1"># HuggingFace token</span>
-<span class="n">HUGGINGFACE_TOKEN</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"HUGGINGFACE_TOKEN"</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"HUGGINGFACE_TOKEN"</span><span class="p">))</span>
-
-<span class="c1"># Initialize the HuggingFace model</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">InferenceClient</span><span class="p">(</span>
-    <span class="n">model</span><span class="o">=</span><span class="s2">"Qwen/Qwen2.5-72B-Instruct"</span><span class="p">,</span>
-    <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"HUGGINGFACE_TOKEN"</span><span class="p">)</span>
-<span class="p">)</span>
-
-<span class="c1"># Define the function that calls the model</span>
-<span class="k">def</span> <span class="nf">call_model</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">MessagesState</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Call the model with the given messages</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        state: MessagesState</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        dict: A dictionary containing the generated text and the thread ID</span>
-<span class="sd">    """</span>
-    <span class="c1"># Convert LangChain messages to HuggingFace format</span>
-    <span class="n">hf_messages</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">state</span><span class="p">[</span><span class="s2">"messages"</span><span class="p">]:</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">HumanMessage</span><span class="p">):</span>
-            <span class="n">hf_messages</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">msg</span><span class="o">.</span><span class="n">content</span><span class="p">})</span>
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">AIMessage</span><span class="p">):</span>
-            <span class="n">hf_messages</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"assistant"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">msg</span><span class="o">.</span><span class="n">content</span><span class="p">})</span>
-
-    <span class="c1"># Call the API</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">chat_completion</span><span class="p">(</span>
-        <span class="n">messages</span><span class="o">=</span><span class="n">hf_messages</span><span class="p">,</span>
-        <span class="n">temperature</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
-        <span class="n">max_tokens</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
-        <span class="n">top_p</span><span class="o">=</span><span class="mf">0.7</span>
-    <span class="p">)</span>
-
-    <span class="c1"># Convert the response to LangChain format</span>
-    <span class="n">ai_message</span> <span class="o">=</span> <span class="n">AIMessage</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">"messages"</span><span class="p">:</span> <span class="n">state</span><span class="p">[</span><span class="s2">"messages"</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">ai_message</span><span class="p">]}</span>
-
-<span class="c1"># Define the graph</span>
-<span class="n">workflow</span> <span class="o">=</span> <span class="n">StateGraph</span><span class="p">(</span><span class="n">state_schema</span><span class="o">=</span><span class="n">MessagesState</span><span class="p">)</span>
-
-<span class="c1"># Define the node in the graph</span>
-<span class="n">workflow</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">START</span><span class="p">,</span> <span class="s2">"model"</span><span class="p">)</span>
-<span class="n">workflow</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">"model"</span><span class="p">,</span> <span class="n">call_model</span><span class="p">)</span>
-
-<span class="c1"># Add memory</span>
-<span class="n">memory</span> <span class="o">=</span> <span class="n">MemorySaver</span><span class="p">()</span>
-<span class="n">graph_app</span> <span class="o">=</span> <span class="n">workflow</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">checkpointer</span><span class="o">=</span><span class="n">memory</span><span class="p">)</span>
-
-<span class="c1"># Define the data model for the request</span>
-<span class="k">class</span> <span class="nc">QueryRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">query</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">thread_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"default"</span>
-
-<span class="c1"># Create the FastAPI application</span>
-<span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"LangChain FastAPI"</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"API to generate text using LangChain and LangGraph"</span><span class="p">)</span>
-
-<span class="c1"># Welcome endpoint</span>
-<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span> <span class="nf">api_home</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">"""Welcome endpoint"""</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">"detail"</span><span class="p">:</span> <span class="s2">"Welcome to FastAPI, Langchain, Docker tutorial"</span><span class="p">}</span>
-
-<span class="c1"># Generate endpoint</span>
-<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/generate"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">QueryRequest</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Endpoint to generate text using the language model</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        request: QueryRequest</span>
-<span class="sd">        query: str</span>
-<span class="sd">        thread_id: str = "default"</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        dict: A dictionary containing the generated text and the thread ID</span>
-<span class="sd">    """</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="c1"># Configure the thread ID</span>
-        <span class="n">config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"configurable"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"thread_id"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">thread_id</span><span class="p">}}</span>
-
-        <span class="c1"># Create the input message</span>
-        <span class="n">input_messages</span> <span class="o">=</span> <span class="p">[</span><span class="n">HumanMessage</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">query</span><span class="p">)]</span>
-
-        <span class="c1"># Invoke the graph</span>
-        <span class="n">output</span> <span class="o">=</span> <span class="n">graph_app</span><span class="o">.</span><span class="n">invoke</span><span class="p">({</span><span class="s2">"messages"</span><span class="p">:</span> <span class="n">input_messages</span><span class="p">},</span> <span class="n">config</span><span class="p">)</span>
-
-        <span class="c1"># Get the model response</span>
-        <span class="n">response</span> <span class="o">=</span> <span class="n">output</span><span class="p">[</span><span class="s2">"messages"</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">content</span>
-
-        <span class="k">return</span> <span class="p">{</span>
-            <span class="s2">"generated_text"</span><span class="p">:</span> <span class="n">response</span><span class="p">,</span>
-            <span class="s2">"thread_id"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">thread_id</span>
-        <span class="p">}</span>
-    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Error al generar texto: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
-    <span class="kn">import</span> <span class="nn">uvicorn</span>
-    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s2">"0.0.0.0"</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">7860</span><span class="p">)</span>
-</pre></div>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python">from fastapi import FastAPI, HTTPException<br>from pydantic import BaseModel<br>from huggingface_hub import InferenceClient<br><br>from langchain_core.messages import HumanMessage, AIMessage<br>from langgraph.checkpoint.memory import MemorySaver<br>from langgraph.graph import START, MessagesState, StateGraph<br><br>import os<br>from dotenv import load_dotenv<br>load_dotenv()<br><br># HuggingFace token<br>HUGGINGFACE_TOKEN = os.environ.get("HUGGINGFACE_TOKEN", os.getenv("HUGGINGFACE_TOKEN"))<br><br># Initialize the HuggingFace model<br>model = InferenceClient(<br>&#x20;&#x20;model="Qwen/Qwen2.5-72B-Instruct",<br>&#x20;&#x20;api_key=os.getenv("HUGGINGFACE_TOKEN")<br>)<br><br># Define the function that calls the model<br>def call_model(state: MessagesState):<br>&#x20;&#x20;"""<br>&#x20;&#x20;Call the model with the given messages<br><br>&#x20;&#x20;Args:<br>&#x20;&#x20;&#x20;&#x20;state: MessagesState<br><br>&#x20;&#x20;Returns:<br>&#x20;&#x20;&#x20;&#x20;dict: A dictionary containing the generated text and the thread ID<br>&#x20;&#x20;"""<br>&#x20;&#x20;# Convert LangChain messages to HuggingFace format<br>&#x20;&#x20;hf_messages = []<br>&#x20;&#x20;for msg in state["messages"]:<br>&#x20;&#x20;&#x20;&#x20;if isinstance(msg, HumanMessage):<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;hf_messages.append({"role": "user", "content": msg.content})<br>&#x20;&#x20;&#x20;&#x20;elif isinstance(msg, AIMessage):<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;hf_messages.append({"role": "assistant", "content": msg.content})<br>&#x20;&#x20;<br>&#x20;&#x20;# Call the API<br>&#x20;&#x20;response = model.chat_completion(<br>&#x20;&#x20;&#x20;&#x20;messages=hf_messages,<br>&#x20;&#x20;&#x20;&#x20;temperature=0.5,<br>&#x20;&#x20;&#x20;&#x20;max_tokens=64,<br>&#x20;&#x20;&#x20;&#x20;top_p=0.7<br>&#x20;&#x20;)<br>&#x20;&#x20;<br>&#x20;&#x20;# Convert the response to LangChain format<br>&#x20;&#x20;ai_message = AIMessage(content=response.choices[0].message.content)<br>&#x20;&#x20;return {"messages": state["messages"] + [ai_message]}<br><br># Define the graph<br>workflow = StateGraph(state_schema=MessagesState)<br><br># Define the node in the graph<br>workflow.add_edge(START, "model")<br>workflow.add_node("model", call_model)<br><br># Add memory<br>memory = MemorySaver()<br>graph_app = workflow.compile(checkpointer=memory)<br><br># Define the data model for the request<br>class QueryRequest(BaseModel):<br>&#x20;&#x20;query: str<br>&#x20;&#x20;thread_id: str = "default"<br><br># Create the FastAPI application<br>app = FastAPI(title="LangChain FastAPI", description="API to generate text using LangChain and LangGraph")<br><br># Welcome endpoint<br>@app.get("/")<br>async def api_home():<br>&#x20;&#x20;"""Welcome endpoint"""<br>&#x20;&#x20;return {"detail": "Welcome to FastAPI, Langchain, Docker tutorial"}<br><br># Generate endpoint<br>@app.post("/generate")<br>async def generate(request: QueryRequest):<br>&#x20;&#x20;"""<br>&#x20;&#x20;Endpoint to generate text using the language model<br>&#x20;&#x20;<br>&#x20;&#x20;Args:<br>&#x20;&#x20;&#x20;&#x20;request: QueryRequest<br>&#x20;&#x20;&#x20;&#x20;query: str<br>&#x20;&#x20;&#x20;&#x20;thread_id: str = "default"<br><br>&#x20;&#x20;Returns:<br>&#x20;&#x20;&#x20;&#x20;dict: A dictionary containing the generated text and the thread ID<br>&#x20;&#x20;"""<br>&#x20;&#x20;try:<br>&#x20;&#x20;&#x20;&#x20;# Configure the thread ID<br>&#x20;&#x20;&#x20;&#x20;config = {"configurable": {"thread_id": request.thread_id}}<br>&#x20;&#x20;&#x20;&#x20;<br>&#x20;&#x20;&#x20;&#x20;# Create the input message<br>&#x20;&#x20;&#x20;&#x20;input_messages = [HumanMessage(content=request.query)]<br>&#x20;&#x20;&#x20;&#x20;<br>&#x20;&#x20;&#x20;&#x20;# Invoke the graph<br>&#x20;&#x20;&#x20;&#x20;output = graph_app.invoke({"messages": input_messages}, config)<br>&#x20;&#x20;&#x20;&#x20;<br>&#x20;&#x20;&#x20;&#x20;# Get the model response<br>&#x20;&#x20;&#x20;&#x20;response = output["messages"][-1].content<br>&#x20;&#x20;&#x20;&#x20;<br>&#x20;&#x20;&#x20;&#x20;return {<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;"generated_text": response,<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;"thread_id": request.thread_id<br>&#x20;&#x20;&#x20;&#x20;}<br>&#x20;&#x20;except Exception as e:<br>&#x20;&#x20;&#x20;&#x20;raise HTTPException(status_code=500, detail=f"Error al generar texto: {str(e)}")<br><br>if __name__ == "__main__":<br>&#x20;&#x20;import uvicorn<br>&#x20;&#x20;uvicorn.run(app, host="0.0.0.0", port=7860)</code></pre></div>
+      </section>
 </section>
 <section class="section-block-markdown-cell">
 <h4 id="Dockerfile">Dockerfile<a class="anchor-link" href="#Dockerfile">¶</a></h4>
@@ -587,69 +333,68 @@ Hola Luis, estoy muy bien, gracias por preguntar. ¿Cómo estás tú? Es un gust
 </section>
 <section class="section-block-markdown-cell">
 <p>Primero indicamos desde qué imagen vamos a partir</p>
-<div class="highlight"><pre><span></span><span class="k">FROM</span><span class="w"> </span><span class="s">python:3.13-slim</span>
-</pre></div>
+<div class='highlight'><pre><code class="language-dockerfile">FROM python:3.13-slim
+</code></pre></div>
 </section>
 <section class="section-block-markdown-cell">
 <p>Ahora creamos el directorio de trabajo</p>
-<div class="highlight"><pre><span></span><span class="k">RUN</span><span class="w"> </span>useradd<span class="w"> </span>-m<span class="w"> </span>-u<span class="w"> </span><span class="m">1000</span><span class="w"> </span>user
-<span class="k">WORKDIR</span><span class="w"> </span><span class="s">/app</span>
-</pre></div>
+<div class='highlight'><pre><code class="language-dockerfile">RUN useradd -m -u 1000 user
+WORKDIR /app
+</code></pre></div>
 </section>
 <section class="section-block-markdown-cell">
 <p>Copiamos el archivo con las dependencias e instalamos</p>
-<div class="highlight"><pre><span></span><span class="k">COPY</span><span class="w"> </span>--chown<span class="o">=</span>user<span class="w"> </span>./requirements.txt<span class="w"> </span>requirements.txt
-<span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--no-cache-dir<span class="w"> </span>--upgrade<span class="w"> </span>-r<span class="w"> </span>requirements.txt
-</pre></div>
+<div class='highlight'><pre><code class="language-dockerfile">COPY --chown=user ./requirements.txt requirements.txt
+RUN pip install --no-cache-dir --upgrade -r requirements.txt
+</code></pre></div>
 </section>
 <section class="section-block-markdown-cell">
 <p>Copiamos el resto del código</p>
-<div class="highlight"><pre><span></span><span class="k">COPY</span><span class="w"> </span>--chown<span class="o">=</span>user<span class="w"> </span>.<span class="w"> </span>/app
-</pre></div>
+<div class='highlight'><pre><code class="language-dockerfile">COPY --chown=user . /app
+</code></pre></div>
 </section>
 <section class="section-block-markdown-cell">
 <p>Exponemos el puerto 7860</p>
-<div class="highlight"><pre><span></span><span class="k">EXPOSE</span><span class="w"> </span><span class="s">7860</span>
-</pre></div>
+<div class='highlight'><pre><code class="language-dockerfile">EXPOSE 7860
+</code></pre></div>
 </section>
 <section class="section-block-markdown-cell">
 <p>Creamos las variables de entorno</p>
-<div class="highlight"><pre><span></span><span class="k">RUN</span><span class="w"> </span>--mount<span class="o">=</span><span class="nv">type</span><span class="o">=</span>secret,id<span class="o">=</span>HUGGINGFACE_TOKEN,mode<span class="o">=</span><span class="m">0444</span>,required<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span><span class="nb">test</span><span class="w"> </span>-f<span class="w"> </span>/run/secrets/HUGGINGFACE_TOKEN<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"Secret exists!"</span>
-</pre></div>
+<div class='highlight'><pre><code class="language-dockerfile">RUN --mount=type=secret,id=HUGGINGFACE_TOKEN,mode=0444,required=true \
+    test -f /run/secrets/HUGGINGFACE_TOKEN &amp;&amp; echo "Secret exists!"
+</code></pre></div>
 </section>
 <section class="section-block-markdown-cell">
 <p>Por último, indicamos el comando para ejecutar la aplicación</p>
-<div class="highlight"><pre><span></span><span class="k">CMD</span><span class="w"> </span><span class="p">[</span><span class="s2">"uvicorn"</span><span class="p">,</span><span class="w"> </span><span class="s2">"app:app"</span><span class="p">,</span><span class="w"> </span><span class="s2">"--host"</span><span class="p">,</span><span class="w"> </span><span class="s2">"0.0.0.0"</span><span class="p">,</span><span class="w"> </span><span class="s2">"--port"</span><span class="p">,</span><span class="w"> </span><span class="s2">"7860"</span><span class="p">]</span>
-</pre></div>
+<div class='highlight'><pre><code class="language-dockerfile">CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]
+</code></pre></div>
 </section>
 <section class="section-block-markdown-cell">
 <p>Ahora lo ponemos todo junto</p>
-<div class="highlight"><pre><span></span><span class="k">FROM</span><span class="w"> </span><span class="s">python:3.13-slim</span>
+<div class='highlight'><pre><code class="language-dockerfile">FROM python:3.13-slim
 
-<span class="k">RUN</span><span class="w"> </span>useradd<span class="w"> </span>-m<span class="w"> </span>-u<span class="w"> </span><span class="m">1000</span><span class="w"> </span>user
-<span class="k">WORKDIR</span><span class="w"> </span><span class="s">/app</span>
+RUN useradd -m -u 1000 user
+WORKDIR /app
 
-<span class="k">COPY</span><span class="w"> </span>--chown<span class="o">=</span>user<span class="w"> </span>./requirements.txt<span class="w"> </span>requirements.txt
-<span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--no-cache-dir<span class="w"> </span>--upgrade<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+COPY --chown=user ./requirements.txt requirements.txt
+RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
-<span class="k">COPY</span><span class="w"> </span>--chown<span class="o">=</span>user<span class="w"> </span>.<span class="w"> </span>/app
+COPY --chown=user . /app
 
-<span class="k">EXPOSE</span><span class="w"> </span><span class="s">7860</span>
+EXPOSE 7860
 
-<span class="k">RUN</span><span class="w"> </span>--mount<span class="o">=</span><span class="nv">type</span><span class="o">=</span>secret,id<span class="o">=</span>HUGGINGFACE_TOKEN,mode<span class="o">=</span><span class="m">0444</span>,required<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span><span class="nb">test</span><span class="w"> </span>-f<span class="w"> </span>/run/secrets/HUGGINGFACE_TOKEN<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"Secret exists!"</span>
+RUN --mount=type=secret,id=HUGGINGFACE_TOKEN,mode=0444,required=true \
+    test -f /run/secrets/HUGGINGFACE_TOKEN &amp;&amp; echo "Secret exists!"
 
-<span class="k">CMD</span><span class="w"> </span><span class="p">[</span><span class="s2">"uvicorn"</span><span class="p">,</span><span class="w"> </span><span class="s2">"app:app"</span><span class="p">,</span><span class="w"> </span><span class="s2">"--host"</span><span class="p">,</span><span class="w"> </span><span class="s2">"0.0.0.0"</span><span class="p">,</span><span class="w"> </span><span class="s2">"--port"</span><span class="p">,</span><span class="w"> </span><span class="s2">"7860"</span><span class="p">]</span>
-</pre></div>
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]
+</code></pre></div>
 </section>
 <section class="section-block-markdown-cell">
 <h4 id="requirements.txt">requirements.txt<a class="anchor-link" href="#requirements.txt">¶</a></h4>
 </section>
 <section class="section-block-markdown-cell">
 <p>Creamos el archivo con las dependencias</p>
-<pre><code class="language-txt">txt
-fastapi
+<div class='highlight'><pre><code class="language-txt">fastapi
 uvicorn
 requests
 pydantic&gt;=2.0.0
@@ -658,14 +403,14 @@ langchain-huggingface
 langchain-core
 langgraph &gt; 0.2.27
 python-dotenv.2.11
-</code></pre>
+</code></pre></div>
 </section>
 <section class="section-block-markdown-cell">
 <h4 id="README.md">README.md<a class="anchor-link" href="#README.md">¶</a></h4>
 </section>
 <section class="section-block-markdown-cell">
 <p>Por último, creamos el archivo README.md con información del espacio y con las intrucciones para HugginFace</p>
-<div class="highlight"><pre><span></span>---
+<div class='highlight'><pre><code class="language-md">---
 title: SmolLM2 Backend
 emoji: 📊
 colorFrom: yellow
@@ -674,59 +419,59 @@ sdk: docker
 pinned: false
 license: apache-2.0
 short_description: Backend of SmolLM2 chat
-<span class="gu">app_port: 7860</span>
-<span class="gu">---</span>
+app_port: 7860
+---
 
-<span class="gh"># SmolLM2 Backend</span>
+# SmolLM2 Backend
 
 This project implements a FastAPI API that uses LangChain and LangGraph to generate text with the Qwen2.5-72B-Instruct model from HuggingFace.
 
-<span class="gu">## Configuration</span>
+## Configuration
 
-<span class="gu">### In HuggingFace Spaces</span>
+### In HuggingFace Spaces
 
 This project is designed to run in HuggingFace Spaces. To configure it:
 
-<span class="k">1.</span> Create a new Space in HuggingFace with SDK Docker
-<span class="k">2.</span> Configure the <span class="sb">`HUGGINGFACE_TOKEN`</span> or <span class="sb">`HF_TOKEN`</span> environment variable in the Space configuration:
-<span class="w">   </span><span class="k">-</span><span class="w"> </span>Go to the "Settings" tab of your Space
-<span class="w">   </span><span class="k">-</span><span class="w"> </span>Scroll down to the "Repository secrets" section
-<span class="w">   </span><span class="k">-</span><span class="w"> </span>Add a new variable with the name <span class="sb">`HUGGINGFACE_TOKEN`</span> and your token as the value
-<span class="w">   </span><span class="k">-</span><span class="w"> </span>Save the changes
+1. Create a new Space in HuggingFace with SDK Docker
+2. Configure the `HUGGINGFACE_TOKEN` or `HF_TOKEN` environment variable in the Space configuration:
+   - Go to the "Settings" tab of your Space
+   - Scroll down to the "Repository secrets" section
+   - Add a new variable with the name `HUGGINGFACE_TOKEN` and your token as the value
+   - Save the changes
 
-<span class="gu">### Local development</span>
+### Local development
 
 For local development:
 
-<span class="k">1.</span> Clone this repository
-<span class="k">2.</span> Create a <span class="sb">`.env`</span> file in the project root with your HuggingFace token:
+1. Clone this repository
+2. Create a `.env` file in the project root with your HuggingFace token:
    ``
    HUGGINGFACE_TOKEN=your_token_here
    ``
-<span class="k">3.</span> Install the dependencies:
+3. Install the dependencies:
    ``
    pip install -r requirements.txt
    ``
 
-<span class="gu">## Local execution</span>
+## Local execution
 
 ``bash
 uvicorn app:app --reload
 ``
 
-The API will be available at <span class="sb">`http://localhost:8000`</span>.
+The API will be available at `http://localhost:8000`.
 
-<span class="gu">## Endpoints</span>
+## Endpoints
 
-<span class="gu">### GET `/`</span>
+### GET `/`
 
 Welcome endpoint that returns a greeting message.
 
-<span class="gu">### POST `/generate`</span>
+### POST `/generate`
 
 Endpoint to generate text using the language model.
 
-<span class="gs">**Request parameters:**</span>
+**Request parameters:**
 ``json
 {
   "query": "Your question here",
@@ -734,7 +479,7 @@ Endpoint to generate text using the language model.
 }
 ``
 
-<span class="gs">**Response:**</span>
+**Response:**
 ``json
 {
   "generated_text": "Generated text by the model",
@@ -742,37 +487,38 @@ Endpoint to generate text using the language model.
 }
 ``
 
-<span class="gu">## Docker</span>
+## Docker
 
 To run the application in a Docker container:
 
 ``bash
-<span class="gh"># Build the image</span>
+# Build the image
 docker build -t smollm2-backend .
 
-<span class="gh"># Run the container</span>
+# Run the container
 docker run -p 8000:8000 --env-file .env smollm2-backend
 ``
 
-<span class="gu">## API documentation</span>
+## API documentation
 
 The interactive API documentation is available at:
-<span class="k">-</span><span class="w"> </span>Swagger UI: <span class="sb">`http://localhost:8000/docs`</span>
-<span class="k">-</span><span class="w"> </span>ReDoc: <span class="sb">`http://localhost:8000/redoc`</span>
-</pre></div>
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
+</code></pre></div>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Token-de-HuggingFace">Token de HuggingFace<a class="anchor-link" href="#Token-de-HuggingFace">¶</a></h3><p>Si te has fijado en el código y en el Dockerfile hemos usado un token de HuggingFace, así que vamos a tener que crear uno. En nuestra cuenta de HuggingFace creamos un <a href="https://huggingface.co/settings/tokens/new?tokenType=fineGrained">nuevo token</a>, le ponemos un nombre y le damos los siguientes permisos:</p>
+<h3 id="Token de HuggingFace">Token de HuggingFace<a class="anchor-link" href="#Token de HuggingFace">¶</a></h3>
+<p>Si te has fijado en el código y en el Dockerfile hemos usado un token de HuggingFace, así que vamos a tener que crear uno. En nuestra cuenta de HuggingFace creamos un <a href="https://huggingface.co/settings/tokens/new?tokenType=fineGrained">nuevo token</a>, le ponemos un nombre y le damos los siguientes permisos:</p>
 <ul>
-<li>Read access to contents of all repos under your personal namespace</li>
-<li>Read access to contents of all repos under your personal namespacev</li>
-<li>Make calls to inference providers</li>
-<li>Make calls to Inference Endpoints</li>
+  <li>Read access to contents of all repos under your personal namespace</li>
+  <li>Read access to contents of all repos under your personal namespacev</li>
+  <li>Make calls to inference providers</li>
+  <li>Make calls to Inference Endpoints</li>
 </ul>
-<p><img alt="backend docker - token" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-token.webp"/></p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-token.webp" alt="backend docker - token">
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="A%C3%B1adir-el-token-a-los-secrets-del-espacio">Añadir el token a los secrets del espacio<a class="anchor-link" href="#A%C3%B1adir-el-token-a-los-secrets-del-espacio">¶</a></h3>
+<h3 id="Anadir el token a los secrets del espacio">Añadir el token a los secrets del espacio<a class="anchor-link" href="#Anadir el token a los secrets del espacio">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>Ahora que ya tenemos el token, necesitamos añadirlo al espacio. En la parte de arriba de la app, podremos ver un botón llamado <code>Settings</code>, lo pulsamos y podremos ver la sección de configuración del espacio.</p>
@@ -786,38 +532,38 @@ The interactive API documentation is available at:
 <p>Si hemos clonado el espacio, tenemos que hacer un commit y un push. Si hemos modificado los archivos en HuggingFace, con guardarlos es suficiente.</p>
 <p>Así que cuando estén los cambios en HuggingFace, tendremos que esperar unos segundos para que se construya el espacio y podremos usarlo.</p>
 <p>En este caso, solo hemos construido un backend, por lo que lo que vamos a ver al entrar al espacio es lo que definimos en el endpoint <code>/</code></p>
-<p><img alt="backend docker - space" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-space.webp"/></p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-space.webp" alt="backend docker - space">
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="URL-del-backend">URL del backend<a class="anchor-link" href="#URL-del-backend">¶</a></h3>
+<h3 id="URL del backend">URL del backend<a class="anchor-link" href="#URL del backend">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>Necesitamos saber la URL del backend para poder hacer llamadas a la API. Para ello, tenemos que pulsar en los tres puntos de la parte superior derecha para ver las opciones</p>
-<p><img alt="backend docker - options" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-options.webp"/></p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-options.webp" alt="backend docker - options">
 </section>
 <section class="section-block-markdown-cell">
 <p>En el menú que se despliega pulsamos en <code>Embed this Spade</code>, se nos abrirá una ventana en la que indica cómo embeber el espacio con un iframe y además nos dará la URL del espacio.</p>
-<p><img alt="backend docker - embed" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-embed.webp"/></p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-embed.webp" alt="backend docker - embed">
 </section>
 <section class="section-block-markdown-cell">
 <p>Si ahora nos vamos a esa URL, veremos lo mismo que en el espacio.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Documentaci%C3%B3n">Documentación<a class="anchor-link" href="#Documentaci%C3%B3n">¶</a></h3>
+<h3 id="Documentacion">Documentación<a class="anchor-link" href="#Documentacion">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>FastAPI, a parte de ser una API rapidísima, tiene otra gran ventaja, y es que genera documentación de manera automática.</p>
 </section>
 <section class="section-block-markdown-cell">
 <p>Si añadimos <code>/docs</code> a la URL que vimos antes, podremos ver la documentación de la API con <code>Swagger UI</code>.</p>
-<p><img alt="backend docker - swagger doc" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-swagger-doc.webp"/></p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-swagger-doc.webp" alt="backend docker - swagger doc">
 </section>
 <section class="section-block-markdown-cell">
 <p>También podemos añadir <code>/redoc</code> a la URL para ver la documentación con <code>ReDoc</code>.</p>
-<p><img alt="backend docker - redoc doc" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-redoc.webp"/></p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-redoc.webp" alt="backend docker - redoc doc">
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Prueba-de-la-API">Prueba de la API<a class="anchor-link" href="#Prueba-de-la-API">¶</a></h3>
+<h3 id="Prueba de la API">Prueba de la API<a class="anchor-link" href="#Prueba de la API">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>Lo bueno de la documentación <code>Swagger UI</code> es que nos permite probar la API directamente desde el navegador.</p>
@@ -826,47 +572,47 @@ The interactive API documentation is available at:
 <p>Añadimos <code>/docs</code> a la URL que obtuvimos, abrimos el desplegable del endpoint <code>/generate</code> y le damos a <code>Try it out</code>, modificamos el valor de la <code>query</code> y del <code>thread_id</code> y pulsamos en <code>Execute</code>.</p>
 <p>En el primer caso voy a poner</p>
 <ul>
-<li><strong>query</strong>: Hola, ¿Cómo estás? Soy Máximo</li>
-<li><strong>thread_id</strong>: user1</li>
+  <li><strong>query</strong>: Hola, ¿Cómo estás? Soy Máximo</li>
+  <li><strong>thread_id</strong>: user1</li>
 </ul>
-<p><img alt="backend docker - test API" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-test-API.webp"/></p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-test-API.webp" alt="backend docker - test API">
 </section>
 <section class="section-block-markdown-cell">
 <p>Recibimos la siguiente respuesta <code>¡Hola Máximo! Estoy muy bien, gracias por preguntar. ¿Cómo estás tú? ¿En qué puedo ayudarte hoy?</code></p>
-<p><img alt="backend docker -response 1 - user1" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-response1-user1.webp"/></p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-response1-user1.webp" alt="backend docker -response 1 - user1">
 </section>
 <section class="section-block-markdown-cell">
 <p>Vamos a probar ahora la misma pregunta, pero con un <code>thread_id</code> diferente, en este caso <code>user2</code>.</p>
-<p><img alt="backend docker - query 1 - user2" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-query1-user2.webp"/></p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-query1-user2.webp" alt="backend docker - query 1 - user2">
 </section>
 <section class="section-block-markdown-cell">
 <p>Y nos responde esto <code>¡Hola Luis! Estoy muy bien, gracias por preguntar. ¿Cómo estás tú? ¿En qué puedo ayudarte hoy?</code></p>
-<p><img alt="backend docker - response 1 - user2" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-response1-user2.webp"/></p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-response1-user2.webp" alt="backend docker - response 1 - user2">
 </section>
 <section class="section-block-markdown-cell">
 <p>Ahora pedimos nuestro nombre con los dos usuarios y obtenemos esto</p>
 <ul>
-<li>Para el usuario <strong>user1</strong>: <code>Te llamas Máximo. ¿Hay algo más en lo que pueda ayudarte?</code></li>
-<li>Para el usuario <strong>user2</strong>: <code>Te llamas Luis. ¿Hay algo más en lo que pueda ayudarte hoy, Luis?</code></li>
+  <li>Para el usuario <strong>user1</strong>: <code>Te llamas Máximo. ¿Hay algo más en lo que pueda ayudarte?</code></li>
+  <li>Para el usuario <strong>user2</strong>: <code>Te llamas Luis. ¿Hay algo más en lo que pueda ayudarte hoy, Luis?</code></li>
 </ul>
-<p><img alt="backend docker - response 2 - user1" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-response2-user1.webp"/></p>
-<p><img alt="backend docker - response 2 - user2" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-response2-user2.webp"/></p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-response2-user1.webp" alt="backend docker - response 2 - user1">
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/backend-docker-response2-user2.webp" alt="backend docker - response 2 - user2">
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Desplegar-backend-con-Gradio-y-modelo-corriendo-en-el-servidor">Desplegar backend con Gradio y modelo corriendo en el servidor<a class="anchor-link" href="#Desplegar-backend-con-Gradio-y-modelo-corriendo-en-el-servidor">¶</a></h2>
+<h2 id="Desplegar backend con Gradio y modelo corriendo en el servidor">Desplegar backend con Gradio y modelo corriendo en el servidor<a class="anchor-link" href="#Desplegar backend con Gradio y modelo corriendo en el servidor">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
 <p>Los dos backends que hemos creado en realidad no están corriendo un modelo, sino que están haciendo llamadas a Inference Endpoints de HuggingFace. Pero puede que queramos que todo corra en el servidor, incluso el modelo. Puede ser que hayas hecho un fine-tuning de un LLM para tu caso de uso, por lo que ya no puedes hacer llamadas a Inference Endpoints.</p>
 <p>Así que vamos a ver cómo modificar el código de los dos backends para correr un modelo en el servidor y no hacer llamadas a Inference Endpoints.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Crear-Space">Crear Space<a class="anchor-link" href="#Crear-Space">¶</a></h3>
+<h3 id="Crear Space">Crear Space<a class="anchor-link" href="#Crear Space">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>A la hora de crear el space en HuggingFace hacemos lo mismo que antes, creamos un nuevo space, ponemos un nombre y una descripción, seleccionamos Gradio como SDK, seleccionamos el HW en el que lo vamos a desplegar, en mi caso selecciono el HW más básico y gratuito, y seleccionamos si lo hacemos privado o público.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="C%C3%B3digo">Código<a class="anchor-link" href="#C%C3%B3digo">¶</a></h3>
+<h3 id="Codigo">Código<a class="anchor-link" href="#Codigo">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>Tenemos que hacer cambios en <code>app.py</code> y en <code>requirements.txt</code> para que en lugar de hacer llamadas a Inference Endpoints, se ejecute el modelo localmente.</p>
@@ -879,188 +625,65 @@ The interactive API documentation is available at:
 </section>
 <section class="section-block-markdown-cell">
 <p>Importar <code>AutoModelForCausalLM</code> y <code>AutoTokenizer</code> de la librería <code>transformers</code> e importar <code>torch</code></p>
-<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">AutoTokenizer</span>
-<span class="kn">import</span> <span class="nn">torch</span>
-</pre></div>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python">from transformers import AutoModelForCausalLM, AutoTokenizer<br>import torch</code></pre></div>
+      </section>
 </section>
 <section class="section-block-markdown-cell">
 <p>En lugar de crear un modelo mediante <code>InferenceClient</code> lo creamos con <code>AutoModelForCausalLM</code> y <code>AutoTokenizer</code></p>
-<div class="highlight"><pre><span></span><span class="c1"># Cargar el modelo y el tokenizer</span>
-<span class="n">model_name</span> <span class="o">=</span> <span class="s2">"HuggingFaceTB/SmolLM2-1.7B-Instruct"</span>
-<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">)</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
-    <span class="n">model_name</span><span class="p">,</span>
-    <span class="n">torch_dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span>
-    <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span>
-<span class="p">)</span>
-</pre></div>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python"># Cargar el modelo y el tokenizer<br>model_name = "HuggingFaceTB/SmolLM2-1.7B-Instruct"<br>tokenizer = AutoTokenizer.from_pretrained(model_name)<br>model = AutoModelForCausalLM.from_pretrained(<br>&#x20;&#x20;model_name,<br>&#x20;&#x20;torch_dtype=torch.float16,<br>&#x20;&#x20;device_map="auto"<br>)</code></pre></div>
+      </section>
 <p>Utilizo <code>HuggingFaceTB/SmolLM2-1.7B-Instruct</code> porque es un modelo bastante capaz de solo 1.7B de parámetros. Como he elegido el HW más básico no puedo usar modelos muy grandes. Tú, si quieres usar un modelo más grande tienes dos opciones, usar el HW gratuito y aceptar que la inferencia va a ser más lenta, o usar un HW más potente, pero de pago.</p>
 </section>
 <section class="section-block-markdown-cell">
 <p>Modificar la función <code>respond</code> para que construya el prompt con la estructura necesaria por la librería <code>transformers</code>, tokenizar el prompt, hacer la inferencia y destokenizar la respuesta.</p>
-<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">respond</span><span class="p">(</span>
-    <span class="n">message</span><span class="p">,</span>
-    <span class="n">history</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>
-    <span class="n">system_message</span><span class="p">,</span>
-    <span class="n">max_tokens</span><span class="p">,</span>
-    <span class="n">temperature</span><span class="p">,</span>
-    <span class="n">top_p</span><span class="p">,</span>
-<span class="p">):</span>
-    <span class="c1"># Construir el prompt con el formato correcto</span>
-    <span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"&lt;|system|&gt;</span><span class="se">\n</span><span class="si">{</span><span class="n">system_message</span><span class="si">}</span><span class="s2">&lt;/s&gt;</span><span class="se">\n</span><span class="s2">"</span>
-
-    <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">history</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-            <span class="n">prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"&lt;|user|&gt;</span><span class="se">\n</span><span class="si">{</span><span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&lt;/s&gt;</span><span class="se">\n</span><span class="s2">"</span>
-        <span class="k">if</span> <span class="n">val</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
-            <span class="n">prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"&lt;|assistant|&gt;</span><span class="se">\n</span><span class="si">{</span><span class="n">val</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&lt;/s&gt;</span><span class="se">\n</span><span class="s2">"</span>
-
-    <span class="n">prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"&lt;|user|&gt;</span><span class="se">\n</span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">&lt;/s&gt;</span><span class="se">\n</span><span class="s2">&lt;|assistant|&gt;</span><span class="se">\n</span><span class="s2">"</span>
-
-    <span class="c1"># Tokenizar el prompt</span>
-    <span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
-
-    <span class="c1"># Generar la respuesta</span>
-    <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
-        <span class="o">**</span><span class="n">inputs</span><span class="p">,</span>
-        <span class="n">max_new_tokens</span><span class="o">=</span><span class="n">max_tokens</span><span class="p">,</span>
-        <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
-        <span class="n">top_p</span><span class="o">=</span><span class="n">top_p</span><span class="p">,</span>
-        <span class="n">do_sample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">pad_token_id</span><span class="o">=</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token_id</span>
-    <span class="p">)</span>
-
-    <span class="c1"># Decodificar la respuesta</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-    <span class="c1"># Extraer solo la parte de la respuesta del asistente</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"&lt;|assistant|&gt;</span><span class="se">\n</span><span class="s2">"</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-
-    <span class="k">yield</span> <span class="n">response</span>
-</pre></div>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python">def respond(<br>&#x20;&#x20;message,<br>&#x20;&#x20;history: list[tuple[str, str]],<br>&#x20;&#x20;system_message,<br>&#x20;&#x20;max_tokens,<br>&#x20;&#x20;temperature,<br>&#x20;&#x20;top_p,<br>):<br>&#x20;&#x20;# Construir el prompt con el formato correcto<br>&#x20;&#x20;prompt = f"&lt;|system|&gt;\n{system_message}&lt;/s&gt;\n"<br>&#x20;&#x20;<br>&#x20;&#x20;for val in history:<br>&#x20;&#x20;&#x20;&#x20;if val[0]:<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;prompt += f"&lt;|user|&gt;\n{val[0]}&lt;/s&gt;\n"<br>&#x20;&#x20;&#x20;&#x20;if val[1]:<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;prompt += f"&lt;|assistant|&gt;\n{val[1]}&lt;/s&gt;\n"<br>&#x20;&#x20;<br>&#x20;&#x20;prompt += f"&lt;|user|&gt;\n{message}&lt;/s&gt;\n&lt;|assistant|&gt;\n"<br>&#x20;&#x20;<br>&#x20;&#x20;# Tokenizar el prompt<br>&#x20;&#x20;inputs = tokenizer(prompt, return_tensors="pt").to(model.device)<br>&#x20;&#x20;<br>&#x20;&#x20;# Generar la respuesta<br>&#x20;&#x20;outputs = model.generate(<br>&#x20;&#x20;&#x20;&#x20;**inputs,<br>&#x20;&#x20;&#x20;&#x20;max_new_tokens=max_tokens,<br>&#x20;&#x20;&#x20;&#x20;temperature=temperature,<br>&#x20;&#x20;&#x20;&#x20;top_p=top_p,<br>&#x20;&#x20;&#x20;&#x20;do_sample=True,<br>&#x20;&#x20;&#x20;&#x20;pad_token_id=tokenizer.eos_token_id<br>&#x20;&#x20;)<br>&#x20;&#x20;<br>&#x20;&#x20;# Decodificar la respuesta<br>&#x20;&#x20;response = tokenizer.decode(outputs[0], skip_special_tokens=True)<br>&#x20;&#x20;<br>&#x20;&#x20;# Extraer solo la parte de la respuesta del asistente<br>&#x20;&#x20;response = response.split("&lt;|assistant|&gt;\n")[-1].strip()<br>&#x20;&#x20;<br>&#x20;&#x20;yield response</code></pre></div>
+      </section>
 </section>
 <section class="section-block-markdown-cell">
 <p>A continuación dejo todo el código</p>
-<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">gradio</span> <span class="k">as</span> <span class="nn">gr</span>
-<span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">AutoTokenizer</span>
-<span class="kn">import</span> <span class="nn">torch</span>
-
-<span class="sd">"""</span>
-<span class="sd">For more information on `huggingface_hub` Inference API support, please check the docs: https://huggingface.co/docs/huggingface_hub/v0.22.2/en/guides/inference</span>
-<span class="sd">"""</span>
-
-<span class="c1"># Cargar el modelo y el tokenizer</span>
-<span class="n">model_name</span> <span class="o">=</span> <span class="s2">"HuggingFaceTB/SmolLM2-1.7B-Instruct"</span>
-<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">)</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
-    <span class="n">model_name</span><span class="p">,</span>
-    <span class="n">torch_dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span>
-    <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span>
-<span class="p">)</span>
-
-<span class="k">def</span> <span class="nf">respond</span><span class="p">(</span>
-    <span class="n">message</span><span class="p">,</span>
-    <span class="n">history</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>
-    <span class="n">system_message</span><span class="p">,</span>
-    <span class="n">max_tokens</span><span class="p">,</span>
-    <span class="n">temperature</span><span class="p">,</span>
-    <span class="n">top_p</span><span class="p">,</span>
-<span class="p">):</span>
-    <span class="c1"># Construir el prompt con el formato correcto</span>
-    <span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"&lt;|system|&gt;</span><span class="se">\n</span><span class="si">{</span><span class="n">system_message</span><span class="si">}</span><span class="s2">&lt;/s&gt;</span><span class="se">\n</span><span class="s2">"</span>
-
-    <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">history</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-            <span class="n">prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"&lt;|user|&gt;</span><span class="se">\n</span><span class="si">{</span><span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&lt;/s&gt;</span><span class="se">\n</span><span class="s2">"</span>
-        <span class="k">if</span> <span class="n">val</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
-            <span class="n">prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"&lt;|assistant|&gt;</span><span class="se">\n</span><span class="si">{</span><span class="n">val</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&lt;/s&gt;</span><span class="se">\n</span><span class="s2">"</span>
-
-    <span class="n">prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"&lt;|user|&gt;</span><span class="se">\n</span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">&lt;/s&gt;</span><span class="se">\n</span><span class="s2">&lt;|assistant|&gt;</span><span class="se">\n</span><span class="s2">"</span>
-
-    <span class="c1"># Tokenizar el prompt</span>
-    <span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
-
-    <span class="c1"># Generar la respuesta</span>
-    <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
-        <span class="o">**</span><span class="n">inputs</span><span class="p">,</span>
-        <span class="n">max_new_tokens</span><span class="o">=</span><span class="n">max_tokens</span><span class="p">,</span>
-        <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
-        <span class="n">top_p</span><span class="o">=</span><span class="n">top_p</span><span class="p">,</span>
-        <span class="n">do_sample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">pad_token_id</span><span class="o">=</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token_id</span>
-    <span class="p">)</span>
-
-    <span class="c1"># Decodificar la respuesta</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-    <span class="c1"># Extraer solo la parte de la respuesta del asistente</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"&lt;|assistant|&gt;</span><span class="se">\n</span><span class="s2">"</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-
-    <span class="k">yield</span> <span class="n">response</span>
-
-
-<span class="sd">"""</span>
-<span class="sd">For information on how to customize the ChatInterface, peruse the gradio docs: https://www.gradio.app/docs/gradio/chatinterface</span>
-<span class="sd">"""</span>
-<span class="n">demo</span> <span class="o">=</span> <span class="n">gr</span><span class="o">.</span><span class="n">ChatInterface</span><span class="p">(</span>
-    <span class="n">respond</span><span class="p">,</span>
-    <span class="n">additional_inputs</span><span class="o">=</span><span class="p">[</span>
-        <span class="n">gr</span><span class="o">.</span><span class="n">Textbox</span><span class="p">(</span>
-            <span class="n">value</span><span class="o">=</span><span class="s2">"You are a friendly Chatbot. Always reply in the language in which the user is writing to you."</span><span class="p">,</span> 
-            <span class="n">label</span><span class="o">=</span><span class="s2">"System message"</span>
-        <span class="p">),</span>
-        <span class="n">gr</span><span class="o">.</span><span class="n">Slider</span><span class="p">(</span><span class="n">minimum</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">maximum</span><span class="o">=</span><span class="mi">2048</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Max new tokens"</span><span class="p">),</span>
-        <span class="n">gr</span><span class="o">.</span><span class="n">Slider</span><span class="p">(</span><span class="n">minimum</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">maximum</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Temperature"</span><span class="p">),</span>
-        <span class="n">gr</span><span class="o">.</span><span class="n">Slider</span><span class="p">(</span>
-            <span class="n">minimum</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
-            <span class="n">maximum</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
-            <span class="n">value</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
-            <span class="n">step</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
-            <span class="n">label</span><span class="o">=</span><span class="s2">"Top-p (nucleus sampling)"</span><span class="p">,</span>
-        <span class="p">),</span>
-    <span class="p">],</span>
-<span class="p">)</span>
-
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
-    <span class="n">demo</span><span class="o">.</span><span class="n">launch</span><span class="p">()</span>
-</pre></div>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python">import gradio as gr<br>from transformers import AutoModelForCausalLM, AutoTokenizer<br>import torch<br><br>"""<br>For more information on `huggingface_hub` Inference API support, please check the docs: https://huggingface.co/docs/huggingface_hub/v0.22.2/en/guides/inference<br>"""<br><br># Cargar el modelo y el tokenizer<br>model_name = "HuggingFaceTB/SmolLM2-1.7B-Instruct"<br>tokenizer = AutoTokenizer.from_pretrained(model_name)<br>model = AutoModelForCausalLM.from_pretrained(<br>&#x20;&#x20;model_name,<br>&#x20;&#x20;torch_dtype=torch.float16,<br>&#x20;&#x20;device_map="auto"<br>)<br><br>def respond(<br>&#x20;&#x20;message,<br>&#x20;&#x20;history: list[tuple[str, str]],<br>&#x20;&#x20;system_message,<br>&#x20;&#x20;max_tokens,<br>&#x20;&#x20;temperature,<br>&#x20;&#x20;top_p,<br>):<br>&#x20;&#x20;# Construir el prompt con el formato correcto<br>&#x20;&#x20;prompt = f"&lt;|system|&gt;\n{system_message}&lt;/s&gt;\n"<br>&#x20;&#x20;<br>&#x20;&#x20;for val in history:<br>&#x20;&#x20;&#x20;&#x20;if val[0]:<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;prompt += f"&lt;|user|&gt;\n{val[0]}&lt;/s&gt;\n"<br>&#x20;&#x20;&#x20;&#x20;if val[1]:<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;prompt += f"&lt;|assistant|&gt;\n{val[1]}&lt;/s&gt;\n"<br>&#x20;&#x20;<br>&#x20;&#x20;prompt += f"&lt;|user|&gt;\n{message}&lt;/s&gt;\n&lt;|assistant|&gt;\n"<br>&#x20;&#x20;<br>&#x20;&#x20;# Tokenizar el prompt<br>&#x20;&#x20;inputs = tokenizer(prompt, return_tensors="pt").to(model.device)<br>&#x20;&#x20;<br>&#x20;&#x20;# Generar la respuesta<br>&#x20;&#x20;outputs = model.generate(<br>&#x20;&#x20;&#x20;&#x20;**inputs,<br>&#x20;&#x20;&#x20;&#x20;max_new_tokens=max_tokens,<br>&#x20;&#x20;&#x20;&#x20;temperature=temperature,<br>&#x20;&#x20;&#x20;&#x20;top_p=top_p,<br>&#x20;&#x20;&#x20;&#x20;do_sample=True,<br>&#x20;&#x20;&#x20;&#x20;pad_token_id=tokenizer.eos_token_id<br>&#x20;&#x20;)<br>&#x20;&#x20;<br>&#x20;&#x20;# Decodificar la respuesta<br>&#x20;&#x20;response = tokenizer.decode(outputs[0], skip_special_tokens=True)<br>&#x20;&#x20;<br>&#x20;&#x20;# Extraer solo la parte de la respuesta del asistente<br>&#x20;&#x20;response = response.split("&lt;|assistant|&gt;\n")[-1].strip()<br>&#x20;&#x20;<br>&#x20;&#x20;yield response<br><br><br>"""<br>For information on how to customize the ChatInterface, peruse the gradio docs: https://www.gradio.app/docs/gradio/chatinterface<br>"""<br>demo = gr.ChatInterface(<br>&#x20;&#x20;respond,<br>&#x20;&#x20;additional_inputs=[<br>&#x20;&#x20;&#x20;&#x20;gr.Textbox(<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;value="You are a friendly Chatbot. Always reply in the language in which the user is writing to you.", <br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;label="System message"<br>&#x20;&#x20;&#x20;&#x20;),<br>&#x20;&#x20;&#x20;&#x20;gr.Slider(minimum=1, maximum=2048, value=512, step=1, label="Max new tokens"),<br>&#x20;&#x20;&#x20;&#x20;gr.Slider(minimum=0.1, maximum=4.0, value=0.7, step=0.1, label="Temperature"),<br>&#x20;&#x20;&#x20;&#x20;gr.Slider(<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;minimum=0.1,<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;maximum=1.0,<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;value=0.95,<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;step=0.05,<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;label="Top-p (nucleus sampling)",<br>&#x20;&#x20;&#x20;&#x20;),<br>&#x20;&#x20;],<br>)<br><br><br>if __name__ == "__main__":<br>&#x20;&#x20;demo.launch()</code></pre></div>
+      </section>
 </section>
 <section class="section-block-markdown-cell">
 <h4 id="requirements.txt">requirements.txt<a class="anchor-link" href="#requirements.txt">¶</a></h4>
 </section>
 <section class="section-block-markdown-cell">
 <p>En este archivo hay que añadir las nuevas librerías que vamos a usar, en este caso <code>transformers</code>, <code>accelerate</code> y <code>torch</code>. El archivo entero quedaría:</p>
-<pre><code class="language-txt">txt
-huggingface_hub==0.25.2
+<div class='highlight'><pre><code class="language-txt">huggingface_hub==0.25.2
 gradio&gt;=4.0.0
 transformers&gt;=4.36.0
 torch&gt;=2.0.0
 accelerate&gt;=0.25.0
-</code></pre>
+</code></pre></div>
 </section>
 <section class="section-block-markdown-cell">
-<h4 id="Prueba-de-la-API">Prueba de la API<a class="anchor-link" href="#Prueba-de-la-API">¶</a></h4>
+<h4 id="Prueba de la API">Prueba de la API<a class="anchor-link" href="#Prueba de la API">¶</a></h4>
 </section>
 <section class="section-block-markdown-cell">
 <p>Desplegamos el space y probamos directamente la API.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">gradio_client</span> <span class="kn">import</span> <span class="n">Client</span>
-
-<span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="s2">"Maximofn/SmolLM2_localModel"</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gradio_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
+<span class="w"> </span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="s2">&quot;Maximofn/SmolLM2_localModel&quot;</span><span class="p">)</span>
 <span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
-		<span class="n">message</span><span class="o">=</span><span class="s2">"Hola, ¿cómo estás? Me llamo Máximo"</span><span class="p">,</span>
-		<span class="n">system_message</span><span class="o">=</span><span class="s2">"You are a friendly Chatbot. Always reply in the language in which the user is writing to you."</span><span class="p">,</span>
-		<span class="n">max_tokens</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
-		<span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
-		<span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
-		<span class="n">api_name</span><span class="o">=</span><span class="s2">"/chat"</span>
+<span class="w">	</span><span class="w">	</span><span class="n">message</span><span class="o">=</span><span class="s2">&quot;Hola, ¿cómo estás? Me llamo Máximo&quot;</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">system_message</span><span class="o">=</span><span class="s2">&quot;You are a friendly Chatbot. Always reply in the language in which the user is writing to you.&quot;</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">max_tokens</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+<span class="w">	</span><span class="w">	</span><span class="n">api_name</span><span class="o">=</span><span class="s2">&quot;/chat&quot;</span>
 <span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>
@@ -1076,114 +699,47 @@ Hola Máximo, soy su Chatbot amable y estoy funcionando bien. Gracias por tu men
 <p>Me sorprende lo rápido que responde el modelo estando en un servidor sin GPU.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Desplegar-backend-con-FastAPI,-Langchain-y-Docker-y-modelo-corriendo-en-el-servidor">Desplegar backend con FastAPI, Langchain y Docker y modelo corriendo en el servidor<a class="anchor-link" href="#Desplegar-backend-con-FastAPI,-Langchain-y-Docker-y-modelo-corriendo-en-el-servidor">¶</a></h2>
+<h2 id="Desplegar backend con FastAPI, Langchain y Docker y modelo corriendo en el servidor">Desplegar backend con FastAPI, Langchain y Docker y modelo corriendo en el servidor<a class="anchor-link" href="#Desplegar backend con FastAPI, Langchain y Docker y modelo corriendo en el servidor">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
 <p>Ahora hacemos lo mismo que antes, pero con FastAPI, LangChain y Docker.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Crear-Space">Crear Space<a class="anchor-link" href="#Crear-Space">¶</a></h3>
+<h3 id="Crear Space">Crear Space<a class="anchor-link" href="#Crear Space">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>A la hora de crear el space en HuggingFace hacemos lo mismo que antes, creamos un nuevo space, ponemos un nombre y una descripción, seleccionamos Docker como SDK, seleccionamos el HW en el que lo vamos a desplegar, en mi caso selecciono el HW más básico y gratuito, y seleccionamos si lo hacemos privado o público.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="C%C3%B3digo">Código<a class="anchor-link" href="#C%C3%B3digo">¶</a></h3>
+<h3 id="Codigo">Código<a class="anchor-link" href="#Codigo">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <h4 id="app.py">app.py<a class="anchor-link" href="#app.py">¶</a></h4>
 </section>
 <section class="section-block-markdown-cell">
 <p>Ya no importamos <code>InferenceClient</code> y ahora importamos <code>AutoModelForCausalLM</code> y <code>AutoTokenizer</code> de la librería <code>transformers</code> e importamos <code>torch</code>.</p>
-<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">AutoTokenizer</span>
-<span class="kn">import</span> <span class="nn">torch</span>
-</pre></div>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python">from transformers import AutoModelForCausalLM, AutoTokenizer<br>import torch</code></pre></div>
+      </section>
 </section>
 <section class="section-block-markdown-cell">
 <p>Instanciamos el modelo y el tokenizer con <code>AutoModelForCausalLM</code> y <code>AutoTokenizer</code>.</p>
-<div class="highlight"><pre><span></span><span class="c1"># Initialize the model and tokenizer</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Cargando modelo y tokenizer..."</span><span class="p">)</span>
-<span class="n">device</span> <span class="o">=</span> <span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span>
-<span class="n">model_name</span> <span class="o">=</span> <span class="s2">"HuggingFaceTB/SmolLM2-1.7B-Instruct"</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="c1"># Load the model in BF16 format for better performance and lower memory usage</span>
-    <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">device</span> <span class="o">==</span> <span class="s2">"cuda"</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">"Usando GPU para el modelo..."</span><span class="p">)</span>
-        <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
-            <span class="n">model_name</span><span class="p">,</span>
-            <span class="n">torch_dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
-            <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">,</span>
-            <span class="n">low_cpu_mem_usage</span><span class="o">=</span><span class="kc">True</span>
-        <span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">"Usando CPU para el modelo..."</span><span class="p">)</span>
-        <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
-            <span class="n">model_name</span><span class="p">,</span>
-            <span class="n">device_map</span><span class="o">=</span><span class="p">{</span><span class="s2">""</span><span class="p">:</span> <span class="n">device</span><span class="p">},</span>
-            <span class="n">torch_dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span>
-        <span class="p">)</span>
-
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Modelo cargado exitosamente en: </span><span class="si">{</span><span class="n">device</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Error al cargar el modelo: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-    <span class="k">raise</span>
-</pre></div>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python"># Initialize the model and tokenizer<br>print("Cargando modelo y tokenizer...")<br>device = "cuda" if torch.cuda.is_available() else "cpu"<br>model_name = "HuggingFaceTB/SmolLM2-1.7B-Instruct"<br><br>try:<br>&#x20;&#x20;# Load the model in BF16 format for better performance and lower memory usage<br>&#x20;&#x20;tokenizer = AutoTokenizer.from_pretrained(model_name)<br>&#x20;&#x20;<br>&#x20;&#x20;if device == "cuda":<br>&#x20;&#x20;&#x20;&#x20;print("Usando GPU para el modelo...")<br>&#x20;&#x20;&#x20;&#x20;model = AutoModelForCausalLM.from_pretrained(<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;model_name,<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;torch_dtype=torch.bfloat16,<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;device_map="auto",<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;low_cpu_mem_usage=True<br>&#x20;&#x20;&#x20;&#x20;)<br>&#x20;&#x20;else:<br>&#x20;&#x20;&#x20;&#x20;print("Usando CPU para el modelo...")<br>&#x20;&#x20;&#x20;&#x20;model = AutoModelForCausalLM.from_pretrained(<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;model_name,<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;device_map={"": device},<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;torch_dtype=torch.float32<br>&#x20;&#x20;&#x20;&#x20;)<br><br>&#x20;&#x20;print(f"Modelo cargado exitosamente en: {device}")<br>except Exception as e:<br>&#x20;&#x20;print(f"Error al cargar el modelo: {str(e)}")<br>&#x20;&#x20;raise</code></pre></div>
+      </section>
 </section>
 <section class="section-block-markdown-cell">
 <p>Redefinimos la función <code>call_model</code> para que haga la inferencia con el modelo local.</p>
-<div class="highlight"><pre><span></span><span class="c1"># Define the function that calls the model</span>
-<span class="k">def</span> <span class="nf">call_model</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">MessagesState</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Call the model with the given messages</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        state: MessagesState</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        dict: A dictionary containing the generated text and the thread ID</span>
-<span class="sd">    """</span>
-    <span class="c1"># Convert LangChain messages to chat format</span>
-    <span class="n">messages</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">state</span><span class="p">[</span><span class="s2">"messages"</span><span class="p">]:</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">HumanMessage</span><span class="p">):</span>
-            <span class="n">messages</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">msg</span><span class="o">.</span><span class="n">content</span><span class="p">})</span>
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">AIMessage</span><span class="p">):</span>
-            <span class="n">messages</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"assistant"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">msg</span><span class="o">.</span><span class="n">content</span><span class="p">})</span>
-
-    <span class="c1"># Prepare the input using the chat template</span>
-    <span class="n">input_text</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">apply_chat_template</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="n">tokenize</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">input_text</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
-
-    <span class="c1"># Generate response</span>
-    <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
-        <span class="n">inputs</span><span class="p">,</span>
-        <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>  <span class="c1"># Increase the number of tokens for longer responses</span>
-        <span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
-        <span class="n">top_p</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span>
-        <span class="n">do_sample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">pad_token_id</span><span class="o">=</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token_id</span>
-    <span class="p">)</span>
-
-    <span class="c1"># Decode and clean the response</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="c1"># Extract only the assistant's response (after the last user message)</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"Assistant:"</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-
-    <span class="c1"># Convert the response to LangChain format</span>
-    <span class="n">ai_message</span> <span class="o">=</span> <span class="n">AIMessage</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="n">response</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">"messages"</span><span class="p">:</span> <span class="n">state</span><span class="p">[</span><span class="s2">"messages"</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">ai_message</span><span class="p">]}</span>
-</pre></div>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python"># Define the function that calls the model<br>def call_model(state: MessagesState):<br>&#x20;&#x20;"""<br>&#x20;&#x20;Call the model with the given messages<br><br>&#x20;&#x20;Args:<br>&#x20;&#x20;&#x20;&#x20;state: MessagesState<br><br>&#x20;&#x20;Returns:<br>&#x20;&#x20;&#x20;&#x20;dict: A dictionary containing the generated text and the thread ID<br>&#x20;&#x20;"""<br>&#x20;&#x20;# Convert LangChain messages to chat format<br>&#x20;&#x20;messages = []<br>&#x20;&#x20;for msg in state["messages"]:<br>&#x20;&#x20;&#x20;&#x20;if isinstance(msg, HumanMessage):<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;messages.append({"role": "user", "content": msg.content})<br>&#x20;&#x20;&#x20;&#x20;elif isinstance(msg, AIMessage):<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;messages.append({"role": "assistant", "content": msg.content})<br>&#x20;&#x20;<br>&#x20;&#x20;# Prepare the input using the chat template<br>&#x20;&#x20;input_text = tokenizer.apply_chat_template(messages, tokenize=False)<br>&#x20;&#x20;inputs = tokenizer.encode(input_text, return_tensors="pt").to(device)<br>&#x20;&#x20;<br>&#x20;&#x20;# Generate response<br>&#x20;&#x20;outputs = model.generate(<br>&#x20;&#x20;&#x20;&#x20;inputs,<br>&#x20;&#x20;&#x20;&#x20;max_new_tokens=512,  # Increase the number of tokens for longer responses<br>&#x20;&#x20;&#x20;&#x20;temperature=0.7,<br>&#x20;&#x20;&#x20;&#x20;top_p=0.9,<br>&#x20;&#x20;&#x20;&#x20;do_sample=True,<br>&#x20;&#x20;&#x20;&#x20;pad_token_id=tokenizer.eos_token_id<br>&#x20;&#x20;)<br>&#x20;&#x20;<br>&#x20;&#x20;# Decode and clean the response<br>&#x20;&#x20;response = tokenizer.decode(outputs[0], skip_special_tokens=True)<br>&#x20;&#x20;# Extract only the assistant&#39;s response (after the last user message)<br>&#x20;&#x20;response = response.split("Assistant:")[-1].strip()<br>&#x20;&#x20;<br>&#x20;&#x20;# Convert the response to LangChain format<br>&#x20;&#x20;ai_message = AIMessage(content=response)<br>&#x20;&#x20;return {"messages": state["messages"] + [ai_message]}</code></pre></div>
+      </section>
 </section>
 <section class="section-block-markdown-cell">
 <h4 id="requirements.txt">requirements.txt<a class="anchor-link" href="#requirements.txt">¶</a></h4>
 </section>
 <section class="section-block-markdown-cell">
 <p>Tenemos que quitar <code>langchain-huggingface</code> y añadir <code>transformers</code>, <code>accelerate</code> y <code>torch</code> en el archivo <code>requirements.txt</code>. El archivo quedaría:</p>
-<pre><code class="language-txt">txt
-fastapi
+<div class='highlight'><pre><code class="language-txt">fastapi
 uvicorn
 requests
 pydantic&gt;=2.0.0
@@ -1194,53 +750,55 @@ python-dotenv&gt;=1.0.0
 transformers&gt;=4.36.0
 torch&gt;=2.0.0
 accelerate&gt;=0.26.0
-</code></pre>
+</code></pre></div>
 </section>
 <section class="section-block-markdown-cell">
 <h4 id="Dockerfile">Dockerfile<a class="anchor-link" href="#Dockerfile">¶</a></h4>
 </section>
 <section class="section-block-markdown-cell">
 <p>Ya no necesitamos tener <code>RUN --mount=type=secret,id=HUGGINGFACE_TOKEN,mode=0444,required=true</code> porque como el modelo va a estar en el servidor y no vamos a hacer llamadas a Inference Endpoints, no necesitamos el token. El archivo quedaría:</p>
-<div class="highlight"><pre><span></span><span class="k">FROM</span><span class="w"> </span><span class="s">python:3.13-slim</span>
+<div class='highlight'><pre><code class="language-dockerfile">FROM python:3.13-slim
 
-<span class="k">RUN</span><span class="w"> </span>useradd<span class="w"> </span>-m<span class="w"> </span>-u<span class="w"> </span><span class="m">1000</span><span class="w"> </span>user
-<span class="k">WORKDIR</span><span class="w"> </span><span class="s">/app</span>
+RUN useradd -m -u 1000 user
+WORKDIR /app
 
-<span class="k">COPY</span><span class="w"> </span>--chown<span class="o">=</span>user<span class="w"> </span>./requirements.txt<span class="w"> </span>requirements.txt
-<span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--no-cache-dir<span class="w"> </span>--upgrade<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+COPY --chown=user ./requirements.txt requirements.txt
+RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
-<span class="k">COPY</span><span class="w"> </span>--chown<span class="o">=</span>user<span class="w"> </span>.<span class="w"> </span>/app
+COPY --chown=user . /app
 
-<span class="k">EXPOSE</span><span class="w"> </span><span class="s">7860</span>
+EXPOSE 7860
 
-<span class="k">CMD</span><span class="w"> </span><span class="p">[</span><span class="s2">"uvicorn"</span><span class="p">,</span><span class="w"> </span><span class="s2">"app:app"</span><span class="p">,</span><span class="w"> </span><span class="s2">"--host"</span><span class="p">,</span><span class="w"> </span><span class="s2">"0.0.0.0"</span><span class="p">,</span><span class="w"> </span><span class="s2">"--port"</span><span class="p">,</span><span class="w"> </span><span class="s2">"7860"</span><span class="p">]</span>
-</pre></div>
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]
+</code></pre></div>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Prueba-de-la-API">Prueba de la API<a class="anchor-link" href="#Prueba-de-la-API">¶</a></h3>
+<h3 id="Prueba de la API">Prueba de la API<a class="anchor-link" href="#Prueba de la API">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
 <p>Desplegamos el space y probamos la API. En este caso lo voy a probar directamente desde python.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">requests</span>
-
-<span class="n">url</span> <span class="o">=</span> <span class="s2">"https://maximofn-smollm2-backend-localmodel.hf.space/generate"</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="w"> </span>
+<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://maximofn-smollm2-backend-localmodel.hf.space/generate&quot;</span>
 <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">"query"</span><span class="p">:</span> <span class="s2">"Hola, ¿cómo estás?"</span><span class="p">,</span>
-    <span class="s2">"thread_id"</span><span class="p">:</span> <span class="s2">"user1"</span>
+<span class="w">    </span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="s2">&quot;Hola, ¿cómo estás?&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;thread_id&quot;</span><span class="p">:</span> <span class="s2">&quot;user1&quot;</span>
 <span class="p">}</span>
-
+<span class="w"> </span>
 <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
 <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">"Respuesta:"</span><span class="p">,</span> <span class="n">result</span><span class="p">[</span><span class="s2">"generated_text"</span><span class="p">])</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">"Thread ID:"</span><span class="p">,</span> <span class="n">result</span><span class="p">[</span><span class="s2">"thread_id"</span><span class="p">])</span>
+<span class="w">    </span><span class="n">result</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Respuesta:&quot;</span><span class="p">,</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;generated_text&quot;</span><span class="p">])</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Thread ID:&quot;</span><span class="p">,</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;thread_id&quot;</span><span class="p">])</span>
 <span class="k">else</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">"Error:"</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error:&quot;</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
 <div class="prompt"></div>

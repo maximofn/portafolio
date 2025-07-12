@@ -1,0 +1,1062 @@
+<?xml version='1.0' encoding='utf-8'?>
+<notebook>
+  <markdown># Bash scripting</markdown>
+  <markdown>## Carpeta con scripts</markdown>
+  <markdown>Para realizar este post, vamos a crear una carpeta donde vamos a guardar todos los scripts</markdown>
+  <input_code>!mkdir scripts_bash</input_code>
+  <markdown>## Primer script</markdown>
+  <markdown>### Especificación del binario de ejecución</markdown>
+  <markdown>En Linux se puede indicar con qué programa ejecutar un archivo poniendo en la primera línea `#!&lt;ruta binario&gt;`, por ejemplo, si creamos un `.py` podemos indicar que se tiene que ejecutar con Python poniendo en la primera línea `#!/usr/bin/python3`. En nuestro caso, como estamos haciendo un script de la terminal, ponemos en la primera línea `#!/bin/bash`.
+
+Ahora si se le dan permisos de ejecución al archivo, se puede ejecutar directamente sin indicar el programa con el que se tiene que ejecutar. Es decir, el `.py` ya no necesita ser ejecutado mediante `python script.py`, sino que se puede ejecutar mediante `./script.py`. En nuestro caso, en vez de ejecutar el archivo mediante `bash script.sh` podemos ejecutarlo mediante `./script.sh`</markdown>
+  <markdown>### Comentarios en scripts de bash</markdown>
+  <markdown>Si queremos introducir un comentario bastaría con empezar la línea con `#`.
+
+``` bash
+# Esto es un comentario de una sola línea
+```
+
+Si lo que queremos es introducir varias líneas de comentarios tenemos que empezar con `:#` y terminar con `#`
+
+``` bash
+: '
+Este es un comentario de varias líneas
+que se extiende a través de varias líneas.
+'
+```</markdown>
+  <markdown>### Imprimir por pantalla con el comando `echo`</markdown>
+  <markdown>Si queremos imprimir por pantalla utilizamos el comando `echo` seguido de lo que queramos imprimir</markdown>
+  <input_code>%%writefile scripts_bash/01_primerScript.sh
+#!/bin/bash
+# Comentario de una sola linea
+: '
+Comentario de varias
+lineas
+'
+echo "Hola mundo"</input_code>
+  <output_code>Writing scripts_bash/01_primerScript.sh
+</output_code>
+  <markdown>Damos permisos de ejecución y ejecutamos el script</markdown>
+  <input_code>!chmod +x scripts_bash/01_primerScript.sh &amp;&amp; ./scripts_bash/01_primerScript.sh</input_code>
+  <output_code>Hola mundo
+</output_code>
+  <markdown>## Declaración de variables</markdown>
+  <markdown>Hay dos tipos de variables: las `variables de usuario` y las `variables de entorno`</markdown>
+  <markdown>Para crear una variable basta con declararla introduciendo el nombre que queramos, seguido de `=` y el valor
+
+Para imprimir el valor de una variable con `echo`, se tiene que referenciar a ella mediante `$&lt;nombre de variable&gt;
+
+``` bash
+echo "Variable = $&lt;nombre de variable&gt;
+```</markdown>
+  <input_code>%%writefile scripts_bash/02_variables.sh
+#!/bin/bash
+opcion=1
+nombre="Juan"
+
+echo "Opcion: $opcion"
+echo "Nombre: $nombre"</input_code>
+  <output_code>Writing scripts_bash/02_variables.sh
+</output_code>
+  <input_code>!chmod +x scripts_bash/02_variables.sh &amp;&amp; ./scripts_bash/02_variables.sh</input_code>
+  <output_code>Opcion: 1
+Nombre: Juan
+</output_code>
+  <markdown>Alcance de las variables</markdown>
+  <markdown>Las variables creadas solo son accesibles desde el script, es decir, su alcance es dentro del script</markdown>
+  <markdown>#### Exportación de variables</markdown>
+  <markdown>Podemos exportar variables para que estén accesibles por otros scripts, para ello primero exportamos la variable mediante el comando `export` y ejecutamos, dentro del script, al segundo script al que se le quiere pasar la variable</markdown>
+  <input_code>%%writefile scripts_bash/02_variables.sh
+#!/bin/bash
+opcion=1
+nombre="Juan"
+
+echo "Opcion: $opcion"
+echo "Nombre: $nombre"
+
+# Exportar variable nombre
+echo "export nombre=$nombre"
+export nombre
+
+# Ejecutar script de importacion
+echo ""
+echo "Ejecutando script de importacion"
+./scripts_bash/02_variables_importacion.sh</input_code>
+  <output_code>Overwriting scripts_bash/02_variables.sh
+</output_code>
+  <input_code>%%writefile scripts_bash/02_variables_importacion.sh
+#!/bin/bash
+echo "Nombre importado: $nombre"</input_code>
+  <output_code>Writing scripts_bash/02_variables_importacion.sh
+</output_code>
+  <input_code>!chmod +x scripts_bash/02_variables.sh &amp;&amp; chmod +x scripts_bash/02_variables_importacion.sh &amp;&amp; ./scripts_bash/02_variables.sh</input_code>
+  <output_code>Opcion: 1
+Nombre: Juan
+export nombre=Juan
+
+Ejecutando script de importacion
+Nombre importado: Juan
+</output_code>
+  <markdown>Se tiene que ejecutar el segundo script dentro del primer script. Si ahora ejecutamos el segundo script, no tenemos la variable</markdown>
+  <input_code>!chmod +x scripts_bash/02_variables_importacion.sh &amp;&amp; ./scripts_bash/02_variables_importacion.sh</input_code>
+  <output_code>Nombre importado: 
+</output_code>
+  <markdown>Si queremos que sea accesible desde cualquier segundo script, sin tener que ejecutarlo dentro del primer script, tenemos que exportar la variable a una variable de entorno</markdown>
+  <markdown>## Tipos de operadores</markdown>
+  <markdown>A continuación, mostramos todos los posibles operadores</markdown>
+  <input_code>%%writefile scripts_bash/03_operadores.sh
+#!/bin/bash
+
+# Asignación de variables
+x=10
+y=20
+echo "x = $x"
+echo "y = $y"
+
+# Operadores aritméticos
+echo ""
+echo "Operadores aritméticos"
+echo "x + y = $((x + y))"
+echo "x - y = $((x - y))"
+echo "x * y = $((x * y))"
+echo "x / y = $((x / y))"
+echo "x % y = $((x % y))"
+
+# Operadores de comparación
+echo ""
+echo "Operadores de comparación"
+if [ "$x" -eq "$y" ]; then
+  echo "x es igual a y"
+else
+  echo "x no es igual a y"
+fi
+
+if [ "$x" -ne "$y" ]; then
+  echo "x no es igual a y"
+else
+  echo "x es igual a y"
+fi
+
+if [ "$x" -lt "$y" ]; then
+  echo "x es menor que y"
+else
+  echo "x no es menor que y"
+fi
+
+if [ "$x" -gt "$y" ]; then
+  echo "x es mayor que y"
+else
+  echo "x no es mayor que y"
+fi
+
+# Operadores de cadena
+echo ""
+echo "Operadores de cadena"
+if [ "$a" = "$b" ]; then
+  echo "a es igual a b"
+else
+  echo "a no es igual a b"
+fi
+
+if [ "$a" != "$b" ]; then
+  echo "a no es igual a b"
+else
+  echo "a es igual a b"
+fi
+
+if [ -z "$a" ]; then
+  echo "a es una cadena vacía"
+else
+  echo "a no es una cadena vacía"
+fi
+
+if [ -n "$a" ]; then
+  echo "a no es una cadena vacía"
+else
+  echo "a es una cadena vacía"
+fi
+
+# Operadores de archivo
+echo ""
+echo "Operadores de archivo"
+if [ -e "/path/to/file" ]; then
+  echo "El archivo existe"
+else
+  echo "El archivo no existe"
+fi
+
+if [ -f "/path/to/file" ]; then
+  echo "Es un archivo regular"
+else
+  echo "No es un archivo regular"
+fi
+
+if [ -d "/path/to/dir" ]; then
+  echo "Es un directorio"
+else
+  echo "No es un directorio"
+fi
+</input_code>
+  <output_code>Overwriting scripts_bash/03_operadores.sh
+</output_code>
+  <input_code>!chmod +x scripts_bash/03_operadores.sh &amp;&amp; ./scripts_bash/03_operadores.sh</input_code>
+  <output_code>x = 10
+y = 20
+
+Operadores aritméticos
+x + y = 30
+x - y = -10
+x * y = 200
+x / y = 0
+x % y = 10
+
+Operadores de comparación
+x no es igual a y
+x no es igual a y
+x es menor que y
+x no es mayor que y
+
+Operadores de cadena
+a es igual a b
+a es igual a b
+a es una cadena vacía
+a es una cadena vacía
+
+Operadores de archivo
+El archivo no existe
+No es un archivo regular
+No es un directorio
+</output_code>
+  <markdown>## Paso de argumentos</markdown>
+  <markdown>Se pueden pasar argumentos a los scripts, una vez dentro del script podemos hacer uso de ellos de la siguiente manera
+
+ * Por número de argumento: en este caso se nombrarán como `$1`, `$2`, etc. Pero en caso de que el número de argumentos sea mayor que 9, es decir que haya falta más de 2 dígitos para nombrarlo, en ese caso se identificará el número entre llaves, `${1}`, `${2}`, ..., ${10}, ${11}, etc
+ * Si se llama al argumento `$0` estamos obteniendo el nombre del archivo
+ * Si queremos todos los argumentos, lo hacemos mediante `$*`
+ * Si lo que queremos es el número de argumentos que tenemos, lo obtenemos mediante `$#`
+ * Si queremos saver la salida del último comando lo podemos saber mediante `$?`
+ * Si queremos saber el `PID` del script, lo podemos saber mediante `$$`
+ * Podemos remplazar el valor de una cadena de un argumento mediante `${&lt;indice de argumento&gt;/cadena que se quiere sustituir/cadena nueva}`, es decir, si tenemos `${1/hola/hello}` sustituirá la palabra `hola` por la palabra `hello` en el argumento 1
+ * Sin embargo, si usamos `${&lt;índice de argumento&gt;/#cadena que se quiere sustituir/cadena nueva}`, solo sustituirá la cadena en el argumento si este argumento empieza por dicha cadena</markdown>
+  <input_code>%%writefile scripts_bash/04_argumentos.sh
+#!/bin/bash
+
+# Pasos de argumentos simples
+echo "Primer argumento: $1"
+echo "Segundo argumento: $2"
+echo "Tercer argumento: $3"
+
+# Accediendo a todos los argumentos
+echo "Todos los argumentos: $*"
+
+# Accediendo al número de argumentos
+echo "Número de argumentos: $#"
+
+# Accediendo al nombre del script
+echo "Nombre del script: $0"
+
+# Accediendo al código de salida del último comando ejecutado
+echo "Código de salida del último comando: $?"
+
+# Accediendo al PID del script
+echo "PID del script: $$"
+
+# Accediendo a los argumentos con índices
+echo "Argumento 3: ${3}"
+echo "Argumento 2: ${2}"
+
+# Accediendo a los argumentos con índices y longitud máxima
+echo "Argumento 3 con longitud máxima de 2 caracteres: ${3:0:2}"
+echo "Argumento 2 con longitud máxima de 3 caracteres: ${2:0:3}"
+
+# Reemplazando argumentos con índices y longitud máxima
+echo "Reemplazando argumento 3: ${3/arg/ARG}"
+echo "Reemplazando argumento 2: $                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   {2/arg/ARG}"
+
+# Accediendo a los argumentos con índices y patrones de reemplazo
+echo "Reemplazando patrón en argumento 3: ${3/#tercer/TERCER}"
+echo "Reemplazando patrón en argumento 2: ${2/#arg/ARG}"</input_code>
+  <output_code>Overwriting scripts_bash/04_argumentos.sh
+</output_code>
+  <input_code>!arg1="primer argumento" &amp;&amp; arg2="segundo argumento" &amp;&amp; arg3="tercer argumento" &amp;&amp; chmod +x scripts_bash/04_argumentos.sh &amp;&amp; ./scripts_bash/04_argumentos.sh "$arg1" "$arg2" "$arg3"</input_code>
+  <output_code>Primer argumento: primer argumento
+Segundo argumento: segundo argumento
+Tercer argumento: tercer argumento
+Todos los argumentos: primer argumento segundo argumento tercer argumento
+Número de argumentos: 3
+Nombre del script: ./scripts_bash/04_argumentos.sh
+Código de salida del último comando: 0
+PID del script: 11644
+Argumento 3: tercer argumento
+Argumento 2: segundo argumento
+Argumento 3 con longitud máxima de 2 caracteres: te
+Argumento 2 con longitud máxima de 3 caracteres: seg
+Reemplazando argumento 3: tercer ARGumento
+Reemplazando argumento 2: segundo ARGumento
+Reemplazando patrón en argumento 3: tercer argumento
+Reemplazando patrón en argumento 2: segundo argumento
+</output_code>
+  <markdown>## Ejecutar comandos y guardarlos en una variable</markdown>
+  <markdown>Tenemos dos maneras de ejecutar un comando y guardar su salida en una variable
+ * Mediante `variable=command`
+ * Mediante `variable=$(command)`</markdown>
+  <input_code>%%writefile scripts_bash/05_variables_comandos.sh
+#!/bin/bash
+
+path=$(pwd)
+infokernel=`uname -a`
+
+echo "El directorio actual es: $path"
+echo "La información del kernel es: $infokernel"</input_code>
+  <output_code>Overwriting scripts_bash/05_variables_comandos.sh
+</output_code>
+  <input_code>!chmod +x scripts_bash/05_variables_comandos.sh &amp;&amp; ./scripts_bash/05_variables_comandos.sh</input_code>
+  <output_code>El directorio actual es: /home/wallabot/Documentos/web/portafolio/posts
+La información del kernel es: Linux wallabot 5.15.0-57-generic #63~20.04.1-Ubuntu SMP Wed Nov 30 13:40:16 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux
+</output_code>
+  <markdown>## Debugging</markdown>
+  <markdown>Hay dos maneras de depurar en bash scripting
+ * Usando `-v`: Ejecución detallada de un script línea por línea
+ * Usando `-x`: Despliege de información del script</markdown>
+  <input_code>!bash -v scripts_bash/05_variables_comandos.sh</input_code>
+  <output_code>#!/bin/bash
+
+path=$(pwd)
+infokernel=`uname -a`
+
+echo "El directorio actual es: $path"
+El directorio actual es: /home/wallabot/Documentos/web/portafolio/posts
+echo "La información del kernel es: $infokernel"
+La información del kernel es: Linux wallabot 5.15.0-57-generic #63~20.04.1-Ubuntu SMP Wed Nov 30 13:40:16 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux
+</output_code>
+  <input_code>!bash -x scripts_bash/05_variables_comandos.sh</input_code>
+  <output_code>++ pwd
++ path=/home/wallabot/Documentos/web/portafolio/posts
+++ uname -a
++ infokernel='Linux wallabot 5.15.0-57-generic #63~20.04.1-Ubuntu SMP Wed Nov 30 13:40:16 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux'
++ echo 'El directorio actual es: /home/wallabot/Documentos/web/portafolio/posts'
+El directorio actual es: /home/wallabot/Documentos/web/portafolio/posts
++ echo 'La información del kernel es: Linux wallabot 5.15.0-57-generic #63~20.04.1-Ubuntu SMP Wed Nov 30 13:40:16 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux'
+La información del kernel es: Linux wallabot 5.15.0-57-generic #63~20.04.1-Ubuntu SMP Wed Nov 30 13:40:16 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux
+</output_code>
+  <markdown>## Obtener información del usuario</markdown>
+  <markdown>### Obtener información mediante los comandos `echo` y `read`</markdown>
+  <markdown>Tenemos tres maneras de obtener información del usuario
+ * Mediante el comando `echo -n`. Con el flag `-n` indicamos que no queremos que se imprima un salto de línea al final del `echo`. Por ejemplo, `echo -n "Introduce dato: "`, con este comando le pedimos un dato y el cursor se quedará en la misma línea, no habrá un salto
+ * Mediante el comando `read`. Con este comando el programa se quedará esperando a que el usuario introduzca datos terminando con un salto de línea. Lo que haya introducido lo guardará en la variable `REPLY`. Si se quiere que la variable donde se guarda el dato introducido por el usuario tenga otro nombre se debe introducir `read [variable]`, por ejemplo el comando `read miVariable`, guardará el dato del usuario en la variable `miVariable`
+ * Mediante el comando `$REPLY` o `$(variable)` accedemos al dato introducido por el usuario.</markdown>
+  <input_code>%%writefile scripts_bash/06_leer_informacion.sh
+#!/bin/bash
+
+option=0
+backupName=""
+
+echo "Programa de utilidades"
+echo -n "Ingresar una opción: "
+read
+option=$REPLY
+echo ""
+echo -n "Ingresar un nombre: "
+read backupName
+echo ""
+echo "Opción: $option, backupName: $backupName"
+</input_code>
+  <output_code>Overwriting scripts_bash/06_leer_informacion.sh
+</output_code>
+  <markdown>Como en un jupyter notebook no puedo meter los datos según me los va pidiendo, se los meto antes en un pipe `|`</markdown>
+  <input_code>!chmod +x scripts_bash/06_leer_informacion.sh &amp;&amp; echo "1\nnombreprueba" | ./scripts_bash/06_leer_informacion.sh</input_code>
+  <output_code>Programa de utilidades
+Ingresar una opción: 
+Ingresar un nombre: 
+Opción: 1, backupName: nombreprueba
+</output_code>
+  <markdown>### Obtener información solo mediante el comando `read`</markdown>
+  <markdown>Otra forma de obtener información es usar solo el comando `read`, la sintaxis sería
+
+``` bash
+read -p "Mensaje de prompt:" [variable]
+```
+
+El flag `-p` indica que el mensaje `Mensaje de prompt:` se mostrará antes de esperar a que el usuario introduzca el dato. Si no se especifica un nombre de variable, el dato se guardará en la variable `REPLY`</markdown>
+  <input_code>%%writefile scripts_bash/06_leer_informacion.sh
+#!/bin/bash
+
+option=0
+backupName=""
+
+echo "Programa de utilidades"
+echo -n "Ingresar una opción: "
+read
+option1=$REPLY
+echo ""
+echo -n "Ingresar un nombre: "
+read backupName
+echo ""
+read -p "Ingresar otra opción: " option2
+echo ""
+echo "Opción: $option1-$option2, backupName: $backupName"</input_code>
+  <output_code>Overwriting scripts_bash/06_leer_informacion.sh
+</output_code>
+  <input_code>!chmod +x scripts_bash/06_leer_informacion.sh &amp;&amp; echo "1\nnombreprueba\n2" | ./scripts_bash/06_leer_informacion.sh</input_code>
+  <output_code>Programa de utilidades
+Ingresar una opción: 
+Ingresar un nombre: 
+
+Opción: 1-2, backupName: nombreprueba
+</output_code>
+  <markdown>## Validar la información del usuario</markdown>
+  <markdown>Para validar la información del usuario lo mejor sería usar expresiones regulares, aquí dejo un [post](https://maximofn.com/expresiones-regulares/) donde las explico</markdown>
+  <markdown>Además podemos especificar el número de caracteres que queremos que el usuario introduzca cuando usamos `read`, para ello usamos el flag `-n`, el cual, si no le sigue ningún número esperará hasta que el usuario introduzca un salto de línea, y si le sigue un número, esperará hasta que el usuario introduzca ese número de caracteres</markdown>
+  <input_code>%%writefile scripts_bash/07_validar_informacion.sh
+#!/bin/bash
+
+option=0
+backupName=""
+
+echo "Programa de utilidades"
+echo -n "Ingresar una opción: "
+read -n1
+option1=$REPLY
+echo ""
+echo -n "Ingresar un nombre: "
+read -n4 backupName
+echo ""
+read -p "Ingresar otra opción: " option2
+echo ""
+echo "Opción: $option1-$option2, backupName: $backupName"</input_code>
+  <output_code>Writing scripts_bash/07_validar_informacion.sh
+</output_code>
+  <input_code>!chmod +x scripts_bash/07_validar_informacion.sh &amp;&amp; echo "1back2" | ./scripts_bash/07_validar_informacion.sh</input_code>
+  <output_code>Programa de utilidades
+Ingresar una opción: 
+Ingresar un nombre: 
+
+Opción: 1-2, backupName: back
+</output_code>
+  <markdown>Si queremos que introduzca un valor confidencial, como una clave, ponemos el flag `-s` (security). De esta manera, cuando el usuario introduzca el dato, este no se imprimirá en la consola</markdown>
+  <input_code>%%writefile scripts_bash/07_validar_informacion.sh
+#!/bin/bash
+
+option=0
+backupName=""
+
+echo "Programa de utilidades"
+echo -n "Ingresar una opción: "
+read -n1
+option1=$REPLY
+echo ""
+echo -n "Ingresar un nombre: "
+read -n4 backupName
+echo ""
+read -p "Ingresar otra opción: " option2
+echo ""
+read -s -p "Password: " password
+echo ""
+echo "Opción: $option1-$option2, backupName: $backupName, password: $password"</input_code>
+  <output_code>Overwriting scripts_bash/07_validar_informacion.sh
+</output_code>
+  <input_code>!chmod +x scripts_bash/07_validar_informacion.sh &amp;&amp; echo "1back2\n1234" | ./scripts_bash/07_validar_informacion.sh</input_code>
+  <output_code>Programa de utilidades
+Ingresar una opción: 
+Ingresar un nombre: 
+
+
+Opción: 1-2, backupName: back, password: 1234
+</output_code>
+  <markdown>## If else</markdown>
+  <markdown>La manera de escribir condicionales `if`-`else` es:
+
+``` bash
+if [[condición]]; then
+    statement
+elif [[condicion]]; then
+    statement
+else
+    statement
+fi
+```
+
+Es importante recalcar que las condiciones tienen que estar entre dos corchetes `[[]]`</markdown>
+  <input_code>%%writefile scripts_bash/08_if_else.sh
+#!/bin/bash
+
+if [[ 1 &gt; 2 ]]; then
+    echo "Verdadero"
+elif [[ 1 &gt; 3 ]]; then
+    echo "Verdadero"
+else
+    echo "Falso"
+fi</input_code>
+  <output_code>Overwriting scripts_bash/08_if_else.sh
+</output_code>
+  <input_code>!chmod +x scripts_bash/08_if_else.sh &amp;&amp; ./scripts_bash/08_if_else.sh</input_code>
+  <output_code>Falso
+</output_code>
+  <markdown>Veamos cómo se crean `if`s anidados</markdown>
+  <input_code>%%writefile scripts_bash/08_if_else.sh
+#!/bin/bash
+
+if [[ 1 &gt; 2 ]]; then
+    echo "Verdadero"
+elif [[ 1 &gt; 3 ]]; then
+    echo "Verdadero"
+else
+    if [[ 1 &gt; 4 ]]; then
+        echo "Verdadero pero falso"
+    else
+        echo "Totalmente falso"
+    fi
+fi</input_code>
+  <output_code>Overwriting scripts_bash/08_if_else.sh
+</output_code>
+  <input_code>!chmod +x scripts_bash/08_if_else.sh &amp;&amp; ./scripts_bash/08_if_else.sh</input_code>
+  <output_code>Totalmente falso
+</output_code>
+  <markdown>## Expresiones condicionales</markdown>
+  <markdown>Ya hemos visto cómo crear `if`s, pero es necesario explicar cómo crear las expresiones condicionales
+
+Si vamos a realizar comparaciones entre cadenas o strings
+
+   |operacion|comando|ejemplo|
+   |---------|-------|-------|
+   |mayor que|`&gt;`|`[[ cadena1 &gt; cadena2 ]]`|
+   |menor que|`&lt;`|`[[ cadena1 &lt; cadena2 ]]`|
+   |igual que|`==`|`[[ cadena1 == cadena2 ]]`|
+   |igual que|`=`|`[[ cadena1 = cadena2 ]]`|
+   |cadena vacía|`-z`|`[[ -z cadena ]]`|
+   |cadena no vacía|`-n`|`[[ -n cadena ]]`|
+   |cadena no vacía||`[[ cadena ]]`|
+    
+Si lo que vamos a hacer es realizar comparaciones entre números
+
+   |operacion|comando|ejemplo|
+   |---------|-------|-------|
+   |mayor que|`-gt`|`[[ numero1 -gt numero2 ]]`|
+   |mayor o igual que|`-ge`|`[[ numero1 -ge numero2 ]]`|
+   |menor que|`-lt`|`[[ numero1 -lt numero2 ]]`|
+   |menor o igual que|`-le`|`[[ numero1 -le numero2 ]]`|
+   |igual que|`-eq`|`[[ numero1 -eq numero2 ]]`|
+   |distinto que|`-ne`|`[[ numero1 -ne numero2 ]]`|
+
+Si queremos comprobar archivos o directorios
+
+   |operacion|comando|ejemplo|
+   |---------|-------|-------|
+   |es un directorio?|`-d`|`[[ -d &lt;dir&gt; ]]`|
+   |es un archivo?|`-f`|`[[ -f &lt;file&gt; ]]`|
+   |existe?|`-e`|`[[ -e &lt;file&gt; ]]` o `[[ -e &lt;dir&gt; ]]`|
+   |es legible?|`-r`|`[[ -r &lt;file&gt; ]]`|
+   |es escribible?|`-w`|`[[ -w &lt;file&gt; ]]`|
+   |es ejecutable?|`-x`|`[[ -x &lt;file&gt; ]]`|
+   |es un link?|`-L`|`[[ -L &lt;file&gt; ]]`|
+   |es tiene contenido?|`-s`|`[[ -s &lt;file&gt; ]]`|
+   |es propiedad del usuario?|`-O`|`[[ -O &lt;file&gt; ]]`|
+   |es propiedad del grupo?|`-G`|`[[ -G &lt;file&gt; ]]`|
+   |fue modificado?|`-N`|`[[ -N &lt;file&gt; ]]`|
+   |file1 es más nuevo que file2?|`-nt`|`[[ &lt;file1&gt; -nt &lt;file2&gt; ]]`|
+   |file1 es más viejo que file2?|`-ot`|`[[ &lt;file1&gt; -ot &lt;file2&gt; ]]`|
+   |file1 es el mismo archivo que file2?|`-ef`|`[[ &lt;file1&gt; -ef &lt;file2&gt; ]]`|
+   |file1 es el mismo archivo que file2?|`-ef`|`[[ &lt;file1&gt; -ef &lt;file2&gt; ]]`|
+
+Si queremos comparar condiciones conjuntas con `and`, `or` y `not`
+
+   |operacion|comando|ejemplo|
+   |---------|-------|-------|
+   |and|`&amp;&amp;`|`[[ &lt;condicion1&gt; &amp;&amp; &lt;condicion2&gt; ]]`|
+   |or|`||`|`[[ &lt;condicion1&gt; || &lt;condicion2&gt; ]]`|
+
+Si queremos negar las condiciones
+
+   |operacion|comando|ejemplo|
+   |---------|-------|-------|
+   |not|`!`|`[[ ! &lt;condicion&gt; ]]`|</markdown>
+  <input_code>%%writefile scripts_bash/09_condicionales.sh
+#!/bin/bash
+
+echo "Comparando strings"
+string1="hola"
+string2="hola"
+string3="chao"
+string4=""
+if [[ $string1 &gt; $string3 ]]; then
+    echo "$string1 es mayor que $string3"
+fi
+if [[ $string3 &lt; $string1 ]]; then
+    echo "$string3 es menor que $string1"
+fi
+if [[ $string1 == $string2 ]]; then
+    echo "$string1 es igual que $string2"
+fi
+if [[ $string1 != $string3 ]]; then
+    echo "$string1 es diferente que $string3"
+fi
+if [[ -z $string4 ]]; then
+    echo "$string4 es una cadena vacía"
+fi
+if [[ -n $string3 ]]; then
+    echo "$string3 es una cadena no vacía"
+fi
+if [[ $string3 ]]; then
+    echo "$string3 es una cadena no vacía"
+fi
+
+echo -e "\nComparando números"
+number1=10
+number2=10
+number3=20
+if [[ $number3 -gt $number1 ]]; then
+    echo "$number3 es mayor que $number1"
+fi
+if [[ $number3 -ge $number2 ]]; then
+    echo "$number3 es mayor o igual que $number2"
+fi
+if [[ $number1 -lt $number3 ]]; then
+    echo "$number1 es menor que $number3"
+fi
+if [[ $number1 -le $number2 ]]; then
+    echo "$number1 es menor o igual que $number2"
+fi
+if [[ $number1 -eq $number2 ]]; then
+    echo "$number1 es igual que $number2"
+fi
+if [[ $number1 -ne $number3 ]]; then
+    echo "$number1 es diferente que $number3"
+fi
+
+echo -e "\nComparando archivos"
+file1="$PWD/2021-02-11-Introduccion-a-Python.ipynb"
+file2="$PWD/scripts_bash"
+file3="$PWD/mi_paquete_de_python"
+if [[ -d $file2 ]]; then
+    echo "$file2 es un directorio"
+fi
+if [[ -f $file1 ]]; then
+    echo "$file1 es un archivo"
+fi
+if [[ -e $file1 ]]; then
+    echo "$file1 existe"
+fi
+if [[ -r $file1 ]]; then
+    echo "$file1 es legible"
+fi
+if [[ -w $file1 ]]; then
+    echo "$file1 es escribible"
+fi
+if [[ -x $file1 ]]; then
+    echo "$file1 es ejecutable"
+fi
+if [[ -L $file1 ]]; then
+    echo "$file1 es un link"
+fi
+if [[ -s $file1 ]]; then
+    echo "$file1 tiene contenido"
+fi
+if [[ -O $file1 ]]; then
+    echo "$file1 es propiedad del usuario"
+fi
+if [[ -G $file1 ]]; then
+    echo "$file1 es propiedad del grupo"
+fi
+if [[ -N $file1 ]]; then
+    echo "$file1 fue modificado"
+fi
+if [[ $file1 -nt $file2 ]]; then
+    echo "$file1 es más nuevo que $file2"
+fi
+if [[ $file1 -ot $file2 ]]; then
+    echo "$file1 es más viejo que $file2"
+fi
+if [[ $file1 -ef $file1 ]]; then
+    echo "$file1 es el mismo archivo que $file2"
+fi
+
+echo -e "\nComparando expresiones con AND"
+if [[ 2 &gt; 1 &amp;&amp; 3 &gt; 1 ]]; then
+    echo "2 &gt; 1 y 3 &gt; 1"
+fi
+
+echo -e "\nComparando expresiones con OR"
+if [[ 2 &gt; 1 || 1 &gt; 2 ]]; then
+    echo "2 &gt; 1 o 1 &gt; 2"
+fi
+
+echo -e "\nComparando expresiones con NOT"
+if [[ ! 1 &gt; 2 ]]; then
+    echo "1 &gt; 2 no es cierto"
+fi
+</input_code>
+  <output_code>Overwriting scripts_bash/09_condicionales.sh
+</output_code>
+  <input_code>!chmod +x scripts_bash/09_condicionales.sh &amp;&amp; ./scripts_bash/09_condicionales.sh</input_code>
+  <output_code>Comparando strings
+hola es mayor que chao
+chao es menor que hola
+hola es igual que hola
+hola es diferente que chao
+ es una cadena vacía
+chao es una cadena no vacía
+chao es una cadena no vacía
+
+Comparando números
+20 es mayor que 10
+20 es mayor o igual que 10
+10 es menor que 20
+10 es menor o igual que 10
+10 es igual que 10
+10 es diferente que 20
+
+Comparando archivos
+/home/wallabot/Documentos/web/portafolio/posts/scripts_bash es un directorio
+/home/wallabot/Documentos/web/portafolio/posts/2021-02-11-Introduccion-a-Python.ipynb es un archivo
+/home/wallabot/Documentos/web/portafolio/posts/2021-02-11-Introduccion-a-Python.ipynb existe
+/home/wallabot/Documentos/web/portafolio/posts/2021-02-11-Introduccion-a-Python.ipynb es legible
+/home/wallabot/Documentos/web/portafolio/posts/2021-02-11-Introduccion-a-Python.ipynb es escribible
+/home/wallabot/Documentos/web/portafolio/posts/2021-02-11-Introduccion-a-Python.ipynb tiene contenido
+/home/wallabot/Documentos/web/portafolio/posts/2021-02-11-Introduccion-a-Python.ipynb es propiedad del usuario
+/home/wallabot/Documentos/web/portafolio/posts/2021-02-11-Introduccion-a-Python.ipynb es propiedad del grupo
+/home/wallabot/Documentos/web/portafolio/posts/2021-02-11-Introduccion-a-Python.ipynb es más viejo que /home/wallabot/Documentos/web/portafolio/posts/scripts_bash
+/home/wallabot/Documentos/web/portafolio/posts/2021-02-11-Introduccion-a-Python.ipynb es el mismo archivo que /home/wallabot/Documentos/web/portafolio/posts/scripts_bash
+
+Comparando expresiones con AND
+2 &gt; 1 y 3 &gt; 1
+
+Comparando expresiones con OR
+2 &gt; 1 o 1 &gt; 2
+
+Comparando expresiones con NOT
+1 &gt; 2 no es cierto
+</output_code>
+  <markdown>## Sentencia `case`</markdown>
+  <markdown>A continuación vamos a ver cómo se escribe el típico `switch-case`, pero en este caso solo se usa `case`
+
+``` bash
+case $variable in
+    &lt;valor1&gt;) &lt;sentencia1&gt;;;
+    &lt;valor2&gt;) &lt;sentencia2&gt;;;
+    &lt;valor3&gt;) &lt;sentencia3&gt;;;
+    ...
+    *) &lt;sentencia que no cumple ninguna de las anteriores&gt;
+esac
+```</markdown>
+  <input_code>%%writefile scripts_bash/10_case.sh
+#!/bin/bash
+
+variable="amarillo"
+
+case $variable in
+    "rojo") echo "Color rojo";;
+    "verde") echo "Color verde";;
+    "azul") echo "Color azul";;
+    *) echo "Color desconocido";;
+esac</input_code>
+  <output_code>Writing scripts_bash/10_case.sh
+</output_code>
+  <input_code>!chmod +x scripts_bash/10_case.sh &amp;&amp; ./scripts_bash/10_case.sh</input_code>
+  <output_code>Color desconocido
+</output_code>
+  <markdown>## Arrays</markdown>
+  <markdown>Vamos a ver cómo se comportan los arrays en bash scripting</markdown>
+  <input_code>%%writefile scripts_bash/11_arrays.sh
+#!/bin/bash
+
+arrayNumeros=(1 2 3 4 5)
+arrayStrings=("hola" "chao" "adios")
+arrayMixto=(1 "hola" 2 "chao" 3 "adios")
+arrayVacio=()
+arrayRango=({A..Z})
+
+echo "Arrays"
+echo "Array de números: ${arrayNumeros[*]}"
+echo "Array de strings: ${arrayStrings[*]}"
+echo "Array mixto: ${arrayMixto[*]}"
+echo "Array vacío: ${arrayVacio[*]}"
+echo "Array de rango: ${arrayRango[*]}"
+
+echo -e "\nAccediendo a elementos"
+echo "Primer elemento del array de números: ${arrayNumeros[0]}"
+echo "Segundo elemento del array de strings: ${arrayStrings[1]}"
+echo "Último elemento del array de números: ${arrayNumeros[-1]}"
+echo "Penúltimo elemento del array de strings: ${arrayStrings[-2]}"
+
+echo -e "\nLongitud de arrays"
+echo "Longitud del array de números: ${#arrayNumeros[*]}"
+echo "Longitud del array de strings: ${#arrayStrings[*]}"
+echo "Longitud del array mixto: ${#arrayMixto[*]}"
+echo "Longitud del array vacío: ${#arrayVacio[*]}"
+echo "Longitud del array de rango: ${#arrayRango[*]}"
+
+echo -e "\nAñadiendo y eliminando elementos"
+arrayNumeros[5]=6
+echo "Añadiendo elemento al array de números: ${arrayNumeros[*]}"
+unset arrayStrings[1]
+echo "Eliminando elemento del array de strings: ${arrayStrings[*]}"</input_code>
+  <output_code>Overwriting scripts_bash/11_arrays.sh
+</output_code>
+  <input_code>!chmod +x scripts_bash/11_arrays.sh &amp;&amp; ./scripts_bash/11_arrays.sh</input_code>
+  <output_code>Arrays
+Array de números: 1 2 3 4 5
+Array de strings: hola chao adios
+Array mixto: 1 hola 2 chao 3 adios
+Array vacío: 
+Array de rango: A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+
+Accediendo a elementos
+Primer elemento del array de números: 1
+Segundo elemento del array de strings: chao
+Último elemento del array de números: 5
+Penúltimo elemento del array de strings: chao
+
+Longitud de arrays
+Longitud del array de números: 5
+Longitud del array de strings: 3
+Longitud del array mixto: 6
+Longitud del array vacío: 0
+Longitud del array de rango: 26
+
+Añadiendo y eliminando elementos
+Añadiendo elemento al array de números: 1 2 3 4 5 6
+Eliminando elemento del array de strings: hola adios
+</output_code>
+  <markdown>## Bucle `for`</markdown>
+  <markdown>Para utilizar el bucle `for` hay que usar la siguiente sintaxis
+
+``` bash
+for &lt;variable&gt; in &lt;array&gt;
+do
+    sentencia
+done
+```
+
+Vamos a ver un ejemplo</markdown>
+  <input_code>%%writefile scripts_bash/12_for.sh
+#!/bin/bash
+
+arrayNumeros=(1 2 3 4 5)
+arrayStrings=("hola" "chao" "adios")
+
+echo "Iterar a través de un array de numeros"
+for numero in ${arrayNumeros[*]}
+do
+    echo "Número: $numero"
+done
+
+echo -e "\nIterar a través de un array de strings"
+for string in ${arrayStrings[*]}
+do
+    echo "String: $string"
+done
+
+echo -e "\nIterar a través de un array no declarado"
+for string in "Manolo" "Juan" "Pedro"
+do
+    echo "String: $string"
+done
+
+echo -e "\nIterar a través de un rango"
+for i in {1..10}
+do
+    echo "Número: $i"
+done
+
+echo -e "\nIterar a través de un rango de manera clásica"
+for (( i=1; i&lt;=10; i++ ))
+do
+    echo "Número: $i"
+done
+
+echo -e "\nIterar a través de un comando"
+for file in $(ls)
+do
+    echo "Archivo: $file"
+done
+
+echo -e "\nIterar a través de un directorio"
+for file in *
+do
+    echo "Archivo: $file"
+done</input_code>
+  <output_code>Overwriting scripts_bash/12_for.sh
+</output_code>
+  <input_code>!chmod +x scripts_bash/12_for.sh &amp;&amp; ./scripts_bash/12_for.sh</input_code>
+  <output_code>Iterar a través de un array de numeros
+Número: 1
+Número: 2
+Número: 3
+Número: 4
+Número: 5
+
+Iterar a través de un array de strings
+String: hola
+String: chao
+String: adios
+
+Iterar a través de un array no declarado
+String: Manolo
+String: Juan
+String: Pedro
+
+Iterar a través de un rango
+Número: 1
+Número: 2
+Número: 3
+Número: 4
+Número: 5
+Número: 6
+Número: 7
+Número: 8
+Número: 9
+Número: 10
+
+Iterar a través de un rango de manera clásica
+Número: 1
+Número: 2
+Número: 3
+Número: 4
+Número: 5
+Número: 6
+Número: 7
+Número: 8
+Número: 9
+Número: 10
+
+Iterar a través de un comando
+Archivo: 2021-02-11-Introduccion-a-Python.ipynb
+Archivo: 2021-04-23-Calculo-matricial-con-Numpy.ipynb
+Archivo: 2021-06-15-Manejo-de-datos-con-Pandas.ipynb
+Archivo: 2022-09-12-Introduccion-a-la-terminal.ipynb
+Archivo: 2023-01-22-Docker.ipynb
+Archivo: 2023-XX-XX-Bash-scripting.ipynb
+Archivo: california_housing_train.csv
+Archivo: command-line-cheat-sheet.pdf
+Archivo: CSS.ipynb
+Archivo: Expresiones
+Archivo: regulares.ipynb
+Archivo: html_files
+Archivo: html.ipynb
+Archivo: introduccion_python
+Archivo: mi_paquete_de_python
+Archivo: movies.csv
+Archivo: movies.dat
+Archivo: notebooks_translated
+Archivo: __pycache__
+Archivo: scripts_bash
+Archivo: ssh.ipynb
+Archivo: test.ipynb
+
+Iterar a través de un directorio
+Archivo: 2021-02-11-Introduccion-a-Python.ipynb
+Archivo: 2021-04-23-Calculo-matricial-con-Numpy.ipynb
+Archivo: 2021-06-15-Manejo-de-datos-con-Pandas.ipynb
+Archivo: 2022-09-12-Introduccion-a-la-terminal.ipynb
+Archivo: 2023-01-22-Docker.ipynb
+Archivo: 2023-XX-XX-Bash-scripting.ipynb
+Archivo: california_housing_train.csv
+Archivo: command-line-cheat-sheet.pdf
+Archivo: CSS.ipynb
+Archivo: Expresiones regulares.ipynb
+Archivo: html_files
+Archivo: html.ipynb
+Archivo: introduccion_python
+Archivo: mi_paquete_de_python
+Archivo: movies.csv
+Archivo: movies.dat
+Archivo: notebooks_translated
+Archivo: __pycache__
+Archivo: scripts_bash
+Archivo: ssh.ipynb
+Archivo: test.ipynb
+</output_code>
+  <markdown>## Bucle `while`</markdown>
+  <markdown>Para utilizar el bucle `while` hay que usar la siguiente sintaxis
+
+``` bash
+while &lt;condicion&gt;
+do
+    sentencia
+done
+```
+
+Vamos a ver un ejemplo</markdown>
+  <input_code>%%writefile scripts_bash/13_while.sh
+#!/bin/bash
+
+numero=1
+while [ $numero -ne 5 ]
+do
+    echo "Número: $numero"
+    numero=$(( numero + 1 ))
+done</input_code>
+  <output_code>Overwriting scripts_bash/13_while.sh
+</output_code>
+  <input_code>!chmod +x scripts_bash/13_while.sh &amp;&amp; ./scripts_bash/13_while.sh</input_code>
+  <output_code>Número: 1
+Número: 2
+Número: 3
+Número: 4
+</output_code>
+  <markdown>## Control de flujo con `break` y `continue`</markdown>
+  <markdown>Podemos controlar el flujo de un bucle mediante las palabras `break` y `continue`, veamos un ejemplo</markdown>
+  <input_code>%%writefile scripts_bash/14_control_de_flujo.sh
+#!/bin/bash
+
+numero=1
+while [ $numero -ne 10 ]
+do
+    if [ $numero -eq 5 ]; then
+        numero=$(( numero + 1 ))
+        echo "Saltando el número 5"
+        continue
+    elif
+        [ $numero -eq 8 ]; then
+        echo "Terminando el bucle"
+        break
+    fi 
+    echo "Número: $numero"
+    numero=$(( numero + 1 ))
+done</input_code>
+  <output_code>Overwriting scripts_bash/14_control_de_flujo.sh
+</output_code>
+  <input_code>!chmod +x scripts_bash/14_control_de_flujo.sh &amp;&amp; ./scripts_bash/14_control_de_flujo.sh</input_code>
+  <output_code>Número: 1
+Número: 2
+Número: 3
+Número: 4
+Saltando el número 5
+Número: 6
+Número: 7
+Terminando el bucle
+</output_code>
+  <markdown>## Funciones</markdown>
+  <markdown>La sintaxis para escribir funciones es
+
+``` bash
+&lt;nombre de funcion&gt; (){
+    sentencias
+}
+```
+
+Veamos un ejemplo</markdown>
+  <input_code>%%writefile scripts_bash/15_funciones.sh
+#!/bin/bash
+
+funcion () {
+    echo "Soy una función"
+}
+
+funcoionConParametros () {
+    echo "Soy una función con parámetros"
+    echo "Parámetro 1: $1"
+    echo "Parámetro 2: $2"
+}
+
+funcion
+funcoionConParametros "Hola" "Adiós"</input_code>
+  <output_code>Writing scripts_bash/15_funciones.sh
+</output_code>
+  <input_code>!chmod +x scripts_bash/15_funciones.sh &amp;&amp; ./scripts_bash/15_funciones.sh</input_code>
+  <output_code>Soy una función
+Soy una función con parámetros
+Parámetro 1: Hola
+Parámetro 2: Adiós
+</output_code>
+</notebook>

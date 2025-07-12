@@ -36,109 +36,109 @@ const closing_brace = '}';
 
 
     <aside class="post-index">
-      <a class="anchor-link" href="#Vector-quantization"><h2>Vector quantization</h2></a>
-      <a class="anchor-link" href="#Threshold-value-%CE%B1"><h2>Threshold value α</h2></a>
-      <a class="anchor-link" href="#Use-of-llm.int8()"><h2>Use of llm.int8()</h2></a>
+      <a class="anchor-link" href="#Vector Quantization"><h2>Vector Quantization</h2></a>
+      <a class="anchor-link" href="#Threshold value α"><h2>Threshold value α</h2></a>
+      <a class="anchor-link" href="#Use of llm.int8()"><h2>Use of llm.int8()</h2></a>
     </aside>
 
 
     <div class="post-body-content">
       
       <section class="section-block-markdown-cell">
-      <h1 id="llm.int8()---8-bit-Matrix-Multiplication-for-Transformers-at-Scale">llm.int8() - 8-bit Matrix Multiplication for Transformers at Scale<a class="anchor-link" href="#llm.int8()---8-bit-Matrix-Multiplication-for-Transformers-at-Scale"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 4" src={svg_paths.link_svg_path}/></a></h1>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>This notebook has been automatically translated to make it accessible to more people, please let me know if you see any typos.</p>
+      <blockquote>
+      <p>Disclaimer: This post has been translated to English using a machine translation model. Please, let me know if you find any mistakes.</p>
+      </blockquote>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>In the post <a href="https://www.maximofn.com/llms-quantization/">LLMs quantization</a> we explained the importance of quantization of LLMs to save memory. We also explained that there is a way of quantization which is <a href="https://www.maximofn.com/llms-quantization/#Cuantizaci%C3%B3n-de-punto-cero">zero-point quantization</a> that consists in transforming the parameter values of the weights linearly, but this has the problem of the degradation of the language models from the moment they exceed 2.7B parameters.</p>
-      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="llm.int8()-degradation" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-degradation.webp" width="868" height="702"/></p>
+      <p>In the post <a href="https://maximofn.com/llms-quantization/">LLMs quantization</a> we explain the importance of LLMs quantization to save memory. Additionally, we explain that there is a type of quantization called <a href="https://maximofn.com/llms-quantization/#Cuantizaci%C3%B3n-de-punto-cero">zero-point quantization</a> which involves transforming the values of the parameters linearly, but this has the problem of language model degradation once they exceed 2.7B parameters.</p>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-degradation.webp" alt="llm.int8()-degradation">
       </section>
       
       <section class="section-block-markdown-cell">
-      <h2 id="Vector-quantization">Vector quantization<a class="anchor-link" href="#Vector-quantization"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 5" src={svg_paths.link_svg_path}/></a></h2>
+      <h2 id="Vector Quantization">Vector Quantization<a class="anchor-link" href="#Vector Quantization"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 5" src={svg_paths.link_svg_path}/></a></h2>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>Since the quantization of all the parameters of the models produces errors in the large language models, what they propose in the paper <a href="https://arxiv.org/abs/2208.07339" target="_blank" rel="nofollow noreferrer">llm.int8()</a> is to perform vector quantization, that is, to separate the matrices of the weights into vectors, so that some of these vectors can be quantized in 8 bits, while others cannot. So those that can be quantized in 8 bits are quantized and matrix multiplications are performed in INT8 format, while those vectors that cannot be quantized are kept in FP16 format and multiplications are performed in FP16 format.</p>
+      <p>Since the quantization of all parameters in models introduces errors in large language models, what is proposed in the paper <a href="https://arxiv.org/abs/2208.07339" target="_blank" rel="nofollow noreferrer">llm.int8()</a> is to perform vector quantization, which means separating weight matrices into vectors so that some of these vectors can be quantized to 8 bits, while others cannot. Therefore, those that can be quantized to 8 bits are quantized and matrix multiplications are performed in INT8 format, while the vectors that cannot be quantized remain in FP16 format and multiplications are performed in FP16 format.</p>
       </section>
       
       <section class="section-block-markdown-cell">
       <p>Let's see it with an example</p>
       <p>Suppose we have the matrix</p>
-      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="llm.int8()-A" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-A.webp" width="378" height="227"/></p>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-A.webp" alt="llm.int8()-A">
       <p>and we want to multiply it by the matrix</p>
-      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="llm.int8()-B" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-B.webp" width="151" height="378"/></p>
-      <p>We set a threshold value and all the columns of the first matrix that have a value greater than that threshold are left in FP16 format, the rows equivalent to the rows of the first matrix, in the second matrix are also left in FP16 format.</p>
-      <p>Let me explain it more clearly, as the second and fourth columns of the first matrix (yellow columns) have values greater than a certain threshold, then the second and fourth rows of the second matrix (yellow rows) are left in FP16 format.</p>
-      <p>In case of having threshold values in the second matrix the same would be done, for example, if in the second matrix a row had a value greater than a threshold, it would be left in FP16 format, and that column in the first matrix would be left in FP16 format.</p>
-      <p>The remaining rows and columns that are not left in FP16 format are quantized in 8 bits and multiplications are performed in INT8 format.</p>
-      <p>So we separate the first matrix into the two matrices</p>
-      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="llm.int8()-A_separated" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-A_separated_.webp" width="794" height="487"/></p>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-B.webp" alt="llm.int8()-B">
+      <p>We set a threshold value and all columns of the first matrix that have a value greater than this threshold are kept in FP16 format. The corresponding rows in the second matrix, equivalent to the rows of the first matrix, are also kept in FP16 format.</p>
+      <p>To make it clearer, since the second and fourth columns of the first matrix (yellow columns) have values greater than a certain threshold, then the second and fourth rows of the second matrix (yellow rows) are kept in FP16 format.</p>
+      <p>If there are threshold values in the second matrix, the same would be done, for example, if a row in the second matrix had a value greater than a threshold it would be kept in FP16 format, and that column in the first matrix would be kept in FP16 format.</p>
+      <p>The rest of the rows and columns that are not kept in FP16 format are quantized to 8 bits, and the multiplications are performed in INT8 format.</p>
+      <p>So we separate the first matrix into the two submatrices</p>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-A_separated_.webp" alt="llm.int8()-A_separated">
       <p>And the second matrix in the two matrices</p>
-      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="llm.int8()-B_separated" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-B_separated_.webp" width="518" height="454"/></p>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-B_separated_.webp" alt="llm.int8()-B_separated">
       </section>
       
       <section class="section-block-markdown-cell">
       <p>We multiply the matrices in INT8 on one side</p>
-      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="llm.int8()-AxB-int8" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB-int8_.webp" width="680" height="227"/></p>
-      <p>and those in FP16 format on the other hand</p>
-      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="llm.int8()-AxB-fp16" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB-fp16_.webp" width="605" height="227"/></p>
-      <p>As you can see, multiplying the matrices in INT8 format gives us a matrix of size 3x2, and multiplying the matrices in FP16 format gives us another matrix of size 3x2, so if we add them together</p>
-      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="llm.int8()-fp16+int8" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-fp16int8_.webp" width="605" height="227"/></p>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB-int8_.webp" alt="llm.int8()-AxB-int8">
+      <p>And those that are in FP16 format on the other hand</p>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB-fp16_.webp" alt="llm.int8()-AxB-fp16">
+      <p>As can be seen, multiplying the matrices in INT8 format gives us a result of a 3x2 matrix, and multiplying the matrices in FP16 format also gives us another 3x2 matrix, so if we add them together</p>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-fp16int8_.webp" alt="llm.int8()-fp16+int8">
       <p>Interestingly, it gives us the same result as if we had multiplied the original matrices</p>
-      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="llm.int8()-AxB" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB_.webp" width="832" height="378"/></p>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB_.webp" alt="llm.int8()-AxB">
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>In order to see why this happens, if we develop the vector product of the two original matrices</p>
-      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="llm.int8()-AxB-explained" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB-explained.webp" width="1020" height="490"/></p>
-      <p>We see that the separation we have made does not cause problems.</p>
+      <p>To understand why this happens, if we develop the cross product of the two original matrices</p>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB-explained.webp" alt="llm.int8()-AxB-explained">
+      <p>We see that the separation we have made does not cause any problems</p>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>Therefore, we can conclude that we can separate rows and columns of matrices to perform matrix multiplications. This separation will be done when any element of the row or column is greater than a threshold value, so that the rows or columns that do not have a value greater than that threshold will be coded in INT8 occupying only one byte and the rows or columns that have an element greater than that threshold will be passed to FP16 occupying 2 bytes. In this way we will not have rounding problems, since the calculations we do in INT8 will be done with values that do not exceed the range of 8 bits.</p>
+      <p>Therefore, we can conclude that we can separate rows and columns of matrices to perform matrix multiplications. This separation will occur when some element of the row or column is greater than a threshold value, so that rows or columns that do not have a value greater than this threshold will be encoded in INT8 occupying only one byte, and rows or columns that have an element greater than this threshold will be converted to FP16 occupying 2 bytes. This way, we won't have rounding issues, as the calculations we perform in INT8 will be with values that ensure the multiplications do not exceed the range of 8 bits.</p>
       </section>
       
       <section class="section-block-markdown-cell">
-      <h2 id="Threshold-value-%CE%B1">Threshold value α<a class="anchor-link" href="#Threshold-value-%CE%B1"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 6" src={svg_paths.link_svg_path}/></a></h2>
+      <h2 id="Threshold value α">Threshold value α<a class="anchor-link" href="#Threshold value α"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 6" src={svg_paths.link_svg_path}/></a></h2>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>As we have said we are going to separate into rows and columns that have some element greater than a threshold value, but what threshold value should we choose? The authors of the paper did experiments with several values and determined that this threshold value should be α=6. Above that value they started to get degradations in the language models.</p>
+      <p>As we have said, we are going to split into rows and columns that have some element greater than a threshold value, but what threshold value should we choose? The authors of the paper conducted experiments with several values and determined that this threshold value should be α=6. Above this value, they started to observe degradations in the language models.</p>
       </section>
       
       <section class="section-block-markdown-cell">
-      <h2 id="Use-of-llm.int8()">Use of llm.int8()<a class="anchor-link" href="#Use-of-llm.int8()"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 7" src={svg_paths.link_svg_path}/></a></h2>
+      <h2 id="Use of llm.int8()">Use of llm.int8()<a class="anchor-link" href="#Use of llm.int8()"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 7" src={svg_paths.link_svg_path}/></a></h2>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>Let's see how to quantize a model with llm.int8() with the transformers library. To do this you must have <code>bitsandbytes</code> installed.</p>
-      <div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>bitsandbytes
-      <span class="sb">```</span>
-      </pre></div>
+      <p>Let's see how to quantize a model with llm.int8() using the transformers library. For this, you need to have <code>bitsandbytes</code> installed.</p>
+      <div class='highlight'><pre><code class="language-bash">pip install bitsandbytes</code></pre></div>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>We load a 1B parameter model twice, once normally and the second time quantizing it with llm.int8().</p>
+      <p>We load a 1B parameter model twice, once in the usual way and the second time quantizing it with llm.int8()</p>
       </section>
       
       <CodeBlockInputCell
         text={[
-          '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">AutoTokenizer</span>',
-          '<span class="kn">import</span> <span class="nn">torch</span>',
-          '',
-          '<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span><span class="p">)</span>',
-          '<span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">"TinyLlama/TinyLlama-1.1B-Chat-v1.0"</span>',
-          '',
-          '<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>',
-          '<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
-          '<span class="n">model_8bit</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">,</span> <span class="n">load_in_8bit</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>',
+      '<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">AutoTokenizer</span>',
+      '<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>',
+      '<span class="w"> </span>',
+      '<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">&quot;cpu&quot;</span><span class="p">)</span>',
+      '<span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">&quot;TinyLlama/TinyLlama-1.1B-Chat-v1.0&quot;</span>',
+      '<span class="w"> </span>',
+      '<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>',
+      '<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
+      '<span class="n">model_8bit</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="n">load_in_8bit</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>',
         ]}
         languaje='python'
       ></CodeBlockInputCell>
+      
       <CodeBlockOutputCell
         text={[
           'The `load_in_4bit` and `load_in_8bit` arguments are deprecated and will be removed in the future versions. Please, pass a `BitsAndBytesConfig` object in `quantization_config` argument instead.',
@@ -147,15 +147,16 @@ const closing_brace = '}';
       ></CodeBlockOutputCell>
       
       <section class="section-block-markdown-cell">
-      <p>Let's see how much memory each model takes up</p>
+      <p>We see how much memory each of the models occupies</p>
       </section>
       
       <CodeBlockInputCell
         text={[
-          '<span></span><span class="n">model</span><span class="o">.</span><span class="n">get_memory_footprint</span><span class="p">()</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">),</span> <span class="n">model_8bit</span><span class="o">.</span><span class="n">get_memory_footprint</span><span class="p">()</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>',
+      '<span></span><span class="n">model</span><span class="o">.</span><span class="n">get_memory_footprint</span><span class="p">()</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">),</span> <span class="n">model_8bit</span><span class="o">.</span><span class="n">get_memory_footprint</span><span class="p">()</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>',
         ]}
         languaje='python'
       ></CodeBlockInputCell>
+      
       <CodeBlockOutputCell
         text={[
           '(4.098002195358276, 1.1466586589813232)',
@@ -164,7 +165,7 @@ const closing_brace = '}';
       ></CodeBlockOutputCell>
       
       <section class="section-block-markdown-cell">
-      <p>As can be seen, the quantized model occupies much less memory.</p>
+      <p>As can be seen, the quantized model takes up much less memory</p>
       </section>
       
       <section class="section-block-markdown-cell">
@@ -173,15 +174,16 @@ const closing_brace = '}';
       
       <CodeBlockInputCell
         text={[
-          '<span></span><span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">"Hello my name is Maximo and I am a Machine Learning Engineer"</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
-          '<span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span>',
+      '<span></span><span class="n">input_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">&quot;Hello my name is Maximo and I am a Machine Learning Engineer&quot;</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
+      '<span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span>',
         ]}
         languaje='python'
       ></CodeBlockInputCell>
+      
       <CodeBlockOutputCell
         text={[
           'tensor([[    1, 15043,   590,  1024,   338,  5918,  4200,   322,   306,   626,',
-          '           263,  6189, 29257, 10863,   261]], device=\'cuda:0\')',
+          '&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;263,  6189, 29257, 10863,   261]], device=&#x27;cuda:0&#x27;)',
         ]}
         languaje='python'
       ></CodeBlockOutputCell>
@@ -192,23 +194,24 @@ const closing_brace = '}';
       
       <CodeBlockInputCell
         text={[
-          '<span></span><span class="kn">import</span> <span class="nn">time</span>',
-          '',
-          '<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>',
-          '<span class="n">max_new_tokens</span> <span class="o">=</span> <span class="mi">50</span>',
-          '<span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>',
-          '    <span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>',
-          '    <span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>',
-          '    <span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>',
-          '<span class="p">)</span>',
-          '<span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>',
-          '<span class="nb">print</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span>',
+      '<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>',
+      '<span class="w"> </span>',
+      '<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>',
+      '<span class="n">max_new_tokens</span> <span class="o">=</span> <span class="mi">50</span>',
+      '<span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>',
+      '<span class="w">    </span><span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>',
+      '<span class="w">    </span><span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>',
+      '<span class="w">    </span><span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>',
+      '<span class="p">)</span>',
+      '<span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>',
+      '<span class="nb">print</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span>',
         ]}
         languaje='python'
       ></CodeBlockInputCell>
+      
       <CodeBlockOutputCell
         text={[
-          'Hello my name is Maximo and I am a Machine Learning Engineer. I am currently working at [Company Name] as a Machine Learning Engineer. I have a Bachelor\'s degree in Computer Science from [University Name] and a Master\'s degree in Computer Science from [University Name]. I',
+          'Hello my name is Maximo and I am a Machine Learning Engineer. I am currently working at [Company Name] as a Machine Learning Engineer. I have a Bachelor&#x27;s degree in Computer Science from [University Name] and a Master&#x27;s degree in Computer Science from [University Name]. I',
           '1.7616662979125977',
         ]}
         languaje='python'
@@ -220,31 +223,32 @@ const closing_brace = '}';
       
       <CodeBlockInputCell
         text={[
-          '<span></span><span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>',
-          '<span class="n">max_new_tokens</span> <span class="o">=</span> <span class="mi">50</span>',
-          '<span class="n">outputs</span> <span class="o">=</span> <span class="n">model_8bit</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>',
-          '    <span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>',
-          '    <span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>',
-          '    <span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>',
-          '<span class="p">)</span>',
-          '<span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>',
-          '<span class="nb">print</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span>',
+      '<span></span><span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>',
+      '<span class="n">max_new_tokens</span> <span class="o">=</span> <span class="mi">50</span>',
+      '<span class="n">outputs</span> <span class="o">=</span> <span class="n">model_8bit</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>',
+      '<span class="w">    </span><span class="n">input_ids</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>',
+      '<span class="w">    </span><span class="n">attention_mask</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>',
+      '<span class="w">    </span><span class="n">max_length</span><span class="o">=</span><span class="n">input_tokens</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">,</span>',
+      '<span class="p">)</span>',
+      '<span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>',
+      '<span class="nb">print</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span>',
         ]}
         languaje='python'
       ></CodeBlockInputCell>
+      
       <CodeBlockOutputCell
         text={[
-          'Hello my name is Maximo and I am a Machine Learning Engineer. I am currently working at [Company Name] as a Machine Learning Engineer. I have a Bachelor\'s degree in Computer Science from [University Name] and a Master\'s degree in Computer Science from [University Name]. I',
+          'Hello my name is Maximo and I am a Machine Learning Engineer. I am currently working at [Company Name] as a Machine Learning Engineer. I have a Bachelor&#x27;s degree in Computer Science from [University Name] and a Master&#x27;s degree in Computer Science from [University Name]. I',
           '9.100712776184082',
         ]}
         languaje='python'
       ></CodeBlockOutputCell>
       
       <section class="section-block-markdown-cell">
-      <p>We see two things, on the one hand we get the same text at the output, so with a much smaller model we can get the same output, however the quantized model takes much longer to run, so if you need to use this model in real time it would not be advisable.</p>
-      <p>This is contradictory, because we might think that a smaller model would have to run faster, but we have to think that in reality the two models, the normal and the quantized, perform the same operations, only that one performs all the operations in FP32 and the other does them in INT8 and FP16, however the quantized model has to search for rows and columns with values greater than the threshold value, separate them, perform the operations in INT8 and FP16 and then put the results back together, so the quantized model takes longer to run.</p>
+      <p>We see two things: on the one hand, that the output we get is the same text; so with a much smaller model we can obtain the same output. However, the quantized model takes much longer to run, so if it needs to be used in real time, it would not be advisable.</p>
+      <p>This is contradictory, because we might think that a smaller model would run faster, but we have to consider that in reality both models, the normal and the quantized one, perform the same operations; it's just that one performs all operations in FP32 while the other does them in INT8 and FP16. However, the quantized model has to find rows and columns with values greater than the threshold value, separate them, perform the operations in INT8 and FP16, and then recombine the results, which is why the quantized model takes longer to run.</p>
       </section>
-      
+
 
 
 

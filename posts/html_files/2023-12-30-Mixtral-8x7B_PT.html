@@ -1,137 +1,140 @@
 <section class="section-block-markdown-cell">
-<h1 id="Mixtral-8x7B-MoE">Mixtral-8x7B MoE<a class="anchor-link" href="#Mixtral-8x7B-MoE">¶</a></h1>
+<h1 id="Mixtral-8x7B MoE">Mixtral-8x7B MoE<a class="anchor-link" href="#Mixtral-8x7B MoE">¶</a></h1>
 </section>
 <section class="section-block-markdown-cell">
-<p>Para mim, a melhor descrição do <code>mixtral-8x7b</code> é a seguinte imagem</p>
-<p><img alt="mixtral-gemini" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/mixtral-gemini.webp"/></p>
-<p>Entre o lançamento do <code>gemini</code> e o lançamento do <code>mixtra-8x7b</code>, houve uma diferença de apenas alguns dias. Nos dois primeiros dias após o lançamento do <code>gemini</code> houve muita conversa sobre esse modelo, mas assim que o <code>mixtral-8x7b</code> foi lançado, o <code>gemini</code> foi completamente esquecido e toda a comunidade estava falando sobre o <code>mixtral-8x7b</code>.</p>
-<p>E não é de se admirar que, analisando seus benchmarks, podemos ver que ele está no nível de modelos como o <code>llama2-70B</code> e o <code>GPT3.5</code>, mas com a diferença de que, enquanto o <code>mixtral-8x7b</code> tem apenas 46,7B de parâmetros, o <code>llama2-70B</code> tem 70B e o <code>GPT3.5</code> tem 175B.</p>
-<p><img alt="mixtral benchmarks" src="https://mistral.ai/images/news/mixtral-of-experts/overview.png"/></p>
+<blockquote>
+<p>Aviso: Este post foi traduzido para o português usando um modelo de tradução automática. Por favor, me avise se encontrar algum erro.</p>
+</blockquote>
 </section>
 <section class="section-block-markdown-cell">
-<p>Este caderno foi traduzido automaticamente para torná-lo acessível a mais pessoas, por favor me avise se você vir algum erro de digitação..</p>
-<h2 id="N%C3%BAmero-de-par%C3%A2metros">Número de parâmetros<a class="anchor-link" href="#N%C3%BAmero-de-par%C3%A2metros">¶</a></h2>
+<p>Para mim, a melhor descrição de <code>mixtral-8x7b</code> é a seguinte imagem</p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/mixtral-gemini.webp" alt="mixtral-gemini">
+<p>Entre a saída do <code>gemini</code> e a saída do <code>mixtra-8x7b</code> houve uma diferença de muito poucos dias. Nos dois primeiros dias após o lançamento do <code>gemini</code>, falou-se bastante sobre esse modelo, mas assim que saiu o <code>mixtral-8x7b</code>, o <code>gemini</code> foi completamente esquecido e toda a comunidade não parou de falar do <code>mixtral-8x7b</code>.</p>
+<p>E não é para menos, vendo seus benchmarks, podemos ver que está no nível de modelos como <code>llama2-70B</code> e <code>GPT3.5</code>, mas com a diferença de que enquanto <code>mixtral-8x7b</code> tem apenas 46,7B de parâmetros, <code>llama2-70B</code> tem 70B e <code>GPT3.5</code> tem 175B.</p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/mixtral_8x7b_benchmark.webp" alt="mixtral benchmarks">
 </section>
 <section class="section-block-markdown-cell">
-<p>Como o nome sugere, <code>mixtral-8x7b</code> é um conjunto de 8 modelos de parâmetros 7B, portanto, poderíamos pensar que ele tem 56B parâmetros (7Bx8), mas não tem. Como [Andrej Karpathy] (<a href="https://twitter.com/karpathy/status/1734251375163511203">https://twitter.com/karpathy/status/1734251375163511203</a>) explica, somente os blocos <code>Feed forward</code> dos transformadores são multiplicados por 8, o restante dos parâmetros é compartilhado entre os 8 modelos. Portanto, no final, o modelo tem 46,7 bilhões de parâmetros.</p>
+<h2 id="Numero de parametros">Número de parâmetros<a class="anchor-link" href="#Numero de parametros">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Mistura-de-especialistas-(MoE)">Mistura de especialistas (MoE)<a class="anchor-link" href="#Mistura-de-especialistas-(MoE)">¶</a></h2>
+<p>Como o nome sugere, <code>mixtral-8x7b</code> é um conjunto de 8 modelos de 7B de parâmetros, então poderíamos pensar que ele tem 56B de parâmetros (7Bx8), mas não é bem assim. Como explica <a href="https://twitter.com/karpathy/status/1734251375163511203">Andrej Karpathy</a>, apenas os blocos <code>Feed forward</code> dos transformers são multiplicados por 8, o resto dos parâmetros é compartilhado entre os 8 modelos. Portanto, no final, o modelo tem 46,7B de parâmetros.</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Conforme mencionado, o modelo é um conjunto de 8 modelos 7B de parâmetros, daí a sigla <code>MoE</code>, que significa <code>Mixture of Experts</code>. Cada um dos 8 modelos é treinado de forma independente, mas quando a inferência é feita, um roteador decide a saída de qual modelo deve ser usado.</p>
-<p>A imagem a seguir mostra a arquitetura de um <code>Transformer</code>.</p>
-<p><img alt="transformer" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/transformer-scaled.webp"/></p>
-<p>Se você não sabe, o importante é que essa arquitetura consiste em um codificador e um decodificador.</p>
-<p><img alt="transformer-encoder-decoder" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/transformer-encoder-decoder.webp"/></p>
-<p>Os LLMs são modelos somente de decodificador, portanto, não têm um codificador. Você pode ver que na arquitetura há três módulos de atenção, um deles realmente conecta o codificador ao decodificador. Mas como os LLMs não têm um codificador, não há necessidade do módulo de atenção que conecta o decodificador e o decodificador.</p>
-<p><img alt="transformer-decoder" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/transformer-decoder.webp"/></p>
-<p>Agora que sabemos como é a arquitetura de um LLM, podemos ver como é a arquitetura do <code>mixtral-8x7b</code>. Na imagem a seguir, podemos ver a arquitetura do modelo</p>
-<p>Arquitetura do MoE] (<a href="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/MoE_architecture.webp">https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/MoE_architecture.webp</a>)</p>
-<p>Como você pode ver, a arquitetura consiste em um decodificador <code>Transformer</code> de 7B parâmetros, sendo que apenas a camada <code>Feed forward</code> consiste em 8 camadas <code>Feed forward</code> com um roteador que escolhe qual das 8 camadas <code>Feed forward</code> deve ser usada. Na imagem acima, são mostradas apenas quatro camadas <code>Feed forward</code>, o que deve ter sido feito para simplificar o diagrama, mas, na realidade, existem 8 camadas <code>Feed forward</code>. Você também pode ver dois caminhos para duas palavras diferentes, a palavra <code>More</code> e a palavra <code>Parameters</code> e como o roteador escolhe qual <code>Feed forward</code> usar para cada palavra.</p>
+<h2 id="Mistura de Especialistas (MoE)">Mistura de Especialistas (MoE)<a class="anchor-link" href="#Mistura de Especialistas (MoE)">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<p>Observando a arquitetura, podemos entender por que o modelo tem 46,7 bilhões de parâmetros e não 56 bilhões. Como dissemos, apenas os blocos <code>Feed forward</code> são multiplicados por 8, o restante dos parâmetros é compartilhado entre os 8 modelos.</p>
+<p>Como dissemos, o modelo é um conjunto de 8 modelos de 7B de parâmetros, daí <code>MoE</code>, que significa <code>Mixture of Experts</code>. Cada um dos 8 modelos é treinado independentemente, mas quando se faz a inferência, um roteador decide qual saída do modelo será usada.</p>
+<p>Na imagem a seguir, podemos ver como é a arquitetura de um <code>Transformer</code>.</p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/transformer-scaled.webp" alt="transformer">
+<p>Se não a conhece, não tem problema. O importante é que esta arquitetura consiste em um encoder e um decoder</p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/transformer-encoder-decoder.webp" alt="transformer-encoder-decoder">
+<p>Os LLMs são modelos que possuem apenas o decoder, portanto não têm encoder. Você pode ver que na arquitetura há três módulos de atenção, um deles de fato conecta o encoder com o decoder. Mas como os LLMs não têm encoder, não é necessário o módulo de atenção que une o decoder e o decoder.</p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/transformer-decoder.webp" alt="transformer-decoder">
+<p>Agora que sabemos como é a arquitetura de um LLM, podemos ver como é a arquitetura do <code>mixtral-8x7b</code>. Na imagem seguinte podemos ver a arquitetura do modelo</p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/MoE_architecture.webp" alt="Arquitetura MoE">
+<p>Como pode ser visto, a arquitetura consiste no decoder de um <code>Transformer</code> de 7B de parâmetros, apenas que a camada <code>Feed forward</code> consiste em 8 camadas <code>Feed forward</code> com um roteador que escolhe qual das 8 camadas <code>Feed forward</code> será usada. Na imagem anterior, apenas quatro camadas <code>Feed forward</code> são mostradas, suponho que seja para simplificar o diagrama, mas na realidade há 8 camadas <code>Feed forward</code>. Também se veem dois caminhos para duas palavras distintas, a palavra <code>More</code> e a palavra <code>Parameters</code> e como o roteador escolhe qual <code>Feed forward</code> será usado para cada palavra.</p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Usando-o-Mixtral-8x7b-na-nuvem">Usando o Mixtral-8x7b na nuvem<a class="anchor-link" href="#Usando-o-Mixtral-8x7b-na-nuvem">¶</a></h2>
+<p>Vendo a arquitetura podemos entender por que o modelo tem 46,7B de parâmetros e não 56B. Como dissemos, apenas os blocos <code>Feed forward</code> se multiplicam por 8, o resto dos parâmetros são compartilhados entre os 8 modelos</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Infelizmente, usar o <code>mixtral-8x7b</code> localmente é complicado, pois os requisitos de hardware são os seguintes</p>
+<h2 id="Uso do Mixtral-8x7b na nuvem">Uso do Mixtral-8x7b na nuvem<a class="anchor-link" href="#Uso do Mixtral-8x7b na nuvem">¶</a></h2>
+</section>
+<section class="section-block-markdown-cell">
+<p>Infelizmente, para usar <code>mixtral-8x7b</code> localmente é complicado, já que os requisitos de hardware são os seguintes</p>
 <ul>
-<li>float32: VRAM &gt; 180 GB, ou seja, como cada parâmetro ocupa 4 bytes, precisamos de 46,7B * 4 = 186,8 GB de VRAM apenas para armazenar o modelo, mais a VRAM necessária para armazenar os dados de entrada e saída.</li>
-<li>float16: VRAM &gt; 90 GB, nesse caso, cada parâmetro ocupa 2 bytes, portanto, precisamos de 46,7B * 2 = 93,4 GB de VRAM apenas para armazenar o modelo, além da VRAM necessária para armazenar os dados de entrada e saída.</li>
-<li>8 bits: VRAM &gt; 45 GB, aqui cada parâmetro ocupa 1 byte, portanto, precisamos de 46,7B * 1 = 46,7 GB de VRAM apenas para armazenar o modelo, além da VRAM necessária para armazenar os dados de entrada e saída.</li>
-<li>4 bits: VRAM &gt; 23 GB, aqui cada parâmetro ocupa 0,5 bytes, portanto, precisamos de 46,7B * 0,5 = 23,35 GB de VRAM apenas para armazenar o modelo, além da VRAM necessária para armazenar os dados de entrada e saída.</li>
+  <li>float32: VRAM > 180 GB, ou seja, como cada parâmetro ocupa 4 bytes, precisamos de 46,7B * 4 = 186,8 GB de VRAM apenas para armazenar o modelo, além disso, é necessário adicionar a VRAM necessária para armazenar os dados de entrada e saída</li>
+  <li>float16: VRAM > 90 GB, neste caso cada parâmetro ocupa 2 bytes, então precisamos de 46,7B * 2 = 93,4 GB de VRAM apenas para armazenar o modelo, além disso, é necessário adicionar a VRAM necessária para armazenar os dados de entrada e saída</li>
+  <li>8-bit: VRAM > 45 GB, aqui cada parâmetro ocupa 1 byte, por isso precisamos de 46,7B * 1 = 46,7 GB de VRAM apenas para armazenar o modelo, além disso, é necessário adicionar a VRAM necessária para armazenar os dados de entrada e saída* 4-bit: VRAM > 23 GB, aqui cada parâmetro ocupa 0.5 bytes, portanto precisamos 46.7B * 0.5 = 23.35 GB de VRAM apenas para armazenar o modelo, além disso, é necessário adicionar a VRAM necessária para armazenar os dados de entrada e saída</li>
 </ul>
-<p>Precisamos de GPUs muito potentes para executá-lo, mesmo quando usamos o modelo quantizado de 4 bits.</p>
+<p>Precisamos de GPUs muito potentes para conseguir executá-lo, mesmo quando utilizamos o modelo quantizado para 4 bits.</p>
 </section>
 <section class="section-block-markdown-cell">
-<p>Portanto, a maneira mais fácil de usar o <code>Mixtral-8x7B</code> é usá-lo já implantado na nuvem. Encontrei vários locais onde você pode usá-lo</p>
+<p>Portanto, a forma mais simples de usar <code>Mixtral-8x7B</code> é usá-lo já implantado na nuvem. Encontrei vários sites onde você pode usá-lo</p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Uso-do-Mixtral-8x7b-no-bate-papo-huggingface">Uso do Mixtral-8x7b no bate-papo huggingface<a class="anchor-link" href="#Uso-do-Mixtral-8x7b-no-bate-papo-huggingface">¶</a></h3>
+<h3 id="Uso de Mixtral-8x7b no huggingface chat">Uso de Mixtral-8x7b no huggingface chat<a class="anchor-link" href="#Uso de Mixtral-8x7b no huggingface chat">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>O primeiro está no [huggingface chat] (<a href="https://huggingface.co/chat">https://huggingface.co/chat</a>). Para usá-lo, clique na roda dentada dentro da caixa <code>Current Model</code> e selecione <code>Mistral AI - Mixtral-8x7B</code>. Uma vez selecionado, você pode começar a conversar com o modelo.</p>
-<p><img alt="huggingface_chat_01" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/huggingface_chat_01.webp"/></p>
-<p>Uma vez lá dentro, selecione <code>mistralai/Mixtral-8x7B-Instruct-v0.1</code> e, por fim, clique no botão <code>Activate</code>. Agora podemos testar o modelo</p>
-<p><img alt="huggingface_chat_02" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/huggingface_chat_02.webp"/></p>
-<p>Como você pode ver, perguntei a ele em espanhol o que é "MoE" e ele me explicou.</p>
+<p>O primeiro está no <a href="https://huggingface.co/chat">huggingface chat</a>. Para poder usá-lo, é necessário clicar na engrenagem dentro da caixa <code>Current Model</code> e selecionar <code>Mistral AI - Mixtral-8x7B</code>. Uma vez selecionado, você já pode começar a conversar com o modelo.</p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/huggingface_chat_01.webp" alt="huggingface_chat_01">
+<p>Uma vez dentro, selecione <code>mistralai/Mixtral-8x7B-Instruct-v0.1</code> e, por fim, clique no botão <code>Activate</code>. Agora poderemos testar o modelo.</p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/huggingface_chat_02.webp" alt="huggingface_chat_02">
+<p>Como se pode ver, eu lhe perguntei em espanhol o que é <code>MoE</code> e ele me explicou</p>
 </section>
 <section class="section-block-markdown-cell">
-<h3 id="Usando-o-Mixtral-8x7b-no-Perplexity-Labs">Usando o Mixtral-8x7b no Perplexity Labs<a class="anchor-link" href="#Usando-o-Mixtral-8x7b-no-Perplexity-Labs">¶</a></h3>
+<h3 id="Uso de Mixtral-8x7b nos Perplexity Labs">Uso de Mixtral-8x7b nos Perplexity Labs<a class="anchor-link" href="#Uso de Mixtral-8x7b nos Perplexity Labs">¶</a></h3>
 </section>
 <section class="section-block-markdown-cell">
-<p>Outra opção é usar o [Perplexity Labs] (<a href="https://labs.perplexity.ai/">https://labs.perplexity.ai/</a>). Uma vez lá dentro, selecione <code>mixtral-8x7b-instruct</code> em um menu suspenso no canto inferior direito.</p>
-<p><img alt="perplexity_labs" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/perplexity_labs.webp"/></p>
-<p>Como você pode ver, eu também perguntei a ele em espanhol o que é <code>MoE</code> e ele me explicou.</p>
+<p>Outra opção é usar <a href="https://labs.perplexity.ai/">Perplexity Labs</a>. Uma vez dentro, deve-se selecionar <code>mixtral-8x7b-instruct</code> em um menu suspenso localizado na parte inferior direita.</p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/perplexity_labs.webp" alt="perplexity_labs">
+<p>Como se pode ver, também lhe perguntei em espanhol o que é <code>MoE</code> e ele me explicou</p>
 </section>
 <section class="section-block-markdown-cell">
-<h2 id="Usando-o-Mixtral-8x7b-localmente-por-meio-da-API-huggingface">Usando o Mixtral-8x7b localmente por meio da API huggingface<a class="anchor-link" href="#Usando-o-Mixtral-8x7b-localmente-por-meio-da-API-huggingface">¶</a></h2>
+<h2 id="Uso de Mixtral-8x7b localmente atraves da API do Hugging Face">Uso de Mixtral-8x7b localmente através da API do Hugging Face<a class="anchor-link" href="#Uso de Mixtral-8x7b localmente atraves da API do Hugging Face">¶</a></h2>
 </section>
 <section class="section-block-markdown-cell">
-<p>Uma maneira de usá-lo localmente, independentemente dos recursos de HW que você tenha, é por meio da API huggingface. Para fazer isso, você precisa instalar a biblioteca huggingface <code>huggingface-hub</code>.</p>
+<p>Uma maneira de usá-lo localmente, independentemente dos recursos de hardware que você tenha, é através da API do Hugging Face. Para isso, é necessário instalar a biblioteca <code>huggingface-hub</code> do Hugging Face.</p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="o">%</span><span class="k">pip</span> install huggingface-hub
+<div class="highlight hl-ipython3"><pre><span></span><span class="o">%</span><span class="n">pip</span> <span class="n">install</span> <span class="n">huggingface</span><span class="o">-</span><span class="n">hub</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Aqui está uma implementação com o <code>gradio</code>.</p>
+<p>Aqui está uma implementação com <code>gradio</code></p>
 </section>
 <section class="section-block-code-cell-">
 <div class="input-code">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">InferenceClient</span>
-<span class="kn">import</span> <span class="nn">gradio</span> <span class="k">as</span> <span class="nn">gr</span>
-
-<span class="n">client</span> <span class="o">=</span> <span class="n">InferenceClient</span><span class="p">(</span><span class="s2">"mistralai/Mixtral-8x7B-Instruct-v0.1"</span><span class="p">)</span>
-
-<span class="k">def</span> <span class="nf">format_prompt</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">history</span><span class="p">):</span>
-  <span class="n">prompt</span> <span class="o">=</span> <span class="s2">"&lt;s&gt;"</span>
-  <span class="k">for</span> <span class="n">user_prompt</span><span class="p">,</span> <span class="n">bot_response</span> <span class="ow">in</span> <span class="n">history</span><span class="p">:</span>
-    <span class="n">prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"[INST] </span><span class="si">{</span><span class="n">user_prompt</span><span class="si">}</span><span class="s2"> [/INST]"</span>
-    <span class="n">prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">" </span><span class="si">{</span><span class="n">bot_response</span><span class="si">}</span><span class="s2">&lt;/s&gt; "</span>
-  <span class="n">prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"[INST] </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2"> [/INST]"</span>
-  <span class="k">return</span> <span class="n">prompt</span>
-
-<span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">history</span><span class="p">,</span> <span class="n">system_prompt</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span> <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,):</span>
-    <span class="n">temperature</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">temperature</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">temperature</span> <span class="o">&lt;</span> <span class="mf">1e-2</span><span class="p">:</span>
-        <span class="n">temperature</span> <span class="o">=</span> <span class="mf">1e-2</span>
-    <span class="n">top_p</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">top_p</span><span class="p">)</span>
-
-    <span class="n">generate_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="n">max_new_tokens</span><span class="p">,</span> <span class="n">top_p</span><span class="o">=</span><span class="n">top_p</span><span class="p">,</span> <span class="n">repetition_penalty</span><span class="o">=</span><span class="n">repetition_penalty</span><span class="p">,</span> <span class="n">do_sample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,)</span>
-
-    <span class="n">formatted_prompt</span> <span class="o">=</span> <span class="n">format_prompt</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">system_prompt</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">prompt</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">history</span><span class="p">)</span>
-    <span class="n">stream</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">text_generation</span><span class="p">(</span><span class="n">formatted_prompt</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">details</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">return_full_text</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="n">output</span> <span class="o">=</span> <span class="s2">""</span>
-
-    <span class="k">for</span> <span class="n">response</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
-        <span class="n">output</span> <span class="o">+=</span> <span class="n">response</span><span class="o">.</span><span class="n">token</span><span class="o">.</span><span class="n">text</span>
-        <span class="k">yield</span> <span class="n">output</span>
-    <span class="k">return</span> <span class="n">output</span>
-
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">InferenceClient</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">gradio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gr</span>
+<span class="w"> </span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">InferenceClient</span><span class="p">(</span><span class="s2">&quot;mistralai/Mixtral-8x7B-Instruct-v0.1&quot;</span><span class="p">)</span>
+<span class="w"> </span>
+<span class="k">def</span><span class="w"> </span><span class="nf">format_prompt</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">history</span><span class="p">):</span>
+<span class="w">  </span><span class="n">prompt</span> <span class="o">=</span> <span class="s2">&quot;&amp;lt;s&amp;gt;&quot;</span>
+<span class="w">  </span><span class="k">for</span> <span class="n">user_prompt</span><span class="p">,</span> <span class="n">bot_response</span> <span class="ow">in</span> <span class="n">history</span><span class="p">:</span>
+<span class="w">    </span><span class="n">prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;[INST] </span><span class="si">{</span><span class="n">user_prompt</span><span class="si">}</span><span class="s2"> [/INST]&quot;</span>
+<span class="w">    </span><span class="n">prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">bot_response</span><span class="si">}</span><span class="s2">&amp;lt;/s&amp;gt; &quot;</span>
+<span class="w">  </span><span class="n">prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;[INST] </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2"> [/INST]&quot;</span>
+<span class="w">  </span><span class="k">return</span> <span class="n">prompt</span>
+<span class="w"> </span>
+<span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">history</span><span class="p">,</span> <span class="n">system_prompt</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span> <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,):</span>
+<span class="w">    </span><span class="n">temperature</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">temperature</span><span class="p">)</span>
+<span class="w">    </span><span class="k">if</span> <span class="n">temperature</span> <span class="o">&amp;</span><span class="n">lt</span><span class="p">;</span> <span class="mf">1e-2</span><span class="p">:</span>
+<span class="w">        </span><span class="n">temperature</span> <span class="o">=</span> <span class="mf">1e-2</span>
+<span class="w">    </span><span class="n">top_p</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">top_p</span><span class="p">)</span>
+<span class="w"> </span>
+<span class="w">    </span><span class="n">generate_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="n">max_new_tokens</span><span class="p">,</span> <span class="n">top_p</span><span class="o">=</span><span class="n">top_p</span><span class="p">,</span> <span class="n">repetition_penalty</span><span class="o">=</span><span class="n">repetition_penalty</span><span class="p">,</span> <span class="n">do_sample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,)</span>
+<span class="w"> </span>
+<span class="w">    </span><span class="n">formatted_prompt</span> <span class="o">=</span> <span class="n">format_prompt</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">system_prompt</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">prompt</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">history</span><span class="p">)</span>
+<span class="w">    </span><span class="n">stream</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">text_generation</span><span class="p">(</span><span class="n">formatted_prompt</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">details</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">return_full_text</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="w">    </span><span class="n">output</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+<span class="w"> </span>
+<span class="w">    </span><span class="k">for</span> <span class="n">response</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
+<span class="w">        </span><span class="n">output</span> <span class="o">+=</span> <span class="n">response</span><span class="o">.</span><span class="n">token</span><span class="o">.</span><span class="n">text</span>
+<span class="w">        </span><span class="k">yield</span> <span class="n">output</span>
+<span class="w">    </span><span class="k">return</span> <span class="n">output</span>
+<span class="w"> </span>
 <span class="n">additional_inputs</span><span class="o">=</span><span class="p">[</span>
-    <span class="n">gr</span><span class="o">.</span><span class="n">Textbox</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">"System Prompt"</span><span class="p">,</span> <span class="n">max_lines</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">interactive</span><span class="o">=</span><span class="kc">True</span><span class="p">,),</span>
-    <span class="n">gr</span><span class="o">.</span><span class="n">Slider</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">"Temperature"</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">minimum</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">maximum</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">interactive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="s2">"Higher values produce more diverse outputs"</span><span class="p">),</span>
-    <span class="n">gr</span><span class="o">.</span><span class="n">Slider</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">"Max new tokens"</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">minimum</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">maximum</span><span class="o">=</span><span class="mi">1048</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">interactive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="s2">"The maximum numbers of new tokens"</span><span class="p">),</span>
-    <span class="n">gr</span><span class="o">.</span><span class="n">Slider</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">"Top-p (nucleus sampling)"</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">0.90</span><span class="p">,</span> <span class="n">minimum</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">maximum</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">interactive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="s2">"Higher values sample more low-probability tokens"</span><span class="p">),</span>
-    <span class="n">gr</span><span class="o">.</span><span class="n">Slider</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">"Repetition penalty"</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span> <span class="n">minimum</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">maximum</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">interactive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="s2">"Penalize repeated tokens"</span><span class="p">)</span>
+<span class="w">    </span><span class="n">gr</span><span class="o">.</span><span class="n">Textbox</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;System Prompt&quot;</span><span class="p">,</span> <span class="n">max_lines</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">interactive</span><span class="o">=</span><span class="kc">True</span><span class="p">,),</span>
+<span class="w">    </span><span class="n">gr</span><span class="o">.</span><span class="n">Slider</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Temperature&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">minimum</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">maximum</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">interactive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="s2">&quot;Higher values produce more diverse outputs&quot;</span><span class="p">),</span>
+<span class="w">    </span><span class="n">gr</span><span class="o">.</span><span class="n">Slider</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Max new tokens&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">minimum</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">maximum</span><span class="o">=</span><span class="mi">1048</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">interactive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="s2">&quot;The maximum numbers of new tokens&quot;</span><span class="p">),</span>
+<span class="w">    </span><span class="n">gr</span><span class="o">.</span><span class="n">Slider</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Top-p (nucleus sampling)&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">0.90</span><span class="p">,</span> <span class="n">minimum</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">maximum</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">interactive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="s2">&quot;Higher values sample more low-probability tokens&quot;</span><span class="p">),</span>
+<span class="w">    </span><span class="n">gr</span><span class="o">.</span><span class="n">Slider</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Repetition penalty&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span> <span class="n">minimum</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">maximum</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">interactive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="s2">&quot;Penalize repeated tokens&quot;</span><span class="p">)</span>
 <span class="p">]</span>
-
+<span class="w"> </span>
 <span class="n">gr</span><span class="o">.</span><span class="n">ChatInterface</span><span class="p">(</span>
-    <span class="n">fn</span><span class="o">=</span><span class="n">generate</span><span class="p">,</span>
-    <span class="n">chatbot</span><span class="o">=</span><span class="n">gr</span><span class="o">.</span><span class="n">Chatbot</span><span class="p">(</span><span class="n">show_label</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">show_share_button</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">show_copy_button</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">likeable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="s2">"panel"</span><span class="p">),</span>
-    <span class="n">additional_inputs</span><span class="o">=</span><span class="n">additional_inputs</span><span class="p">,</span>
-    <span class="n">title</span><span class="o">=</span><span class="s2">"Mixtral 46.7B"</span><span class="p">,</span>
-    <span class="n">concurrency_limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+<span class="w">    </span><span class="n">fn</span><span class="o">=</span><span class="n">generate</span><span class="p">,</span>
+<span class="w">    </span><span class="n">chatbot</span><span class="o">=</span><span class="n">gr</span><span class="o">.</span><span class="n">Chatbot</span><span class="p">(</span><span class="n">show_label</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">show_share_button</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">show_copy_button</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">likeable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="s2">&quot;panel&quot;</span><span class="p">),</span>
+<span class="w">    </span><span class="n">additional_inputs</span><span class="o">=</span><span class="n">additional_inputs</span><span class="p">,</span>
+<span class="w">    </span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Mixtral 46.7B&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">concurrency_limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
 <span class="p">)</span><span class="o">.</span><span class="n">launch</span><span class="p">(</span><span class="n">show_api</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section class="section-block-markdown-cell">
-<p>Mixtral-8x7B huggingface API](<a href="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/Mixtral-8x7B_huggingface_API.webp">https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/Mixtral-8x7B_huggingface_API.webp</a>)</p>
+<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/Mixtral-8x7B_huggingface_API.webp" alt="Mixtral-8x7B huggingface API">
 </section>

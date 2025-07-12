@@ -29,9 +29,9 @@ class Test_get_notebook_metadata(unittest.TestCase):
         self.assertEqual(cm.exception.code, 1)
 
     def test_get_notebook_metadata(self):
-        notebook = "preparar_notebook/tests/test_get_notebook_metadata.ipynb"
+        notebook = "tests/test_get_notebook_metadata.ipynb"
         title_es, title_en, title_pt, end_url, description_es, description_en, description_pt, \
-        keywords_es, keywords_en, keywords_pt, image, witdh, height, image_extension, date = get_notebook_metadata(notebook)
+        keywords_es, keywords_en, keywords_pt, image, image_hover_path, witdh, height, image_extension, date = get_notebook_metadata(notebook)
         self.assertEqual(title_es, "Introducción a Python")
         self.assertEqual(title_en, "Introduction to Python")
         self.assertEqual(title_pt, "Introdução ao Python")
@@ -43,6 +43,7 @@ class Test_get_notebook_metadata(unittest.TestCase):
         self.assertEqual(keywords_en, "python, introduction, tutorial, basic, beginners")
         self.assertEqual(keywords_pt, "python, introdução, tutorial, básico, iniciantes")
         self.assertEqual(image, "https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/icon-python.webp")
+        self.assertEqual(image_hover_path, "https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/icon-python.webp")
         self.assertEqual(witdh, 800)
         self.assertEqual(height, 336)
         self.assertEqual(image_extension, "webp")
@@ -50,9 +51,9 @@ class Test_get_notebook_metadata(unittest.TestCase):
     
     @patch('sys.stdout')    # Mock the stdout to avoid printing to the console
     def test_get_notebook_metadata_no_description_es(self, mock_stdout):
-        notebook = "preparar_notebook/tests/test_get_notebook_metadata_no_description_es.ipynb"
+        notebook = "tests/test_get_notebook_metadata_no_description_es.ipynb"
         title_es, title_en, title_pt, end_url, description_es, description_en, description_pt, \
-        keywords_es, keywords_en, keywords_pt, image, witdh, height, image_extension, date = get_notebook_metadata(notebook)
+        keywords_es, keywords_en, keywords_pt, image, image_hover_path, witdh, height, image_extension, date = get_notebook_metadata(notebook)
         self.assertEqual(title_es, None)
         self.assertEqual(title_en, None)
         self.assertEqual(title_pt, None)
@@ -64,6 +65,7 @@ class Test_get_notebook_metadata(unittest.TestCase):
         self.assertEqual(keywords_en, None)
         self.assertEqual(keywords_pt, None)
         self.assertEqual(image, None)
+        self.assertEqual(image_hover_path, None)
         self.assertEqual(witdh, None)
         self.assertEqual(height, None)
         self.assertEqual(image_extension, None)

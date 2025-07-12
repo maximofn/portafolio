@@ -68,6 +68,11 @@ clases = [
     'nx',
     'gh',
     'ge',
+    'math-inline',
+    'math-display',
+    'math-fraction',
+    'math-fraction-numerator',
+    'math-fraction-denominator',
 ]
 
 def check_for_new_classes(path_file):
@@ -81,7 +86,6 @@ def check_for_new_classes(path_file):
 
     # Convert the list to a set to remove duplicates
     class_name_set = set(class_name_list)
-    class_name_set
 
     # Check if there are any new classes in class_name_set that are not in clases
     new_classes = []
@@ -101,8 +105,6 @@ def check_for_new_classes(path_file):
         for new_class in new_classes:
             print("New class: ", new_class)
         exit(1)
-    # else:
-        # exit(0)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Check for new classes in a html file')

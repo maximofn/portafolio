@@ -1,0 +1,295 @@
+<?xml version='1.0' encoding='utf-8'?>
+<notebook>
+  <markdown># Environment Management with uv</markdown>
+  <markdown> &gt; Disclaimer: This post has been translated to English using a machine translation model. Please, let me know if you find any mistakes.</markdown>
+  <markdown>So far I have been managing my environments with conda. But for a while now I've been reading a lot about `poetry`, but especially about `uv`. What are the advantages of `uv`? Speed. `uv` is implemented in Rust, so it manages environments and installs packages extremely quickly.</markdown>
+  <markdown>The following table shows the speed difference between different package managers. Source: [LLMs-from-scratch/setup/01_optional-python-setup-preferences/native-uv.md](https://github.com/rasbt/LLMs-from-scratch/blob/main/setup/01_optional-python-setup-preferences/native-uv.md#native-uv-python-and-package-management)
+
+| Command | Speed |
+|--------------------|-----------------------|
+| `conda install &lt;pkg&gt;`              | slow            |
+| `pip install &lt;pkg&gt;`             | up to 10 times faster than the previous version            |
+| `uv pip install &lt;pkg&gt;`                 | between 5 and 10 times faster than the previous          |
+| `uv add &lt;pkg&gt;`                 | between 2 and 5 times faster than the previous          |</markdown>
+  <markdown>Looking at the table, it's definitely worth using `uv`. So let's see how to create an environment and install packages with `uv`.</markdown>
+  <markdown>## Repository download</markdown>
+  <markdown>As I said, I am using [LLMs-from-scratch/setup/01_optional-python-setup-preferences
+[native-uv.md](https://github.com/rasbt/LLMs-from-scratch/blob/main/setup/01_optional-python-setup-preferences/native-uv.md) as the source, so let's download the repository, install the proposed environment, and see how to run a script.
+
+We use `--depth 1` to download only the latest commit of the repository and make it clone faster, we are not interested in the history.</markdown>
+  <input_code>git clone https://github.com/rasbt/LLMs-from-scratch.git --depth 1</input_code>
+  <output_code>Cloning into 'LLMs-from-scratch'...
+remote: Enumerating objects: 260, done.[K
+remote: Counting objects: 100% (260/260), done.[K
+remote: Compressing objects: 100% (226/226), done.[K
+remote: Total 260 (delta 61), reused 121 (delta 22), pack-reused 0 (from 0)[K
+Receiving objects: 100% (260/260), 1.64 MiB | 6.94 MiB/s, done.
+Resolving deltas: 100% (61/61), done.
+</output_code>
+  <markdown>Now we are going to the repository that we have downloaded</markdown>
+  <input_code>cd LLMs-from-scratch</input_code>
+  <markdown>## Install `uv`</markdown>
+  <markdown>If we are on macOS or Linux, we can install using the command
+
+``` bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+If we are on Windows
+
+``` bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```</markdown>
+  <markdown>## Create environment</markdown>
+  <markdown>If we do an `ls` we can see that there is a file called `pyproject.toml`, this will be the file that `uv` will use to create the environment.</markdown>
+  <input_code>ls</input_code>
+  <output_code>2025-03-10-uv.ipynb [1m[36mappendix-D[m[m          [1m[36mch04[m[m                pyproject.toml
+CITATION.cff        [1m[36mappendix-E[m[m          [1m[36mch05[m[m                requirements.txt
+LICENSE.txt         [1m[36mch01[m[m                [1m[36mch06[m[m                [1m[36msetup[m[m
+README.md           [1m[36mch02[m[m                [1m[36mch07[m[m
+[1m[36mappendix-A[m[m          [1m[36mch03[m[m                pixi.toml
+</output_code>
+  <markdown>So let's see what the file has</markdown>
+  <input_code>cat pyproject.toml</input_code>
+  <output_code>[project]
+name = "llms-from-scratch"
+version = "0.1.0"
+description = "Implement a ChatGPT-like LLM in PyTorch from scratch, step by step"
+readme = "README.md"
+requires-python = "&gt;=3.10"
+dependencies = [
+    "torch&gt;=2.3.0",
+    "jupyterlab&gt;=4.0",
+    "tiktoken&gt;=0.5.1",
+    "matplotlib&gt;=3.7.1",
+    "tensorflow&gt;=2.18.0",
+    "tqdm&gt;=4.66.1",
+    "numpy&gt;=1.26,&lt;2.1",
+    "pandas&gt;=2.2.1",
+    "pip&gt;=25.0.1",
+]
+
+[tool.setuptools.packages]
+find = {}
+
+[tool.uv.sources]
+llms-from-scratch = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "llms-from-scratch",
+]
+
+[tool.ruff]
+line-length = 140
+
+[tool.ruff.lint]
+exclude = [".venv"]
+# Ignored rules (W504 removed)
+ignore = [
+    "C406", "E226", "E402", "E702", "E703",
+    "E722", "E731", "E741"
+]
+</output_code>
+  <markdown>As can be seen, there are data such as the name, version, etc., and the dependencies, which are the packages we are going to install.</markdown>
+  <markdown>To create the environment, we use the command `uv sync`, and we add the `--dev` flag to also install development dependencies and the `--python` flag to specify the version of Python we want to use.</markdown>
+  <input_code>uv sync --dev --python 3.11</input_code>
+  <output_code>Using CPython [36m3.11.11[39m
+Creating virtual environment at: [36m.venv[39m
+[2K[2mResolved [1m160 packages[0m [2min 175ms[0m[0m                                       [0m
+[2K[2mInstalled [1m139 packages[0m [2min 1.46s[0m[0m                             [0m
+ [32m+[39m [1mabsl-py[0m[2m==2.1.0[0m
+ [32m+[39m [1manyio[0m[2m==4.8.0[0m
+ [32m+[39m [1mappnope[0m[2m==0.1.4[0m
+ [32m+[39m [1margon2-cffi[0m[2m==23.1.0[0m
+ [32m+[39m [1margon2-cffi-bindings[0m[2m==21.2.0[0m
+ [32m+[39m [1marrow[0m[2m==1.3.0[0m
+ [32m+[39m [1masttokens[0m[2m==3.0.0[0m
+ [32m+[39m [1mastunparse[0m[2m==1.6.3[0m
+ [32m+[39m [1masync-lru[0m[2m==2.0.4[0m
+ [32m+[39m [1mattrs[0m[2m==25.1.0[0m
+ [32m+[39m [1mbabel[0m[2m==2.17.0[0m
+ [32m+[39m [1mbeautifulsoup4[0m[2m==4.13.3[0m
+ [32m+[39m [1mbleach[0m[2m==6.2.0[0m
+ [32m+[39m [1mcertifi[0m[2m==2025.1.31[0m
+ [32m+[39m [1mcffi[0m[2m==1.17.1[0m
+ [32m+[39m [1mcharset-normalizer[0m[2m==3.4.1[0m
+ [32m+[39m [1mcomm[0m[2m==0.2.2[0m
+ [32m+[39m [1mcontourpy[0m[2m==1.3.1[0m
+ [32m+[39m [1mcycler[0m[2m==0.12.1[0m
+ [32m+[39m [1mdebugpy[0m[2m==1.8.13[0m
+ [32m+[39m [1mdecorator[0m[2m==5.2.1[0m
+ [32m+[39m [1mdefusedxml[0m[2m==0.7.1[0m
+ [32m+[39m [1mexecuting[0m[2m==2.2.0[0m
+ [32m+[39m [1mfastjsonschema[0m[2m==2.21.1[0m
+ [32m+[39m [1mfilelock[0m[2m==3.17.0[0m
+ [32m+[39m [1mflatbuffers[0m[2m==25.2.10[0m
+ [32m+[39m [1mfonttools[0m[2m==4.56.0[0m
+ [32m+[39m [1mfqdn[0m[2m==1.5.1[0m
+ [32m+[39m [1mfsspec[0m[2m==2025.3.0[0m
+ [32m+[39m [1mgast[0m[2m==0.6.0[0m
+ [32m+[39m [1mgoogle-pasta[0m[2m==0.2.0[0m
+ [32m+[39m [1mgrpcio[0m[2m==1.70.0[0m
+ [32m+[39m [1mh11[0m[2m==0.14.0[0m
+ [32m+[39m [1mh5py[0m[2m==3.13.0[0m
+ [32m+[39m [1mhttpcore[0m[2m==1.0.7[0m
+ [32m+[39m [1mhttpx[0m[2m==0.28.1[0m
+ [32m+[39m [1midna[0m[2m==3.10[0m
+ [32m+[39m [1mipykernel[0m[2m==6.29.5[0m
+ [32m+[39m [1mipython[0m[2m==9.0.2[0m
+ [32m+[39m [1mipython-pygments-lexers[0m[2m==1.1.1[0m
+ [32m+[39m [1misoduration[0m[2m==20.11.0[0m
+ [32m+[39m [1mjedi[0m[2m==0.19.2[0m
+ [32m+[39m [1mjinja2[0m[2m==3.1.6[0m
+ [32m+[39m [1mjson5[0m[2m==0.10.0[0m
+ [32m+[39m [1mjsonpointer[0m[2m==3.0.0[0m
+ [32m+[39m [1mjsonschema[0m[2m==4.23.0[0m
+ [32m+[39m [1mjsonschema-specifications[0m[2m==2024.10.1[0m
+ [32m+[39m [1mjupyter-client[0m[2m==8.6.3[0m
+ [32m+[39m [1mjupyter-core[0m[2m==5.7.2[0m
+ [32m+[39m [1mjupyter-events[0m[2m==0.12.0[0m
+ [32m+[39m [1mjupyter-lsp[0m[2m==2.2.5[0m
+ [32m+[39m [1mjupyter-server[0m[2m==2.15.0[0m
+ [32m+[39m [1mjupyter-server-terminals[0m[2m==0.5.3[0m
+ [32m+[39m [1mjupyterlab[0m[2m==4.3.5[0m
+ [32m+[39m [1mjupyterlab-pygments[0m[2m==0.3.0[0m
+ [32m+[39m [1mjupyterlab-server[0m[2m==2.27.3[0m
+ [32m+[39m [1mkeras[0m[2m==3.9.0[0m
+ [32m+[39m [1mkiwisolver[0m[2m==1.4.8[0m
+ [32m+[39m [1mlibclang[0m[2m==18.1.1[0m
+ [32m+[39m [1mmarkdown[0m[2m==3.7[0m
+ [32m+[39m [1mmarkdown-it-py[0m[2m==3.0.0[0m
+ [32m+[39m [1mmarkupsafe[0m[2m==3.0.2[0m
+ [32m+[39m [1mmatplotlib[0m[2m==3.10.1[0m
+ [32m+[39m [1mmatplotlib-inline[0m[2m==0.1.7[0m
+ [32m+[39m [1mmdurl[0m[2m==0.1.2[0m
+ [32m+[39m [1mmistune[0m[2m==3.1.2[0m
+ [32m+[39m [1mml-dtypes[0m[2m==0.4.1[0m
+ [32m+[39m [1mmpmath[0m[2m==1.3.0[0m
+ [32m+[39m [1mnamex[0m[2m==0.0.8[0m
+ [32m+[39m [1mnbclient[0m[2m==0.10.2[0m
+ [32m+[39m [1mnbconvert[0m[2m==7.16.6[0m
+ [32m+[39m [1mnbformat[0m[2m==5.10.4[0m
+ [32m+[39m [1mnest-asyncio[0m[2m==1.6.0[0m
+ [32m+[39m [1mnetworkx[0m[2m==3.4.2[0m
+ [32m+[39m [1mnotebook-shim[0m[2m==0.2.4[0m
+ [32m+[39m [1mnumpy[0m[2m==2.0.2[0m
+ [32m+[39m [1mopt-einsum[0m[2m==3.4.0[0m
+ [32m+[39m [1moptree[0m[2m==0.14.1[0m
+ [32m+[39m [1moverrides[0m[2m==7.7.0[0m
+ [32m+[39m [1mpackaging[0m[2m==24.2[0m
+ [32m+[39m [1mpandas[0m[2m==2.2.3[0m
+ [32m+[39m [1mpandocfilters[0m[2m==1.5.1[0m
+ [32m+[39m [1mparso[0m[2m==0.8.4[0m
+ [32m+[39m [1mpexpect[0m[2m==4.9.0[0m
+ [32m+[39m [1mpillow[0m[2m==11.1.0[0m
+ [32m+[39m [1mpip[0m[2m==25.0.1[0m
+ [32m+[39m [1mplatformdirs[0m[2m==4.3.6[0m
+ [32m+[39m [1mprometheus-client[0m[2m==0.21.1[0m
+ [32m+[39m [1mprompt-toolkit[0m[2m==3.0.50[0m
+ [32m+[39m [1mprotobuf[0m[2m==5.29.3[0m
+ [32m+[39m [1mpsutil[0m[2m==7.0.0[0m
+ [32m+[39m [1mptyprocess[0m[2m==0.7.0[0m
+ [32m+[39m [1mpure-eval[0m[2m==0.2.3[0m
+ [32m+[39m [1mpycparser[0m[2m==2.22[0m
+ [32m+[39m [1mpygments[0m[2m==2.19.1[0m
+ [32m+[39m [1mpyparsing[0m[2m==3.2.1[0m
+ [32m+[39m [1mpython-dateutil[0m[2m==2.9.0.post0[0m
+ [32m+[39m [1mpython-json-logger[0m[2m==3.3.0[0m
+ [32m+[39m [1mpytz[0m[2m==2025.1[0m
+ [32m+[39m [1mpyyaml[0m[2m==6.0.2[0m
+ [32m+[39m [1mpyzmq[0m[2m==26.2.1[0m
+ [32m+[39m [1mreferencing[0m[2m==0.36.2[0m
+ [32m+[39m [1mregex[0m[2m==2024.11.6[0m
+ [32m+[39m [1mrequests[0m[2m==2.32.3[0m
+ [32m+[39m [1mrfc3339-validator[0m[2m==0.1.4[0m
+ [32m+[39m [1mrfc3986-validator[0m[2m==0.1.1[0m
+ [32m+[39m [1mrich[0m[2m==13.9.4[0m
+ [32m+[39m [1mrpds-py[0m[2m==0.23.1[0m
+ [32m+[39m [1msend2trash[0m[2m==1.8.3[0m
+ [32m+[39m [1msetuptools[0m[2m==76.0.0[0m
+ [32m+[39m [1msix[0m[2m==1.17.0[0m
+ [32m+[39m [1msniffio[0m[2m==1.3.1[0m
+ [32m+[39m [1msoupsieve[0m[2m==2.6[0m
+ [32m+[39m [1mstack-data[0m[2m==0.6.3[0m
+ [32m+[39m [1msympy[0m[2m==1.13.1[0m
+ [32m+[39m [1mtensorboard[0m[2m==2.18.0[0m
+ [32m+[39m [1mtensorboard-data-server[0m[2m==0.7.2[0m
+ [32m+[39m [1mtensorflow[0m[2m==2.18.0[0m
+ [32m+[39m [1mtensorflow-io-gcs-filesystem[0m[2m==0.37.1[0m
+ [32m+[39m [1mtermcolor[0m[2m==2.5.0[0m
+ [32m+[39m [1mterminado[0m[2m==0.18.1[0m
+ [32m+[39m [1mtiktoken[0m[2m==0.9.0[0m
+ [32m+[39m [1mtinycss2[0m[2m==1.4.0[0m
+ [32m+[39m [1mtorch[0m[2m==2.6.0[0m
+ [32m+[39m [1mtornado[0m[2m==6.4.2[0m
+ [32m+[39m [1mtqdm[0m[2m==4.67.1[0m
+ [32m+[39m [1mtraitlets[0m[2m==5.14.3[0m
+ [32m+[39m [1mtypes-python-dateutil[0m[2m==2.9.0.20241206[0m
+ [32m+[39m [1mtyping-extensions[0m[2m==4.12.2[0m
+ [32m+[39m [1mtzdata[0m[2m==2025.1[0m
+ [32m+[39m [1muri-template[0m[2m==1.3.0[0m
+ [32m+[39m [1murllib3[0m[2m==2.3.0[0m
+ [32m+[39m [1mwcwidth[0m[2m==0.2.13[0m
+ [32m+[39m [1mwebcolors[0m[2m==24.11.1[0m
+ [32m+[39m [1mwebencodings[0m[2m==0.5.1[0m
+ [32m+[39m [1mwebsocket-client[0m[2m==1.8.0[0m
+ [32m+[39m [1mwerkzeug[0m[2m==3.1.3[0m
+ [32m+[39m [1mwheel[0m[2m==0.45.1[0m
+ [32m+[39m [1mwrapt[0m[2m==1.17.2[0m
+</output_code>
+  <markdown>It has created the environment and installed the packages in a lightning-fast way</markdown>
+  <markdown>Moreover, if we run `ls` again now we will see a new folder called `.venv`, that is the folder for the virtual environment.</markdown>
+  <input_code>ls -a</input_code>
+  <output_code>[1m[36m.[m[m                   CITATION.cff        [1m[36mch02[m[m                pyproject.toml
+[1m[36m..[m[m                  LICENSE.txt         [1m[36mch03[m[m                requirements.txt
+[1m[36m.git[m[m                README.md           [1m[36mch04[m[m                [1m[36msetup[m[m
+[1m[36m.github[m[m             [1m[36mappendix-A[m[m          [1m[36mch05[m[m                uv.lock
+.gitignore          [1m[36mappendix-D[m[m          [1m[36mch06[m[m
+[1m[36m.venv[m[m               [1m[36mappendix-E[m[m          [1m[36mch07[m[m
+2025-03-10-uv.ipynb [1m[36mch01[m[m                pixi.toml
+</output_code>
+  <markdown>## Add packages</markdown>
+  <markdown>If we want to add packages to our environment that are not in the `pyproject.toml` file, we can do so with the command `uv add &lt;pkg&gt;`.</markdown>
+  <markdown>For example, if we run `cat pyproject.toml | grep dotenv` we will see that the package `python-dotenv` is not installed.</markdown>
+  <input_code>cat pyproject.toml | grep dotenv</input_code>
+  <markdown>So we add the package</markdown>
+  <input_code>uv add dotenv</input_code>
+  <output_code>[2K[2mResolved [1m162 packages[0m [2min 92ms[0m[0m                                        [0m
+[2K[2mInstalled [1m2 packages[0m [2min 5ms[0m[0m                                 [0m     [0m░░░░░░░░░░░░░░░░░░░░ [0/0] [2mInstalling wheels...                                 [0m
+ [32m+[39m [1mdotenv[0m[2m==0.9.9[0m
+ [32m+[39m [1mpython-dotenv[0m[2m==1.0.1[0m
+</output_code>
+  <markdown>If we now run `cat pyproject.toml | grep dotenv` again, we will see that it has been added to the file.</markdown>
+  <input_code>cat pyproject.toml | grep dotenv</input_code>
+  <output_code>    "dotenv&gt;=0.9.9",
+</output_code>
+  <markdown>This is very good because now with this new `pyproject.toml` file we can recreate the environment with the command `uv sync` on any other computer.</markdown>
+  <markdown>## Running a script</markdown>
+  <markdown>Now that we have an environment, we can run a script in two ways, the first with `uv run python &lt;script&gt;.py`, which will activate the `.venv` environment and run the script.</markdown>
+  <input_code>uv run python setup/02_installing-python-libraries/python_environment_check.py</input_code>
+  <output_code>[OK] Your Python version is 3.11.11
+[OK] torch 2.6.0
+[OK] jupyterlab 4.3.5
+[OK] tiktoken 0.9.0
+[OK] matplotlib 3.10.1
+[OK] tensorflow 2.18.0
+[OK] tqdm 4.67.1
+[OK] numpy 2.0.2
+[OK] pandas 2.2.3
+[OK] psutil 7.0.0
+</output_code>
+  <markdown>However, if what we want is to run the script directly with `python &lt;script&gt;.py`, we need to activate the environment manually first.</markdown>
+  <input_code>source .venv/bin/activate &amp;&amp; python setup/02_installing-python-libraries/python_environment_check.py</input_code>
+  <output_code>[OK] Your Python version is 3.11.11
+[OK] torch 2.6.0
+[OK] jupyterlab 4.3.5
+[OK] tiktoken 0.9.0
+[OK] matplotlib 3.10.1
+[OK] tensorflow 2.18.0
+[OK] tqdm 4.67.1
+[OK] numpy 2.0.2
+[OK] pandas 2.2.3
+[OK] psutil 7.0.0
+</output_code>
+</notebook>

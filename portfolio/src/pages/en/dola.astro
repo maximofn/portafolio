@@ -37,31 +37,32 @@ const closing_brace = '}';
 
     <aside class="post-index">
       <a class="anchor-link" href="#Method"><h2>Method</h2></a>
-      <a class="anchor-link" href="#Dynamic-selection-of-the-premature-layer"><h2>Dynamic selection of the premature layer</h2></a>
-      <a class="anchor-link" href="#Contrast-of-predictions"><h2>Contrast of predictions</h2></a>
-      <a class="anchor-link" href="#Repetition-penalty"><h2>Repetition penalty</h2></a>
-      <a class="anchor-link" href="#Implementation-with-transformers"><h2>Implementation with transformers</h2></a>
+      <a class="anchor-link" href="#Dynamic Selection of the Premature Layer"><h2>Dynamic Selection of the Premature Layer</h2></a>
+      <a class="anchor-link" href="#Contrast of the predictions"><h2>Contrast of the predictions</h2></a>
+      <a class="anchor-link" href="#Repetition Penalty"><h2>Repetition Penalty</h2></a>
+      <a class="anchor-link" href="#Implementation with transformers"><h2>Implementation with transformers</h2></a>
     </aside>
 
 
     <div class="post-body-content">
       
       <section class="section-block-markdown-cell">
-      <h1 id="DoLa:-Decoding-by-Contrasting-Layers-Improves-Factuality-in-Large-Language-Models">DoLa: Decoding by Contrasting Layers Improves Factuality in Large Language Models<a class="anchor-link" href="#DoLa:-Decoding-by-Contrasting-Layers-Improves-Factuality-in-Large-Language-Models"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 6" src={svg_paths.link_svg_path}/></a></h1>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>This notebook has been automatically translated to make it accessible to more people, please let me know if you see any typos.</p>
+      <blockquote>
+      <p>Disclaimer: This post has been translated to English using a machine translation model. Please, let me know if you find any mistakes.</p>
+      </blockquote>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>However, as LLMs grow in size and new capabilities emerge, we have a problem and that is aliasing. The authors of the paper <a href="https://arxiv.org/abs/2309.03883" target="_blank" rel="nofollow noreferrer">DoLa: Decoding by Contrasting Layers Improves Factuality in Large Language Models</a> propose a method to avoid this problem.</p>
+      <p>Although as LLMs grow in size and new capabilities emerge, we have a problem: hallucinations. The authors of the paper <a href="https://arxiv.org/abs/2309.03883" target="_blank" rel="nofollow noreferrer">DoLa: Decoding by Contrasting Layers Improves Factuality in Large Language Models</a> propose a method to avoid this issue.</p>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>They propose a contrastive decoding approach, where the output probability of the next word is obtained from the difference in logits between an upper and a lower layer. By emphasizing knowledge of higher layers and de-emphasizing knowledge of lower layers, we can make LMs more factual and thus reduce hallucinations.</p>
-      <p>The following figure shows this idea. While <code>Seattle</code> maintains a high probability in all layers, the probability of the correct answer <code>Olympia</code> increases after the upper layers inject more factual knowledge. Contrasting the differences between the different layers may reveal the correct answer in this case.</p>
-      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="DoLa-figure1" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/DoLa-figure1.webp" width="748" height="431"/></p>
+      <p>They propose a contrastive decoding approach, where the probability of the next word's output is obtained from the difference in logits between an upper layer and a lower layer. By emphasizing the knowledge of the upper layers and de-emphasizing that of the lower layers, we can make LMs more factual and, therefore, reduce hallucinations.</p>
+      <p>The following figure illustrates this idea. While <code>Seattle</code> maintains a high probability across all layers, the probability of the correct answer <code>Olympia</code> increases after the upper layers inject more factual knowledge. Comparing the differences between the various layers can reveal the correct answer in this case.</p>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/DoLa-figure1.webp" alt="DoLa-figure1">
       </section>
       
       <section class="section-block-markdown-cell">
@@ -69,83 +70,76 @@ const closing_brace = '}';
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>An LLM consists of an embedding layer, several sequential transformers and then an output layer. What they propose is to measure the output of each transformer using the Jensen-Shannon divergence (JSD).</p>
-      <p>The following figure shows this measurement at the output of each transformer for an LLM input sentence. Each column corresponds to one token of the phrase</p>
-      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="DoLa-figure2" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/DoLa-figure2.webp" width="972" height="403"/></p>
+      <p>A LLM consists of an embedding layer, several sequential transformers, and then an output layer. What they propose is to measure the output of each transformer using the Jensen-Shannon divergence (JSD).</p>
+      <p>In the following figure, this measure can be seen at the output of each transformer for an input sentence to the LLM. Each column corresponds to a token in the sentence.</p>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/DoLa-figure2.webp" alt="DoLa-figure2">
       <p>Two patterns can be observed</p>
       <ul>
-      <li><p>The first occurs when predicting named entities or important dates, such as <code>Wole Soyinka</code> and <code>1986</code>, which require factual knowledge. It can be seen that the calculated JSD remains extremely high in the upper layers. This pattern indicates that the model keeps changing its predictions in the later layers, and potentially injecting more factual knowledge into the predictions.</p>
-      </li>
-      <li><p>The second occurs when predicting function words, such as <code>was</code>, <code>the</code>, <code>to</code>, <code>in</code>, and tokens copied from the input question, such as <code>first Nigerian</code>, <code>Nobel Prize</code>. When these <code>easy</code> tokens are predicted, we can observe that the JSD becomes very small from the intermediate layers. This finding indicates that the model has already decided which token to generate in the intermediate layers, and keeps the output distributions almost unchanged in the upper layers. This finding is also consistent with the assumptions in the early output LLMs <code>Schuster et al., 2022</code>.</p>
-      </li>
+        <li>The first occurs when predicting named entities or important dates, such as <code>Wole Soyinka</code> and <code>1986</code>, which require factual knowledge. It can be seen that the JSD calculated remains extremely high in the upper layers. This pattern indicates that the model is still changing its predictions in the final layers, potentially injecting more factual knowledge into the predictions.</li>
+      </ul>
+      <ul>
+        <li>The second occurs when functional words are predicted, such as <code>was</code>, <code>the</code>, <code>to</code>, <code>in</code>, and tokens copied from the input question, like <code>first Nigerian</code>, <code>Nobel Prize</code>. When these "easy" tokens are predicted, we can observe that the JSD becomes very small from the intermediate layers onwards. This finding indicates that the model has already decided which token to generate by the intermediate layers, and maintains the output distributions almost unchanged in the upper layers. This finding is also consistent with the assumptions of early output LLMs <code>Schuster et al., 2022</code></li>
       </ul>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>When the prediction of the next word requires factual knowledge, the LLM appears to change the predictions in the upper layers. Contrasting the layers before and after a sudden change may therefore amplify the knowledge emerging from the upper layers and make the model rely more on its internal factual knowledge. Moreover, this evolution of information seems to vary from token to token.</p>
+      <p>When the prediction of the next word requires factual knowledge, the LLM seems to change predictions in the upper layers. Contrasting the layers before and after a sudden change can therefore amplify the knowledge that emerges from the upper layers and make the model rely more on its internal factual knowledge. Additionally, this evolution of information appears to vary from one token to another.</p>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>Their method requires accurately selecting the premature layer containing plausible but less factual information, which may not always be in the same early layer. Therefore, they propose to find that premature layer by dynamically selecting the premature layer as seen in the following image.</p>
-      <p><img decoding="async" onerror="this.parentNode.removeChild(this)" alt="DoLa-figure3" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/DoLa-figure3.webp" width="837" height="457"/></p>
+      <p>Your method requires accurately selecting the premature layer that contains plausible but less factual information, which may not always be in the same early layer. Therefore, they propose finding this premature layer through dynamic selection of the premature layer as shown in the following image</p>
+      <img decoding="async" onerror="this.parentNode.removeChild(this)" src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/DoLa-figure3.webp" alt="DoLa-figure3">
       </section>
       
       <section class="section-block-markdown-cell">
-      <h2 id="Dynamic-selection-of-the-premature-layer">Dynamic selection of the premature layer<a class="anchor-link" href="#Dynamic-selection-of-the-premature-layer"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 8" src={svg_paths.link_svg_path}/></a></h2>
+      <h2 id="Dynamic Selection of the Premature Layer">Dynamic Selection of the Premature Layer<a class="anchor-link" href="#Dynamic Selection of the Premature Layer"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 8" src={svg_paths.link_svg_path}/></a></h2>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>To select the premature layer they calculate the Jensen-Shannon divergence (JSD) between the intermediate layers with the final layer. The premature layer is selected as the layer with the highest JSD.</p>
+      <p>To select the premature layer, they calculate the Jensen-Shannon Divergence (JSD) between the intermediate and final layers. The premature layer is selected as the layer with the highest JSD.</p>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>However, as this process can be a bit slow, what they do is to group several layers together to make fewer calculations.</p>
+      <p>However, as this process can be a bit slow, what they do is group several layers to make fewer calculations</p>
       </section>
       
       <section class="section-block-markdown-cell">
-      <h2 id="Contrast-of-predictions">Contrast of predictions<a class="anchor-link" href="#Contrast-of-predictions"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 9" src={svg_paths.link_svg_path}/></a></h2>
+      <h2 id="Contrast of the predictions">Contrast of the predictions<a class="anchor-link" href="#Contrast of the predictions"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 9" src={svg_paths.link_svg_path}/></a></h2>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>Now that we have the last layer (mature layer) and the premature layer, we can contrast the predictions of both layers. To do this, they calculate the log probability of the next token in the mature layer and the premature layer. They then subtract the log-likelihood of the premature layer from that of the mature layer, thus giving more weight to the knowledge of the mature layer.</p>
+      <p>Now that we have the last layer (mature layer) and the premature layer, we can contrast the predictions of both layers. To do this, they calculate the logarithmic probability of the next token in the mature layer and the premature layer. Then they subtract the logarithmic probability of the premature layer from that of the mature layer, thus giving more importance to the knowledge of the mature layer.</p>
       </section>
       
       <section class="section-block-markdown-cell">
-      <h2 id="Repetition-penalty">Repetition penalty<a class="anchor-link" href="#Repetition-penalty"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 10" src={svg_paths.link_svg_path}/></a></h2>
+      <h2 id="Repetition Penalty">Repetition Penalty<a class="anchor-link" href="#Repetition Penalty"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 10" src={svg_paths.link_svg_path}/></a></h2>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>DoLa's motivation is to de-emphasize lower-layer linguistic knowledge and amplify factual knowledge of the real world. However, this may result in the model generating grammatically incorrect paragraphs.</p>
-      <p>Empirically they have not observed such a problem, but they have found that the resulting DoLa distribution sometimes has a greater tendency to repeat previously generated sentences, especially during the generation of long sequences of reasoning in the chain of thought.</p>
+      <p>The motivation of DoLa is to downplay the linguistic knowledge of the lower layers and amplify the factual knowledge of the real world. However, this can lead to the model generating grammatically incorrect paragraphs.</p>
+      <p>Empirically, they have not observed that problem, but they have found that the resulting DoLa distribution sometimes has a greater tendency to repeat previously generated phrases, especially during the generation of long reasoning sequences in the chain of thought.</p>
       <p>So they include a repetition penalty introduced in <code>Keskar et al. (2019)</code> with <code>θ = 1.2</code> during decoding</p>
       </section>
       
       <section class="section-block-markdown-cell">
-      <h2 id="Implementation-with-transformers">Implementation with transformers<a class="anchor-link" href="#Implementation-with-transformers"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 11" src={svg_paths.link_svg_path}/></a></h2>
+      <h2 id="Implementation with transformers">Implementation with transformers<a class="anchor-link" href="#Implementation with transformers"><img decoding="async" class="link-img" width="24px" height="24px" alt="link image 11" src={svg_paths.link_svg_path}/></a></h2>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>Let's see how to implement DoLa with the <code>transformers</code> library of Hugging Face. For more information on how to implement DoLa with the <code>transformers</code> library you can consult the following <a href="https://huggingface.co/docs/transformers/main/en/generation_strategies#dola-decoding" target="_blank" rel="nofollow noreferrer">link</a></p>
+      <p>Let's see how to implement DoLa with the <code>transformers</code> library from Hugging Face. For more information on how to apply DoLa with the <code>transformers</code> library, you can consult the following <a href="https://huggingface.co/docs/transformers/main/en/generation_strategies#dola-decoding" target="_blank" rel="nofollow noreferrer">link</a></p>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>First we log into the Hub, because we are going to use Llama 3 8B, to use it you have to ask permission to Meta, so to download it you have to be logged in so you know who is downloading it.</p>
+      <p>First we log in to the Hub, because we are going to use Llama 3 8B, and to be able to use it, we need to request permission from Meta. So, to download it, you need to be logged in so they know who is downloading it.</p>
       </section>
       
       <CodeBlockInputCell
         text={[
-      '<span></span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">notebook_login</span>',
-      '      <span class="n">notebook_login</span><span class="p">()</span>',
+      '<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">notebook_login</span>',
+      '<span class="n">notebook_login</span><span class="p">()</span>',
         ]}
         languaje='python'
       ></CodeBlockInputCell>
-
-
-
-
-
-
-
       
       <section class="section-block-markdown-cell">
       <p>Now we instantiate the tokenizer and the model</p>
@@ -153,38 +147,20 @@ const closing_brace = '}';
       
       <CodeBlockInputCell
         text={[
-      '<span></span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">notebook_login</span>',
-      '      <span class="n">notebook_login</span><span class="p">()</span>',
-      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">set_seed</span>',
-      '      <span class="kn">import</span> <span class="nn">torch</span>',
-      '      ',
-      '      <span class="n">compute_dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_bf16_supported</span><span class="p">()</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>',
-      '      ',
-      '      <span class="n">device</span> <span class="o">=</span> <span class="s1">\'cuda\'</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s1">\'cpu\'</span>',
-      '      <span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">"meta-llama/Meta-Llama-3-8B-Instruct"</span>',
-      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>',
-      '      <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>',
-      '      <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">,</span> <span class="n">torch_dtype</span><span class="o">=</span><span class="n">compute_dtype</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">)</span>',
-      '      <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">eos_token_id</span>',
+      '<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">set_seed</span>',
+      '<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>',
+      '<span class="w"> </span>',
+      '<span class="n">compute_dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_bf16_supported</span><span class="p">()</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>',
+      '<span class="w"> </span>',
+      '<span class="n">device</span> <span class="o">=</span> <span class="s1">&#39;cuda&#39;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s1">&#39;cpu&#39;</span>',
+      '<span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">&quot;meta-llama/Meta-Llama-3-8B-Instruct&quot;</span>',
+      '<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>',
+      '<span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>',
+      '<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">,</span> <span class="n">torch_dtype</span><span class="o">=</span><span class="n">compute_dtype</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">)</span>',
+      '<span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">eos_token_id</span>',
         ]}
         languaje='python'
       ></CodeBlockInputCell>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
       
       <section class="section-block-markdown-cell">
       <p>We assign a fixed seed value for the reproducibility of the example</p>
@@ -192,206 +168,113 @@ const closing_brace = '}';
       
       <CodeBlockInputCell
         text={[
-      '<span></span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">notebook_login</span>',
-      '      <span class="n">notebook_login</span><span class="p">()</span>',
-      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">set_seed</span>',
-      '      <span class="kn">import</span> <span class="nn">torch</span>',
-      '      ',
-      '      <span class="n">compute_dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_bf16_supported</span><span class="p">()</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>',
-      '      ',
-      '      <span class="n">device</span> <span class="o">=</span> <span class="s1">\'cuda\'</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s1">\'cpu\'</span>',
-      '      <span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">"meta-llama/Meta-Llama-3-8B-Instruct"</span>',
-      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>',
-      '      <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>',
-      '      <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">,</span> <span class="n">torch_dtype</span><span class="o">=</span><span class="n">compute_dtype</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">)</span>',
-      '      <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">eos_token_id</span>',
       '<span></span><span class="n">set_seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>',
         ]}
         languaje='python'
       ></CodeBlockInputCell>
-
-
-
-
-
-
       
       <section class="section-block-markdown-cell">
-      <p>Generate LLM input tokens</p>
+      <p>We generate the input tokens for the LLM</p>
       </section>
       
       <CodeBlockInputCell
         text={[
-      '<span></span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">notebook_login</span>',
-      '      <span class="n">notebook_login</span><span class="p">()</span>',
-      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">set_seed</span>',
-      '      <span class="kn">import</span> <span class="nn">torch</span>',
-      '      ',
-      '      <span class="n">compute_dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_bf16_supported</span><span class="p">()</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>',
-      '      ',
-      '      <span class="n">device</span> <span class="o">=</span> <span class="s1">\'cuda\'</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s1">\'cpu\'</span>',
-      '      <span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">"meta-llama/Meta-Llama-3-8B-Instruct"</span>',
-      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>',
-      '      <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>',
-      '      <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">,</span> <span class="n">torch_dtype</span><span class="o">=</span><span class="n">compute_dtype</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">)</span>',
-      '      <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">eos_token_id</span>',
-      '<span></span><span class="n">set_seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>',
-      '<span></span><span class="n">question</span> <span class="o">=</span> <span class="s1">\'What does Darth Vader say to Luke in "The Empire Strikes Back"?\'</span>',
-      '      <span class="n">text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Answer with a short answer.</span><span class="se">\n\n</span><span class="s2">Question: </span><span class="si">{</span><span class="n">question</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">Answer: "</span>',
-      '      <span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>',
+      '<span></span><span class="n">question</span> <span class="o">=</span> <span class="s1">&#39;What does Darth Vader say to Luke in &quot;The Empire Strikes Back&quot;?&#39;</span>',
+      '<span class="n">text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Answer with a short answer.</span><span class="se">\n\n</span><span class="s2">Question: </span><span class="si">{</span><span class="n">question</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">Answer: &quot;</span>',
+      '<span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>',
         ]}
         languaje='python'
       ></CodeBlockInputCell>
-
-
-
-
-
-
-
-
       
       <section class="section-block-markdown-cell">
-      <p>We now generate the vanilla input, i.e., without applying DoLa</p>
+      <p>We now generate the vanilla input, that is, without applying DoLa</p>
       </section>
       
-      <section class="section-block-code-cell-">
-      <div class="input-code">
-      <div class="highlight hl-ipython3">
-<pre><span></span><span class="n">generate_kwargs</span><span class="o">=</span><span class="p">{opening_brace}</span>
-          <span class="s2">"do_sample"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-          <span class="s2">"max_new_tokens"</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
-          <span class="s2">"top_p"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-          <span class="s2">"temperature"</span><span class="p">:</span> <span class="kc">None</span>
-      <span class="p">{closing_brace}</span>
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">generate_kwargs</span><span class="o">=</span><span class="p">{</span>',
+      '<span class="w">    </span><span class="s2">&quot;do_sample&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>',
+      '<span class="w">    </span><span class="s2">&quot;max_new_tokens&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>',
+      '<span class="w">    </span><span class="s2">&quot;top_p&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>',
+      '<span class="w">    </span><span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="kc">None</span>',
+      '<span class="p">}</span>',
+      '<span class="w"> </span>',
+      '<span class="n">vanilla_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">)</span>',
+      '<span class="w"> </span>',
+      '<span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">vanilla_output</span><span class="p">[:,</span> <span class="n">inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
       
-      <span class="n">vanilla_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">)</span>
+      <CodeBlockOutputCell
+        text={[
+          'Setting `pad_token_id` to `eos_token_id`:128001 for open-end generation.',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
       
-      <span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">vanilla_output</span><span class="p">[:,</span> <span class="n">inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
-      </pre></div>
-      </div>
-      <div class="output-wrapper">
-      <div class="output-area">
-      <div class="prompt"></div>
-      <div class="output-subarea-output-stream-output-stderr-output-text">
-      <pre>Setting `pad_token_id` to `eos_token_id`:128001 for open-end generation.
-      </pre>
-      </div>
-      </div>
-      <div class="output-area">
-      <div class="prompt"></div>
-      <div class="output-subarea-output-stream-output-stdout-output-text">
-      <pre> "No, I am your father." (Note: This is a famous misquote. The actual quote is "No, I am your father" is not in the movie. The correct quote is "No, I am your father." is not
-      </pre>
-      </div>
-      </div>
-      </div>
-      </section>
+      <CodeBlockOutputCell
+        text={[
+          '&quot;No, I am your father.&quot; (Note: This is a famous misquote. The actual quote is &quot;No, I am your father&quot; is not in the movie. The correct quote is &quot;No, I am your father.&quot; is not',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
       
       <section class="section-block-markdown-cell">
-      <p>We see that he knows that there is a famous mistake, but he fails to say the actual phrase</p>
+      <p>We see that he knows there is a famous mistake, but he can't manage to say the correct phrase.</p>
       </section>
       
       <section class="section-block-markdown-cell">
       <p>Now applying DoLa</p>
       </section>
       
-      <section class="section-block-code-cell-">
-      <div class="input-code">
-      <div class="highlight hl-ipython3">
-<pre><span></span><span class="n">dola_high_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">,</span> <span class="n">dola_layers</span><span class="o">=</span><span class="s1">'high'</span><span class="p">,</span> <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.2</span><span class="p">)</span>
+      <CodeBlockInputCell
+        text={[
+      '<span></span><span class="n">dola_high_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">,</span> <span class="n">dola_layers</span><span class="o">=</span><span class="s1">&#39;high&#39;</span><span class="p">,</span> <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.2</span><span class="p">)</span>',
+      '<span class="w"> </span>',
+      '<span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">dola_high_output</span><span class="p">[:,</span> <span class="n">inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>',
+        ]}
+        languaje='python'
+      ></CodeBlockInputCell>
       
-      <span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">dola_high_output</span><span class="p">[:,</span> <span class="n">inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
-      </pre></div>
-      </div>
-      <div class="output-wrapper">
-      <div class="output-area">
-      <div class="prompt"></div>
-      <div class="output-subarea-output-stream-output-stderr-output-text">
-      <pre>Setting `pad_token_id` to `eos_token_id`:128001 for open-end generation.
-      </pre>
-      </div>
-      </div>
-      <div class="output-area">
-      <div class="prompt"></div>
-      <div class="output-subarea-output-stream-output-stdout-output-text">
-      <pre> "No, I am your father." (Note: This is one of the most famous lines in movie history, and it's often misquoted as "Luke, I am your father.")
-      </pre>
-      </div>
-      </div>
-      </div>
+      <CodeBlockOutputCell
+        text={[
+          'Setting `pad_token_id` to `eos_token_id`:128001 for open-end generation.',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <CodeBlockOutputCell
+        text={[
+          '&quot;No, I am your father.&quot; (Note: This is one of the most famous lines in movie history, and it&#x27;s often misquoted as &quot;Luke, I am your father.&quot;)',
+        ]}
+        languaje='python'
+      ></CodeBlockOutputCell>
+      
+      <section class="section-block-markdown-cell">
+      <p>Now he manages to get the sentence right and the <a href="https://www.bbc.co.uk/bitesize/articles/zc38kty" target="_blank" rel="nofollow noreferrer">famous error</a></p>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>Now he does manage to give the correct sentence and the <a href="https://www.bbc.co.uk/bitesize/articles/zc38kty" target="_blank" rel="nofollow noreferrer">famous error</a></p>
-      </section>
-      
-      <section class="section-block-markdown-cell">
-      <p>Let's do another test with another example, I reboot the notebook and use another model</p>
+      <p>Let's do another test with another example, I reset the notebook and use another model.</p>
       </section>
       
       <CodeBlockInputCell
         text={[
-      '<span></span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">notebook_login</span>',
-      '      <span class="n">notebook_login</span><span class="p">()</span>',
-      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">set_seed</span>',
-      '      <span class="kn">import</span> <span class="nn">torch</span>',
-      '      ',
-      '      <span class="n">compute_dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_bf16_supported</span><span class="p">()</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>',
-      '      ',
-      '      <span class="n">device</span> <span class="o">=</span> <span class="s1">\'cuda\'</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s1">\'cpu\'</span>',
-      '      <span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">"meta-llama/Meta-Llama-3-8B-Instruct"</span>',
-      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>',
-      '      <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>',
-      '      <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">,</span> <span class="n">torch_dtype</span><span class="o">=</span><span class="n">compute_dtype</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">)</span>',
-      '      <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">eos_token_id</span>',
-      '<span></span><span class="n">set_seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>',
-      '<span></span><span class="n">question</span> <span class="o">=</span> <span class="s1">\'What does Darth Vader say to Luke in "The Empire Strikes Back"?\'</span>',
-      '      <span class="n">text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Answer with a short answer.</span><span class="se">\n\n</span><span class="s2">Question: </span><span class="si">{</span><span class="n">question</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">Answer: "</span>',
-      '      <span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>',
-      '<span></span><span class="n">generate_kwargs</span><span class="o">=</span><span class="p">{</span>',
-      '          <span class="s2">"do_sample"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>',
-      '          <span class="s2">"max_new_tokens"</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>',
-      '          <span class="s2">"top_p"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>',
-      '          <span class="s2">"temperature"</span><span class="p">:</span> <span class="kc">None</span>',
-      '      <span class="p">}</span>',
-      '      ',
-      '      <span class="n">vanilla_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">)</span>',
-      '      ',
-      '      <span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">vanilla_output</span><span class="p">[:,</span> <span class="n">inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>',
-      '<span></span><span class="n">dola_high_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">,</span> <span class="n">dola_layers</span><span class="o">=</span><span class="s1">\'high\'</span><span class="p">,</span> <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.2</span><span class="p">)</span>',
-      '      ',
-      '      <span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">dola_high_output</span><span class="p">[:,</span> <span class="n">inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>',
-      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">set_seed</span>',
-      '      <span class="kn">import</span> <span class="nn">torch</span>',
-      '      ',
-      '      <span class="n">compute_dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_bf16_supported</span><span class="p">()</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>',
-      '      ',
-      '      <span class="n">device</span> <span class="o">=</span> <span class="s1">\'cuda\'</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s1">\'cpu\'</span>',
-      '      <span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">"huggyllama/llama-7b"</span>',
-      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>',
-      '      <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>',
-      '      <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">,</span> <span class="n">torch_dtype</span><span class="o">=</span><span class="n">compute_dtype</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">)</span>',
-      '      <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">eos_token_id</span>',
+      '<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">set_seed</span>',
+      '<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>',
+      '<span class="w"> </span>',
+      '<span class="n">compute_dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_bf16_supported</span><span class="p">()</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>',
+      '<span class="w"> </span>',
+      '<span class="n">device</span> <span class="o">=</span> <span class="s1">&#39;cuda&#39;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s1">&#39;cpu&#39;</span>',
+      '<span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">&quot;huggyllama/llama-7b&quot;</span>',
+      '<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>',
+      '<span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>',
+      '<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">,</span> <span class="n">torch_dtype</span><span class="o">=</span><span class="n">compute_dtype</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">)</span>',
+      '<span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">eos_token_id</span>',
         ]}
         languaje='python'
       ></CodeBlockInputCell>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
       
       <section class="section-block-markdown-cell">
       <p>We assign a fixed seed value for the reproducibility of the example</p>
@@ -399,118 +282,22 @@ const closing_brace = '}';
       
       <CodeBlockInputCell
         text={[
-      '<span></span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">notebook_login</span>',
-      '      <span class="n">notebook_login</span><span class="p">()</span>',
-      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">set_seed</span>',
-      '      <span class="kn">import</span> <span class="nn">torch</span>',
-      '      ',
-      '      <span class="n">compute_dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_bf16_supported</span><span class="p">()</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>',
-      '      ',
-      '      <span class="n">device</span> <span class="o">=</span> <span class="s1">\'cuda\'</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s1">\'cpu\'</span>',
-      '      <span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">"meta-llama/Meta-Llama-3-8B-Instruct"</span>',
-      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>',
-      '      <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>',
-      '      <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">,</span> <span class="n">torch_dtype</span><span class="o">=</span><span class="n">compute_dtype</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">)</span>',
-      '      <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">eos_token_id</span>',
-      '<span></span><span class="n">set_seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>',
-      '<span></span><span class="n">question</span> <span class="o">=</span> <span class="s1">\'What does Darth Vader say to Luke in "The Empire Strikes Back"?\'</span>',
-      '      <span class="n">text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Answer with a short answer.</span><span class="se">\n\n</span><span class="s2">Question: </span><span class="si">{</span><span class="n">question</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">Answer: "</span>',
-      '      <span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>',
-      '<span></span><span class="n">generate_kwargs</span><span class="o">=</span><span class="p">{</span>',
-      '          <span class="s2">"do_sample"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>',
-      '          <span class="s2">"max_new_tokens"</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>',
-      '          <span class="s2">"top_p"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>',
-      '          <span class="s2">"temperature"</span><span class="p">:</span> <span class="kc">None</span>',
-      '      <span class="p">}</span>',
-      '      ',
-      '      <span class="n">vanilla_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">)</span>',
-      '      ',
-      '      <span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">vanilla_output</span><span class="p">[:,</span> <span class="n">inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>',
-      '<span></span><span class="n">dola_high_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">,</span> <span class="n">dola_layers</span><span class="o">=</span><span class="s1">\'high\'</span><span class="p">,</span> <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.2</span><span class="p">)</span>',
-      '      ',
-      '      <span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">dola_high_output</span><span class="p">[:,</span> <span class="n">inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>',
-      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">set_seed</span>',
-      '      <span class="kn">import</span> <span class="nn">torch</span>',
-      '      ',
-      '      <span class="n">compute_dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_bf16_supported</span><span class="p">()</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>',
-      '      ',
-      '      <span class="n">device</span> <span class="o">=</span> <span class="s1">\'cuda\'</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s1">\'cpu\'</span>',
-      '      <span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">"huggyllama/llama-7b"</span>',
-      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>',
-      '      <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>',
-      '      <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">,</span> <span class="n">torch_dtype</span><span class="o">=</span><span class="n">compute_dtype</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">)</span>',
-      '      <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">eos_token_id</span>',
       '<span></span><span class="n">set_seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>',
         ]}
         languaje='python'
       ></CodeBlockInputCell>
-
-
-
-
-
-
       
       <section class="section-block-markdown-cell">
-      <p>I am writing a new question</p>
+      <p>Sure, please provide the new Markdown text you would like translated to English.</p>
       </section>
       
       <CodeBlockInputCell
         text={[
-      '<span></span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">notebook_login</span>',
-      '      <span class="n">notebook_login</span><span class="p">()</span>',
-      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">set_seed</span>',
-      '      <span class="kn">import</span> <span class="nn">torch</span>',
-      '      ',
-      '      <span class="n">compute_dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_bf16_supported</span><span class="p">()</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>',
-      '      ',
-      '      <span class="n">device</span> <span class="o">=</span> <span class="s1">\'cuda\'</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s1">\'cpu\'</span>',
-      '      <span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">"meta-llama/Meta-Llama-3-8B-Instruct"</span>',
-      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>',
-      '      <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>',
-      '      <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">,</span> <span class="n">torch_dtype</span><span class="o">=</span><span class="n">compute_dtype</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">)</span>',
-      '      <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">eos_token_id</span>',
-      '<span></span><span class="n">set_seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>',
-      '<span></span><span class="n">question</span> <span class="o">=</span> <span class="s1">\'What does Darth Vader say to Luke in "The Empire Strikes Back"?\'</span>',
-      '      <span class="n">text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Answer with a short answer.</span><span class="se">\n\n</span><span class="s2">Question: </span><span class="si">{</span><span class="n">question</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">Answer: "</span>',
-      '      <span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>',
-      '<span></span><span class="n">generate_kwargs</span><span class="o">=</span><span class="p">{</span>',
-      '          <span class="s2">"do_sample"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>',
-      '          <span class="s2">"max_new_tokens"</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>',
-      '          <span class="s2">"top_p"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>',
-      '          <span class="s2">"temperature"</span><span class="p">:</span> <span class="kc">None</span>',
-      '      <span class="p">}</span>',
-      '      ',
-      '      <span class="n">vanilla_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">)</span>',
-      '      ',
-      '      <span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">vanilla_output</span><span class="p">[:,</span> <span class="n">inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>',
-      '<span></span><span class="n">dola_high_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">,</span> <span class="n">dola_layers</span><span class="o">=</span><span class="s1">\'high\'</span><span class="p">,</span> <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.2</span><span class="p">)</span>',
-      '      ',
-      '      <span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">dola_high_output</span><span class="p">[:,</span> <span class="n">inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>',
-      '<span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">set_seed</span>',
-      '      <span class="kn">import</span> <span class="nn">torch</span>',
-      '      ',
-      '      <span class="n">compute_dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_bf16_supported</span><span class="p">()</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>',
-      '      ',
-      '      <span class="n">device</span> <span class="o">=</span> <span class="s1">\'cuda\'</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s1">\'cpu\'</span>',
-      '      <span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">"huggyllama/llama-7b"</span>',
-      '      <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>',
-      '      <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>',
-      '      <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">,</span> <span class="n">torch_dtype</span><span class="o">=</span><span class="n">compute_dtype</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">)</span>',
-      '      <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">eos_token_id</span>',
-      '<span></span><span class="n">set_seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>',
-      '<span></span><span class="n">text</span> <span class="o">=</span> <span class="s2">"On what date was the Declaration of Independence officially signed?"</span>',
-      '      <span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
+      '<span></span><span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;On what date was the Declaration of Independence officially signed?&quot;</span>',
+      '<span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
         ]}
         languaje='python'
       ></CodeBlockInputCell>
-
-
-
-
-
-
-
       
       <section class="section-block-markdown-cell">
       <p>We generate the vanilla output</p>
@@ -518,67 +305,22 @@ const closing_brace = '}';
       
       <CodeBlockInputCell
         text={[
-          '<span></span><span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">notebook_login</span>',
-          '<span class="n">notebook_login</span><span class="p">()</span>',
-          '</span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">set_seed</span>',
-          '<span class="kn">import</span> <span class="nn">torch</span>',
-          '',
-          '<span class="n">compute_dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_bf16_supported</span><span class="p">()</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>',
-          '',
-          '<span class="n">device</span> <span class="o">=</span> <span class="s1">\'cuda\'</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s1">\'cpu\'</span>',
-          '<span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">"meta-llama/Meta-Llama-3-8B-Instruct"</span>',
-          '<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>',
-          '<span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>',
-          '<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">,</span> <span class="n">torch_dtype</span><span class="o">=</span><span class="n">compute_dtype</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">)</span>',
-          '<span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">eos_token_id</span>',
-          '</span><span class="n">set_seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>',
-          '</span><span class="n">question</span> <span class="o">=</span> <span class="s1">\'What does Darth Vader say to Luke in "The Empire Strikes Back"?\'</span>',
-          '<span class="n">text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Answer with a short answer.</span><span class="se">\n\n</span><span class="s2">Question: </span><span class="si">{</span><span class="n">question</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">Answer: "</span>',
-          '<span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>',
-          '</span><span class="n">generate_kwargs</span><span class="o">=</span><span class="p">{</span>',
-          '    <span class="s2">"do_sample"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>',
-          '    <span class="s2">"max_new_tokens"</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>',
-          '    <span class="s2">"top_p"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>',
-          '    <span class="s2">"temperature"</span><span class="p">:</span> <span class="kc">None</span>',
-          '<span class="p">}</span>',
-          '',
-          '<span class="n">vanilla_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">)</span>',
-          '',
-          '<span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">vanilla_output</span><span class="p">[:,</span> <span class="n">inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>',
-          '</span><span class="n">dola_high_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">,</span> <span class="n">dola_layers</span><span class="o">=</span><span class="s1">\'high\'</span><span class="p">,</span> <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.2</span><span class="p">)</span>',
-          '',
-          '<span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">dola_high_output</span><span class="p">[:,</span> <span class="n">inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>',
-          '</span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">set_seed</span>',
-          '<span class="kn">import</span> <span class="nn">torch</span>',
-          '',
-          '<span class="n">compute_dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_bf16_supported</span><span class="p">()</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>',
-          '',
-          '<span class="n">device</span> <span class="o">=</span> <span class="s1">\'cuda\'</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s1">\'cpu\'</span>',
-          '<span class="n">checkpoints</span> <span class="o">=</span> <span class="s2">"huggyllama/llama-7b"</span>',
-          '<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>',
-          '<span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>',
-          '<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">,</span> <span class="n">torch_dtype</span><span class="o">=</span><span class="n">compute_dtype</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">)</span>',
-          '<span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">eos_token_id</span>',
-          '</span><span class="n">set_seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>',
-          '</span><span class="n">text</span> <span class="o">=</span> <span class="s2">"On what date was the Declaration of Independence officially signed?"</span>',
-          '<span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">"pt"</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>',
-          '</span><span class="n">generate_kwargs</span><span class="o">=</span><span class="p">{</span>',
-          '    <span class="s2">"do_sample"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>',
-          '    <span class="s2">"max_new_tokens"</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>',
-          '    <span class="s2">"top_p"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>',
-          '    <span class="s2">"temperature"</span><span class="p">:</span> <span class="kc">None</span>',
-          '<span class="p">}</span>',
-          '',
-          '<span class="n">vanilla_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">)</span>',
-          '',
-          '<span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">vanilla_output</span><span class="p">[:,</span> <span class="n">inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>',
+      '<span></span><span class="n">generate_kwargs</span><span class="o">=</span><span class="p">{</span>',
+      '<span class="w">    </span><span class="s2">&quot;do_sample&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>',
+      '<span class="w">    </span><span class="s2">&quot;max_new_tokens&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>',
+      '<span class="w">    </span><span class="s2">&quot;top_p&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>',
+      '<span class="w">    </span><span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="kc">None</span>',
+      '<span class="p">}</span>',
+      '<span class="w"> </span>',
+      '<span class="n">vanilla_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">)</span>',
+      '<span class="w"> </span>',
+      '<span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">vanilla_output</span><span class="p">[:,</span> <span class="n">inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>',
         ]}
         languaje='python'
       ></CodeBlockInputCell>
+      
       <CodeBlockOutputCell
         text={[
-          'Setting `pad_token_id` to `eos_token_id`:128001 for open-end generation.',
-          'Setting `pad_token_id` to `eos_token_id`:128001 for open-end generation.',
           'The Declaration of Independence was signed on July 4, 1776.',
           'What was the date of the signing of the Declaration of Independence?',
           'The Declaration of Independence was signed on July 4,',
@@ -587,21 +329,22 @@ const closing_brace = '}';
       ></CodeBlockOutputCell>
       
       <section class="section-block-markdown-cell">
-      <p>As we can see, it generates the wrong departure, since although it is celebrated on July 4, it was actually signed on <a href="https://www.nps.gov/inde/learn/historyculture/resources-declarationofindependence.htm" target="_blank" rel="nofollow noreferrer">August 2</a>.</p>
+      <p>As we can see, it generates the wrong output, since although it is celebrated on July 4th, it was actually signed on <a href="https://www.nps.gov/inde/learn/historyculture/resources-declarationofindependence.htm" target="_blank" rel="nofollow noreferrer">August 2nd</a></p>
       </section>
       
       <section class="section-block-markdown-cell">
-      <p>Let's try now with DoLa</p>
+      <p>Let's try it now with DoLa</p>
       </section>
       
       <CodeBlockInputCell
         text={[
-          '<span></span><span class="n">dola_high_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">,</span> <span class="n">dola_layers</span><span class="o">=</span><span class="s1">\'high\'</span><span class="p">,</span> <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.2</span><span class="p">)</span>',
-          '',
-          '<span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">dola_high_output</span><span class="p">[:,</span> <span class="n">inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>',
+      '<span></span><span class="n">dola_high_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">,</span> <span class="n">dola_layers</span><span class="o">=</span><span class="s1">&#39;high&#39;</span><span class="p">,</span> <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.2</span><span class="p">)</span>',
+      '<span class="w"> </span>',
+      '<span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">dola_high_output</span><span class="p">[:,</span> <span class="n">inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>',
         ]}
         languaje='python'
       ></CodeBlockInputCell>
+      
       <CodeBlockOutputCell
         text={[
           'July 4, 1776. This is the most well-known date in U.S. history. The day has been celebrated with parades, barbeques, fireworks and festivals for hundreds of years.',
@@ -610,17 +353,18 @@ const closing_brace = '}';
       ></CodeBlockOutputCell>
       
       <section class="section-block-markdown-cell">
-      <p>It still doesn't generate a correct output, so let's tell it to only contrast the final layer with layers 28 and 30.</p>
+      <p>It's still not generating the correct output, so we're going to instruct it to only contrast the final layer with layers 28 and 30</p>
       </section>
       
       <CodeBlockInputCell
         text={[
-          '<span></span><span class="n">dola_high_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">,</span> <span class="n">dola_layers</span><span class="o">=</span><span class="p">[</span><span class="mi">28</span><span class="p">,</span><span class="mi">30</span><span class="p">],</span> <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.2</span><span class="p">)</span>',
-          '',
-          '<span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">dola_high_output</span><span class="p">[:,</span> <span class="n">inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>',
+      '<span></span><span class="n">dola_high_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">generate_kwargs</span><span class="p">,</span> <span class="n">dola_layers</span><span class="o">=</span><span class="p">[</span><span class="mi">28</span><span class="p">,</span><span class="mi">30</span><span class="p">],</span> <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.2</span><span class="p">)</span>',
+      '<span class="w"> </span>',
+      '<span class="nb">print</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">dola_high_output</span><span class="p">[:,</span> <span class="n">inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>',
         ]}
         languaje='python'
       ></CodeBlockInputCell>
+      
       <CodeBlockOutputCell
         text={[
           'It was officially signed on 2 August 1776, when 56 members of the Second Continental Congress put their John Hancocks to the Declaration. The 2-page document had been written in 17',
@@ -629,9 +373,9 @@ const closing_brace = '}';
       ></CodeBlockOutputCell>
       
       <section class="section-block-markdown-cell">
-      <p>Now it does generate the correct answer</p>
+      <p>Now it manages to generate the correct response.</p>
       </section>
-      
+
 
 
 

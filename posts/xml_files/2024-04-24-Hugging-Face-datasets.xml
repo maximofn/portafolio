@@ -1,0 +1,1886 @@
+<?xml version='1.0' encoding='utf-8'?>
+<notebook>
+  <markdown># Hugging Face datasets</markdown>
+  <markdown>La librería `datasets` de Hugging Face es una librería muy útil para trabajar con datasets, tanto con todos los que hay en el [hub](https://huggingface.co/datasets) como con datasets propios.</markdown>
+  <markdown>## Instalación</markdown>
+  <markdown>Para usar la librería `datasets` de Hugging Face, primero debemos instalarla con pip
+
+``` bash
+pip install datasets
+```
+
+o con Conda
+
+``` bash
+conda install -c huggingface -c conda-forge datasets
+```</markdown>
+  <markdown>## Cargar un dataset desde el hub</markdown>
+  <markdown>Hugging Face tiene un [hub](https://huggingface.co/datasets) con una gran cantidad de datasets, clasificados por tareas o `tasks`</markdown>
+  <markdown>### Obtener la información del dataset</markdown>
+  <markdown>Antes de descargar un dataset conviene obtener la información de este. Lo mejor es entrar en el hub y ver su información, pero si no se puede, se puede obtener la información primero hay que cargar un generador de un dataset con la función `load_dataset_builder`, lo cual no conlleva la descarga y luego obtener su información con el método `info`.</markdown>
+  <input_code>from datasets import load_dataset_builder
+
+ds_builder = load_dataset_builder("yelp_review_full")
+info = ds_builder.info
+info</input_code>
+  <output_code>DatasetInfo(description='', citation='', homepage='', license='', features={'label': ClassLabel(names=['1 star', '2 star', '3 stars', '4 stars', '5 stars'], id=None), 'text': Value(dtype='string', id=None)}, post_processed=None, supervised_keys=None, task_templates=None, builder_name='parquet', dataset_name='yelp_review_full', config_name='yelp_review_full', version=0.0.0, splits={'train': SplitInfo(name='train', num_bytes=483811554, num_examples=650000, shard_lengths=None, dataset_name=None), 'test': SplitInfo(name='test', num_bytes=37271188, num_examples=50000, shard_lengths=None, dataset_name=None)}, download_checksums=None, download_size=322952369, post_processing_size=None, dataset_size=521082742, size_in_bytes=None)</output_code>
+  <markdown>Se pueden ver por ejemplo las clases</markdown>
+  <input_code>info.features</input_code>
+  <output_code>{'label': ClassLabel(names=['1 star', '2 star', '3 stars', '4 stars', '5 stars'], id=None),
+ 'text': Value(dtype='string', id=None)}</output_code>
+  <markdown>### Descarga del dataset</markdown>
+  <markdown>Si estamos contentos con el dataset que hemos elegido podemos descargarlo con la función `load_dataset`</markdown>
+  <input_code>from datasets import load_dataset
+
+ds = load_dataset("yelp_review_full")
+ds</input_code>
+  <output_code>DatasetDict({
+    train: Dataset({
+        features: ['label', 'text'],
+        num_rows: 650000
+    })
+    test: Dataset({
+        features: ['label', 'text'],
+        num_rows: 50000
+    })
+})</output_code>
+  <markdown>### Splits</markdown>
+  <markdown>Como se puede ver, cuando hemos descargado el dataset hemos visto que se ha bajado el conjunto de `train` y el de `test`. Si queremos saber qué conjuntos tiene un dataset, podemos usar la función `get_dataset_split_names`</markdown>
+  <input_code>from datasets import get_dataset_split_names
+
+split_names = get_dataset_split_names("yelp_review_full")
+split_names</input_code>
+  <output_code>['train', 'test']</output_code>
+  <markdown>Hay datasets que también tienen un conjunto de `validation`</markdown>
+  <input_code>from datasets import get_dataset_split_names
+
+split_names = get_dataset_split_names("rotten_tomatoes")
+split_names</input_code>
+  <output_code>['train', 'validation', 'test']</output_code>
+  <markdown>Como los datasets tienen conjuntos de datos, podemos descargar solo uno de ellos con el argumento `split`</markdown>
+  <input_code>from datasets import load_dataset
+
+ds = load_dataset("yelp_review_full", split="train")
+ds</input_code>
+  <output_code>Dataset({
+    features: ['label', 'text'],
+    num_rows: 650000
+})</output_code>
+  <markdown>### Configuraciones</markdown>
+  <markdown>Algunos datasets tienen subconjuntos de datasets, para ver los subconjuntos de un dataset podemos usar la función `get_dataset_config_names`</markdown>
+  <input_code>from datasets import get_dataset_config_names
+
+configs = get_dataset_config_names("opus100")
+configs</input_code>
+  <output_code>['af-en',
+ 'am-en',
+ 'an-en',
+ 'ar-de',
+ 'ar-en',
+ 'ar-fr',
+ 'ar-nl',
+ 'ar-ru',
+ 'ar-zh',
+ 'as-en',
+ 'az-en',
+ 'be-en',
+ 'bg-en',
+ 'bn-en',
+ 'br-en',
+ 'bs-en',
+ 'ca-en',
+ 'cs-en',
+ 'cy-en',
+ 'da-en',
+ 'de-en',
+ 'de-fr',
+ 'de-nl',
+ 'de-ru',
+ 'de-zh',
+ 'dz-en',
+ 'el-en',
+ 'en-eo',
+ 'en-es',
+ 'en-et',
+ 'en-eu',
+ 'en-fa',
+ 'en-fi',
+ 'en-fr',
+ 'en-fy',
+ 'en-ga',
+ 'en-gd',
+ 'en-gl',
+ 'en-gu',
+ 'en-ha',
+ 'en-he',
+ 'en-hi',
+ 'en-hr',
+ 'en-hu',
+ 'en-hy',
+ 'en-id',
+ 'en-ig',
+ 'en-is',
+ 'en-it',
+ 'en-ja',
+ 'en-ka',
+ 'en-kk',
+ 'en-km',
+ 'en-kn',
+ 'en-ko',
+ 'en-ku',
+ 'en-ky',
+ 'en-li',
+ 'en-lt',
+ 'en-lv',
+ 'en-mg',
+ 'en-mk',
+ 'en-ml',
+ 'en-mn',
+ 'en-mr',
+ 'en-ms',
+ 'en-mt',
+ 'en-my',
+ 'en-nb',
+ 'en-ne',
+ 'en-nl',
+ 'en-nn',
+ 'en-no',
+ 'en-oc',
+ 'en-or',
+ 'en-pa',
+ 'en-pl',
+ 'en-ps',
+ 'en-pt',
+ 'en-ro',
+ 'en-ru',
+ 'en-rw',
+ 'en-se',
+ 'en-sh',
+ 'en-si',
+ 'en-sk',
+ 'en-sl',
+ 'en-sq',
+ 'en-sr',
+ 'en-sv',
+ 'en-ta',
+ 'en-te',
+ 'en-tg',
+ 'en-th',
+ 'en-tk',
+ 'en-tr',
+ 'en-tt',
+ 'en-ug',
+ 'en-uk',
+ 'en-ur',
+ 'en-uz',
+ 'en-vi',
+ 'en-wa',
+ 'en-xh',
+ 'en-yi',
+ 'en-yo',
+ 'en-zh',
+ 'en-zu',
+ 'fr-nl',
+ 'fr-ru',
+ 'fr-zh',
+ 'nl-ru',
+ 'nl-zh',
+ 'ru-zh']</output_code>
+  <markdown>Este dataset tiene subconjuntos de traducciones de un idioma a otro</markdown>
+  <markdown>Si solo se quiere descargar un subconjunto de un dataset, solo hay que especificarlo</markdown>
+  <input_code>from datasets import load_dataset
+
+opus100en_es = load_dataset("opus100", "en-es")
+opus100en_es</input_code>
+  <output_code>DatasetDict({
+    test: Dataset({
+        features: ['translation'],
+        num_rows: 2000
+    })
+    train: Dataset({
+        features: ['translation'],
+        num_rows: 1000000
+    })
+    validation: Dataset({
+        features: ['translation'],
+        num_rows: 2000
+    })
+})</output_code>
+  <markdown>### Código remoto</markdown>
+  <markdown>Todos los archivos y códigos cargados en Hub se analizan en busca de malware, se ejecuta un script para comprobarlos. Pero si quieres descargarlos más rápido sin que se ejecute ese script debes poner el parámetro `trust_remote_code=True`. Esto solo es aconsejable en un dataset en el que confíes, o si quieres hacer esa comprobación tú mismo.</markdown>
+  <input_code>from datasets import load_dataset
+
+opus100 = load_dataset("opus100", "en-es", trust_remote_code=True)
+opus100</input_code>
+  <output_code>DatasetDict({
+    test: Dataset({
+        features: ['translation'],
+        num_rows: 2000
+    })
+    train: Dataset({
+        features: ['translation'],
+        num_rows: 1000000
+    })
+    validation: Dataset({
+        features: ['translation'],
+        num_rows: 2000
+    })
+})</output_code>
+  <markdown>## Conociendo los conjuntos de datos</markdown>
+  <markdown>En Hugging Face existen dos conjuntos de datos, los conjuntos de datos normales y los conjuntos de datos iterables, que son conjuntos de datos que no necesitan ser cargados enteros. Esto qué quiere decir, supongamos que tenemos un dataset tan grande que no entre en la memoria del disco, pues con un conjunto de datos iterable no hace falta descargárselo entero ya que se irán descargando partes a medida que se vayan necesitando</markdown>
+  <markdown>### Conjuntos de datos normales</markdown>
+  <markdown>Como su nombre indica, en un conjunto de datos hay muchos datos, por lo que podemos hacer una indexación</markdown>
+  <input_code>from datasets import load_dataset
+
+opus100 = load_dataset("opus100", "en-es", split="train")</input_code>
+  <input_code>opus100[1]</input_code>
+  <output_code>{'translation': {'en': "I'm out of here.", 'es': 'Me voy de aquí.'}}</output_code>
+  <input_code>opus100[1:10]</input_code>
+  <output_code>{'translation': [{'en': "I'm out of here.", 'es': 'Me voy de aquí.'},
+  {'en': 'One time, I swear I pooped out a stick of chalk.',
+   'es': 'Una vez, juro que cagué una barra de tiza.'},
+  {'en': 'And I will move, do you understand me?',
+   'es': 'Y prefiero mudarme, ¿Entiendes?'},
+  {'en': '- Thank you, my lord.', 'es': '- Gracias.'},
+  {'en': 'You have to help me.', 'es': 'Debes ayudarme.'},
+  {'en': 'Fuck this!', 'es': '¡Por la mierda!'},
+  {'en': 'The safety and efficacy of MIRCERA therapy in other indications has not been established.',
+   'es': 'No se ha establecido la seguridad y eficacia del tratamiento con MIRCERA en otras indicaciones.'},
+  {'en': 'You can stay if you want.',
+   'es': 'Así lo decidí, pueden quedarse si quieren.'},
+  {'en': "Of course, when I say 'translating an idiom,' I do not mean literal translation, rather an equivalent idiomatic expression in the target language, or any other means to convey the meaning.",
+   'es': "Por supuesto, cuando digo 'traducir un idioma', no me refiero a la traducción literal, más bien a una expresión equivalente idiomática de la lengua final, o cualquier otro medio para transmitir el significado."}]}</output_code>
+  <markdown>Hay que remarcar que hemos descargado el conjunto de datos de `train`, ya que si lo hubiésemos descargado todo nos daría un error</markdown>
+  <input_code>from datasets import load_dataset
+
+opus100_all = load_dataset("opus100", "en-es")</input_code>
+  <input_code>opus100_all[1]</input_code>
+  <output_code>---------------------------------------------------------------------------KeyError                                  Traceback (most recent call last)Cell In[12], line 1
+----&gt; 1 opus100_all[1]
+File ~/miniconda3/envs/nlp/lib/python3.11/site-packages/datasets/dataset_dict.py:80, in DatasetDict.__getitem__(self, k)
+     76 available_suggested_splits = [
+     77     split for split in (Split.TRAIN, Split.TEST, Split.VALIDATION) if split in self
+     78 ]
+     79 suggested_split = available_suggested_splits[0] if available_suggested_splits else list(self)[0]
+---&gt; 80 raise KeyError(
+     81     f"Invalid key: {k}. Please first select a split. For example: "
+     82     f"`my_dataset_dictionary['{suggested_split}'][{k}]`. "
+     83     f"Available splits: {sorted(self)}"
+     84 )
+KeyError: "Invalid key: 1. Please first select a split. For example: `my_dataset_dictionary['train'][1]`. Available splits: ['test', 'train', 'validation']"</output_code>
+  <markdown>Como vemos, nos dice que primero tenemos que elegir un split, así que en este caso que nos hemos descargado todo, se tendría que haber hecho así</markdown>
+  <input_code>opus100_all["train"][1]</input_code>
+  <output_code>{'translation': {'en': "I'm out of here.", 'es': 'Me voy de aquí.'}}</output_code>
+  <markdown>También podemos indexar por alguna de las features, primero veamos cuáles son</markdown>
+  <input_code>features = opus100.features
+features</input_code>
+  <output_code>{'translation': Translation(languages=['en', 'es'], id=None)}</output_code>
+  <markdown>Vemos que es `translation`</markdown>
+  <input_code>opus100["translation"]</input_code>
+  <output_code>[{'en': "It was the asbestos in here, that's what did it!",
+  'es': 'Fueron los asbestos aquí. ¡Eso es lo que ocurrió!'},
+ {'en': "I'm out of here.", 'es': 'Me voy de aquí.'},
+ {'en': 'One time, I swear I pooped out a stick of chalk.',
+  'es': 'Una vez, juro que cagué una barra de tiza.'},
+ {'en': 'And I will move, do you understand me?',
+  'es': 'Y prefiero mudarme, ¿Entiendes?'},
+ {'en': '- Thank you, my lord.', 'es': '- Gracias.'},
+ {'en': 'You have to help me.', 'es': 'Debes ayudarme.'},
+ {'en': 'Fuck this!', 'es': '¡Por la mierda!'},
+ {'en': 'The safety and efficacy of MIRCERA therapy in other indications has not been established.',
+  'es': 'No se ha establecido la seguridad y eficacia del tratamiento con MIRCERA en otras indicaciones.'},
+ {'en': 'You can stay if you want.',
+  'es': 'Así lo decidí, pueden quedarse si quieren.'},
+ {'en': "Of course, when I say 'translating an idiom,' I do not mean literal translation, rather an equivalent idiomatic expression in the target language, or any other means to convey the meaning.",
+  'es': "Por supuesto, cuando digo 'traducir un idioma', no me refiero a la traducción literal, más bien a una expresión equivalente idiomática de la lengua final, o cualquier otro medio para transmitir el significado."},
+ {'en': 'Norman.', 'es': 'Norman.'},
+ {'en': "- I'm not stupid.", 'es': '- Yo no soy estúpido.'},
+ {'en': 'Sorry, a weird gas bubble for a sec.',
+  'es': 'Perdón, he tenido una burbuja de gas extraño un momentito'},
+ {'en': "It's uncomplicated.", 'es': 'Es algo sin complicaciones.'},
+ {'en': 'No!', 'es': '¡No!'},
+ {'en': 'No.', 'es': 'No.'},
+ {'en': 'in paragraph 2, the first subparagraph is replaced by the following:',
+  'es': 'en el apartado 2, el párrafo primero se sustituye por el texto siguiente:'},
+ {'en': "- Mm. I'll tell you something my father told me.",
+  'es': 'Te diré algo que me dijo mi padre.'},
+ {'en': "Good night, ma'am.",
+  'es': 'Esta tarde,hubo conciertos en las ciudades ocupadas.'},
+ {'en': 'http://www.vodniraj.cz/bazen.asp', 'es': 'http://www.madeira.ji.cz/'},
+ {'en': 'What?', 'es': '¿Qué?'},
+ {'en': "- I'm afraid so.", 'es': 'Eso me temo.'},
+ {'en': '- Come on.', 'es': '- Vamos.'},
+ {'en': 'Now pivot as you deliver the stroke.',
+  'es': 'Ahora gira mientras propinas el golpe.'},
+ {'en': "I'm sorry.", 'es': 'Lo siento.'},
+ {'en': 'No!', 'es': '¡No!'},
+ {'en': 'Of course.', 'es': 'Por supuesto.'},
+ {'en': "You know it's true.", 'es': 'Sabes que es verdad.'},
+ {'en': 'Good to see you.', 'es': 'Me alegro de verte.'},
+ {'en': "- We don't know that.", 'es': '- No lo sabemos.'},
+ {'en': 'Why are you late?', 'es': '¿Por qué vienes tarde?'},
+ {'en': '- All right.', 'es': '- De acuerdo.'},
+ {'en': 'I want answers.', 'es': 'Quiero respuestas.'},
+ {'en': 'I am quite certain.', 'es': 'Estoy bastante seguro.'},
+ {'en': 'Hey, Johnny.', 'es': 'Hola, Johnny.'},
+ {'en': "No, it's OK.", 'es': 'No pasa nada.'},
+ {'en': 'I...', 'es': 'Ya...'},
+ {'en': 'No dad.', 'es': 'No papá.'},
+ {'en': 'Someone betrayed me.', 'es': 'Alguien me la jugó'},
+ {'en': 'I, um...', 'es': 'Yo...'},
+ {'en': 'I did.', 'es': 'Sí.'},
+ {'en': "It's only for one night.", 'es': 'Es sólo por una noche.'},
+ {'en': 'C95-132/I95-143 C95-132/I95-143',
+  'es': 'C95-132/ I95-143 C95-132/ I95-143'},
+ {'en': "It's me.", 'es': 'Soy yo.'},
+ {'en': "No, I don't want any lessons from some up-north stranger.",
+  'es': 'No, yo no recibo lecciones... de un extranjero venido del norte.'},
+ {'en': 'Well, what are we gonna do?', 'es': '- Bueno, ¿qué vamos a hacer?'},
+ {'en': 'Always.', 'es': 'Siempre.'},
+ {'en': 'And then...', 'es': 'Y luego ...'},
+ {'en': 'Three million.', 'es': '- Tres millones.'},
+ {'en': '- Oh, have fun scrubbing my boxers.', 'es': '- ¿Qué?'},
+ {'en': 'Prepare yourself!', 'es': '¡Seif!'},
+ {'en': '- Tom?', 'es': '- ¿Tom?'},
+ {'en': 'That was beautiful.', 'es': 'Eso ha sido precioso.'},
+ {'en': "It's fine.", 'es': 'No pasa nada.'},
+ {'en': 'Evil.', 'es': 'El mal.'},
+ {'en': "It's business.", 'es': 'Son los negocios.'},
+ {'en': '3.', 'es': '3 .'},
+ {'en': 'Go for it.', 'es': 'Adelante.'},
+ {'en': 'Coursework?', 'es': 'Tarea?'},
+ {'en': 'No, stop!', 'es': 'No.'},
+ {'en': 'You were there?', 'es': '¿Estuvo allí?'},
+ {'en': "If I wasn't, you wouldn't like me.",
+  'es': 'Si no lo fuera, no te gustaría.'},
+ {'en': '- I would love that.', 'es': '- Me encantaría.'},
+ {'en': 'Put the weapon down.', 'es': '- Arroje el arma.'},
+ {'en': "That's all I got.", 'es': 'Eso es todo lo que tengo.'},
+ {'en': 'Hotchner.', 'es': 'Hotchner.'},
+ {'en': 'Get out of my face.', 'es': 'Vete de mi vista.'},
+ {'en': 'I wish...', 'es': 'Tal vez...'},
+ {'en': 'Sire.', 'es': 'Sire.'},
+ {'en': 'I got nothing to say.', 'es': 'No tengo nada que decir.'},
+ {'en': 'You go.', 'es': 'Tú hazlo.'},
+ {'en': '2 weeks.', 'es': '2 semanas'},
+ {'en': 'You got the wrong guy!', 'es': '¡Se equivocan de hombre!'},
+ {'en': 'What will he choose, ladies and gentlemen?',
+  'es': '¿Qué elegirá, damas y caballeros?'},
+ {'en': "It doesn't have to be.", 'es': 'No tiene por qué serlo.'},
+ {'en': '-Perfect.', 'es': 'Perfecto.'},
+ {'en': 'Hey.', 'es': 'Hey.'},
+ {'en': 'While you are in the chart, clicking with the &amp; RMB; will bring the &amp; kchart; settings menu which allows you to modify the parameters of the chart. Please see the &amp; kchart; user manual to get more information on how to use &amp; kchart;.',
+  'es': 'Cuando esté en la gráfica, al hacer clic con el &amp; RMB; aparecerá el menú de opciones de &amp; kchart;, que permite modificar los parámetros de la gráfica. Puede consultar el manual de usuario de &amp; kchart; para acceder a la información relativa al uso de &amp; kchart;.'},
+ {'en': 'Enough!', 'es': '¡Ya basta!'},
+ {'en': 'Eritrea', 'es': 'Eritrea'},
+ {'en': '- All right!', 'es': '- ¡Sí!'},
+ {'en': 'Address European Development Centre, 3 Milton Park, Abingdon, Oxon OX14 4RN, United Kingdom',
+  'es': 'Dirección European Development Centre, 3 Milton Park, Abingdon, Oxon OX14 4RN, Reino Unido'},
+ {'en': '- Yes?', 'es': '- ¿Si?'},
+ {'en': 'Having regard to the Treaty establishing the European Community,',
+  'es': 'Visto el Tratado constitutivo de la Comunidad Europea,'},
+ {'en': '- Okay.', 'es': 'Está bien.'},
+ {'en': '- Is that a fact?', 'es': '- ¿No me diga?'},
+ {'en': 'Anything to stop you taking off?',
+  'es': 'Cualquier cosa para detener se aparta ?'},
+ {'en': 'I chose you.', 'es': 'Te elegí a ti.'},
+ {'en': '- Hi there.', 'es': '- Hola.'},
+ {'en': 'Are you angry with me?', 'es': '¿Estás enfadado conmigo?'},
+ {'en': 'Dad!', 'es': '¡Papá!'},
+ {'en': 'No!', 'es': '¡No!'},
+ {'en': 'I told you.', 'es': 'Se lo dije.'},
+ {'en': 'Sleeping?', 'es': 'Durmiendo.'},
+ {'en': '- I am.', 'es': '- Sí.'},
+ {'en': 'Come with me.', 'es': 'Ven conmigo.'},
+ {'en': 'Regular regular.', 'es': 'Normal, tirando a regular.'},
+ {'en': "I'm trying to narrow it down.", 'es': 'Estoy tratando de reducirlo.'},
+ {'en': 'One life is just the blink of an eye.',
+  'es': 'Una vida es sólo un parpadeo.'},
+ {'en': 'Excuse me.', 'es': 'Disculpe.'},
+ {'en': 'And I think we should get a drink.',
+  'es': 'Y creo que hay que conseguir un trago.'},
+ {'en': '- Is this it?', 'es': '- ¿Es aquí?'},
+ {'en': 'Okay, okay!', 'es': '¡Está bien, está bien!'},
+ {'en': 'Show both', 'es': 'Mostrar ambos'},
+ {'en': "The whole presence of the Devil, the tails and the horns, that must've been quite disrupting.",
+  'es': 'La simple presencia del diablo, la cola y los cuernos, debe haber sido bastante perturbador.'},
+ {'en': 'Oh, yeah.', 'es': 'Sí.'},
+ {'en': "It's not to everybody's taste.",
+  'es': 'No es para el gusto de cualquiera.'},
+ {'en': "Blackie don't like nobody to walk out of a game.",
+  'es': 'A Blackie no le agrada que alguien se retire de una partida.'},
+ {'en': 'Hi, Jake.', 'es': 'Hola, Jake.'},
+ {'en': 'Thank you. Thank you.', 'es': 'Gracias'},
+ {'en': 'Time periods indicated include presentations and discussion.',
+  'es': 'Time periods indicated include presentations and discussion.'},
+ {'en': 'Let me handle this.', 'es': 'Dejame manejar esto.'},
+ {'en': '- Which I give unopened to my PR man.',
+  'es': '- Que se la doy a mi relacionista público.'},
+ {'en': 'Oh, yeah?', 'es': '¿Ah, sí?'},
+ {'en': "We're in the middle of a goddamn minefield!",
+  'es': '¡Estamos en medio de un maldito campo minado!'},
+ {'en': 'Use that big brain of yours to think your way out.',
+  'es': 'Usa tu cerebro de genio para pensar una salida.'},
+ {'en': 'Take it.', 'es': 'Quédesela.'},
+ {'en': "That's a beautiful name.", 'es': 'Es un bonito nombre.'},
+ {'en': 'Not you, trooper.', 'es': 'Tú no, soldado.'},
+ {'en': 'I am.', 'es': '- Sí, sí.'},
+ {'en': 'Get on the ground!', 'es': '¡Al suelo!'},
+ {'en': 'I can wait.', 'es': 'Puedo esperar.'},
+ {'en': 'Forget it.', 'es': 'Olvídadlo. No importa.'},
+ {'en': '27/06/2014', 'es': '19/11/2014'},
+ {'en': "That's what they said.", 'es': 'Es lo que han dicho.'},
+ {'en': 'I only assumed you would not waste excessive coin towards them.',
+  'es': 'Solo asumo que no deberías desperdiciar una gran cantidad de monedas en ellos.'},
+ {'en': "- Oh, that's too bad.", 'es': '- Qué pena.'},
+ {'en': 'As a family?', 'es': '¿Como familia?'},
+ {'en': 'Oh, jeez.', 'es': '- Ya viene el bebé.'},
+ {'en': 'Dating a junior?', 'es': '¿Saliendo con una niña?'},
+ {'en': 'Whoever did it only arrived in town last night.',
+  'es': 'Porque quien lo hizo llegó a la ciudad anoche.'},
+ {'en': 'They came for you.', 'es': 'Vienen por ti.'},
+ {'en': '[Laughter]', 'es': '[Risa]'},
+ {'en': 'Look at this.', 'es': 'Mira esto.'},
+ {'en': 'He looks happy.', 'es': '- Parece feliz.'},
+ {'en': 'Is Tahiti better than this place?',
+  'es': '¿Es mejor Tahití que esto?'},
+ {'en': '- Thank you, baby.', 'es': '- Gracias, cariño.'},
+ {'en': 'Looters.', 'es': 'Saqueadores.'},
+ {'en': 'Anybody here?', 'es': '¿ Hay alguien aquí?'},
+ {'en': '- Oh, man!', 'es': '- ¡Hombre!'},
+ {'en': 'Oh, yeah.', 'es': 'Sí.'},
+ {'en': 'Protests in Dhaka.', 'es': 'Protestas en Daca.'},
+ {'en': '- It is?', 'es': '- Lo es?'},
+ {'en': '- Sorry to interrupt.', 'es': '- Perdón por interrumpir.'},
+ {'en': 'Can I have one?', 'es': '¿Puedo fumar uno?'},
+ {'en': 'What is this?', 'es': '¿Qué es esto?'},
+ {'en': 'Not right now.', 'es': 'Ahora no.'},
+ {'en': 'Trust me.', 'es': 'Confía en mí.'},
+ {'en': 'Fuck.', 'es': 'Maldición.'},
+ {'en': 'No.', 'es': 'No.'},
+ {'en': 'During the Israeli military operations in Gaza, the number of children detained by Israel was higher than in the same period in 2008.',
+  'es': 'Durante las operaciones militares israelíes en Gaza, el número de niños detenidos por Israel era superior al del mismo período en 2008.'},
+ {'en': 'You can... you can have my bedroom.',
+  'es': 'Puedes... puedes quedarte en mi habitación.'},
+ {'en': 'Watch out.', 'es': 'Cuidado.'},
+ {'en': 'It is not enough to come up with rhetorical and woolly phrases; what we need instead is results and actions of the kind of which Robert Schuman spoke, when he said that Europe would not be built in a day, but by action, and probably by actions in the plural.',
+  'es': 'No basta con pronunciar frases retóricas y vagas; lo que necesitamos en lugar de ello son resultados y acciones a los que se refería Robert Schuman cuando dijo que Europa no podía construirse en un solo día, sino a través de la acción y probablemente a través de las acciones, en plural.'},
+ {'en': '- If you have autoimmune hepatitis or any other problem with your immune system; if you are',
+  'es': '- Si presenta una hepatitis autoinmune o cualquier otro problema del sistema inmune; si se'},
+ {'en': 'Hello, pretty.', 'es': 'Hola, linda.'},
+ {'en': '- Sabrina?', 'es': '- ¿Sabrina?'},
+ {'en': '- Bruce:', 'es': '- Bueno.'},
+ {'en': "It's night.", 'es': 'Es de noche.'},
+ {'en': '- Good.', 'es': '- Bien.'},
+ {'en': 'No!', 'es': 'No!'},
+ {'en': 'I thought it would suit you.',
+  'es': 'Pensé que sería apropiado para ti.'},
+ {'en': 'You got it.', 'es': 'A ti.'},
+ {'en': "It's okay.", 'es': 'Está bien.'},
+ {'en': 'I just mean files.', 'es': '¡Quiero decir archivos!'},
+ {'en': 'Say what?', 'es': '¿Qué dijiste?'},
+ {'en': "You're a professional.", 'es': 'Eres un profesional.'},
+ {'en': "You're gonna miss the slumber party.",
+  'es': 'Se perderán la fiesta de pijamas.'},
+ {'en': 'of 21 December 2006', 'es': 'de 21 de diciembre de 2006'},
+ {'en': 'Good.', 'es': 'Bien.'},
+ {'en': '- Where?', 'es': '- ¿Dónde?'},
+ {'en': "It's so beautiful.", 'es': 'Es tan hermoso.'},
+ {'en': 'Remarks', 'es': 'Comentarios'},
+ {'en': 'This is terrible.', 'es': 'Esto es terrible.'},
+ {'en': '- Oh...', 'es': '- Oh...'},
+ {'en': 'Oh, yes.', 'es': 'Sí.'},
+ {'en': 'Stephen?', 'es': '¿Stephen?'},
+ {'en': 'She has Only herself to blame!', 'es': '¡Ella misma es culpable!'},
+ {'en': 'Thank you.', 'es': '- Gracias.'},
+ {'en': 'Go on!', 'es': '¡Órale!'},
+ {'en': '- Get out!', 'es': '¡Fuera!'},
+ {'en': "I've done nothing wrong!", 'es': '¡No he hecho nada malo!'},
+ {'en': '- Thank you.', 'es': '- Gracias.'},
+ {'en': 'Get back.', 'es': '¡Retrocedan!'},
+ {'en': "You can't be serious.", 'es': 'No puedes estar hablando en serio.'},
+ {'en': 'And I was at the end of it.', 'es': 'Y yo estaba al final.'},
+ {'en': 'Leo!', 'es': '¡Leo!'},
+ {'en': 'Of course you can.', 'es': 'Por supuesto que sí .'},
+ {'en': 'What do I get in return?', 'es': '¿Qué consigo a cambio?'},
+ {'en': 'To contribute to attaining the objectives referred to in paragraph 1, the European Parliament and the Council, acting in accordance with the ordinary legislative procedure, shall establish the necessary measures, which may take the form of a European space programme, excluding any harmonisation of the laws and regulations of the Member States.',
+  'es': 'Para contribuir a la consecución de los objetivos mencionados en el apartado 1, el Parlamento Europeo y el Consejo establecerán, con arreglo al procedimiento legislativo ordinario, las medidas necesarias, que podrán tener la forma de un programa espacial europeo, con exclusión de toda armonización de las disposiciones legales y reglamentarias de los Estados miembros.'},
+ {'en': '- Let me know how it goes.', 'es': '- Hazme saber como estuvo.'},
+ {'en': 'Wait for me.', 'es': 'Espérenme.'},
+ {'en': '- Roc can get am-fucker anything am-fucker gonna ask for.',
+  'es': 'J-Roc puede conseguir cualquier mierda que quieras.'},
+ {'en': "I told you I'd do my best.", 'es': '- Te dije que me esforzaría.'},
+ {'en': 'Sure.', 'es': 'Claro.'},
+ {'en': 'Aniline derivatives and their salts',
+  'es': 'Derivados de la anilina y sus sales'},
+ {'en': "But you're right, it's not relevant.",
+  'es': 'Pero, tienes razón, no es relevante.'},
+ {'en': 'Take this.', 'es': 'Toma.'},
+ {'en': 'What?', 'es': '¿Qué?'},
+ {'en': 'Not very.', 'es': 'No mucho.'},
+ {'en': "I'm sorry, Paul.", 'es': 'Lo siento, Paul.'},
+ {'en': '- Excuse me?', 'es': '¿Disculpa?'},
+ {'en': "You're not good enough to be my friend",
+  'es': 'No eres lo suficientemente buena para ser mi amiga.'},
+ {'en': 'I-I know.', 'es': 'Lo sé.'},
+ {'en': "I don't want to lose you.", 'es': 'No quiero perderte.'},
+ {'en': 'Contents', 'es': 'ÍNDICE'},
+ {'en': 'Okay, here we go.', 'es': 'Ahí vamos.'},
+ {'en': "I'll find a way.", 'es': 'Hallaré el modo.'},
+ {'en': 'Be right back.', 'es': 'Enseguida vuelvo.'},
+ {'en': 'Wanna come?', 'es': '¿Quiere venir?'},
+ {'en': "I really hope you don't.", 'es': 'Realmente espero que no.'},
+ {'en': '18 A.', 'es': '19 A.'},
+ {'en': '- Who are you?', 'es': '- ¿Quien eres tu?'},
+ {'en': 'Because of the potential for adverse reactions in breast-fed infants, breast-feeding should be discontinued prior to initiation of treatment.',
+  'es': 'Dado el potencial de reacciones adversas en lactantes, la lactancia se deberá interrumpir antes de iniciar el tratamiento.'},
+ {'en': 'Hi.', 'es': '- Hola.'},
+ {'en': 'Good evening.', 'es': 'Buenas noches.'},
+ {'en': '- Huh?', 'es': '- ¿Eh?'},
+ {'en': "That's right.", 'es': 'Eso es.'},
+ {'en': 'And what are you doing?', 'es': '¿Y qué está haciendo?'},
+ {'en': "It doesn't matter what I feel.", 'es': 'No importa lo que siento.'},
+ {'en': 'Yeah, sure.', 'es': 'Qué bobada.'},
+ {'en': 'The entire building almost burned down.',
+  'es': 'Casi se quemó todo el edificio entero.'},
+ {'en': "He's one of the most brilliant minds we have.",
+  'es': 'Es de los más inteligentes.'},
+ {'en': 'Drink?', 'es': '- ¿Un trago?'},
+ {'en': 'Knock-knock.', 'es': '¿Se puede?'},
+ {'en': '- Arrested? !', 'es': '- ¿Arrestado?'},
+ {'en': 'Having regard to the proposal from the Commission(1),',
+  'es': 'Vista la propuesta de la Comisión(1),'},
+ {'en': 'It takes time.', 'es': 'Lleva su tiempo.'},
+ {'en': 'Get you back on your feet.', 'es': 'Ayudarte a recuperar.'},
+ {'en': 'Many centuries ago, a Chinese poet foresaw a Hong Kong that glittered like the stars in the heavens.',
+  'es': 'Hace muchos siglos, un poeta chino imaginó una Hong Kong que brillara como las estrellas del cielo.'},
+ {'en': 'Contents', 'es': 'Índice'},
+ {'en': 'That was pretty fast.', 'es': '- Eso fue muy rápido.'},
+ {'en': 'I will allow it.', 'es': 'Lo permitiré.'},
+ {'en': 'Where, in a rule in the list, two percentages are given for the maximum value of non-originating materials that can be used, then these percentages may not be added together.',
+  'es': 'Si en una norma de la lista se establecen dos o más porcentajes relativos al valor máximo de las materias no originarias que pueden utilizarse, estos porcentajes no podrán sumarse.'},
+ {'en': "She's in danger.", 'es': 'Está en peligro'},
+ {'en': 'Battle stations.', 'es': 'Estaciones de batalla.'},
+ {'en': 'The window was open.', 'es': 'La ventana está abierta.'},
+ {'en': 'You got something to say, just say it.',
+  'es': 'Si tienes algo que decir, simplemente dilo.'},
+ {'en': 'I think this machine works.',
+  'es': 'Creo que esta máquina funciona.'},
+ {'en': '- I am not!', 'es': '- ¡No soy comunista!'},
+ {'en': 'Alaska.', 'es': 'Alaska.'},
+ {'en': 'Romania', 'es': 'Rumanía'},
+ {'en': 'All alone?', 'es': '¿Sola?'},
+ {'en': 'This is for you.', 'es': 'Es para ti.'},
+ {'en': 'Liddy.', 'es': '- Liddy'},
+ {'en': 'Sharon, please.', 'es': '- Sharon, por favor.'},
+ {'en': "It's worse than death in the mines.",
+  'es': 'Es incluso peor que trabajar en las minas.'},
+ {'en': 'You had taken a risk.', 'es': 'Has tomado un riesgo.'},
+ {'en': 'Marker.', 'es': 'Marker.'},
+ {'en': '- I know.', 'es': '- Lo sé.'},
+ {'en': '- Yes, love?', 'es': '- ¿Si amor? .'},
+ {'en': '- Fi!', 'es': '-¡Fi!'},
+ {'en': "It doesn't work with a bow...", 'es': 'No funciona con un corba...'},
+ {'en': "We're only waiting for you.", 'es': '¡Fuera de aquí!'},
+ {'en': 'Goodbye!', 'es': '¡Hasta la vista!'},
+ {'en': 'My darling.', 'es': 'Mi querido.'},
+ {'en': "- You're welcome.", 'es': '-De nada.'},
+ {'en': "I'm not here.", 'es': '- No estoy aquí.'},
+ {'en': '- Butters.', 'es': 'Butters.'},
+ {'en': "Let's go to sleep.", 'es': 'Vamos a dormir.'},
+ {'en': 'Give me your hand.', 'es': 'Dame la mano.'},
+ {'en': "You've got me.", 'es': 'Me tiene a mí.'},
+ {'en': 'Following intravenous administration to healthy adults, the volume of distribution (Vdss) of nevirapine was 1.21 ± 0.09 l/ kg, suggesting that nevirapine is widely distributed in humans.',
+  'es': 'Después de la administración intravenosa a adultos sanos, el volumen de distribución (Vdss) de la nevirapina fue de 1,21 ± 0,09 l/ kg, sugiriendo una amplia distribución en el ser humano.'},
+ {'en': 'Cheers.', 'es': 'Salud.'},
+ {'en': 'Suit yourself.', 'es': 'haz lo que quieras.'},
+ {'en': '-So?', 'es': '- ¿Y?'},
+ {'en': "You're a good boy.", 'es': 'Eres un buen muchacho.'},
+ {'en': 'For the Commission', 'es': 'Por la Comisión'},
+ {'en': 'Okay, great.', 'es': '- Adiós.'},
+ {'en': "Where's the sample, Kat?", 'es': '¿Dónde está la muestra, Kat?'},
+ {'en': "They're gone.", 'es': 'Se han ido'},
+ {'en': 'I want my baby!', 'es': '¡Quiero a mi bebé!'},
+ {'en': '- Sure.', 'es': '- Claro.'},
+ {'en': "Let's get going.", 'es': 'Sigamos adelante.'},
+ {'en': '-What the hell does that mean?', 'es': '-Qué significa eso?'},
+ {'en': 'However, this clarification does not impose any new obligations on Member States or holders of authorisations compared to the directives which have been adopted until now amending Annex I.',
+  'es': 'Esta aclaración, sin embargo, no impone nuevas obligaciones a los Estados miembros ni a los titulares de autorizaciones con respecto a las Directivas adoptadas hasta el momento para modificar el anexo I.'},
+ {'en': '- Who is it?', 'es': '¿Quién?'},
+ {'en': '- Already?', 'es': '- Ahora?'},
+ {'en': 'Everybody, quiet!', 'es': '¡Chicos, silencio!'},
+ {'en': '- Of course she does.', 'es': '- Claro que tiene.'},
+ {'en': '-Hellfish.', 'es': '- Hellfish.'},
+ {'en': '4.3 Contraindications', 'es': '4.3 Contraindicaciones'},
+ {'en': 'A train.', 'es': 'Un tren.'},
+ {'en': 'Okay.', 'es': 'Bien.'},
+ {'en': 'As you can see, we have everything under control.',
+  'es': 'Tenemos todo bajo control.'},
+ {'en': "If anything goes wrong, it's all down to you, Martha.",
+  'es': 'Si algo va mal, todo depende de ti, Martha.'},
+ {'en': 'Thomas?', 'es': '- ¿Que protegería mi trabajo?'},
+ {'en': 'Alto.', 'es': '-Alto.'},
+ {'en': "So, if you don't mind...", 'es': 'Entonces, si no te importa...'},
+ {'en': "That's really pretty.", 'es': 'Es muy bonito.'},
+ {'en': 'Is someone there?', 'es': 'Hay alguien allí?'},
+ {'en': 'Survival.', 'es': 'Para sobrevivir.'},
+ {'en': 'We need to take some X rays, though.', 'es': 'Señor.'},
+ {'en': 'Wait until tomorrow.', 'es': 'Espera hasta mañana.'},
+ {'en': 'A lifetime in jail.', 'es': 'Toda una vida en la cárcel.'},
+ {'en': 'I know what you look like.', 'es': 'Sé como luces.'},
+ {'en': 'Preamble', 'es': 'Preámbulo'},
+ {'en': 'But then he began to fear discovery.',
+  'es': 'Pero luego tuvo miedo, de ser descubierto.'},
+ {'en': 'Enough.', 'es': 'Suficiente.'},
+ {'en': 'Wow.', 'es': 'Vaya.'},
+ {'en': 'Excuse me.', 'es': 'Disculpe.'},
+ {'en': 'Thanks a lot.', 'es': 'Muchas gracias.'},
+ {'en': 'What are you looking for?', 'es': '¿Qué está buscando?'},
+ {'en': 'Me neither.', 'es': 'Yo tampoco.'},
+ {'en': 'Thank you.', 'es': 'Gracias.'},
+ {'en': "I said don't!", 'es': 'No ! Yo no dije !'},
+ {'en': "I don't need any help.", 'es': 'No necesito ayuda.'},
+ {'en': "- I'm so sorry.", 'es': '- Cuanto lo siento.'},
+ {'en': "It's easy for you, Victor.", 'es': 'Es fácil para ti, Victor'},
+ {'en': "I think she's going to help us.", 'es': 'Nos ayudará.'},
+ {'en': 'hello.', 'es': 'Hola.'},
+ {'en': 'You got that right.',
+  'es': '- En eso tienes razón. - Y trabajaremos en eso.'},
+ {'en': "I'm not gonna narc on them.", 'es': 'No voy a chivarme.'},
+ {'en': "You're late.", 'es': 'Llegas tarde.'},
+ {'en': "Doctor she won't listen.", 'es': 'Doctor... ella no escucha.'},
+ {'en': "- What'd he do?", 'es': '- ¿Qué hizo?'},
+ {'en': "You'll hardly know we're here.", 'es': 'Apenas sabrá dónde estamos.'},
+ {'en': '- Sure.', 'es': '- Seguro.'},
+ {'en': 'I need a word.', 'es': 'Necesito hablar.'},
+ {'en': 'Love it.', 'es': 'Me encanta.'},
+ {'en': "You weren't?", 'es': '¿No fue así?'},
+ {'en': '- Which one?', 'es': '- ¿Qué?'},
+ {'en': '- Permanent.', 'es': 'Permanentemente.'},
+ {'en': 'Just a suggestion.', 'es': 'Era una sugerencia.'},
+ {'en': 'He has severe scar tissue all over his body.',
+  'es': 'Tiene cicatrices por todo el cuerpo.'},
+ {'en': 'What are you thinking?', 'es': '¿Qué piensas?'},
+ {'en': 'Tatiana.', 'es': 'Tatiana.'},
+ {'en': '- Nothing.', 'es': '- Nada.'},
+ {'en': "Sorry to disturb you but it's important.",
+  'es': 'Siento molestarte pero es importante.'},
+ {'en': 'Come on, off you go!', 'es': '¡Vamos, empiecen!'},
+ {'en': 'Total quantity', 'es': 'Cantidad total'},
+ {'en': "- It's nice to see you.", 'es': '- Me alegra verte.'},
+ {'en': 'Oh, good.', 'es': 'Bien.'},
+ {'en': "What's so funny?", 'es': '¿Qué te resulta tan divertido?'},
+ {'en': "- They're dead.", 'es': '- Están muertos.'},
+ {'en': "Let's see your hands.", 'es': 'Dejame ver tus manos.'},
+ {'en': 'Sorry...', 'es': 'Perdón.'},
+ {'en': 'Yes?', 'es': '¿Qué?'},
+ {'en': 'What are you afraid of?', 'es': '¿De qué tiene miedo?'},
+ {'en': 'Call the police.', 'es': '- Tengo que llamar a la policía.'},
+ {'en': 'MAN:', 'es': 'Un chaval nos dijo:'},
+ {'en': "He's crashing.", 'es': 'Está entrando en shock.'},
+ {'en': 'Done at Brussels, 27 April 2006.',
+  'es': 'Hecho en Bruselas, el 27 de abril de 2006.'},
+ {'en': 'It would be my honor to play your husband, Claire.',
+  'es': 'Será un honor para mí actuar de marido tuyo, Claire.'},
+ {'en': 'What are you doing here?', 'es': '¿Qué estás haciendo aquí?'},
+ {'en': 'Chen!', 'es': 'Chen!'},
+ {'en': 'Gus.', 'es': 'Gus.'},
+ {'en': 'PHARMACEUTICAL FORM AND CONTENTS',
+  'es': 'FORMA FARMACÉUTICA Y CONTENIDO DEL ENVASE'},
+ {'en': 'Do not use in pregnant or lactating animals.',
+  'es': 'No usar en animales en gestación o lactancia.'},
+ {'en': 'I had...', 'es': '- Tenía...'},
+ {'en': '- I am.', 'es': '- Lo estoy.'},
+ {'en': 'Move forward.', 'es': 'Hacia adelante'},
+ {'en': '"When you hear them, scream.', 'es': '"Cuando los oigas, grita.'},
+ {'en': 'How do you know her?', 'es': '¿cómo la conoces?'},
+ {'en': "She doesn't look good.", 'es': 'Ella no se ve bien.'},
+ {'en': 'The report from the Committee on Regional Policy once again comes out in favour of changing regional planning policy in the Community.',
+  'es': 'El informe de la Comisión de Política Regional aboga una vez más en favor de que la política de ordenación del territorio entre en el ámbito comunitario.'},
+ {'en': 'Agenda item 7', 'es': 'Tema 7 del programa'},
+ {'en': 'Thanks for waiting.', 'es': 'Perdón por la espera.'},
+ {'en': '- Thank you.', 'es': '- Muchas gracias,'},
+ {'en': 'Right on the dot.', 'es': 'El peso exacto.'},
+ {'en': "Why don't you go give this to Carrie?",
+  'es': '¿Qué tal si se Io das a Carrie?'},
+ {'en': 'Okay, I am.', 'es': '¿Qué? ¿te estás riendo?'},
+ {'en': "That's it.", 'es': 'Eso es todo. ¡Es asombroso!'},
+ {'en': 'Mmm!', 'es': 'Mmm!'},
+ {'en': "You're crazy.", 'es': 'Estás loca.'},
+ {'en': 'Thank you.', 'es': 'Gracias.'},
+ {'en': 'I...', 'es': 'No...'},
+ {'en': "We didn't have him, but we do now, and he's on a flight as we speak.",
+  'es': 'No le teníamos, pero ahora sí, y está volando hacia aquí ahora mismo.'},
+ {'en': 'No.', 'es': 'No.'},
+ {'en': 'I panicked.', 'es': 'Entré en pánico.'},
+ {'en': 'ibuprofen) or to COX-2 inhibitors.',
+  'es': 'o AINE (p.ej.: ibuprofeno) o a inhibidores de la COX -2.'},
+ {'en': '- Thank you.', 'es': '- Gracias.'},
+ {'en': 'Of course you do.', 'es': 'Claro que te acuerdas.'},
+ {'en': "Wow, hadn't thought of that.", 'es': 'No Había pensado en eso.'},
+ {'en': 'Her parents?', 'es': '¿Es sobre sus padres?'},
+ {'en': 'Are you okay?', 'es': '¿Estás bien?'},
+ {'en': "Why didn't you tell me before?",
+  'es': '¿Por qué no me lo dijiste antes?'},
+ {'en': 'Not now.', 'es': 'Ahora no.'},
+ {'en': 'Is there a point to this?', 'es': '¿Quieres llegar a algo?'},
+ {'en': 'Get to work. Yes, sir.', 'es': 'Sí, señor.'},
+ {'en': '- Nothing.', 'es': '- Nada.'},
+ {'en': "Here's my card.", 'es': 'Aquí está mi tarjeta.'},
+ {'en': "That's the thing.", 'es': 'Esa es la cuestión.'},
+ {'en': 'Am I too late?', 'es': '¿Llego tarde?'},
+ {'en': 'I knew it was real.', 'es': 'Sabía que era real.'},
+ {'en': '- Great.', 'es': '-Genial.'},
+ {'en': 'I mean, I was just in grade school at the time.',
+  'es': 'Quiero decir, solo estaba en la primaria en ese tiempo.'},
+ {'en': "That's right.", 'es': 'Así es.'},
+ {'en': '"let it go, please"', 'es': 'Suéltalo... "Suéltalo, por favor"'},
+ {'en': 'Fancy meeting you here.', 'es': 'Un lujo encontrarte aquí.'},
+ {'en': 'My son!', 'es': '¡Mi hijo!'},
+ {'en': 'What should they do?', 'es': '¿Qué tendrían que hacer?'},
+ {'en': 'Liquid, yellowish.', 'es': 'Líquido, con un tono amarillento.'},
+ {'en': 'Tax Man.', 'es': 'Recaudador.'},
+ {'en': "- I'm proud of you.", 'es': '-Te admiro. -¿Por qué?'},
+ {'en': '- With physical force?', 'es': '- ¿Con fuerza física?'},
+ {'en': 'CEREALS', 'es': 'CEREALES'},
+ {'en': 'Thank you for coming.', 'es': 'Gracias por venir.'},
+ {'en': "Let's go inside.", 'es': 'Vamos adentro.'},
+ {'en': 'Good gracious!', 'es': '¡Dios mío! ¡Bertie!'},
+ {'en': 'Stop it!', 'es': '- Deténganse. ¡Deténganse ya!'},
+ {'en': 'I thought you were...', 'es': 'Pensé que...'},
+ {'en': 'For God Sake,Lee!', 'es': '¡Por dios santo, Lee!'},
+ {'en': 'Thank you.', 'es': 'Gracias.'},
+ {'en': "I'm in!", 'es': '¡Me aceptaron!'},
+ {'en': 'I am the hostess .', 'es': 'Yo soy la azafata.'},
+ {'en': 'All of a sudden...', 'es': 'De repente-'},
+ {'en': 'Now, listen, I am still having my annual Fourth of July Clambake.',
+  'es': 'Ahora, escucha, sigo teniendo mi fiesta de la almeja del cuatro de Julio'},
+ {'en': 'Did you talk to him?', 'es': '¿Habló con él?'},
+ {'en': 'Duration', 'es': 'Duración'},
+ {'en': 'Can you...?', 'es': '¿Puede...?'},
+ {'en': "Sadly, some of us women have been led to think this is “normal” or that “it's our fault” we are victims of this type of abuse, and it's because our aggressors use public transport — and especially the streets — to offend us sexually.",
+  'es': 'Lamentablemente, algunas mujeres hemos llegado a pensar que es “normal” o que “por nuestra culpa” somos víctimas de este tipo de abuso, y es que los acosadores aprovechan las unidades de transporte -sobre todo las rutas-, para ofendernos sexualmente.'},
+ {'en': 'Come on, come on, come on.', 'es': 'Vamos, vamos.'},
+ {'en': 'We are too late.', 'es': 'Es demasiado tarde.'},
+ {'en': 'Here.', 'es': 'Toma.'},
+ {'en': 'Come on.', 'es': '¡Vayan!'},
+ {'en': 'Get down!', 'es': '¡Al suelo!'},
+ {'en': 'I can do that.', 'es': 'Puedo hacer eso.'},
+ {'en': 'Excuse me, I have a very important announcement to make.',
+  'es': 'Perdona.'},
+ {'en': 'Oh, no.', 'es': 'Oh, no.'},
+ {'en': "The quantity of time isn't always the most important.",
+  'es': 'La cantidad de tiempo no siempre es lo más importante.'},
+ {'en': "You're alive!", 'es': '¡Estáis vivos!'},
+ {'en': 'Is he okay?', 'es': '¿Está bien?'},
+ {'en': 'Your father was a great man.', 'es': 'Tu padre era un gran hombre.'},
+ {'en': '- No problem.', 'es': '- No hay problema.'},
+ {'en': '“The members of the Council had a constructive exchange of views with representatives of participating troop-contributing countries.”',
+  'es': 'Los miembros del Consejo mantuvieron un constructivo intercambio de opiniones con los representantes de los países que aportan contingentes.”'},
+ {'en': 'If the Reptilians wanted to keep their actions a secret... the past would be a good place to do it.',
+  'es': 'Si los Reptilianos querían mantener en secreto sus acciones, el pasado sería un buen lugar para hacerlo'},
+ {'en': 'What? What?', 'es': '¿Qué?'},
+ {'en': '- Back off!', 'es': '-¡Atrás!'},
+ {'en': 'Who are you looking for?', 'es': '¿A quién está buscando?'},
+ {'en': 'Drop your weapons!', 'es': '¡Tira tus armas! .'},
+ {'en': 'Burn it down!', 'es': '¡Quémenlo!'},
+ {'en': "- Yes, ma'am.", 'es': '- Sí, señora.'},
+ {'en': "- I'm innocent.", 'es': '- Muy bien.'},
+ {'en': 'Enough already.', 'es': 'Ya lo está.'},
+ {'en': 'I just need a place to rest.',
+  'es': 'Sólo necesito un lugar donde descansar.'},
+ {'en': 'Fuck.', 'es': 'joder.'},
+ {'en': 'Nothing?', 'es': '¿Nada?'},
+ {'en': '(2) Maximum residue limits should be established only after the examination within the Committee for Veterinary Medicinal Products of all the relevant information concerning the safety of residues of the substance concerned for the consumer of foodstuffs of animal origin and the impact of residues on the industrial processing of foodstuffs.',
+  'es': '(2) Los límites máximos de residuos deben establecerse solamente tras examinar en el Comité de medicamentos veterinarios toda información pertinente que se refiera a la inocuidad de los residuos de la sustancia en cuestión para el consumidor de productos alimenticios de origen animal y la repercusión de los residuos en el tratamiento industrial de productos alimenticios.'},
+ {'en': 'I got it!', 'es': '¡Lo tengo!'},
+ {'en': 'Move on!', 'es': '¡Vamos!'},
+ {'en': 'I have no idea.', 'es': 'No tengo ni idea.'},
+ {'en': 'Right.', 'es': 'Claro.'},
+ {'en': "That's what I want.", 'es': 'Esto es lo que quiero.'},
+ {'en': "I don't like lying.", 'es': 'No me gusta mentir.'},
+ {'en': '- You could be my Peter.', 'es': 'Podrías ser mi Pedro.'},
+ {'en': 'Oh, my God!', 'es': '¡Por Dios!'},
+ {'en': 'Great.', 'es': 'Estupendo.'},
+ {'en': 'Excellent', 'es': 'Genial'},
+ {'en': 'Now are you absolutely, positively clear about rule number one?',
+  'es': '¿Está absoluta, positivamente segura de la regla número uno?'},
+ {'en': 'Ring the bell.', 'es': 'Llama al timbre.'},
+ {'en': 'No kidding.', 'es': 'No es broma.'},
+ {'en': 'How?', 'es': '¿Cómo?'},
+ {'en': 'Animals killed for organs and tissues, as well as sentinels, are excluded from the provision of statistical data, unless the killing is performed under a project authorisation using a method not included in Annex IV or where the animal has gone through a previous intervention, prior to being killed, and which has been above the threshold of minimum pain, suffering, distress and lasting harm.',
+  'es': 'Los animales que se sacrifiquen por sus órganos y tejidos, así como los animales centinelas, se excluirán de los datos estadísticos, salvo cuando el sacrificio tenga lugar en el marco de una autorización de proyecto que utilice un método no incluido en el anexo IV o cuando el animal se haya sometido antes de su sacrificio a una intervención en la que el dolor, el sufrimiento, la angustia y los daños duraderos hayan superado el umbral mínimo.'},
+ {'en': 'You want a hint?', 'es': '¿Quieres una pista?'},
+ {'en': '-Why?', 'es': '- ¿Por qué?'},
+ {'en': 'Impact warning 30° West.', 'es': 'Aviso de impacto.'},
+ {'en': 'What are you, stupid?', 'es': '¿Qué eres tú, estúpido?'},
+ {'en': "You're kidding, right?", 'es': '- ¿Estás de broma?'},
+ {'en': 'I think that was a strange question.',
+  'es': 'Esa fue una pregunta extraña.'},
+ {'en': "Carter's dead?", 'es': '¿Carter está muerto?'},
+ {'en': '- Nobody move.', 'es': '- Nadie se mueva.'},
+ {'en': 'One, two, three!', 'es': 'Una... dos... ¡tres!'},
+ {'en': 'The Organization has to strive for a proper mix of these two categories of functions, which complement each other.',
+  'es': 'La Organización debe aspirar a lograr una proporción idónea entre las dos categorías de funciones, que se complementan.'},
+ {'en': 'Thank you so much.', 'es': 'Muchas gracias.'},
+ {'en': '- Motherland!', 'es': '- Patria!'},
+ {'en': "No, you don't.", 'es': 'No,no lo haces'},
+ {'en': "I'm a cop.", 'es': 'Soy policía.'},
+ {'en': 'What the hell are you doing in there?',
+  'es': '¿Qué diablos estás haciendo?'},
+ {'en': 'Up to the fifth year of primary education there are no major differences in dropout rates between boys and girls, although after the sixth year males are more likely to be affected, a phenomenon that is still more marked over the entire period of secondary education.',
+  'es': 'Hasta el 5º de primaria no existen grandes diferencias en la tasa de abandono entre hombres y mujeres, aunque a partir de 6º se convierte en un factor que afecta más a los hombres, fenómeno que es aún más marcado durante todo el nivel secundario.'},
+ {'en': 'All right.', 'es': '¿OK?'},
+ {'en': "I've changed my mind.", 'es': 'He cambiado de opinión.'},
+ {'en': 'Almost nothing.', 'es': 'Prácticamente nada.'},
+ {'en': 'But--', 'es': 'Pero...'},
+ {'en': 'More than three decades later and boosted by many awards including the Nobel Peace Prize (jointly with its founder Dr. Muhammad Yunus in 2006), it has expanded into a family of social organizations.',
+  'es': 'Más de tres décadas después e impulsado por muchos premios (incluido el Premio Nobel de la Paz, junto con su fundador el Dr. Muhammad Yunus en 2006), se ha transformado en una familia de organizaciones sociales.'},
+ {'en': "Oh, Virgil. I don't think you're gonna win many races.",
+  'es': 'Virgil, no creo que ganes muchas carreras.'},
+ {'en': 'You need anything?', 'es': '¿Necesitas algo?'},
+ {'en': 'No one.', 'es': 'Nadie.'},
+ {'en': "I'm so sorry.", 'es': 'Lo siento mucho.'},
+ {'en': 'No.', 'es': 'No.'},
+ {'en': 'Hi, Charlie.', 'es': '¡Oye, Charlie!'},
+ {'en': "- What? That's it?", 'es': '¿Eso es todo?'},
+ {'en': 'The restaurant.', 'es': 'Del restaurante.'},
+ {'en': 'Your Highness.', 'es': 'Alteza.'},
+ {'en': 'Better.', 'es': 'Mejor.'},
+ {'en': '__________________', 'es': 'Azizbek a_grigory'},
+ {'en': 'Five?', 'es': '¿Cinco?'},
+ {'en': "- I'm just...", 'es': '- Sí. - Voy a...'},
+ {'en': 'Friend...', 'es': '!'},
+ {'en': '@ashbetteridge: a thing that struck me about the campaigns here over the past week or so is that they are predominately male #eleisaun2012',
+  'es': '@ashbetteridge: algo que me sorprende de las campañas durante la semana pasada es que casi todos son hombres #eleisaun2012'},
+ {'en': "I wasn't looking for an invite.", 'es': 'No buscaba una invitación.'},
+ {'en': 'It was just a dream.', 'es': 'Fue sólo un sueño.'},
+ {'en': 'Oh.', 'es': 'Oh.'},
+ {'en': "Stop what you're doing.", 'es': 'Paren lo que hacen.'},
+ {'en': "You're welcome.", 'es': 'De nada.'},
+ {'en': 'Number of visits: 2734', 'es': 'Número de visitas: 404'},
+ {'en': 'One, two, three.', 'es': 'Uno, dos, tres.'},
+ {'en': "Don't you?", 'es': '¿Tú no?'},
+ {'en': 'Thank you.', 'es': 'Gracias.'},
+ {'en': 'It goes without saying that no sensible person would oppose equal rights for men and women.',
+  'es': 'Está claro que ninguna persona en su sano juicio se opone a la igualdad de oportunidades entre hombres y mujeres.'},
+ {'en': 'Brought to you by WITH S2 Written In The Heavens Subbing Squad',
+  'es': 'Subtítulos en español: *** Coffee-Wings Subs ***'},
+ {'en': "If it's not too late.", 'es': 'Vean a esa pobre gente ahí afuera.'},
+ {'en': 'Daylight!', 'es': 'Luz de día.'},
+ {'en': 'No, no.', 'es': 'No, no.'},
+ {'en': 'Oh, my!', 'es': '¡Ah, caray!'},
+ {'en': 'Nope.', 'es': 'No.'},
+ {'en': 'It happens.', 'es': 'Eso pasa.'},
+ {'en': 'In centrum (3)', 'es': 'In centrum (54)'},
+ {'en': 'Aah!', 'es': 'Aah!'},
+ {'en': 'Prescribers should refer to national guidelines for influenza vaccination.',
+  'es': 'El médico deberá observar las directrices nacionales para la vacunación contra la gripe.'},
+ {'en': '- Hi.', 'es': '- Hola.'},
+ {'en': 'Everything.', 'es': 'Todo.'},
+ {'en': 'Not exactly.', 'es': 'No precisamente.'},
+ {'en': 'Bye.', 'es': 'Si.'},
+ {'en': 'Move on.', 'es': 'Pásala.'},
+ {'en': 'Oh, stop it.', 'es': 'Oh, basta.'},
+ {'en': 'Sure.', 'es': '- Claro. - ¿Cree que irá al Cielo?'},
+ {'en': 'NAME AND ADDRESS OF THE MARKETING AUTHORISATION HOLDER',
+  'es': 'NOMBRE O RAZÓN SOCIAL DEL TITULAR DE LA AUTORIZACIÓN DE COMERCIALIZACIÓN'},
+ {'en': '- Mercy.', 'es': '- Mercy.'},
+ {'en': 'Is that what you think?', 'es': '¿Eso es lo que crees?'},
+ {'en': 'To both of us.', 'es': 'Para ambos.'},
+ {'en': 'This is fresh.', 'es': 'Es reciente.'},
+ {'en': '- May I ?', 'es': '- ¿Puedo?'},
+ {'en': "If that's all right with you?", 'es': '- ¿Si estás de acuerdo?'},
+ {'en': 'Outputs', 'es': 'Productos'},
+ {'en': 'Take those off.', 'es': 'Sacate eso.'},
+ {'en': 'Any relationship problems?',
+  'es': '¿Cualquier problema con las relaciones?'},
+ {'en': 'No, what?', 'es': 'No, ¿qué?'},
+ {'en': 'I want to leave an Eliot Stemple skid mark.',
+  'es': 'Quiero dejar una marca de derrape Eliot Stemple.'},
+ {'en': 'Conclusion', 'es': 'Conclusión'},
+ {'en': '- My father.', 'es': 'Mi padre.'},
+ {'en': 'VI.', 'es': '177.'},
+ {'en': "- It's a little bit of trivia.", 'es': '- Es un poco de trivia.'},
+ {'en': 'Five dates.', 'es': 'Cinco citas.'},
+ {'en': 'And?', 'es': '¿Y?'},
+ {'en': 'Most of them are non-lethal.',
+  'es': 'La mayoría de ellas no son letales.'},
+ {'en': 'I spent the whole time sleeping.',
+  'es': 'Me pasé todo el santo tiempo, durmiendo.'},
+ {'en': 'Hey, Kent.', 'es': 'Hola, Kent.'},
+ {'en': 'Quantum mechanics allows--', 'es': 'La mecánica cuántica permite...'},
+ {'en': 'Yard sale!', 'es': '¡Venta de garaje!'},
+ {'en': 'Enoch.', 'es': 'Enoch.'},
+ {'en': 'What is it?', 'es': '¿Que es?'},
+ {'en': "What's up, brother?", 'es': '¿Qué tal? Hola, Dé.'},
+ {'en': 'I have to go.', 'es': 'Debo irme.'},
+ {'en': 'Go on.', 'es': 'Continúa.'},
+ {'en': 'THE CUBE', 'es': 'EL CUBO'},
+ {'en': "It's fine.", 'es': 'Esto se mete por todas partes.'},
+ {'en': 'Oh, okay.', 'es': 'Vale.'},
+ {'en': '- God.', 'es': '- Dios.'},
+ {'en': '4.', 'es': '4.'},
+ {'en': "It's you?", 'es': '¿Eres tú?'},
+ {'en': '- Four!', 'es': '- ¡Cuatro!'},
+ {'en': 'Since when?', 'es': 'Desde cuando?'},
+ {'en': 'Listen to me.', 'es': 'Escúchame.'},
+ {'en': "What do you think'?", 'es': '¿Que piensas?'},
+ {'en': "I mean, I don't shop in this neighborhood, but...",
+  'es': 'No compro en este barrio, pero...'},
+ {'en': '- I know.', 'es': '- Lo sé.'},
+ {'en': "I'll see you at dinner.", 'es': 'Nos vemos en la cena.'},
+ {'en': 'You alone?', 'es': '¿Estás sola?'},
+ {'en': 'Come here.', 'es': 'Ven acá.'},
+ {'en': 'Development of clear and transparent indicators, especially for ODA.',
+  'es': 'Asistencia oficial para el desarrollo/asistencia para el desarrollo'},
+ {'en': 'It will be fine.', 'es': 'No pasa nada.'},
+ {'en': '- Tonight.', 'es': '- Todos nosotros.'},
+ {'en': 'Here you go.', 'es': 'Aquí tiene.'},
+ {'en': "- What are you laughing at, what's so funny?",
+  'es': '¿Y cuántos son, 24 votos? ¿Pero de qué coño te ríes, Michè? ¿De qué te ríes?'},
+ {'en': 'Fuck.', 'es': 'Carajo.'},
+ {'en': 'Can you hear me?', 'es': '¿Puedes oírme?'},
+ {'en': "That's true.", 'es': 'Eso es verdad.'},
+ {'en': "She won't do it, Dad.", 'es': 'Ella no lo hará, papá.'},
+ {'en': 'You.', 'es': 'Tú.'},
+ {'en': '(1)', 'es': 'Douche (116)'},
+ {'en': 'Valenzuela is dead.', 'es': 'Valenzuela está muerto.'},
+ {'en': 'Clear right.', 'es': 'Despejado a la derecha.'},
+ {'en': 'Like this.', 'es': 'Así.'},
+ {'en': 'What, right now?', 'es': '¿Cómo, ahora mismo?'},
+ {'en': "Then that's what we'll do.", 'es': 'Entonces vayamos.'},
+ {'en': "- You don't seem too worried.", 'es': '- No pareces muy preocupado.'},
+ {'en': 'You found it.', 'es': '- Lo encontró.'},
+ {'en': 'You first.', 'es': 'Tú el primero.'},
+ {'en': "I don't want it.", 'es': 'No lo quiero.'},
+ {'en': '4.', 'es': '4.'},
+ {'en': '%#: session number', 'es': '%#: número de sesión'},
+ {'en': 'I gave you one.', 'es': 'Yo te di uno.'},
+ {'en': 'This is my fault?',
+  'es': '¿Y es culpa mía? Le puse mis datos en unas tarjetas.'},
+ {'en': 'Yes, she is.', 'es': 'Sí, es preciosa.'},
+ {'en': 'Hello.', 'es': 'Hola.'},
+ {'en': 'Distillation:', 'es': 'Destilación:'},
+ {'en': 'Do me a favor.', 'es': 'Hazme un favor.'},
+ {'en': 'Individually and collectively, States will endeavour, as appropriate, to support the following actions:',
+  'es': 'Individual y colectivamente, según proceda, los Estados se esforzarán por apoyar:'},
+ {'en': 'I conclude by expressing my appreciation for the constructive contribution offered to the Committee on Civil Liberties and Internal Affairs in relation to the text originally proposed.',
+  'es': 'Y termino diciendo que aprecio la contribución constructiva prestada a la Comisión de Libertades Públicas y de Asuntos Interiores con respecto al texto originariamente propuesto.'},
+ {'en': 'Hi.', 'es': 'Hola.'},
+ {'en': 'I checked out his web page.', 'es': 'Ojeé su página web.'},
+ {'en': '6.2 Incompatibilities', 'es': '21 6.2 Incompatibilidades'},
+ {'en': 'Gotcha.', 'es': 'Eres mía.'},
+ {'en': 'No morphine.', 'es': '- Morfina. No, morfina no.'},
+ {'en': 'Yeah, he does.', 'es': 'Sí que me odia.'},
+ {'en': 'Down!', 'es': '¡Abajo!'},
+ {'en': 'You OK?', 'es': '¿Estás bien?'},
+ {'en': 'Jeff!', 'es': '¡Jeff! ¿No era eso lo que querías?'},
+ {'en': 'Tai.', 'es': 'Tai.'},
+ {'en': 'Tiny bars of soap.', 'es': 'Jaboncitos individuales.'},
+ {'en': "- I'm aware of that.", 'es': '- Soy consciente de ello.'},
+ {'en': "- Take 'em off.", 'es': '- Quítatelos.'},
+ {'en': "It's about time.", 'es': 'A buenas horas.'},
+ {'en': '_', 'es': 'Trabajo esta noche.'},
+ {'en': '- You sure?', 'es': '-¿Estás seguro?'},
+ {'en': '7.', 'es': '7.'},
+ {'en': 'Yeah, she does.', 'es': 'Sí, así es.'},
+ {'en': "It's nothing.", 'es': 'No es nada.'},
+ {'en': '- Hang on.', 'es': '- Espera.'},
+ {'en': 'Firstly, if this scum is a hoji , he should have explained to the boys that theft is bad!',
+  'es': 'En primer lugar si esta escoria es un Hoji , debería haber explicado a los jóvenes ¡que robar es malo!'},
+ {'en': '- Hi.', 'es': '- Hola.'},
+ {'en': 'Somebody stop him!', 'es': 'IQue alguien le detenga!'},
+ {'en': "That's all.", 'es': 'Eso es todo.'},
+ {'en': 'Many users on social media referred to the double standard the Bogota police showed.',
+  'es': 'Muchos usuarios en redes sociales se refirieron al doble estándar que mostró la policía de Bogotá.'},
+ {'en': 'Everybody does it.', 'es': 'Todo el mundo lo hace.'},
+ {'en': '4.4 Special warnings and precautions for use',
+  'es': '4.4 Advertencias y precauciones especiales de empleo'},
+ {'en': 'The John Galt Line.', 'es': 'La Línea John Galt.'},
+ {'en': '- I think so.', 'es': '- Eso creo.'},
+ {'en': 'Him?', 'es': '¿Él?'},
+ {'en': "It's up to you.", 'es': 'Depende de ti.'},
+ {'en': '- What? !', 'es': '- ¿Qué?'},
+ {'en': "Yeah, I don't know.", 'es': 'Sí, no lo sé.'},
+ {'en': 'Murder?', 'es': '¿Asesinato?'},
+ {'en': 'Oh, I see.', 'es': 'Ya veo.'},
+ {'en': 'Yes, sir.', 'es': 'Si señor.'},
+ {'en': 'What happened to your face?', 'es': '¿Qué te pasó en la cara?'},
+ {'en': "I'm gonna get me a new partner.", 'es': 'Me buscaré un socio nuevo.'},
+ {'en': 'No!', 'es': '¡No!'},
+ {'en': "I left it at Maria's a while ago.",
+  'es': 'Se lo dejé a María hace un tiempo.'},
+ {'en': 'Good.', 'es': 'Bien.'},
+ {'en': 'Bullshtak.', 'es': 'Shtak de toro.'},
+ {'en': 'Have you gone mad?', 'es': 'Es un poco tarde para esas preguntas.'},
+ {'en': 'Anyway, thank you.', 'es': 'En fin, gracias.'},
+ {'en': "No, that's just a...", 'es': 'No, es solo...'},
+ {'en': 'Cut.', 'es': 'Corte.'},
+ {'en': 'Well, that is absolutely not true.',
+  'es': 'Bueno, eso no es para nada verdad.'},
+ {'en': 'Wait, what?', 'es': 'Espera, ¿qué?'},
+ {'en': 'No, no, no.', 'es': 'No, no.'},
+ {'en': 'Whereas this new situation, by altering the conditions of competition in the markets of the Member States of the Community as constituted before 1 January 1986, also influences the level of income of sardine producers of those Member States in the Mediterranean region;',
+  'es': 'Considerando que el nuevo contexto, al alterar las condiciones de competencia en los mercados de los Estados miembros de la Comunidad en su composición anterior al 1 de enero de 1986, afecta asimismo al nivel de ingresos de los productores de sardinas de dichos Estados miembros en la zona mediterránea;'},
+ {'en': 'Well, okay.', 'es': 'Está bien.'},
+ {'en': 'You think?', 'es': '¿Eso crees?'},
+ {'en': 'She says that you can, uh, pull greatness right out of people.',
+  'es': 'Dice que tú puedes sacar la grandeza de la gente.'},
+ {'en': "It's the Thunderbowl, the ultimate test of bowling nerve.",
+  'es': 'Esto es Bocha relámpago, la máxima prueba para los nervios.'},
+ {'en': 'Article 74', 'es': 'Artículo 74'},
+ {'en': 'What are you looking at?', 'es': '¿Qué estás mirando?'},
+ {'en': '- Oh, I know, I know.', 'es': 'Lo sé.'},
+ {'en': 'Oh, please.', 'es': 'Ah, por favor.'},
+ {'en': 'ANNEX I', 'es': 'ANEXO I'},
+ {'en': 'Stop it!', 'es': '¡Para!'},
+ {'en': 'The Assembly:', 'es': 'La Asamblea:'},
+ {'en': "Yeah. Yeah, you're right.", 'es': 'Tienes razón.'},
+ {'en': 'Get the lead out!', 'es': '¡Fuera!'},
+ {'en': 'Oh.', 'es': 'Oh.'},
+ {'en': "What have you told him about his father's death?",
+  'es': '¿Qué le dijiste sobre su muerte?'},
+ {'en': 'Victoria.', 'es': 'Victoria.'},
+ {'en': 'It is my understanding that the Council is ready to proceed to the vote on the draft resolution before it.',
+  'es': 'Tengo entendido que el Consejo de Seguridad está dispuesto a proceder a la votación del proyecto de resolución que tiene ante sí.'},
+ {'en': 'Okay, okay, okay.', 'es': 'Bien, está bien, está bien.'},
+ {'en': 'Doctor?', 'es': '¿El doctor?'},
+ {'en': 'Are you deaf?', 'es': '- ¿Es sorda?'},
+ {'en': 'No worries.', 'es': 'Sin problema.'},
+ {'en': 'Well, what do you think?', 'es': 'Bueno, ¿qué crees tú?'},
+ {'en': "Lover's quarrel?", 'es': '¿Pleito de enamorados?'},
+ {'en': 'Nothing could be further from the truth.',
+  'es': 'Si este referendo hubiera tenido lugar antes de la reciente ampliación, ¿nos habríamos adherido – y me refiero a los 10 nuevos Estados miembros– a la UE?'},
+ {'en': '- OK?', 'es': '- ¿OK?'},
+ {'en': 'Hey, man.', 'es': 'Hey hombre.'},
+ {'en': "That's really nice of you.", 'es': 'Es muy bonito por tu parte.'},
+ {'en': 'He does.', 'es': 'Lo está.'},
+ {'en': 'Just cut to the chase.', 'es': 'Para. Ve directo al grano.'},
+ {'en': 'Together.', 'es': 'Juntos.'},
+ {'en': "Now he's dead.", 'es': 'Y ahora está muerto.'},
+ {'en': "This isn't about me.", 'es': 'Esto no es sobre mí.'},
+ {'en': 'Max?', 'es': '¿Max?'},
+ {'en': 'Period.', 'es': 'Punto.'},
+ {'en': 'BEVERLY: What?', 'es': '¿Qué?'},
+ {'en': 'Right.', 'es': 'cierto.'},
+ {'en': "I'll see you all tomorrow.", 'es': 'Hasta mañana.'},
+ {'en': 'No, you crazy?', 'es': '- No. ¿Estás loco?'},
+ {'en': 'Neighbouring Country', 'es': 'País vecino'},
+ {'en': "Oh, I'm sorry.", 'es': 'Lo siento.'},
+ {'en': "Don't tempt me.", 'es': 'No me tientes.'},
+ {'en': "I just couldn't do it.", 'es': 'yo no podía hacerlo.'},
+ {'en': 'Doctors.', 'es': 'Doctores.'},
+ {'en': 'Jack!', 'es': '¡Jack!'},
+ {'en': '- Wait.', 'es': '- Espera.'},
+ {'en': 'Enron on-line will change the markets for many many commodities.',
+  'es': 'Enron Online cambiará los mercados ...para muchas mercancías.'},
+ {'en': "He can't take care of himself.",
+  'es': 'No puede cuidarse a si mismo.'},
+ {'en': 'Look.', 'es': 'Mira.'},
+ {'en': '-Close your eyes.', 'es': 'Cierra tus ojos.'},
+ {'en': 'Wanna give it a shot?', 'es': '¿Quieres darle algún toque?'},
+ {'en': 'Do you understand that?', 'es': '¿Entiendes eso?'},
+ {'en': 'Nobody gave shit for me!', 'es': '¡A nadie le importo una mierda!'},
+ {'en': "- You're welcome.", 'es': '- De nada.'},
+ {'en': '- Who? Me?', 'es': '¿Yo?'},
+ {'en': "He's a liar.", 'es': '- Es un mentiroso.'},
+ {'en': 'What?', 'es': '¿Qué?'},
+ {'en': 'Come on.', 'es': 'Vamos.'},
+ {'en': 'Tell me everything.', 'es': 'Cuéntemelo todo.'},
+ {'en': "It's a metaphor.", 'es': 'Es una metáfora.'},
+ {'en': 'Paragraphs Page', 'es': 'Párrafos Página'},
+ {'en': '- Oh, no, please.', 'es': '- No, por favor.'},
+ {'en': 'Hope so.', 'es': 'Eso espero.'},
+ {'en': '- Roger, roger.', 'es': '- Entendido, entendido.'},
+ {'en': '- Who is it?', 'es': '- Quién es?'},
+ {'en': "They're coming back.", 'es': 'Aquí vamos.'},
+ {'en': "It's almost 8.", 'es': 'Son casi las 8.'},
+ {'en': 'I promise.', 'es': 'Lo prometo.'},
+ {'en': 'Maybe we should just do our jobs.',
+  'es': 'Tal vez deberíamos dedicarnos a nuestros trabajos.'},
+ {'en': "If you don't like it, don't look.",
+  'es': 'Si no te gusta, no mires.'},
+ {'en': '- Hey, there.', 'es': '-Hola'},
+ {'en': 'No, sorry.', 'es': 'Ni me importa.'},
+ {'en': 'See you tomorrow.', 'es': 'Nos vemos mañana.'},
+ {'en': 'Come on.', 'es': 'Vamos.'},
+ {'en': 'Stella?', 'es': 'Estrella?'},
+ {'en': 'What are you trying to say?', 'es': '¿Qué tratas de decir?'},
+ {'en': 'One vial with powder for solution for injection contains nonacog alfa 1000 IU and excipients.',
+  'es': 'Un vial con polvo para solución inyectable que contiene 1000 UI de nonacog alfa y excipientes.'},
+ {'en': "I understand, ma'am.", 'es': 'Lo entiendo, señora.'},
+ {'en': '- I heard you.', 'es': 'Sí, sargento.'},
+ {'en': '- Who do you think?', 'es': '- ¿Quién va a ser?'},
+ {'en': 'Stop now.', 'es': 'Para ya.'},
+ {'en': 'Nobody.', 'es': 'Nadie.'},
+ {'en': 'Actually, no.', 'es': 'De hecho, no.'},
+ {'en': "I don't know, honey.", 'es': 'No lo sé, cariño.'},
+ {'en': 'Aware of the devastating impact of crime on the national economies of African States and of the fact that crime is a major obstacle to harmonious and sustainable development in Africa,',
+  'es': 'Consciente de la repercusión devastadora del delito en la economía nacional de los Estados de África y de que la delincuencia constituye un obstáculo importante para el desarrollo armonioso y sostenible en África,'},
+ {'en': 'Why ?', 'es': '¿Por qué?'},
+ {'en': 'Here.', 'es': 'Toma.'},
+ {'en': 'Mr\xa0President, rapporteur, ladies and gentlemen, I would like to congratulate the Committee on Development, and in particular Mrs\xa0Carlotti, on its work.',
+  'es': 'Señor Presidente, señora ponente, Señorías, quisiera felicitar a la Comisión de Desarrollo, y en especial a la señora Carlotti, por su trabajo.'},
+ {'en': 'DATE OF FIRST AUTHORISATION/ RENEWAL OF THE AUTHORISATION',
+  'es': 'FECHA DE LA PRIMERA AUTORIZACIÓN/ RENOVACIÓN DE LA AUTORIZACIÓN'},
+ {'en': 'Thank you.', 'es': 'Gracias.'},
+ {'en': 'Hey.', 'es': 'Hola...'},
+ {'en': '- I trust you.', 'es': '- Confío en ti.'},
+ {'en': "I've tried.", 'es': 'Lo he intentado.'},
+ {'en': "-You don't understand...", 'es': '-No entiende...'},
+ {'en': 'Do you know where they went?', 'es': '¿Sabes adónde fueron?'},
+ {'en': "No, it's not possible.", 'es': 'No, no es posible.'},
+ {'en': 'Stay calm! No!', 'es': '¡Mantén la calma!'},
+ {'en': 'Nothing.', 'es': 'Nada.'},
+ {'en': '-Hello.', 'es': '- Hola.'},
+ {'en': 'Oh, no, no!', 'es': '¡No, no!'},
+ {'en': 'Well, talk to you later.', 'es': 'Bueno, luego hablamos.'},
+ {'en': '-A LSD predecessor?', 'es': '- ¿Un predecesor del LSD?'},
+ {'en': 'Is she all right?', 'es': '¿Está bien?'},
+ {'en': '- Quiet!', 'es': '- ¡Silencio!'},
+ {'en': 'You look great.', 'es': 'Te ves genial.'},
+ {'en': 'Seriously.', 'es': '- En serio.'},
+ {'en': 'You wore them so proudly.',
+  'es': 'Usted los portaba tan orgullosamente.'},
+ {'en': 'Elise?', 'es': '¿Elise?'},
+ {'en': '26:48', 'es': '7:26'},
+ {'en': 'Damn!', 'es': 'Maldición!'},
+ {'en': 'How to get there?', 'es': '¿Cómo llegar?'},
+ {'en': 'Okay.', 'es': 'Vale.'},
+ {'en': 'And then my Mr. Tuttle and your Mr. Moguy can hash out the finer details between themselves.',
+  'es': 'Y entonces mi Sr. Tuttle y su Sr. Moguy puede discutir los más íntimos detalles entre ellos.'},
+ {'en': '- Oh, get out.', 'es': '-Lárgate.'},
+ {'en': 'Airport.', 'es': '- ¿Aeropuerto?'},
+ {'en': 'How do I know I can trust you?',
+  'es': '¿Cómo sé que puedo confiar en ti?'},
+ {'en': "You don't know that.", 'es': 'No lo sabes.'},
+ {'en': '- Yeah, we know.', 'es': '-Sí, lo sabemos.'},
+ {'en': "That's classified.", 'es': '- Es un secreto.'},
+ {'en': 'Brilliant!', 'es': '¡Brillante!'},
+ {'en': '- Friends.', 'es': '- Amigos.'},
+ {'en': "What's this?", 'es': '¿Qué es esto?'},
+ {'en': "No, I'm okay.", 'es': '- No estoy bien, estoy bien.'},
+ {'en': 'Now, say it again once more.', 'es': 'Repítelo otra vez.'},
+ {'en': 'Joint Inspection Unit', 'es': 'Dependencia Común de Inspección'},
+ {'en': 'I was just looking for--', 'es': 'Estaba buscando...'},
+ {'en': '2.25 1.125 0.56 1.35 0.68 0.34 0.9 0.45 0.225',
+  'es': '2,25 1,125 0,56 1,35 0,68 0,34 0,9 0,45 0,225'},
+ {'en': 'Can you see?', 'es': '¿Puedes ver?'},
+ {'en': "That's really something.", 'es': 'Es verdaderamente importante.'},
+ {'en': "Listen, for our ten-year vow renewal, you'll do your mint mixology station.",
+  'es': 'Escucha, para la renovación de nuestros votos de los diez años, harás tu cóctel de menta. Genial.'},
+ {'en': 'News flash.', 'es': 'Noticia de última hora.'},
+ {'en': "Shouldn't be a big deal.", 'es': 'No debe ser cualquier cosa que,'},
+ {'en': '- Have you seen him?', 'es': '- ¿Le has visto?'},
+ {'en': 'I understand.', 'es': 'Lo entiendo.'},
+ {'en': 'ANNEX', 'es': 'ANEXO'},
+ {'en': 'Article 13(4) of Regulation (EC) No 3072/95, provides that when refunds are being fixed account must be taken of the existing situation and the future trend with regard to prices and availabilities of rice and broken rice on the Community market on the one hand and prices for rice and broken rice on the world market on the other.',
+  'es': 'En virtud de lo dispuesto en el apartado 4 del artículo 13 del Reglamento (CE) no 3072/95, las restituciones deben fijarse tomando en consideración la situación y las perspectivas de evolución, por una parte, de las disponibilidades de arroz partido y de sus precios en el mercado de la Comunidad y, por otra parte, de los precios del arroz y el arroz partido en el mercado mundial.'},
+ {'en': '66.', 'es': '66.'},
+ {'en': 'For how long?', 'es': '¿Por cuánto tiempo?'},
+ {'en': "It's yours.", 'es': 'Toma.'},
+ {'en': 'Not then.', 'es': 'No en esa época.'},
+ {'en': "Wait, wait, what's that?", 'es': 'Espera, espera, qué es eso?'},
+ {'en': 'I love you.', 'es': 'Te amo.'},
+ {'en': "I'll see you in court.", 'es': 'Te veré en el tribunal.'},
+ {'en': '- Of course.', 'es': '- Por supuesto.'},
+ {'en': '- No, no.', 'es': '- No, no.'},
+ {'en': '- You sure?', 'es': '¿Seguro?'},
+ {'en': '- Or else?', 'es': '¿O bien?'},
+ {'en': 'Respect for the views of the child',
+  'es': 'Respeto de las opiniones del niño'},
+ {'en': 'This is Paul.', 'es': 'Habla Paul.'},
+ {'en': 'Oh, dear.', 'es': 'Oh, querida.'},
+ {'en': "What's the secret?", 'es': '¿Cuál es el secreto?'},
+ {'en': "I don't see a thing.", 'es': 'No veo nada.'},
+ {'en': 'Got it?', 'es': '¿Enterado?'},
+ {'en': 'Chloe!', 'es': '¡Cloé!'},
+ {'en': 'Alright!', 'es': '¡Bien!'},
+ {'en': 'Well done.', 'es': 'Bien hecho.'},
+ {'en': '1.', 'es': '1.'},
+ {'en': 'Well...', 'es': 'Bueno...'},
+ {'en': 'Have you ever thought about getting out?',
+  'es': '¿Alguna vez has pensado en irte?'},
+ {'en': 'But then, when we find that gold...',
+  'es': 'Pero entonces, cuando encontremos el oro...'},
+ {'en': "I know what I'm doing.", 'es': 'Sé lo que estoy haciendo.'},
+ {'en': 'Article 6', 'es': 'Artículo 6'},
+ {'en': "We're fucked.", 'es': 'Estamos jodidos.'},
+ {'en': "He's killing bad people who got a 2nd chance in life.",
+  'es': 'Está matando "gente mala" que obtuvo una 2ª oportunidad en la vida.'},
+ {'en': 'You know which one?', 'es': '¿Sabes cúal?'},
+ {'en': 'Nope.', 'es': 'No.'},
+ {'en': 'What?', 'es': '¿Qué?'},
+ {'en': 'You all right?', 'es': '¿Estás bien?'},
+ {'en': 'Uh, yeah.', 'es': 'Sí. Está bien.'},
+ {'en': '[LAUGHING]',
+  'es': 'Así es que me gustaría presentar Una moción para que le enviamos'},
+ {'en': 'Bye.', 'es': '- Adiós.'},
+ {'en': 'Yeah, what?', 'es': 'Ok. ¿Qué?'},
+ {'en': 'No.', 'es': 'No.'},
+ {'en': 'I have her.', 'es': 'La tengo.'},
+ {'en': 'What are you doing there?', 'es': '? Que haces ahi parado? ?'},
+ {'en': 'The minute I see an opening, okay?',
+  'es': '¿En cuanto vea el momento, vale?'},
+ {'en': "Oh, that's so cute.", 'es': 'Qué mono.'},
+ {'en': '- Yes, sorry.', 'es': 'Sí, perdónanos.'},
+ {'en': 'Font &amp;Size',
+  'es': 'Tamaño del tipo de letra@action boldify selected text'},
+ {'en': 'I was able to reach an agreement with the Liberals to the effect that their amendment would be adopted although in modified form.',
+  'es': 'He podido llegar a un acuerdo con los liberales para recoger su enmienda, si bien, modificada.'},
+ {'en': '-Do you have a moment?', 'es': 'Director Green, ¿tiene un momento?'},
+ {'en': "I'm not going through that.", 'es': 'No pasaré por ello.'},
+ {'en': 'METHOD AND ROUTE(S) OF ADMINISTRATION',
+  'es': 'FORMA Y VÍA(S) DE ADMINISTRACIÓN'},
+ {'en': '- Yep.', 'es': '- Sí.'},
+ {'en': 'Come on, Spock.', 'es': '¡Vamos, Spock!'},
+ {'en': 'Withdrawal', 'es': 'Tamaño de envase'},
+ {'en': 'However, an embossing press combined with letters or figures obtained by means of perforation, or printing on the licence may be substituted for the issuing authority’s stamp.',
+  'es': 'No obstante, el sello de los organismos expedidores podrá ser sustituido por un sello seco combinado con letras y cifras obtenidas mediante perforación o impresión sobre la licencia.'},
+ {'en': 'Well.', 'es': 'Bueno.'},
+ {'en': 'Given this focus, all sectors should formulate programmes and projects that target the poor, the vulnerable and the un-reached.',
+  'es': 'En consecuencia, todos los sectores deberán formular programas y proyectos destinados a las personas pobres, vulnerables y abandonadas.'},
+ {'en': 'Damn!', 'es': 'Maldición.'},
+ {'en': 'Better?', 'es': '¿Mejor?'},
+ {'en': '- Do what I say.', 'es': '- Haz lo que te digo.'},
+ {'en': 'No.', 'es': 'No.'},
+ {'en': 'OK, then.', 'es': 'De acuerdo, entonces.'},
+ {'en': 'Oh, you have got to be freaking kidding me!',
+  'es': 'Oh, ¡tienes que estar bromeando carajo¡'},
+ {'en': 'Yes, sir.', 'es': 'Sí, señor.'},
+ {'en': 'Well, Mrs Norbury,', 'es': 'Bien, Sra. Norbury,'},
+ {'en': 'Edie.', 'es': 'Eddie.'},
+ {'en': 'Sorry.', 'es': 'Perdona.'},
+ {'en': 'I accept your apology.', 'es': 'Acepto tu disculpa.'},
+ {'en': 'Okay.', 'es': 'Vale.'},
+ {'en': '-I only provide winners.', 'es': '¡Yo sólo doy ganadores!'},
+ {'en': 'Maybe you should.', 'es': 'Tal vez deberías.'},
+ {'en': 'But...', 'es': 'Pero...'},
+ {'en': 'If you pollinate too early, it may not work.',
+  'es': 'Si polinizas demasiado pronto, puede que no funcione bien.'},
+ {'en': 'One, two, and three.', 'es': 'Una, dos y tres.'},
+ {'en': "But that ain't all, come take a looksee.",
+  'es': 'Pero eso no es todo. Ven aquí y mira.'},
+ {'en': 'No.', 'es': 'No.'},
+ {'en': 'Addendum', 'es': 'Adición'},
+ {'en': 'She wants a divorce.', 'es': 'Ella quiere el divorcio.'},
+ {'en': 'Is it?', 'es': '¿Sí?'},
+ {'en': 'Office of the Director', 'es': 'Oficina del Director'},
+ {'en': 'Congratulations.', 'es': 'Te felicito.'},
+ {'en': '- Who?', 'es': '- ¿De quién?'},
+ {'en': "What's going on?", 'es': '- ¿Qué pasa?'},
+ {'en': 'Lenny. How have you been?', 'es': 'Lenny, ¿cómo has estado?'},
+ {'en': 'Thank you.', 'es': 'Gracias.'},
+ {'en': 'Click on the Add Photos button and select from your computer the TIF photos you wish to flip. Then click the ‘Next’ button.',
+  'es': 'Haga clic en la botón Añadir y seleccione las fotos desde el ordenador las fotos JPG que usted desea retocar.'},
+ {'en': "I'm here.", 'es': 'He llegado.'},
+ {'en': "That's bullshit.", 'es': 'Qué disparate.'},
+ {'en': 'A little senile, you mean, with one foot and a big toe in the grave?',
+  'es': 'Quieres decir un poco senil, ¿con un pie en la tumba?'},
+ {'en': '- Yes?', 'es': '¿Si?'},
+ {'en': 'Finish:', 'es': 'Acabados:'},
+ {'en': 'Huh?', 'es': 'Eh... ¿qué?'},
+ {'en': "Oh, it's good to be home.", 'es': 'Es bueno estar en casa.'},
+ {'en': 'In its 3-year action plan of consumer policy in the EC (1990-1992) the Commission emphasized its aim to rapidly and radically improve the standards of consumer informa tion about the use of consumer products in order to prepare consumers for the full implementation of the internal market by 1993.',
+  'es': 'En su Plan trienal de acción sobre política de los consumidores en la CE (1990-1992), la Comisión hizo hincapié en su objetivo de mejorar de forma acelerada y radical los niveles de información al consumidor en relación con la utilización de productos de consumo, para preparar al consumidor ante la plena realización del mercado interior en 1993.'},
+ {'en': 'What is so special about me?', 'es': '¿Qué tengo de especial?'},
+ {'en': 'What was the plan?', 'es': '¿Cuál era el plan?'},
+ {'en': 'Now, listen...', 'es': 'Escuche...'},
+ {'en': "- Who's that?", 'es': '- ¿Quién es esa?'},
+ {'en': 'You again.', 'es': 'Otra vez tú.'},
+ {'en': 'Let me take you home.', 'es': 'Permíteme llevarte a casa.'},
+ {'en': 'There was nothing we could do.', 'es': 'No pudimos hacer nada.'},
+ {'en': 'No, actually, I come for your girls.',
+  'es': 'No, de hecho, yo vengo por ellas.'},
+ {'en': '- Key?', 'es': '- ¿Llave?'},
+ {'en': 'Get dressed.', 'es': 'Vístete.'},
+ {'en': '- Okay.', 'es': '- De acuerdo.'},
+ {'en': 'Come on.', 'es': 'Vamos.'},
+ {'en': "- 'Bye.", 'es': '- Adiós.'},
+ {'en': 'Her body language is all wrong.',
+  'es': 'Su lenguaje corporal es todo incorrecto.'},
+ {'en': 'Bullshit!', 'es': '¡Y una mierda!'},
+ {'en': "I'm sorry!", 'es': '¡Lo siento!'},
+ {'en': 'Hello.', 'es': '- Hola.'},
+ {'en': '- Damn.', 'es': '- Maldición.'},
+ {'en': "People's direct action.", 'es': 'Acción directa del Pueblo.'},
+ {'en': 'Fine weather today.', 'es': 'El tiempo está bueno hoy.'},
+ {'en': "This might sound crazy, but they're allergic to drunk people.",
+  'es': 'Esto probablemente sonará como una locura, pero son alérgicos a la gente ebria.'},
+ {'en': 'You oughta be ashamed of yourself.',
+  'es': '-Seguro. -Debería avergonzarte de ti mismo.'},
+ {'en': 'Mama.', 'es': 'Mamá.'},
+ {'en': 'Morning.', 'es': '- ¿Y su alquiler?'},
+ {'en': 'Who then?', 'es': '¿Y quién es?'},
+ {'en': "I don't know how to tell you, but...",
+  'es': 'No sé cómo decírtelo, pero...'},
+ {'en': 'What the hell just happened?', 'es': '¿Qué diablos acaba de pasar?'},
+ {'en': 'Just kidding.', 'es': 'Estoy bromenado.'},
+ {'en': 'Can I come in?', 'es': '¿Puedo pasar?'},
+ {'en': 'points 4.1 and 4.2 are deleted;',
+  'es': 'se suprimen los puntos 4.1 y 4.2;'},
+ {'en': 'Are you kidding me?', 'es': '¿Estás de broma?'},
+ {'en': 'You threatened Hans Pettersson in prison.',
+  'es': 'Amenazaste a Hans Pettersson desde la cárcel.'},
+ {'en': '- What the hell are you doing?', 'es': '¿Qué haces aquí?'},
+ {'en': 'Look,', 'es': 'Mire,'},
+ {'en': 'You want a hug?', 'es': '¿Quieres un abrazo?'},
+ {'en': 'You were flawed, weak, malleable.',
+  'es': 'Estabas dañado, débil, maleable.'},
+ {'en': 'I...', 'es': 'Yo...'},
+ {'en': "What's the use in fighting our natures.",
+  'es': '¿Qué sentido tiene luchar contra nuestra propia naturaleza?'},
+ {'en': 'He is your son.', 'es': 'Es tu hijo.'},
+ {'en': "I'm Gravity, Mission Commander's assistant.",
+  'es': 'Soy Gravedad, asistente del comandante de la misión.'},
+ {'en': 'Great.', 'es': 'Genial.'},
+ {'en': '"PWIP PIP"?', 'es': '¿PPG PIP?'},
+ {'en': 'You sad?', 'es': '¿Triste?'},
+ {'en': '- Jubilee?', 'es': '- ¿Jubileo?'},
+ {'en': "I can't wait to tell the judge all about this tomorrow.",
+  'es': 'No veo la hora de contarle al juez todo esto mañana.'},
+ {'en': "It's not bad.", 'es': '- Igual no es poco.'},
+ {'en': "- I don't know.", 'es': 'Va a estar enojada.'},
+ {'en': '[ Doorbell rings ]', 'es': '[Suena el timbre]'},
+ {'en': 'I gotta go to the bathroom.', 'es': 'Debo ir al baño.'},
+ {'en': "I'll blow them away.", 'es': 'Los machacaré.'},
+ {'en': "That's it.", 'es': 'Se acabó.'},
+ {'en': "Don't you want to call me a phony jerk first?",
+  'es': 'No deseas llamarme falso idiota primero?'},
+ {'en': 'Neither the radio.', 'es': 'Tampoco las radios.'},
+ {'en': '"No.', 'es': '"No.'},
+ {'en': '-Of course I do.', 'es': 'Claro que sí.'},
+ {'en': 'Stop...', 'es': 'Para...'},
+ {'en': "- You're a bad boy.", 'es': '- Eres un mal tipo.'},
+ {'en': "You don't think?", 'es': '- ¿Creen?'},
+ {'en': 'Emma?', 'es': '¿Emma?'},
+ {'en': "You're in excellent hands.", 'es': 'Estás en excelentes manos.'},
+ {'en': "Keep 'em closed.", 'es': 'Mantenlos cerrados.'},
+ {'en': 'Alone and forgotten.', 'es': 'Solo y olvidado.'},
+ {'en': "No, I didn't.", 'es': 'No, yo no le he dicho nada.'},
+ {'en': "He's all alone?", 'es': '¿Él está totalmente solo?'},
+ {'en': 'Right.', 'es': 'Bien.'},
+ {'en': 'Well, okay.', 'es': 'Bueno, de acuerdo.'},
+ {'en': "He's not.", 'es': 'No está libre.'},
+ {'en': '- Christ!', 'es': '- Cristo.'},
+ {'en': 'Eurostat', 'es': 'Eurostat.'},
+ {'en': 'The demon woman was here, the one who attacked you.',
+  'es': 'La chica demonio estuvo aquí, la que te atacó.'},
+ {'en': 'Having regard to the proposal of the Italian Government,',
+  'es': 'Vista la propuesta del Gobierno italiano,'},
+ {'en': "You're not going to help me?", 'es': '¿No me ayudarás?'},
+ {'en': 'School.', 'es': 'Escuela.'},
+ {'en': "I don't know what...", 'es': 'No sé qué ...'},
+ {'en': "You don't have to tattoo my dad.",
+  'es': 'No tienen que tatuar a mi papá.'},
+ {'en': "It's in you.", 'es': 'Está dentro de ti.'},
+ {'en': 'Take it.', 'es': 'Tómalo.'},
+ {'en': "The others didn't save me.", 'es': 'Nadie puede salvarte.'},
+ {'en': "I promise I'll never lie to you again.",
+  'es': 'Te prometo que nunca volveré a mentirte.'},
+ {'en': 'No, no.', 'es': 'No, no.'},
+ {'en': "- They're watching me on Facebook?", 'es': '- ¿Me ven en Facebook?'},
+ {'en': 'Report?', 'es': '¿Reporte?'},
+ {'en': 'Now!', 'es': '¡Ahora!'},
+ {'en': 'Commission on the Status of Women',
+  'es': 'Comisión de la Condición Jurídica y Social de la Mujer'},
+ {'en': '- You did that on purpose.',
+  'es': 'Mi- ¡Maldita sea! ¡Lo hiciste a propósito!'},
+ {'en': "Lizzy, it's just a house and it's yours.",
+  'es': 'Lizzy, es sólo una casa y es tuya.'},
+ {'en': "She's wrong.", 'es': 'Está mal.'},
+ {'en': 'I think this has finally been achieved.',
+  'es': 'Creo que al final se ha logrado.'},
+ {'en': 'The costs and benefits taken into account shall include at least the following:',
+  'es': 'Los costes y beneficios que se tengan en cuenta incluirán, al menos, lo siguiente:'},
+ {'en': "It's taken care of.", 'es': 'Ya ha sido solucionado.'},
+ {'en': 'What a view!', 'es': 'Que vista!'},
+ {'en': 'Sole Article', 'es': 'Artículo único'},
+ {'en': "Now, let's get back to work.", 'es': 'Manos a la obra.'},
+ {'en': "And I don't believe you.", 'es': 'Y no te creo.'},
+ {'en': 'We have multiple vortices touching down.',
+  'es': '¡Tenemos múltiples vórtices tocando tierra!'},
+ {'en': "She's smart.", 'es': 'Es inteligente.'},
+ {'en': 'You and your wife?', 'es': '¿Tuya y de tu esposa?'},
+ {'en': 'Billy, no!', 'es': '¡Billy, no!'},
+ {'en': "You don't know that.", 'es': 'No lo sabes. Sí lo sé.'},
+ {'en': 'Sverige sanofi-aventis AB Tel: +46 (0)8 634 50 00',
+  'es': 'Sverige sanofi-aventis AB Tel: +46 (0)8 634 50 00'},
+ {'en': 'Come on.', 'es': 'Vamos.'},
+ {'en': '21 December 2009', 'es': '29 de diciembre de 2013'},
+ {'en': 'Why should I mind?', 'es': 'Por qué debería importarme?'},
+ {'en': 'In a six-month rat toxicity study no tumorigenic or unexpected mitogenic responses were observed in non-haematological tissues.',
+  'es': 'En un estudio de toxicidad a seis meses con ratas, no se observaron respuestas cancerígenas o mitógenas inesperadas en tejidos extrahematológicos.'},
+ {'en': "Isn't it?", 'es': '¿No es así?'},
+ {'en': 'Regulation (EEC) No 2658/87 has laid down the general rules for the interpretation of the Combined Nomenclature.',
+  'es': 'El Reglamento (CEE) no 2658/87 establece las reglas generales para la interpretación de la nomenclatura combinada.'},
+ {'en': 'This is my fault.', 'es': 'Esto es culpa mía.'},
+ {'en': 'Come on, you know what.', 'es': 'Vamos, ya lo sabes.'},
+ {'en': "- Let's see.", 'es': '- A ver...'},
+ {'en': 'I believed in you.', 'es': 'Creo en ti.'},
+ {'en': '- Someone like me?', 'es': '- ¿Alguien como yo?'},
+ {'en': '- Yeah, but...', 'es': '- Sí, pero...'},
+ {'en': "That's very clever.", 'es': 'Eso es muy inteligente.'},
+ {'en': 'You going somewhere?', 'es': 'Vas a alguna parte?'},
+ {'en': "Isn't it?", 'es': 'No lo es?'},
+ {'en': '(e) To continue to consider, on a priority basis, ways and means of improving its working methods and enhancing its efficiency with a view to identifying widely acceptable measures for future implementation;',
+  'es': 'e) Siga examinando, con carácter prioritario, los medios de mejorar sus métodos de trabajo e incrementar su eficiencia a fin de determinar medidas que cuenten con aceptación general y puedan aplicarse en el futuro;'},
+ {'en': 'Not.', 'es': 'No.'},
+ {'en': 'I have seen you.', 'es': 'La vi hace 4 años.'},
+ {'en': 'Finale', 'es': 'Final'},
+ {'en': 'Yeah, it does.', 'es': 'Si, claro.'},
+ {'en': "I'm sure you'll be very happy.",
+  'es': 'Qué novia tan guapa, estoy seguro de que serás feliz. Adiós.'},
+ {'en': 'Hey!', 'es': '¡Oye!'},
+ {'en': 'Godspeed, my lord.', 'es': 'Buena suerte, mi señor.'},
+ {'en': 'Right which is why I think you should keep your day job.',
+  'es': 'Correcto, es por eso que creo que tienes que mantener tú trabajo diurno.'},
+ {'en': '_', 'es': 'Fischer era predecible.'},
+ {'en': "I feel like I'm dreaming.", 'es': 'Siento que estoy soñando.'},
+ {'en': "I don't think I need to, honey.",
+  'es': 'No creo que lo necesite, cariño.'},
+ {'en': "- Which bit don't you understand?",
+  'es': '- ¿Qué parte no entiendes?'},
+ {'en': 'Is it anything like your last Christmas letter?', 'es': 'Sí, bueno.'},
+ {'en': 'Mike.', 'es': 'Mike.'},
+ {'en': 'The haemoglobin should be measured every one or two weeks until it is stable.',
+  'es': 'La hemoglobina se medirá cada una o dos semanas hasta que se estabilice.'},
+ {'en': 'Yeah, buddy!', 'es': '- ¡Sí, amigo!'},
+ {'en': "That's not it.", 'es': 'No se trata de eso.'},
+ {'en': 'Come on.', 'es': 'Vamos.'},
+ {'en': 'I knew this would happen.', 'es': 'Sabía que esto sucedería.'},
+ ...]</output_code>
+  <markdown>Como vemos obtenemos una lista con muchos pares de traducciones entre inglés y español, por lo que si quisiésemos la primera podríamos estar tentados de hacer `opus100["translation"][0]`, pero hagamos unas mediciones de tiempo</markdown>
+  <input_code>from time import time
+
+t0 = time()
+opus100["translation"][0]
+t = time()
+print(f"Tiempo indexando primero por feature y luego por posición: {t-t0} segundos")
+
+t0 = time()
+opus100[0]["translation"]
+t = time()
+print(f"Tiempo indexando primero por posición y luego por feature: {t-t0} segundos")</input_code>
+  <output_code>Tiempo indexando primero por feature y luego por posición: 6.145161390304565 segundos
+Tiempo indexando primero por posición y luego por feature: 0.00044727325439453125 segundos
+</output_code>
+  <markdown>Como se puede ver es mucho más rápido indexar primero por posición y luego por feature, esto es porque si hacemos `opus100["translation"]` obtenemos todos los pares de traducciones del dataset y luego nos quedamos con el primero, mientras que si hacemos `opus100[0]` obtenemos el primer elemento del dataset y luego ya solo nos quedamos con la feature que queramos.
+
+Por eso es importante indexar primero por posición y luego por feature</markdown>
+  <markdown>Veamos ahora un ejemplo de un par de traducciones</markdown>
+  <input_code>opus100[0]["translation"]</input_code>
+  <output_code>{'en': "It was the asbestos in here, that's what did it!",
+ 'es': 'Fueron los asbestos aquí. ¡Eso es lo que ocurrió!'}</output_code>
+  <markdown>### Conjuntos de datos iterables (streaming)</markdown>
+  <markdown>Como hemos dicho, el conjunto de datos iterable se va descargando a medida que vamos necesitando los datos y no todos de una vez, para poder hacer esto hay que añadir el parámetro `streaming=True` a la función `load_dataset`
+
+![huggingface_datasets_streaming_dark](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/datasets/streaming-dark.gif)</markdown>
+  <input_code>from datasets import load_dataset
+
+iterable_dataset = load_dataset("food101", split="train", streaming=True)
+
+for example in iterable_dataset:
+    print(example)
+    break</input_code>
+  <output_code>{'image': &lt;PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=384x512 at 0x7F9878371AD0&gt;, 'label': 6}
+</output_code>
+  <markdown>A diferencia de los conjuntos de datos normales, con los conjuntos de datos iterables no se puede hacer indexaciones ni slicing, ya que, como no lo tenemos cargado en memoria, no podemos coger partes del conjunto</markdown>
+  <markdown>Para ir iterando por un conjunto de datos iterable se tiene que hacer con un `for` como hemos hecho antes, pero cuando solo se quiere coger el siguiente elemento se tiene que hacer con las funciones `next()` e `iter()` de Python.
+
+Con la función `next()` convertimos el conjunto de datos en un tipo de dato iterable de Python. Y con la función `next()` obtenemos el siguiente elemento del tipo de dato iterable. Todo esto está explicado mejor en el post de [Introducción a Python](https://maximofn.com/python/)</markdown>
+  <input_code>next(iter(iterable_dataset))</input_code>
+  <output_code>{'image': &lt;PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=384x512&gt;,
+ 'label': 6}</output_code>
+  <markdown>Sin embargo, si lo que queremos es obtener varios elementos nuevos del dataset lo hacemos mediante la función `list()` y el método `take()`
+
+Con el método `take()` le decimos al conjunto de datos iterable cuántos elementos nuevos queremos. Mientras que con la función `list()` convertimos esos datos en una lista</markdown>
+  <input_code>list(iterable_dataset.take(3))</input_code>
+  <output_code>[{'image': &lt;PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=384x512&gt;,
+  'label': 6},
+ {'image': &lt;PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=512x512&gt;,
+  'label': 6},
+ {'image': &lt;PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=512x383&gt;,
+  'label': 6}]</output_code>
+  <markdown>## Preprocesado de los datos</markdown>
+  <markdown>Cuando tenemos un dataset normalmente hay que hacer un preprocesamiento de los datos, por ejemplo a veces tenemos que quitar caracteres inválidos, etc. La librería `dataset` da esa funcionalidad mediante el método `map`</markdown>
+  <markdown>Primero vamos a instanciar un dataset y un tokenizador preentrenado, para instanciar el tokenizador usamos la librería `transformers` y no la librería `tokenizers`, ya que con la librería `transformers` podemos instanciar un tokenizador preentrenado y con la librería `tokenizers` tendríamos que crear el tokenizador desde cero</markdown>
+  <input_code>from transformers import AutoTokenizer
+from datasets import load_dataset
+
+tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+dataset = load_dataset("rotten_tomatoes", split="train")</input_code>
+  <markdown>Vamos a ver las `key`s del dataset</markdown>
+  <input_code>dataset[0].keys()</input_code>
+  <output_code>dict_keys(['text', 'label'])</output_code>
+  <markdown>Ahora veamos un ejemplo del dataset</markdown>
+  <input_code>dataset[0]</input_code>
+  <output_code>{'text': 'the rock is destined to be the 21st century\'s new " conan " and that he\'s going to make a splash even greater than arnold schwarzenegger , jean-claud van damme or steven segal .',
+ 'label': 1}</output_code>
+  <markdown>Tokenicemos el texto</markdown>
+  <input_code>tokenizer(dataset[0]["text"])</input_code>
+  <output_code>{'input_ids': [101, 1996, 2600, 2003, 16036, 2000, 2022, 1996, 7398, 2301, 1005, 1055, 2047, 1000, 16608, 1000, 1998, 2008, 2002, 1005, 1055, 2183, 2000, 2191, 1037, 17624, 2130, 3618, 2084, 7779, 29058, 8625, 13327, 1010, 3744, 1011, 18856, 19513, 3158, 5477, 4168, 2030, 7112, 16562, 2140, 1012, 102], 'token_type_ids': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]}</output_code>
+  <markdown>Cuando vamos a entrenar un modelo de lenguaje hemos visto que no le podemos pasar el texto, sino los tokens, por lo que vamos a hacer un preprocesado del dataset tokenizando todos los textos</markdown>
+  <markdown>Primero creamos una función que tokenice un texto de entrada</markdown>
+  <input_code>def tokenization(example):
+    return tokenizer(example["text"])</input_code>
+  <markdown>Ahora, como hemos dicho, con el método `map` podemos aplicar una función a todos los elementos de un dataset. Además usamos la variable `batched=True` para que se aplique la función a batches de texto y no de uno en uno para ir más rápido</markdown>
+  <input_code>dataset = dataset.map(tokenization, batched=True)</input_code>
+  <markdown>Veamos ahora las `key`s del dataset</markdown>
+  <input_code>dataset[0].keys()</input_code>
+  <output_code>dict_keys(['text', 'label', 'input_ids', 'token_type_ids', 'attention_mask'])</output_code>
+  <markdown>Como vemos se han añadido nuevas `key`s al dataset, que son las que se han añadido al tokenizar el texto</markdown>
+  <markdown>Volvamos a ver el mismo ejemplo de antes</markdown>
+  <input_code>dataset[0]</input_code>
+  <output_code>{'text': 'the rock is destined to be the 21st century\'s new " conan " and that he\'s going to make a splash even greater than arnold schwarzenegger , jean-claud van damme or steven segal .',
+ 'label': 1,
+ 'input_ids': [101,
+  1996,
+  2600,
+  2003,
+  16036,
+  2000,
+  2022,
+  1996,
+  7398,
+  2301,
+  1005,
+  1055,
+  2047,
+  1000,
+  16608,
+  1000,
+  1998,
+  2008,
+  2002,
+  1005,
+  1055,
+  2183,
+  2000,
+  2191,
+  1037,
+  17624,
+  2130,
+  3618,
+  2084,
+  7779,
+  29058,
+  8625,
+  13327,
+  1010,
+  3744,
+  1011,
+  18856,
+  19513,
+  3158,
+  5477,
+  4168,
+  2030,
+  7112,
+  16562,
+  2140,
+  1012,
+  102],
+ 'token_type_ids': [0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0],
+ 'attention_mask': [1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1]}</output_code>
+  <markdown>Es mucho más extenso que antes</markdown>
+  <markdown>### Formateo del dataset</markdown>
+  <markdown>Hemos realizado la tokenización para poder usar el dataset con un modelo de lenguaje, pero si nos fijamos, el tipo de dato de cada `key` es una lista</markdown>
+  <input_code>type(dataset[0]["text"]), type(dataset[0]["label"]), type(dataset[0]["input_ids"]), type(dataset[0]["token_type_ids"]), type(dataset[0]["attention_mask"])</input_code>
+  <output_code>(str, int, list, list, list)</output_code>
+  <markdown>Sin embargo, para entrenar necesitamos que sean tensores, así que `datasets` ofrece un método para asignar el formato de los datos de los datasets, que es el método `set_format`</markdown>
+  <input_code>dataset.set_format(type="torch", columns=["input_ids", "token_type_ids", "attention_mask", "label"])
+dataset.format['type']</input_code>
+  <output_code>'torch'</output_code>
+  <markdown>Volvamos a ver las `key`s del dataset</markdown>
+  <input_code>dataset[0].keys()</input_code>
+  <output_code>dict_keys(['label', 'input_ids', 'token_type_ids', 'attention_mask'])</output_code>
+  <markdown>Como vemos, al hacer el formateo, ya no tenemos la `key` `text`, y realmente no la necesitamos</markdown>
+  <markdown>Ahora vemos el tipo de dato de cada `key`</markdown>
+  <input_code>type(dataset[0]["label"]), type(dataset[0]["input_ids"]), type(dataset[0]["token_type_ids"]), type(dataset[0]["attention_mask"])</input_code>
+  <output_code>(torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor)</output_code>
+  <markdown>Todos son tensores, perfecto para entrenar</markdown>
+  <markdown>En este punto podríamos guardar el dataset para no tener que hacer siempre este preprocesamiento</markdown>
+  <markdown>## Crear un dataset</markdown>
+  <markdown>A la hora de crear un dataset huggingface nos da tres opciones, a través de carpetas, pero a la hora de escribir este post, el hacerlo por carpetas solo es válido para datasets de imagen o audio.
+
+Los otros dos métodos son mediante generadores y mediante diccionarios, así que vamos a verlos</markdown>
+  <markdown>### Crear un dataset desde un generador</markdown>
+  <markdown>Supongamos que tenemos los siguientes pares de frases en inglés y español:</markdown>
+  <input_code>print("El perro ha comido hoy - The dog has eaten today")
+print("El gato ha dormido hoy - The cat has slept today")
+print("El pájaro ha volado hoy - The bird has flown today")
+print("El pez ha nadado hoy - The fish has swum today")
+print("El caballo ha galopado hoy - The horse has galloped today")
+print("El cerdo ha corrido hoy - The pig has run today")
+print("El ratón ha saltado hoy - The mouse has jumped today")
+print("El elefante ha caminado hoy - The elephant has walked today")
+print("El león ha rugido hoy - The lion has roared today")
+print("El tigre ha cazado hoy - The tiger has hunted today")</input_code>
+  <output_code>El perro ha comido hoy - The dog has eaten today
+El gato ha dormido hoy - The cat has slept today
+El pájaro ha volado hoy - The bird has flown today
+El pez ha nadado hoy - The fish has swum today
+El caballo ha galopado hoy - The horse has galloped today
+El cerdo ha corrido hoy - The pig has run today
+El ratón ha saltado hoy - The mouse has jumped today
+El elefante ha caminado hoy - The elephant has walked today
+El león ha rugido hoy - The lion has roared today
+El tigre ha cazado hoy - The tiger has hunted today
+</output_code>
+  <markdown> &gt; No me juzgues, lo ha generado copilot</markdown>
+  <markdown>Podemos crear un dataset mediante un generador, para ello importamos `Dataset` y usamos su método `from_generator`.</markdown>
+  <input_code>from datasets import Dataset
+
+def generator():
+    yield {"es": "El perro ha comido hoy", "en": "The dog has eaten today"}
+    yield {"es": "El gato ha dormido hoy", "en": "The cat has slept today"}
+    yield {"es": "El pájaro ha volado hoy", "en": "The bird has flown today"}
+    yield {"es": "El pez ha nadado hoy", "en": "The fish has swum today"}
+    yield {"es": "El caballo ha galopado hoy", "en": "The horse has galloped today"}
+    yield {"es": "El cerdo ha corrido hoy", "en": "The pig has run today"}
+    yield {"es": "El ratón ha saltado hoy", "en": "The mouse has jumped today"}
+    yield {"es": "El elefante ha caminado hoy", "en": "The elephant has walked today"}
+    yield {"es": "El león ha rugido hoy", "en": "The lion has roared today"}
+    yield {"es": "El tigre ha cazado hoy", "en": "The tiger has hunted today"}
+
+dataset = Dataset.from_generator(generator)
+dataset</input_code>
+  <output_code>Generating train split: 0 examples [00:00, ? examples/s]</output_code>
+  <output_code>Dataset({
+    features: ['es', 'en'],
+    num_rows: 10
+})</output_code>
+  <markdown>Lo bueno de utilizar el método `from_generator` es que podemos crear un conjunto de datos iterables, que como hemos visto antes, no necesitan ser cargados enteros en memoria. Para ello lo que tenemos que hacer es importar el módulo `IterableDataset`, en vez del módulo `Dataset`, y volver a usar el método `from_generator`</markdown>
+  <input_code>from datasets import IterableDataset
+
+def generator():
+    yield {"es": "El perro ha comido hoy", "en": "The dog has eaten today"}
+    yield {"es": "El gato ha dormido hoy", "en": "The cat has slept today"}
+    yield {"es": "El pájaro ha volado hoy", "en": "The bird has flown today"}
+    yield {"es": "El pez ha nadado hoy", "en": "The fish has swum today"}
+    yield {"es": "El caballo ha galopado hoy", "en": "The horse has galloped today"}
+    yield {"es": "El cerdo ha corrido hoy", "en": "The pig has run today"}
+    yield {"es": "El ratón ha saltado hoy", "en": "The mouse has jumped today"}
+    yield {"es": "El elefante ha caminado hoy", "en": "The elephant has walked today"}
+    yield {"es": "El león ha rugido hoy", "en": "The lion has roared today"}
+    yield {"es": "El tigre ha cazado hoy", "en": "The tiger has hunted today"}
+
+iterable_dataset = IterableDataset.from_generator(generator)
+iterable_dataset</input_code>
+  <output_code>IterableDataset({
+    features: ['es', 'en'],
+    n_shards: 1
+})</output_code>
+  <markdown>Ahora podemos ir obteniendo datos uno a uno</markdown>
+  <input_code>next(iter(iterable_dataset))</input_code>
+  <output_code>{'es': 'El perro ha comido hoy', 'en': 'The dog has eaten today'}</output_code>
+  <markdown>O en batches</markdown>
+  <input_code>list(iterable_dataset.take(3))</input_code>
+  <output_code>[{'es': 'El perro ha comido hoy', 'en': 'The dog has eaten today'},
+ {'es': 'El gato ha dormido hoy', 'en': 'The cat has slept today'},
+ {'es': 'El pájaro ha volado hoy', 'en': 'The bird has flown today'}]</output_code>
+  <markdown>### Crear un dataset desde un diccionario</markdown>
+  <markdown>Puede ser que tengamos los datos guardados en un diccionario, en ese caso podemos crear un dataset importando el módulo `Dataset` y utilizando el método `from_dict`</markdown>
+  <input_code>from datasets import Dataset
+
+translations_dict = {
+    "es": [
+            "El perro ha comido hoy",
+            "El gato ha dormido hoy",
+            "El pájaro ha volado hoy",
+            "El pez ha nadado hoy",
+            "El caballo ha galopado hoy",
+            "El cerdo ha corrido hoy",
+            "El ratón ha saltado hoy",
+            "El elefante ha caminado hoy",
+            "El león ha rugido hoy",
+            "El tigre ha cazado hoy"
+        ],
+    "en": [
+            "The dog has eaten today",
+            "The cat has slept today",
+            "The bird has flown today",
+            "The fish has swum today",
+            "The horse has galloped today",
+            "The pig has run today",
+            "The mouse has jumped today",
+            "The elephant has walked today",
+            "The lion has roared today",
+            "The tiger has hunted today"
+        ]
+}
+
+dataset = Dataset.from_dict(translations_dict)
+dataset</input_code>
+  <output_code>Dataset({
+    features: ['es', 'en'],
+    num_rows: 10
+})</output_code>
+  <markdown>Sin embargo, al crear un dataset desde un diccionario no podemos crear un dataset iterable</markdown>
+  <markdown>## Compartir el dataset en el Hub de Hugging Face</markdown>
+  <markdown>Una vez tenemos el dataset creado podemos subirlo a nuestro espacio en el Hub de Hugging Face para que otros lo puedan usar. Para ello es necesario tener una cuenta en Hugging Face</markdown>
+  <markdown>### Logging</markdown>
+  <markdown>Para poder subir el dataset primero nos tenemos que loguear.
+
+Se puede hacer a través de la terminal con
+
+```bash
+huggingface-cli login
+```
+
+O a través del notebook, habiendo instalado antes la librería `huggingface_hub` con
+
+```bash
+pip install huggingface_hub
+```
+
+Ahora podemos loguearnos con la función `notebook_login`, que creará una pequeña interfaz gráfica en la que tenemos que introducir un token de Hugging Face</markdown>
+  <markdown>Para crear un token hay que ir a la página de [settings/tokens](https://huggingface.co/settings/tokens) de nuestra cuenta, nos aparecerá algo así
+
+![User-Access-Token-dark](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/User-Access-Token-dark.webp)
+
+Le damos a `New token` y nos aparecerá una ventana para crear un nuevo token
+
+![new-token-dark](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/new-token-dark.webp)
+
+Le damos un nombre al token y lo creamos con el rol `write`.
+
+Una vez creado lo copiamos</markdown>
+  <input_code>from huggingface_hub import notebook_login
+
+notebook_login()</input_code>
+  <output_code>VBox(children=(HTML(value='&lt;center&gt; &lt;img\nsrc=https://huggingface.co/front/assets/huggingface_logo-noborder.sv…</output_code>
+  <markdown>### Subida del dataset</markdown>
+  <markdown>Una vez nos hemos logueado, podemos subir el dataset simplemente con el método `push_to_hub`, dando un nombre para el dataset</markdown>
+  <input_code>dataset.push_to_hub("dataset_notebook_demo")</input_code>
+  <output_code>Uploading the dataset shards:   0%|          | 0/1 [00:00&lt;?, ?it/s]</output_code>
+  <output_code>Creating parquet from Arrow format:   0%|          | 0/1 [00:00&lt;?, ?ba/s]</output_code>
+  <output_code>CommitInfo(commit_url='https://huggingface.co/datasets/Maximofn/dataset_notebook_demo/commit/71f1ad2cffd6f424f33d45fd992f817d8f76dc0e', commit_message='Upload dataset', commit_description='', oid='71f1ad2cffd6f424f33d45fd992f817d8f76dc0e', pr_url=None, pr_revision=None, pr_num=None)</output_code>
+  <markdown>Si ahora vamos a nuestro Hub podemos ver que se ha subido el dataset
+
+![push_dataset_public_huggingface](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/push_dataset_public_huggingface.webp)</markdown>
+  <markdown>Si ahora entramos a la dataset card a ver
+
+![dataset_card_public_huggingface](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/dataset_card_public_huggingface.webp)
+
+Vemos que todo está sin rellenar, así que habría que completar la información</markdown>
+  <markdown>### Subida del dataset de manera privada</markdown>
+  <markdown>Si queremos que solo nosotros o la gente de nuestra organización tenga acceso al dataset, tenemos que añadir el atributo `private=true` al método `push_to_hub`</markdown>
+  <input_code>dataset.push_to_hub("dataset_notebook_demo_private", private=True)</input_code>
+  <output_code>Uploading the dataset shards:   0%|          | 0/1 [00:00&lt;?, ?it/s]</output_code>
+  <output_code>Creating parquet from Arrow format:   0%|          | 0/1 [00:00&lt;?, ?ba/s]</output_code>
+  <output_code>CommitInfo(commit_url='https://huggingface.co/datasets/Maximofn/dataset_notebook_demo_private/commit/c90525f6aa5f1c8c44da3cde2b9599828abd8233', commit_message='Upload dataset', commit_description='', oid='c90525f6aa5f1c8c44da3cde2b9599828abd8233', pr_url=None, pr_revision=None, pr_num=None)</output_code>
+  <markdown>Si ahora vamos a nuestro Hub podemos ver que se ha subido el dataset
+
+![push_dataset_public_huggingface_private](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/push_dataset_public_huggingface_private.webp)</markdown>
+  <markdown>Si ahora entramos a la dataset card a ver
+
+![dataset_card_private_huggingface](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/dataset_card_private_huggingface.webp)
+
+Vemos que todo está sin rellenar, así que habría que completar la información. También podemos ver que en los datasets privados no se pueden ver los datos</markdown>
+  <markdown>## Hub como repositorio Git</markdown>
+  <markdown>En Hugging Face tanto los modelos, como los espacios, como los datasets son repositorios de git, por lo que se puede trabajar con ellos como eso. Es decir, puedes clonar, hacer forks, pull requests, etc.</markdown>
+  <markdown>Pero otra gran ventaja de esto es que puedes usar un dataset en una versión determinada</markdown>
+  <input_code>from datasets import load_dataset
+
+ds = load_dataset("yelp_review_full", revision="393e083")</input_code>
+  <output_code>config.json:   0%|          | 0.00/433 [00:00&lt;?, ?B/s]</output_code>
+  <output_code>pytorch_model.bin:   0%|          | 0.00/436M [00:00&lt;?, ?B/s]</output_code>
+  <output_code>Some weights of BertForSequenceClassification were not initialized from the model checkpoint at bert-base-cased and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+</output_code>
+</notebook>

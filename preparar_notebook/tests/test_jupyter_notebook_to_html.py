@@ -5,11 +5,11 @@ import sys
 import os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
-from jupyter_notebook_to_html import add_index_html, add_content_html, format_anchor_links, format_images, replace_braces, img_base64_to_webp, add_witdh_and_height_to_image, convert_to_html
+from convert_jupyter_notebook_to_html import add_index_html, add_content_html, format_anchor_links, format_images, replace_braces, img_base64_to_webp, add_witdh_and_height_to_image, convert_jupyter_notebook_to_html
 
 class Test_jupyter_notebook_to_html(unittest.TestCase):
     def setUp(self):
-        self.html_file = "preparar_notebook/tests/test_jupyter_notebook_to_html.html"
+        self.html_file = "tests/test_jupyter_notebook_to_html.html"
         with open(self.html_file, "r") as file:
             self.html_content = file.read()
         self.open_brace = "{"
@@ -19,7 +19,7 @@ class Test_jupyter_notebook_to_html(unittest.TestCase):
     
     def test_add_index_html(self):
         index_html = add_index_html(self.html_content)
-        with open("preparar_notebook/tests/test_jupyter_notebook_to_html_index.html", "r") as file:
+        with open("tests/test_jupyter_notebook_to_html_index.html", "r") as file:
             true_index_html = file.read()
 
         # split the html content in lines
@@ -30,7 +30,7 @@ class Test_jupyter_notebook_to_html(unittest.TestCase):
 
     def test_add_content_html(self):
         content_html = add_content_html(self.html_content)
-        with open("preparar_notebook/tests/test_jupyter_notebook_to_html_content.html", "r") as file:
+        with open("tests/test_jupyter_notebook_to_html_content.html", "r") as file:
             true_content_html = file.read()
 
         # split the html content in lines
@@ -149,3 +149,31 @@ class Test_jupyter_notebook_to_html(unittest.TestCase):
         formatted_html_content = add_witdh_and_height_to_image(html_content)
         html_content_formatted = html_content_formatted + "\n"
         self.assertEqual(formatted_html_content, html_content_formatted)
+    
+    def test_aside_with_inline_code(self):
+        html_content = '''<section class="section-block-markdown-cell">
+<h1 id="Gestion de entornos con uv">Gestión de entornos con uv<a class="anchor-link" href="#Gestion de entornos con uv">¶</a></h1>
+</section>
+<section class="section-block-markdown-cell">
+<h2 id="Descarga de repositorio">Descarga de repositorio<a class="anchor-link" href="#Descarga de repositorio">¶</a></h2>
+</section>
+<section class="section-block-markdown-cell">
+<h2>Instalar <code>uv</code></h2>
+</section>
+<section class="section-block-markdown-cell">
+<h2 id="Crear entorno">Crear entorno<a class="anchor-link" href="#Crear entorno">¶</a></h2>
+</section>
+<section class="section-block-markdown-cell">
+<h2 id="Anadir paquetes">Añadir paquetes<a class="anchor-link" href="#Anadir paquetes">¶</a></h2>
+</section>
+<section class="section-block-markdown-cell">
+<h2 id="Ejecutar un script">Ejecutar un script<a class="anchor-link" href="#Ejecutar un script">¶</a></h2>
+</section>'''
+        expected_index_html = '''      <a class="anchor-link" href="#Descarga de repositorio"><h2>Descarga de repositorio</h2></a>
+      <a class="anchor-link" href="#Instalar uv"><h2>Instalar <code>uv</code></h2></a>
+      <a class="anchor-link" href="#Crear entorno"><h2>Crear entorno</h2></a>
+      <a class="anchor-link" href="#Anadir paquetes"><h2>Añadir paquetes</h2></a>
+      <a class="anchor-link" href="#Ejecutar un script"><h2>Ejecutar un script</h2></a>
+'''
+        index_html = add_index_html(html_content)
+        self.assertEqual(index_html, expected_index_html)

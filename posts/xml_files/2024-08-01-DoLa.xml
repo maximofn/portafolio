@@ -1,0 +1,134 @@
+<?xml version='1.0' encoding='utf-8'?>
+<notebook>
+  <markdown># DoLa: Decoding by Contrasting Layers Improves Factuality in Large Language Models</markdown>
+  <markdown>Aunque a medida que los LLMs van aumentando de tamaño y van surgiendo nuevas capacidades, tenemos un problema y son las alucionaciones. Los autores del paper [DoLa: Decoding by Contrasting Layers Improves Factuality in Large Language Models](https://arxiv.org/abs/2309.03883) proponen un método para evitar este problema.</markdown>
+  <markdown>Proponen un enfoque de decodificación contrastiva, donde la probabilidad de salida de la siguiente palabra se obtiene de la diferencia en los logits entre una capa superior y una inferior. Al enfatizar el conocimiento de las capas superiores y restarle importancia al de las inferiores, podemos hacer que los LM sean más factuales y, por lo tanto, reducir las alucinaciones.
+
+En la siguiente figura se muestra esta idea. Mientras que `Seattle` mantiene una alta probabilidad en todas las capas, la probabilidad de la respuesta correcta `Olympia` aumenta después de que las capas superiores inyecten más conocimiento factual. Contrastar las diferencias entre las distintas capas puede revelar la respuesta correcta en este caso
+
+![DoLa-figure1](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/DoLa-figure1.webp)</markdown>
+  <markdown>## Método</markdown>
+  <markdown>Un LLM consiste en una capa de embedding, varios transformers secuenciales y a continuación una capa de salida. Lo que proponen es medir la salida de cada transformer mediante la divergencia de Jensen-Shannon (JSD)
+
+En la siguiente figura se puede ver esta medida a la salida de cada transformer para una frase de entrada al LLM. Cada columna corresponde a un token de la frase.
+
+![DoLa-figure2](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/DoLa-figure2.webp)
+
+Se pueden observar dos patrones
+
+ * El primero ocurre cuando se predicen entidades de nombre o fechas importantes, como `Wole Soyinka` y `1986`, que requieren conocimiento factual. Se puede ver que la JSD calculada sigue siendo extremadamente alta en las capas superiores. Este patrón indica que el modelo sigue cambiando sus predicciones en las últimas capas, y potencialmente inyectando más conocimiento factual en las predicciones
+ 
+ * El segundo ocurre cuando se predicen palabras funcionales, como `was`, `the`, `to`, `in`, y los tokens copiados de la pregunta de entrada, como `first Nigerian`, `Nobel Prize`. Cuando se predicen estos tokens "fáciles", podemos observar que la JSD se vuelve muy pequeña a partir de las capas intermedias. Este hallazgo indica que el modelo ya ha decidido qué token generar en las capas intermedias, y mantiene las distribuciones de salida casi sin cambios en las capas superiores. Este hallazgo también es consistente con las suposiciones en los LLM de salida temprana `Schuster et al., 2022`</markdown>
+  <markdown>Cuando la predicción de la siguiente palabra requiere conocimiento factual, el LLM parece cambiar las predicciones en las capas superiores. Contrastar las capas antes y después de un cambio repentino puede, por lo tanto, amplificar el conocimiento que emerge de las capas superiores y hacer que el modelo se base más en su conocimiento interno factual. Además, esta evolución de la información parece variar de un token a otro</markdown>
+  <markdown>Su método requiere seleccionar con precisión la capa prematura que contiene información plausible pero menos factual, que puede no estar siempre en la misma capa temprana. Por lo tanto, proponen encontrar esa capa prematura mediante una selección dinámica de la capa prematura como se ve en la siguiente imagen
+
+![DoLa-figure3](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/DoLa-figure3.webp)</markdown>
+  <markdown>## Selección dinámica de la capa prematura</markdown>
+  <markdown>Para seleccionar la capa prematura, calculan la divergencia de Jensen-Shannon (JSD) entre las capas intermedias y la final. La capa prematura se selecciona como la capa con la JSD más alta</markdown>
+  <markdown>Sin embargo, como este proceso puede ser un poco lento, lo que hacen es agrupar varias capas para hacer menos cálculos</markdown>
+  <markdown>## Contraste de las predicciones</markdown>
+  <markdown>Ahora que tenemos la última capa (capa madura) y la capa prematura, podemos contrastar las predicciones de ambas capas. Para ello, calculan la probabilidad logarítmica del siguiente token en la capa madura y la prematura. A continuación restan la probabilidad logarítmica de la capa prematura a la de la capa madura, así le dan más importancia al conocimiento de la capa madura</markdown>
+  <markdown>## Penalización por repetición</markdown>
+  <markdown>La motivación de DoLa es restar importancia al conocimiento lingüístico de las capas inferiores y amplificar el conocimiento factual del mundo real. Sin embargo, esto puede dar lugar a que el modelo genere párrafos gramaticalmente incorrectos
+
+Empíricamente no han observado ese problema, pero han encontrado que la distribución DoLa resultante a veces tiene una mayor tendencia a repetir frases generadas previamente, especialmente durante la generación de largas secuencias de razonamiento en la cadena de pensamiento
+
+Así que incluyen una penalización por repetición introducida en `Keskar et al. (2019)` con `θ = 1.2` durante la decodificación</markdown>
+  <markdown>## Implementación con transformers</markdown>
+  <markdown>Vamos a ver cómo implementar DoLa con la librería `transformers` de Hugging Face. Para obtener más información de cómo aplicar DoLa con la librería `transformers` puedes consultar el siguiente [enlace](https://huggingface.co/docs/transformers/main/en/generation_strategies#dola-decoding)</markdown>
+  <markdown>Primero nos logueamos en el Hub, porque vamos a usar Llama 3 8B, para poder usarlo hay que pedir permiso a Meta, así que para poder descargarlo hay que estar logueado para que sepa quién lo está descargando</markdown>
+  <input_code>from huggingface_hub import notebook_login
+notebook_login()</input_code>
+  <markdown>Ahora instanciamos el tokenizador y el modelo</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM, set_seed
+import torch
+
+compute_dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+checkpoints = "meta-llama/Meta-Llama-3-8B-Instruct"
+tokenizer = AutoTokenizer.from_pretrained(checkpoints)
+tokenizer.pad_token = tokenizer.eos_token
+model = AutoModelForCausalLM.from_pretrained(checkpoints, torch_dtype=compute_dtype, device_map="auto")
+model.config.pad_token_id = model.config.eos_token_id</input_code>
+  <markdown>Asignamos un valor fijo de semilla para la reproducibilidad del ejemplo</markdown>
+  <input_code>set_seed(42)</input_code>
+  <markdown>Generamos los tokens de entrada al LLM</markdown>
+  <input_code>question = 'What does Darth Vader say to Luke in "The Empire Strikes Back"?'
+text = f"Answer with a short answer.\n\nQuestion: {question}\n\nAnswer: "
+inputs = tokenizer(text, return_tensors="pt").to(model.device)</input_code>
+  <markdown>Generamos ahora la entrada vanilla, es decir, sin aplicar DoLa</markdown>
+  <input_code>generate_kwargs={
+    "do_sample": False,
+    "max_new_tokens": 50,
+    "top_p": None,
+    "temperature": None
+}
+
+vanilla_output = model.generate(**inputs, **generate_kwargs)
+
+print(tokenizer.batch_decode(vanilla_output[:, inputs.input_ids.shape[-1]:], skip_special_tokens=True)[0])</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:128001 for open-end generation.
+</output_code>
+  <output_code> "No, I am your father." (Note: This is a famous misquote. The actual quote is "No, I am your father" is not in the movie. The correct quote is "No, I am your father." is not
+</output_code>
+  <markdown>Vemos que sabe que hay un error famoso, pero no consigue decir la frase correcta</markdown>
+  <markdown>Ahora aplicando DoLa</markdown>
+  <input_code>dola_high_output = model.generate(**inputs, **generate_kwargs, dola_layers='high', repetition_penalty=1.2)
+
+print(tokenizer.batch_decode(dola_high_output[:, inputs.input_ids.shape[-1]:], skip_special_tokens=True)[0])</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:128001 for open-end generation.
+</output_code>
+  <output_code> "No, I am your father." (Note: This is one of the most famous lines in movie history, and it's often misquoted as "Luke, I am your father.")
+</output_code>
+  <markdown>Ahora sí consigue dar la frase correcta y el [error famoso](https://www.bbc.co.uk/bitesize/articles/zc38kty)</markdown>
+  <markdown>Vamos a hacer otra prueba con otro ejemplo, reinicio el notebook y uso otro modelo</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM, set_seed
+import torch
+
+compute_dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+checkpoints = "huggyllama/llama-7b"
+tokenizer = AutoTokenizer.from_pretrained(checkpoints)
+tokenizer.pad_token = tokenizer.eos_token
+model = AutoModelForCausalLM.from_pretrained(checkpoints, torch_dtype=compute_dtype, device_map="auto")
+model.config.pad_token_id = model.config.eos_token_id</input_code>
+  <markdown>Asignamos un valor fijo de semilla para la reproducibilidad del ejemplo</markdown>
+  <input_code>set_seed(42)</input_code>
+  <markdown>Le escribo una nueva pregunta</markdown>
+  <input_code>text = "On what date was the Declaration of Independence officially signed?"
+inputs = tokenizer(text, return_tensors="pt").to(device)</input_code>
+  <markdown>Generamos la salida vanilla</markdown>
+  <input_code>generate_kwargs={
+    "do_sample": False,
+    "max_new_tokens": 50,
+    "top_p": None,
+    "temperature": None
+}
+
+vanilla_output = model.generate(**inputs, **generate_kwargs)
+
+print(tokenizer.batch_decode(vanilla_output[:, inputs.input_ids.shape[-1]:], skip_special_tokens=True)[0])</input_code>
+  <output_code>
+The Declaration of Independence was signed on July 4, 1776.
+What was the date of the signing of the Declaration of Independence?
+The Declaration of Independence was signed on July 4,
+</output_code>
+  <markdown>Como vemos, genera mal la salida, ya que aunque se celebra el 4 de julio, en realidad fue firmada el [2 de agosto](https://www.nps.gov/inde/learn/historyculture/resources-declarationofindependence.htm)</markdown>
+  <markdown>Vamos a probar ahora con DoLa</markdown>
+  <input_code>dola_high_output = model.generate(**inputs, **generate_kwargs, dola_layers='high', repetition_penalty=1.2)
+
+print(tokenizer.batch_decode(dola_high_output[:, inputs.input_ids.shape[-1]:], skip_special_tokens=True)[0])</input_code>
+  <output_code>
+July 4, 1776. This is the most well-known date in U.S. history. The day has been celebrated with parades, barbeques, fireworks and festivals for hundreds of years.
+</output_code>
+  <markdown>Sigue sin generar una salida correcta, así que vamos a indicarle que solo contraste la capa final con las capas 28 y 30</markdown>
+  <input_code>dola_high_output = model.generate(**inputs, **generate_kwargs, dola_layers=[28,30], repetition_penalty=1.2)
+
+print(tokenizer.batch_decode(dola_high_output[:, inputs.input_ids.shape[-1]:], skip_special_tokens=True)[0])</input_code>
+  <output_code>
+It was officially signed on 2 August 1776, when 56 members of the Second Continental Congress put their John Hancocks to the Declaration. The 2-page document had been written in 17
+</output_code>
+  <markdown>Ahora sí consigue generar la respuesta correcta</markdown>
+</notebook>

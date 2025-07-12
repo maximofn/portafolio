@@ -4,6 +4,13 @@ import pathlib
 import re
 import xml.etree.ElementTree as ET
 
+SPANISH = "ES"
+ENGLISH = "EN"
+PORTUGUESE = "PT"
+LANGUAGES = [SPANISH, ENGLISH, PORTUGUESE]
+LANGUAJES_DICT = {SPANISH: "spanish", ENGLISH: "english", PORTUGUESE: "portuguese"}
+
+NOTEBOOKS_TRANSLATED = "notebooks_translated"
 
 def notebook_to_xml_tree(notebook_path):
     """Return an ElementTree representing the notebook converted to XML."""
@@ -17,7 +24,21 @@ def notebook_to_xml_tree(notebook_path):
     for cell in notebook_json.get('cells', []):
         cell_type = cell.get('cell_type')
         if cell_type == 'markdown':
+            if 'EN' in str(notebook_path) or 'PT' in str(notebook_path):
+                num_sourece_elements = len(cell.get('source', []))
+                for i,source in enumerate(cell.get('source', [])):
+                    # if is the last element, do nothing
+                    if i == num_sourece_elements - 1:
+                        continue
+                    # if the element ends with a break line, do nothing
+                    if source.endswith('\n'):
+                        continue
+                    # else, add a break line
+                    cell.get('source', []).insert(i+1, '\n')
+
             md = ''.join(cell.get('source', []))
+            # Duplicate backslashes followed by pipe characters for LaTeX compatibility
+            md = md.replace('\\|', '||')
             elem = ET.SubElement(root, 'markdown')
             elem.text = md
         elif cell_type == 'code':
@@ -70,18 +91,41 @@ def notebook_to_xml_tree(notebook_path):
 
 def convert_notebook_to_xml(notebook_path):
     """Convert a Jupyter notebook to XML and save it in xml_files folder."""
+    # Get notebook path
     notebook_path = pathlib.Path(notebook_path)
-    xml_tree = notebook_to_xml_tree(notebook_path)
+    path = notebook_path.parent
+    notebook_name = notebook_path.stem
+    notebook_extension = notebook_path.suffix
 
-    # Indent the XML tree for pretty printing.
-    # This adds newlines and indentation to make the XML file readable.
-    ET.indent(xml_tree, space="  ")
+    # Create the paths for the translated notebooks
+    notebook_name_en = notebook_name.replace("_es", "") + "_" + ENGLISH + notebook_extension
+    notebook_name_pt = notebook_name.replace("_es", "") + "_" + PORTUGUESE + notebook_extension
+    notebook_paths = [notebook_path, path/NOTEBOOKS_TRANSLATED/notebook_name_en, path/NOTEBOOKS_TRANSLATED/notebook_name_pt]
 
-    xml_dir = notebook_path.parent / 'xml_files'
-    xml_dir.mkdir(exist_ok=True)
-    xml_file = xml_dir / f"{notebook_path.stem}.xml"
-    xml_tree.write(xml_file, encoding='utf-8', xml_declaration=True)
-    return xml_file
+    # Convert every notebook to XML
+    xml_files = []
+    for notebook_path in notebook_paths:
+        # Convert the notebook to XML
+        xml_tree = notebook_to_xml_tree(notebook_path)
+
+        # Indent the XML tree for pretty printing.
+        # This adds newlines and indentation to make the XML file readable.
+        ET.indent(xml_tree, space="  ")
+
+        # Create the xml_files folder if it doesn't exist
+        xml_dir = path / 'xml_files'
+        xml_dir.mkdir(exist_ok=True)
+
+        # Create the xml file
+        xml_file = xml_dir / f"{notebook_path.stem}.xml"
+
+        # Save the xml file
+        xml_tree.write(xml_file, encoding='utf-8', xml_declaration=True)
+
+        # Add the xml file to the list
+        xml_files.append(xml_file)
+    
+    return xml_files
 
 
 if __name__ == '__main__':

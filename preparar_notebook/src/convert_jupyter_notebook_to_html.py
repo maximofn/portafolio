@@ -424,6 +424,8 @@ def convert_jupyter_notebook_to_html(notebook_path, metadata, notebook_title):
     # Get metadata
     tittles_list = [metadata[0], metadata[1], metadata[2]]
     end_url = metadata[3]
+    if end_url.endswith("/"):
+        end_url = end_url[:-1]
     descriptions_list = [metadata[4], metadata[5], metadata[6]]
     keywords_list = [metadata[7], metadata[8], metadata[9]]
     image, image_hover_path, witdh, height, image_extension, date = metadata[10], metadata[11], metadata[12], metadata[13], metadata[14], metadata[15]

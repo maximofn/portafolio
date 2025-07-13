@@ -1,0 +1,1072 @@
+<?xml version='1.0' encoding='utf-8'?>
+<notebook>
+  <markdown># Florence-2: Advancing a Unified Representation for a Variety of Vision Tasks</markdown>
+  <markdown>## Paper</markdown>
+  <markdown>[Florence-2: Advancing a Unified Representation for a Variety of Vision Tasks](https://arxiv.org/abs/2311.06242) es el paper de Florence-2.</markdown>
+  <markdown>## Resumen del paper</markdown>
+  <markdown>Florence-2 es un modelo fundacional de visión con una representación unificada, se basa en prompts, para una variedad de tareas de visión y visión-lenguaje.
+
+Los modelos grandes de visión existentes son buenos en el aprendizaje por transferencia, pero tienen dificultades para realizar una diversidad de tareas con instrucciones simples. Florence-2 fue diseñado para tomar prompts de texto como instrucciones de tareas y generar resultados en forma de texto, detección de objetos, grounding (relacionar palabras o frases de un lenguaje natural con regiones específicas de una imagen) o segmentación
+
+Para poder entrenar el modelo, crearon el dataset FLD-5B, que tiene 5,4 mil millones de anotaciones visuales completas en 126 millones de imágenes. Este dataset fue entrenado por dos módulos de procesamiento eficientes.
+El primer módulo utiliza modelos especializados para anotar imágenes de forma colaborativa y autónoma, en vez de el método de anotación única y manual. Múltiples modelos trabajan juntos para llegar a un consenso, que recuerda al concepto de la sabiduría de las multitudes, asegurando una comprensión de la imagen más confiable e imparcial.  
+El segundo módulo refina y filtra iterativamente estas anotaciones automatizadas utilizando modelos fundamentales bien entrenados.
+
+El modelo es capaz de realizar una variedad de tareas, como la detección de objetos, el subtitulado y el grounding, todo dentro de un único modelo. La activación de la tarea se logra a través de prompts de texto</markdown>
+  <markdown>Para desarrollar un modelo básico de visión versátil. Para ello el método de entrenamiento del modelo incorpora tres objetivos de aprendizaje distintos, cada uno de los cuales aborda un nivel diferente de granularidad y comprensión semántica:
+
+ * **Las tareas de comprensión a nivel de imagen** capturan la semántica de alto nivel y fomentan una comprensión integral de las imágenes a través de descripciones lingüísticas. Permiten que el modelo comprenda el contexto general de una imagen y capte las relaciones semánticas y los matices contextuales en el dominio del lenguaje. Las tareas ejemplares incluyen la clasificación de imágenes, el subtitulado y la respuesta a preguntas visuales.
+ * **Las tareas de reconocimiento a nivel de región/píxel** facilitan la localización detallada de objetos y entidades dentro de las imágenes, capturando las relaciones entre los objetos y su contexto espacial. Las tareas incluyen la detección de objetos, la segmentación y la comprensión de expresiones de referencia.
+ * **Las tareas de alineación visual-semántica de grano fino** requieren una comprensión de grano fino tanto del texto como de la imagen. Implica localizar las regiones de la imagen que corresponden a las frases de texto, como objetos, atributos o relaciones. Estas tareas desafían la capacidad de capturar los detalles locales de las entidades visuales y sus contextos semánticos, así como las interacciones entre los elementos textuales y visuales.
+
+Al combinar estos tres objetivos de aprendizaje en un marco de aprendizaje multitarea, el modelo aprende a manejar diferentes niveles de detalle y comprensión semántica.</markdown>
+  <markdown>## Arquitectura</markdown>
+  <markdown>El modelo emplea una arquitectura de secuencia a secuencia (seq2seq), que integra un codificador de imagen y un codificador-decodificador multimodal
+
+![Florence-2 architecture](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/Florence-2_architecture-2.webp)
+
+Como al modelo le van a entrar imágenes y prompts, tiene un codificador de imagen para obtener los embeddings de la imagen, por otro lado se pasan los prompts por un tokenizador y embedding de texto y localización. Se concatenan los embeddings de la imagen y del prompt y se pasa por un transformer para obtener los tokens del texto de salida y la localización en la imagen. Finalmente se pasa por un decodificador de texto y localización para obtener los resultados.
+
+Al codificador-decodificador (transformer) del texto más las posiciones le denominan codificador-decodificador multimodal.</markdown>
+  <markdown>Al extender el vocabulario del tokenizador para incluir tokens de ubicación, se permite que el modelo procese información específica de la región del objeto en un formato de aprendizaje unificado, es decir, mediante un único modelo. Esto elimina la necesidad de diseñar cabezas específicas para diferentes tareas y permite un enfoque más centrado en los datos</markdown>
+  <markdown>Crearon 2 modelos, Florence-2 Base y Florence-2 Large. Florence-2 Base tiene 232B de parámetros y Florence-2 Large tiene 771B de parámetros. Cada uno tiene estos tamaños
+
+|Model | Image Encoder (DaViT) | Image Encoder (DaViT) | Image Encoder (DaViT) | Image Encoder (DaViT) | Encoder-Decoder (Transformer) | Encoder-Decoder (Transformer) | Encoder-Decoder (Transformer) | Encoder-Decoder (Transformer) |
+|------- | -------- | -------- | -------- | -------- | -------- | -------- | -------- | -------- |
+|       | dimensions | blocks | heads/groups | #params | encoder layers | decoder layers | dimensions | #params|
+|Florence-2-B | [128, 256, 512, 1024] | [1, 1, 9, 1] | [4, 8, 16, 32] | 90M | 6 | 6 | 768 | 140M|
+|Florence-2-L | [256, 512, 1024, 2048] | [1, 1, 9, 1] | [8, 16, 32, 64] | 360M | 12 | 12 | 1024 | 410M|</markdown>
+  <markdown>### Codificador de visión</markdown>
+  <markdown>Usaron DaViT como codificador de visión. Procesa una imagen de entrada a embeddings visuales aplanados (N&lt;sub&gt;v&lt;/sub&gt;×D&lt;sub&gt;v&lt;/sub&gt;), donde N&lt;sub&gt;v&lt;/sub&gt; y D&lt;sub&gt;v&lt;/sub&gt; representan el número de embeddings y la dimensión de los embeddings visuales, respectivamente.</markdown>
+  <markdown>### Codificador-decodificador multimodal</markdown>
+  <markdown>Utilizaron una arquitectura transformador estándar para procesar los embeddings visuales y de lenguaje</markdown>
+  <markdown>### Objetivo de optimización</markdown>
+  <markdown>Dada una entrada x (combinación de la imagen y el prompt), y el objetivo y, usaron el modelado de lenguaje estándar con pérdida de entropía cruzada para todas las tareas</markdown>
+  <markdown>## Dataset</markdown>
+  <markdown>Crearon el conjunto de datos FLD-5B que incluye 126 millones de imágenes, 500 millones de anotaciones de texto y 1.3 mil millones de anotaciones de texto-región, y 3.6 mil millones de anotaciones de texto-frase-región en diferentes tareas</markdown>
+  <markdown>### Recopilación de las imágenes</markdown>
+  <markdown>Para recopilar las imágenes usaron imágenes de los datasets ImageNet-22k, Object 365, Open Images, Conceptual Captions y LAION</markdown>
+  <markdown>### Etiquetado de las imágenes</markdown>
+  <markdown>El objetivo principal es generar anotaciones que puedan valer para el aprendizaje multitarea de manera efectiva. Para ello crearon tres categorías de anotaciones: texto, pares de texto-región y tripletas de texto-frase-región.
+
+![Florence-2 Image annotations](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/Florence-2_Image_annotations.webp)
+
+El flujo de trabajo de anotación de datos consta de tres fases: (1) anotación inicial empleando modelos especializados, (2) filtrado de datos para corregir errores y eliminar anotaciones irrelevantes, y (3) un proceso iterativo para el refinamiento de datos.
+
+ * **Anotación inicial con modelos especializados**. Usaron etiquetas sintéticas obtenidas de modelos especializados. Estos modelos especializados son una combinación de modelos fuera de línea entrenados en una variedad de conjuntos de datos disponibles públicamente y servicios en línea alojados en plataformas en la nube. Están específicamente diseñados para sobresalir en la anotación de sus respectivos tipos de anotación. Ciertos conjuntos de datos de imágenes contienen anotaciones parciales. Por ejemplo, Object 365 ya incluye cuadros delimitadores anotados por humanos y las categorías correspondientes como anotaciones de texto-región. En esos casos, fusionaron las anotaciones preexistentes con las etiquetas sintéticas generadas por los modelos especializados.
+
+ * **Filtrado y mejora de datos**. Las anotaciones iniciales obtenidas de los modelos especializados, son susceptibles al ruido y la imprecisión. Por lo que implementaron un proceso de filtrado. Se centra principalmente en dos tipos de datos en las anotaciones: datos de texto y de región. En lo que respecta a las anotaciones textuales, desarrollaron una herramienta de análisis basada en SpaCy para extraer objetos, atributos y acciones. Filtraron textos que contienen objetos excesivos, ya que tienden a introducir ruido y pueden no reflejar con precisión el contenido real en las imágenes. Además, evaluaron la complejidad de las acciones y los objetos midiendo su grado de nodo en el árbol de análisis de dependencias. Conservaron textos con una cierta complejidad mínima para garantizar la riqueza de los conceptos visuales en las imágenes. En relación con las anotaciones de región, eliminaron los cuadros ruidosos por debajo de un umbral de puntuación de confianza. También emplearon la supresión no máxima para reducir los cuadros delimitadores redundantes o superpuestos.
+
+ * **Refinamiento iterativo de datos**. Utilizando las anotaciones iniciales filtradas, entrenaron un modelo multitarea que procesa secuencias de datos.</markdown>
+  <markdown>## Entrenamiento</markdown>
+  <markdown> * Para el entrenamiento usaron [AdamW](https://www.fast.ai/posts/2018-07-02-adam-weight-decay.html) como optimizador, que es una variante de Adam que incluye la regularización L2 en los pesos.
+ * Utilizaron un decaimiento en la tasa de aprendizaje del [coseno](https://www.linkedin.com/pulse/learning-rate-cosine-decay-warmup-hold-period-karel-becerra-fppye/). El valor máximo de la tasa de aprendizaje se estableció en 1e-4 y un warmup lineal de 5000 steps.
+ * Usaron [Deep-Speed] y precisión mixta para acelerar el entrenamiento.
+ * Usaron un tamaño de lote (batch size) de 2048 para Florence-2 Base y 3072 para Florence-2 Large.
+ * Hicieron un primer entrenamiento con imágenes de tamaño 184x184 con todas las imágenes del dataset y luego un ajuste de resolución con imágenes de 768x768 con 500 millones de imágenes para el modelo base y 100 millones de imágenes para el modelo large.</markdown>
+  <markdown>## Resultados</markdown>
+  <markdown>### Evaluación zero-shot</markdown>
+  <markdown>Para tareas zero-shot obtuvieron estos resultados
+
+| Method        | #params | COCO Cap. | COCO Cap. | NoCaps | TextCaps | COCO Det. | Flickr30k | Refcoco | Refcoco+ | Refcocog | Refcoco RES |
+|-------------- | -------- | :--------: | :--------: | :----: | :------: | :--------: | :-------: | :------: | :-------: | :-------: | :----------: |
+|               |          |    test   |    val    |   val  |   val   | val2017 |   test   | test-A  |  test-B   |   val   | test-A  | test-B   |  val   |  test   |  val    |
+|               |          |   CIDEr   |   CIDEr   | CIDEr |  CIDEr  |   mAP    |   R@1    | Accuracy | Accuracy | Accuracy |    mIoU     |
+| Flamingo [2]  | 80B      |   84.3    |     -      |   -    |    -     |     -      |     -      |    -     |     -      |     -      |      -       |
+| Kosmos-2 [60] | 1.6B     |     -      |     -      |   -    |    -     |     -      |  78.7     | 52.3     |  57.4     |  47.3     | 45.5    | 50.7     | 42.2    | 60.6    | 61.7     |    -       |
+| Florence-2-B  | 0.23B    |  133.0    |  118.7     |  70.1  |  34.7    |  34.7     |  83.6     | 53.9     |  58.4     |  49.7     | 51.5    | 56.4     | 47.9    | 66.3    | 65.1     |   34.6      |
+| Florence-2-L  | 0.77B    |  135.6    |  120.8     |  72.8  |  37.5    |  37.5     |  84.4     | 56.3     |  61.6     |  51.4     | 53.6    | 57.9     | 49.9    | 68.0    | 67.0     |   35.8      |
+
+Como se puede ver Florence-2, tanto el base, como el largue supera a modelos de uno y dos ordenes de magnitud más grandes.</markdown>
+  <markdown>### Modelo generalista con datos supervisados públicos</markdown>
+  <markdown>Ajustaron los modelos Florence-2 añadiendo una colección de conjuntos de datos públicos que cubren tareas a nivel de imagen, región y píxel. Los resultados se pueden ver en las siguientes tablas.
+
+Rendimiento en tareas de subtitulado y VQA:
+
+| Method         | #params | COCO Caption | NoCaps | TextCaps | VQAv2 | TextVQA | VizWiz VQA |
+| -------------- | -------- | :-----------: | :----: | :------: | :----: | :------: | :--------: |
+|                |          |  Karpathy test |   val  |   val   |  test-dev  | test-dev  |  test-dev   |
+|                |          |   CIDEr    | CIDEr |  CIDEr  |   Acc  |   Acc   |    Acc    |
+| **Specialist Models** |          |              |        |          |         |          |            |
+| CoCa [92]      | 2.1B     |   143.6     | 122.4  |    -     |  82.3   |    -     |     -      |
+| BLIP-2 [44]     | 7.8B     |   144.5     | 121.6  |    -     |  82.2   |    -     |     -      |
+| GIT2 [78]      | 5.1B     |    145      | 126.9  |  148.6  |  81.7   |  67.3    |   71.0     |
+| Flamingo [2]   | 80B     |   138.1     |   -    |    -     |  82.0   |  54.1    |   65.7     |
+| PaLI [15]      | 17B     |   149.1     | **127.0**  | 160.0 |  84.3   | 58.8 / 73.1△ | 71.6 / 74.4△ |
+| PaLI-X [12]     | 55B     |   **149.2**     | 126.3  | **147 / 163.7** |  **86.0**   | **71.4 / 80.8△** | **70.9 / 74.6△** |
+| **Generalist Models** |          |              |        |          |         |          |            |
+| Unified-IO [55] | 2.9B     |      -       |  100   |    -     |  77.9   |    -     |   57.4     |
+| Florence-2-B   | 0.23B    |   140.0     | 116.7  |  143.9  |  79.7   |  63.6    |   63.6     |
+| Florence-2-L   | 0.77B    |   143.3     | 124.9  |  151.1  |  81.7   |  73.5    |   72.6     |
+
+△ Indica que se usó OCR externo como entrada
+
+Rendimiento en tareas a nivel de región y píxel:
+
+| Method         | #params | COCO Det. | Flickr30k | Refcoco | Refcoco+ | Refcocog | Refcoco RES |
+| -------------- | -------- | :--------: | :-------: | :------: | :-------: | :-------: | :----------: |
+|                |          | val2017 |   test   | test-A  |  test-B   |   val   | test-A  | test-B   |  val   |  test   |  val    |
+|                |          |   mAP    |   R@1    | Accuracy | Accuracy | Accuracy |    mIoU     |
+| **Specialist Models** |          |         |          |         |          |         |             |
+| SeqTR [99]      | -        |    -     |     -      |  83.7    |  86.5     |  81.2     | 71.5    | 76.3     | 64.9    | 74.9    | 74.2     |    -       |
+| PolyFormer [49] | -        |    -     |     -      |  90.4    |  92.9     |  87.2     | 85.0    | 89.8     | 78.0    | 85.8    | 85.9     |   76.9      |
+| UNINEXT [84]   | 0.74B    |  **60.6**    |     -      |  92.6    |  94.3     |  91.5     | 85.2    | 89.6     | 79.8    | 88.7    | 89.4     |    -       |
+| Ferret [90]    | 13B      |    -     |     -      |  89.5    |  92.4     |  84.4     | 82.8    | 88.1     | 75.2    | 85.8    | 86.3     |    -       |
+| **Generalist Models** |          |         |          |         |          |         |             |
+| UniTAB [88]     | -        |    -     |  **88.6**     |  91.1    |  83.8     |  81.0     | 85.4    | 71.6     | **84.6**    | 84.7    |     -      |    -       |
+| Florence-2-B   | 0.23B    |  41.4    |  84.0     |  92.6    |  94.8     |  91.5     | 86.8    | 91.7     | 82.2    | 89.8    | 82.2     |   78.0      |
+| Florence-2-L   | 0.77B    |  43.4    |  85.2     |  **93.4**    |  **95.3**     |  **92.0**     | **88.3**    | **92.9**     | 83.6    | **91.2**    | **91.7**     |   **80.5**      |</markdown>
+  <markdown>Resultados de la detección de objetos COCO y segmentación de instancias
+
+| Backbone | Pretrain      | Mask R-CNN  | Mask R-CNN | DINO   |
+| :------- | :-----------: | :---------: | :---: | :---: |
+|          |               | APb         | APm        | AP |
+| ViT-B    | MAE, IN-1k    | 51.6 | 45.9 | 55.0 |
+| Swin-B   | Sup IN-1k     | 50.2 |   -   | 53.4 |
+| Swin-B   | SimMIM [83]   | 52.3 |   -   |   -   |
+| FocalAtt-B| Sup IN-1k     | 49.0 | 43.7 |   -   |
+| FocalNet-B| Sup IN-1k     | 49.8 | 44.1 | 54.4 |
+| ConvNeXt v1-B | Sup IN-1k     | 50.3 | 44.9 | 52.6 |
+| ConvNeXt v2-B | Sup IN-1k     | 51.0 | 45.6 |   -   |
+| ConvNeXt v2-B | FCMAE         | 52.9 | 46.6 |   -   |
+| DaViT-B   | Florence-2     | **53.6** | **46.4** | **59.2** |
+
+Detección de objetos COCO utilizando Mask R-CNN y DINO
+
+|Pretrain | Frozen stages  | Mask R-CNN | Mask R-CNN | DINO     | UperNet|
+|-------- | -------------  | ---------- | -------- | --------| --------|
+|         |                | APb | APm | AP | mloU |
+|Sup IN1k   | n/a          | 46.7 | 42.0 | 53.7 | 49 |
+|UniCL [87] | n/a          | 50.4 | 45.0 | 57.3 | 53.6|
+|Florence-2 | n/a          | **53.6** | **46.4** | **59.2** | **54.9**|
+|Florence-2 | [1]          | **53.6** | 46.3 | **59.2** | 54.1|
+|Florence-2 | [1, 2]       | 53.3 | 46.1 | 59.0 | 54.4|
+|Florence-2 | [1, 2, 3]    | 49.5 | 42.9 | 56.7 | 49.6|
+|Florence-2 | [1, 2, 3, 4] | 48.3 | 44.5 | 56.1 | 45.9 |</markdown>
+  <markdown>Resultados de segmentación semántica ADE20K
+
+|Backbone | Pretrain | mIoU | ms-mIoU|
+|------- | -------- | -------- | --------|
+|ViT-B [24] | Sup IN-1k | 47.4 | -|
+|ViT-B [24] | MAE IN-1k | 48.1 | -|
+|ViT-B [4] | BEiT | 53.6 | 54.1|
+|ViT-B [59] | BEiTv2 IN-1k | 53.1 | -|
+|ViT-B [59] | BEiTv2 IN-22k | 53.5 | -|
+|Swin-B [51] | Sup IN-1k | 48.1 | 49.7|
+|Swin-B [51] | Sup IN-22k | - | 51.8|
+|Swin-B [51] | SimMIM [83] | - | 52.8|
+|FocalAtt-B [86] | Sup IN-1k | 49.0 | 50.5|
+|FocalNet-B [85] | Sup IN-1k | 50.5 | 51.4|
+|ConvNeXt v1-B [52] | Sup IN-1k | - | 49.9|
+|ConvNeXt v2-B [81] | Sup IN-1k | - | 50.5|
+|ConvNeXt v2-B [81] | FCMAE | - | 52.1|
+|DaViT-B [20] | Florence-2 | **54.9** | **55.5**|</markdown>
+  <markdown>Se puede ver cómo Florence-2 no es el mejor en algunas de las tareas, aunque en algunas sí, pero está a la altura de los mejores modelos de cada tarea, teniendo uno o dos órdenes de magnitud menos de parámetros que los otros modelos</markdown>
+  <markdown>## Modelos disponibles</markdown>
+  <markdown>En la [colección](https://huggingface.co/collections/microsoft/florence-6669f44df0d87d9c3bfb76de) de modelos de Florence-2 de Microsoft en Hugging Face se pueden encontrar los modelos [Florence-2-large](https://huggingface.co/microsoft/Florence-2-large), [Florence-2-base](https://huggingface.co/microsoft/Florence-2-base), [Florence-2-large-ft](https://huggingface.co/microsoft/Florence-2-large-ft) y [Florence-2-base-ft](https://huggingface.co/microsoft/Florence-2-base-ft).
+
+Ya hemos visto la diferencia entre large y base, large es un modelo de 771B de parámetros y base de 232B de parámetros. Los modelos con `-ft` son los modelos que han sido fine tuneados en algunas tareas.</markdown>
+  <markdown>## Tareas definidas por el prompt</markdown>
+  <markdown>Como hemos visto Florence-2 es un modelo al que le entra una imagen y un prompt, por lo que mediante el prompt el modelo hará una tarea u otra. A continuación se muestran los prompts que se pueden usar para cada tarea
+
+|Task |Annotation Type| Prompt Input| Output|
+|-----|---------------|-------------|-------|
+|Caption| Text| Image, text| Text|
+|Detailed caption| Text| Image, text| Text|
+|More detailed caption| Text| Image, text| Text|
+|Region proposal| Region| Image, text| Region|
+|Object detection| Region-Text| Image, text| Text, region|
+|Dense region caption| Region-Text| Image, text| Text, region|
+|Phrase grounding| Text-Phrase-Region| Image, text| Text, region|
+|Referring expression segmentation| Region-Text| Image, text| Text, region|
+|Region to segmentation| Region-Text| Image, text| Text, region|
+|Open vocabulary detection| Region-Text| Image, text| Text, region|
+|Region to category| Region-Text| Image, text, region| Text|
+|Region to description| Region-Text| Image, text, region| Text|
+|OCR| Text| Image, text| Text|
+|OCR with region| Region-Text| Image, text| Text, region|</markdown>
+  <markdown>## Uso de Florence-2 large</markdown>
+  <markdown>Primero importamos las librerías</markdown>
+  <input_code>from transformers import AutoProcessor, AutoModelForCausalLM  
+from PIL import Image
+import requests
+import copy
+import time</input_code>
+  <markdown>Creamos el modelo y el procesador</markdown>
+  <input_code>model_id = 'microsoft/Florence-2-large'
+model = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True).eval().to('cuda')
+processor = AutoProcessor.from_pretrained(model_id, trust_remote_code=True)</input_code>
+  <markdown>Creamos una función para construir el prompt</markdown>
+  <input_code>def create_prompt(task_prompt, text_input=None):
+    if text_input is None:
+        prompt = task_prompt
+    else:
+        prompt = task_prompt + text_input
+    return prompt</input_code>
+  <markdown>Ahora una función para generar la salida</markdown>
+  <input_code>def generate_answer(task_prompt, text_input=None):
+    # Create prompt
+    prompt = create_prompt(task_prompt, text_input)
+
+    # Get inputs
+    inputs = processor(text=prompt, images=image, return_tensors="pt").to('cuda')
+
+    # Get outputs
+    generated_ids = model.generate(
+      input_ids=inputs["input_ids"],
+      pixel_values=inputs["pixel_values"],
+      max_new_tokens=1024,
+      early_stopping=False,
+      do_sample=False,
+      num_beams=3,
+    )
+
+    # Decode the generated IDs
+    generated_text = processor.batch_decode(generated_ids, skip_special_tokens=False)[0]
+
+    # Post-process the generated text
+    parsed_answer = processor.post_process_generation(
+        generated_text, 
+        task=task_prompt, 
+        image_size=(image.width, image.height)
+    )
+
+    return parsed_answer</input_code>
+  <markdown>Obtenemos una imagen sobre la que vamos a probar el modelo</markdown>
+  <input_code>url = "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/transformers/tasks/car.jpg?download=true"
+image = Image.open(requests.get(url, stream=True).raw)
+image</input_code>
+  <output_code>&lt;PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=640x480&gt;</output_code>
+  <markdown>### Tareas sin prompt adicionales</markdown>
+  <markdown>#### Caption</markdown>
+  <input_code>task_prompt = '&lt;CAPTION&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+answer</input_code>
+  <output_code>Time taken: 284.60 ms
+</output_code>
+  <output_code>{'&lt;CAPTION&gt;': 'A green car parked in front of a yellow building.'}</output_code>
+  <input_code>task_prompt = '&lt;DETAILED_CAPTION&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+answer</input_code>
+  <output_code>Time taken: 491.69 ms
+</output_code>
+  <output_code>{'&lt;DETAILED_CAPTION&gt;': 'The image shows a blue Volkswagen Beetle parked in front of a yellow building with two brown doors, surrounded by trees and a clear blue sky.'}</output_code>
+  <input_code>task_prompt = '&lt;MORE_DETAILED_CAPTION&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+answer</input_code>
+  <output_code>Time taken: 1011.38 ms
+</output_code>
+  <output_code>{'&lt;MORE_DETAILED_CAPTION&gt;': 'The image shows a vintage Volkswagen Beetle car parked on a cobblestone street in front of a yellow building with two wooden doors. The car is painted in a bright turquoise color and has a sleek, streamlined design. It has two doors on either side of the car, one on top of the other, and a small window on the front. The building appears to be old and dilapidated, with peeling paint and crumbling walls. The sky is blue and there are trees in the background.'}</output_code>
+  <markdown>#### Region proposal</markdown>
+  <markdown>Es una detección de objetos, pero en este caso no devuelve las clases de los objetos</markdown>
+  <markdown>Como vamos a obtener bounding boxes, primero vamos a crear una función para pintarlas sobre la imagen</markdown>
+  <input_code>import matplotlib.pyplot as plt  
+import matplotlib.patches as patches 
+ 
+def plot_bbox(image, data):
+   # Create a figure and axes  
+    fig, ax = plt.subplots()  
+      
+    # Display the image  
+    ax.imshow(image)  
+      
+    # Plot each bounding box  
+    for bbox, label in zip(data['bboxes'], data['labels']):  
+        # Unpack the bounding box coordinates  
+        x1, y1, x2, y2 = bbox  
+        # Create a Rectangle patch  
+        rect = patches.Rectangle((x1, y1), x2-x1, y2-y1, linewidth=1, edgecolor='r', facecolor='none')  
+        # Add the rectangle to the Axes  
+        ax.add_patch(rect)  
+        # Annotate the label  
+        plt.text(x1, y1, label, color='white', fontsize=8, bbox=dict(facecolor='red', alpha=0.5))  
+      
+    # Remove the axis ticks and labels  
+    ax.axis('off')  
+      
+    # Show the plot  
+    plt.show() </input_code>
+  <input_code>task_prompt = '&lt;REGION_PROPOSAL&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+plot_bbox(image, answer[task_prompt])</input_code>
+  <output_code>Time taken: 439.41 ms
+{'&lt;REGION_PROPOSAL&gt;': {'bboxes': [[33.599998474121094, 159.59999084472656, 596.7999877929688, 371.7599792480469], [454.0799865722656, 96.23999786376953, 580.7999877929688, 261.8399963378906], [449.5999755859375, 276.239990234375, 554.5599975585938, 370.3199768066406], [91.19999694824219, 280.0799865722656, 198.0800018310547, 370.3199768066406], [224.3199920654297, 85.19999694824219, 333.7599792480469, 164.39999389648438], [274.239990234375, 178.8000030517578, 392.0, 228.239990234375], [165.44000244140625, 178.8000030517578, 264.6399841308594, 230.63999938964844]], 'labels': ['', '', '', '', '', '', '']}}
+</output_code>
+  <output_code>&lt;Figure size 640x480 with 1 Axes&gt;</output_code>
+  <markdown>#### Object detection</markdown>
+  <markdown>En este caso sí devuelve las clases de los objetos</markdown>
+  <input_code>task_prompt = '&lt;OD&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+plot_bbox(image, answer[task_prompt])</input_code>
+  <output_code>Time taken: 385.74 ms
+{'&lt;OD&gt;': {'bboxes': [[33.599998474121094, 159.59999084472656, 596.7999877929688, 371.7599792480469], [454.0799865722656, 96.23999786376953, 580.7999877929688, 261.8399963378906], [224.95999145507812, 86.15999603271484, 333.7599792480469, 164.39999389648438], [449.5999755859375, 276.239990234375, 554.5599975585938, 370.3199768066406], [91.19999694824219, 280.0799865722656, 198.0800018310547, 370.3199768066406]], 'labels': ['car', 'door', 'door', 'wheel', 'wheel']}}
+</output_code>
+  <output_code>&lt;Figure size 640x480 with 1 Axes&gt;</output_code>
+  <markdown>#### Dense region caption</markdown>
+  <input_code>task_prompt = '&lt;DENSE_REGION_CAPTION&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+plot_bbox(image, answer[task_prompt])</input_code>
+  <output_code>Time taken: 434.88 ms
+{'&lt;DENSE_REGION_CAPTION&gt;': {'bboxes': [[33.599998474121094, 159.59999084472656, 596.7999877929688, 371.7599792480469], [454.0799865722656, 96.72000122070312, 580.1599731445312, 261.8399963378906], [449.5999755859375, 276.239990234375, 554.5599975585938, 370.79998779296875], [91.83999633789062, 280.0799865722656, 198.0800018310547, 370.79998779296875], [224.95999145507812, 86.15999603271484, 333.7599792480469, 164.39999389648438]], 'labels': ['turquoise Volkswagen Beetle', 'wooden double doors with metal handles', 'wheel', 'wheel', 'door']}}
+</output_code>
+  <output_code>&lt;Figure size 640x480 with 1 Axes&gt;</output_code>
+  <markdown>### Tareas con prompt adicionales</markdown>
+  <markdown>#### Phrase Grounding</markdown>
+  <input_code>task_prompt = '&lt;CAPTION_TO_PHRASE_GROUNDING&gt;'
+text_input="A green car parked in front of a yellow building."
+t0 = time.time()
+answer = generate_answer(task_prompt, text_input)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+plot_bbox(image, answer[task_prompt])</input_code>
+  <output_code>Time taken: 327.24 ms
+{'&lt;CAPTION_TO_PHRASE_GROUNDING&gt;': {'bboxes': [[34.23999786376953, 159.1199951171875, 582.0800170898438, 374.6399841308594], [1.5999999046325684, 4.079999923706055, 639.0399780273438, 305.03997802734375]], 'labels': ['A green car', 'a yellow building']}}
+</output_code>
+  <output_code>&lt;Figure size 640x480 with 1 Axes&gt;</output_code>
+  <markdown>#### Referring expression segmentation</markdown>
+  <markdown>Como vamos a obtener máscaras de segmentación, vamos a crear una función para pintarlas sobre la imagen</markdown>
+  <input_code>from PIL import Image, ImageDraw, ImageFont 
+import random
+import numpy as np
+
+colormap = ['blue','orange','green','purple','brown','pink','gray','olive','cyan','red',
+            'lime','indigo','violet','aqua','magenta','coral','gold','tan','skyblue']
+
+def draw_polygons(input_image, prediction, fill_mask=False):  
+    """  
+    Draws segmentation masks with polygons on an image.  
+  
+    Parameters:  
+    - input_image: Path to the image file.  
+    - prediction: Dictionary containing 'polygons' and 'labels' keys.  
+                  'polygons' is a list of lists, each containing vertices of a polygon.  
+                  'labels' is a list of labels corresponding to each polygon.  
+    - fill_mask: Boolean indicating whether to fill the polygons with color.  
+    """
+    # Copy the input image to draw on
+    image = copy.deepcopy(input_image)
+
+    # Load the image  
+    draw = ImageDraw.Draw(image)  
+   
+    # Set up scale factor if needed (use 1 if not scaling)  
+    scale = 1  
+      
+    # Iterate over polygons and labels  
+    for polygons, label in zip(prediction['polygons'], prediction['labels']):  
+        color = random.choice(colormap)  
+        fill_color = random.choice(colormap) if fill_mask else None  
+          
+        for _polygon in polygons:  
+            _polygon = np.array(_polygon).reshape(-1, 2)  
+            if len(_polygon) &lt; 3:  
+                print('Invalid polygon:', _polygon)  
+                continue  
+              
+            _polygon = (_polygon * scale).reshape(-1).tolist()  
+              
+            # Draw the polygon  
+            if fill_mask:  
+                draw.polygon(_polygon, outline=color, fill=fill_color)  
+            else:  
+                draw.polygon(_polygon, outline=color)  
+              
+            # Draw the label text  
+            draw.text((_polygon[0] + 8, _polygon[1] + 2), label, fill=color)  
+  
+    # Save or display the image  
+    #image.show()  # Display the image  
+    display(image)</input_code>
+  <input_code>task_prompt = '&lt;REFERRING_EXPRESSION_SEGMENTATION&gt;'
+text_input="a green car"
+t0 = time.time()
+answer = generate_answer(task_prompt, text_input)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+draw_polygons(image, answer[task_prompt], fill_mask=True) </input_code>
+  <output_code>Time taken: 4854.74 ms
+{'&lt;REFERRING_EXPRESSION_SEGMENTATION&gt;': {'polygons': [[[180.8000030517578, 180.72000122070312, 182.72000122070312, 180.72000122070312, 187.83999633789062, 177.83999633789062, 189.75999450683594, 177.83999633789062, 192.95999145507812, 175.9199981689453, 194.87998962402344, 175.9199981689453, 198.0800018310547, 174.0, 200.63999938964844, 173.0399932861328, 203.83999633789062, 172.0800018310547, 207.0399932861328, 170.63999938964844, 209.59999084472656, 169.67999267578125, 214.0800018310547, 168.72000122070312, 217.9199981689453, 167.75999450683594, 221.75999450683594, 166.8000030517578, 226.239990234375, 165.83999633789062, 230.72000122070312, 164.87998962402344, 237.1199951171875, 163.9199981689453, 244.1599884033203, 162.95999145507812, 253.1199951171875, 162.0, 265.2799987792969, 161.0399932861328, 312.6399841308594, 161.0399932861328, 328.6399841308594, 162.0, 337.6000061035156, 162.95999145507812, 344.6399841308594, 163.9199981689453, 349.7599792480469, 164.87998962402344, 353.6000061035156, 165.83999633789062, 358.0799865722656, 166.8000030517578, 361.91998291015625, 167.75999450683594, 365.7599792480469, 168.72000122070312, 369.6000061035156, 169.67999267578125, 372.79998779296875, 170.63999938964844, 374.7200012207031, 172.0800018310547, 377.91998291015625, 174.95999145507812, 379.8399963378906, 177.83999633789062, 381.7599792480469, 180.72000122070312, 383.67999267578125, 183.59999084472656, 385.6000061035156, 186.95999145507812, 387.5199890136719, 189.83999633789062, 388.79998779296875, 192.72000122070312, 390.7200012207031, 194.63999938964844, 392.0, 197.51998901367188, 393.91998291015625, 200.87998962402344, 395.8399963378906, 203.75999450683594, 397.7599792480469, 206.63999938964844, 399.67999267578125, 209.51998901367188, 402.8800048828125, 212.87998962402344, 404.79998779296875, 212.87998962402344, 406.7200012207031, 213.83999633789062, 408.6399841308594, 215.75999450683594, 408.6399841308594, 217.67999267578125, 410.55999755859375, 219.59999084472656, 412.47998046875, 220.55999755859375, 431.03997802734375, 220.55999755859375, 431.67999267578125, 221.51998901367188, 443.8399963378906, 222.47999572753906, 457.91998291015625, 222.47999572753906, 466.8799743652344, 223.44000244140625, 473.91998291015625, 224.87998962402344, 479.67999267578125, 225.83999633789062, 486.0799865722656, 226.79998779296875, 491.1999816894531, 227.75999450683594, 495.03997802734375, 228.72000122070312, 498.8799743652344, 229.67999267578125, 502.0799865722656, 230.63999938964844, 505.2799987792969, 231.59999084472656, 507.8399963378906, 232.55999755859375, 511.03997802734375, 233.51998901367188, 514.239990234375, 234.47999572753906, 516.7999877929688, 235.4399871826172, 520.0, 237.36000061035156, 521.9199829101562, 237.36000061035156, 534.0800170898438, 243.59999084472656, 537.2799682617188, 245.51998901367188, 541.1199951171875, 249.36000061035156, 544.9599609375, 251.75999450683594, 548.1599731445312, 252.72000122070312, 551.3599853515625, 253.67999267578125, 553.2799682617188, 253.67999267578125, 556.47998046875, 255.59999084472656, 558.3999633789062, 255.59999084472656, 567.3599853515625, 260.3999938964844, 569.2799682617188, 260.3999938964844, 571.2000122070312, 261.3599853515625, 573.1199951171875, 263.2799987792969, 574.3999633789062, 265.67999267578125, 574.3999633789062, 267.6000061035156, 573.1199951171875, 268.55999755859375, 572.47998046875, 271.44000244140625, 572.47998046875, 281.5199890136719, 573.1199951171875, 286.32000732421875, 574.3999633789062, 287.2799987792969, 575.0399780273438, 290.6399841308594, 576.3200073242188, 293.5199890136719, 576.3200073242188, 309.3599853515625, 576.3200073242188, 312.239990234375, 576.3200073242188, 314.1600036621094, 577.5999755859375, 315.1199951171875, 578.239990234375, 318.47998046875, 578.239990234375, 320.3999938964844, 576.3200073242188, 321.3599853515625, 571.2000122070312, 322.32000732421875, 564.1599731445312, 323.2799987792969, 555.2000122070312, 323.2799987792969, 553.2799682617188, 325.1999816894531, 553.2799682617188, 333.3599853515625, 552.0, 337.1999816894531, 551.3599853515625, 340.0799865722656, 550.0800170898438, 343.44000244140625, 548.1599731445312, 345.3599853515625, 546.8800048828125, 348.239990234375, 544.9599609375, 351.1199951171875, 543.0399780273438, 354.47998046875, 534.0800170898438, 363.1199951171875, 530.8800048828125, 365.03997802734375, 525.1199951171875, 368.3999938964844, 521.9199829101562, 369.3599853515625, 518.0800170898438, 370.3199768066406, 496.9599914550781, 370.3199768066406, 491.1999816894531, 369.3599853515625, 488.0, 368.3999938964844, 484.79998779296875, 367.44000244140625, 480.9599914550781, 365.03997802734375, 477.7599792480469, 363.1199951171875, 475.1999816894531, 361.1999816894531, 464.9599914550781, 351.1199951171875, 463.03997802734375, 348.239990234375, 461.1199951171875, 345.3599853515625, 459.8399963378906, 343.44000244140625, 459.8399963378906, 341.03997802734375, 457.91998291015625, 338.1600036621094, 457.91998291015625, 336.239990234375, 456.6399841308594, 334.32000732421875, 454.7200012207031, 332.3999938964844, 452.79998779296875, 333.3599853515625, 448.9599914550781, 337.1999816894531, 447.03997802734375, 338.1600036621094, 426.55999755859375, 337.1999816894531, 424.0, 337.1999816894531, 422.7200012207031, 338.1600036621094, 419.5199890136719, 339.1199951171875, 411.8399963378906, 339.1199951171875, 410.55999755859375, 338.1600036621094, 379.8399963378906, 337.1999816894531, 376.0, 337.1999816894531, 374.7200012207031, 338.1600036621094, 365.7599792480469, 337.1999816894531, 361.91998291015625, 337.1999816894531, 360.6399841308594, 338.1600036621094, 351.67999267578125, 337.1999816894531, 347.8399963378906, 337.1999816894531, 346.55999755859375, 338.1600036621094, 340.79998779296875, 337.1999816894531, 337.6000061035156, 337.1999816894531, 336.9599914550781, 338.1600036621094, 328.6399841308594, 337.1999816894531, 323.5199890136719, 337.1999816894531, 322.8800048828125, 338.1600036621094, 314.55999755859375, 337.1999816894531, 310.7200012207031, 337.1999816894531, 309.44000244140625, 338.1600036621094, 301.7599792480469, 337.1999816894531, 298.55999755859375, 337.1999816894531, 297.91998291015625, 338.1600036621094, 289.6000061035156, 337.1999816894531, 287.67999267578125, 337.1999816894531, 286.3999938964844, 338.1600036621094, 279.3599853515625, 337.1999816894531, 275.5199890136719, 337.1999816894531, 274.239990234375, 338.1600036621094, 267.1999816894531, 337.1999816894531, 265.2799987792969, 337.1999816894531, 264.6399841308594, 338.1600036621094, 256.32000732421875, 337.1999816894531, 254.39999389648438, 337.1999816894531, 253.1199951171875, 338.1600036621094, 246.0800018310547, 337.1999816894531, 244.1599884033203, 337.1999816894531, 243.51998901367188, 338.1600036621094, 235.1999969482422, 337.1999816894531, 232.0, 337.1999816894531, 231.36000061035156, 338.1600036621094, 223.0399932861328, 337.1999816894531, 217.9199981689453, 337.1999816894531, 217.27999877929688, 338.1600036621094, 214.0800018310547, 339.1199951171875, 205.1199951171875, 339.1199951171875, 201.9199981689453, 338.1600036621094, 200.0, 337.1999816894531, 198.0800018310547, 335.2799987792969, 196.1599884033203, 334.32000732421875, 194.239990234375, 334.32000732421875, 191.67999267578125, 336.239990234375, 191.0399932861328, 338.1600036621094, 191.0399932861328, 340.0799865722656, 189.1199951171875, 343.44000244140625, 189.1199951171875, 345.3599853515625, 187.83999633789062, 347.2799987792969, 185.9199981689453, 349.1999816894531, 184.63999938964844, 352.0799865722656, 182.72000122070312, 355.44000244140625, 180.8000030517578, 358.3199768066406, 176.95999145507812, 362.1600036621094, 173.75999450683594, 364.0799865722656, 170.55999755859375, 366.0, 168.63999938964844, 367.44000244140625, 166.0800018310547, 368.3999938964844, 162.87998962402344, 369.3599853515625, 159.67999267578125, 370.3199768066406, 152.63999938964844, 371.2799987792969, 131.52000427246094, 371.2799987792969, 127.68000030517578, 370.3199768066406, 124.47999572753906, 369.3599853515625, 118.7199935913086, 366.0, 115.5199966430664, 364.0799865722656, 111.68000030517578, 361.1999816894531, 106.55999755859375, 356.3999938964844, 104.63999938964844, 353.03997802734375, 103.36000061035156, 350.1600036621094, 101.43999481201172, 348.239990234375, 100.79999542236328, 346.32000732421875, 99.5199966430664, 343.44000244140625, 99.5199966430664, 340.0799865722656, 98.23999786376953, 337.1999816894531, 96.31999969482422, 335.2799987792969, 94.4000015258789, 334.32000732421875, 87.36000061035156, 334.32000732421875, 81.5999984741211, 335.2799987792969, 80.31999969482422, 336.239990234375, 74.55999755859375, 337.1999816894531, 66.23999786376953, 337.1999816894531, 64.31999969482422, 335.2799987792969, 53.439998626708984, 335.2799987792969, 50.23999786376953, 334.32000732421875, 48.31999969482422, 333.3599853515625, 47.03999710083008, 331.44000244140625, 47.03999710083008, 329.03997802734375, 48.31999969482422, 327.1199951171875, 50.23999786376953, 325.1999816894531, 50.23999786376953, 323.2799987792969, 43.20000076293945, 322.32000732421875, 40.0, 321.3599853515625, 38.07999801635742, 320.3999938964844, 37.439998626708984, 318.47998046875, 36.15999984741211, 312.239990234375, 36.15999984741211, 307.44000244140625, 38.07999801635742, 305.5199890136719, 40.0, 304.55999755859375, 43.20000076293945, 303.6000061035156, 46.39999771118164, 302.6399841308594, 53.439998626708984, 301.67999267578125, 66.23999786376953, 301.67999267578125, 68.15999603271484, 299.2799987792969, 69.43999481201172, 297.3599853515625, 69.43999481201172, 293.5199890136719, 68.15999603271484, 292.55999755859375, 67.5199966430664, 287.2799987792969, 67.5199966430664, 277.67999267578125, 68.15999603271484, 274.32000732421875, 69.43999481201172, 272.3999938964844, 73.27999877929688, 268.55999755859375, 75.19999694824219, 267.6000061035156, 78.4000015258789, 266.6399841308594, 80.31999969482422, 266.6399841308594, 82.23999786376953, 264.7200012207031, 81.5999984741211, 260.3999938964844, 81.5999984741211, 258.47998046875, 83.5199966430664, 257.5199890136719, 87.36000061035156, 257.5199890136719, 89.27999877929688, 256.55999755859375, 96.31999969482422, 249.36000061035156, 96.31999969482422, 248.39999389648438, 106.55999755859375, 237.36000061035156, 110.39999389648438, 233.51998901367188, 112.31999969482422, 231.59999084472656, 120.63999938964844, 223.44000244140625, 123.83999633789062, 221.51998901367188, 126.39999389648438, 220.55999755859375, 129.59999084472656, 218.63999938964844, 132.8000030517578, 216.72000122070312, 136.63999938964844, 213.83999633789062, 141.75999450683594, 209.51998901367188, 148.8000030517578, 202.8000030517578, 153.9199981689453, 198.95999145507812, 154.55999755859375, 198.95999145507812, 157.75999450683594, 196.55999755859375, 161.59999084472656, 193.67999267578125, 168.63999938964844, 186.95999145507812, 171.83999633789062, 186.0, 173.75999450683594, 183.59999084472656, 178.87998962402344, 181.67999267578125, 180.8000030517578, 179.75999450683594]]], 'labels': ['']}}
+</output_code>
+  <output_code>&lt;PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=640x480&gt;</output_code>
+  <markdown>#### Region to segmentation</markdown>
+  <input_code>task_prompt = '&lt;REGION_TO_SEGMENTATION&gt;'
+text_input="&lt;loc_702&gt;&lt;loc_575&gt;&lt;loc_866&gt;&lt;loc_772&gt;"
+t0 = time.time()
+answer = generate_answer(task_prompt, text_input)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+draw_polygons(image, answer[task_prompt], fill_mask=True) </input_code>
+  <output_code>Time taken: 1246.26 ms
+{'&lt;REGION_TO_SEGMENTATION&gt;': {'polygons': [[[468.79998779296875, 288.239990234375, 472.6399841308594, 285.3599853515625, 475.8399963378906, 283.44000244140625, 477.7599792480469, 282.47998046875, 479.67999267578125, 282.47998046875, 482.8799743652344, 280.55999755859375, 485.44000244140625, 279.6000061035156, 488.6399841308594, 278.6399841308594, 491.8399963378906, 277.67999267578125, 497.5999755859375, 276.7200012207031, 511.67999267578125, 276.7200012207031, 514.8800048828125, 277.67999267578125, 518.0800170898438, 278.6399841308594, 520.6400146484375, 280.55999755859375, 522.5599975585938, 280.55999755859375, 524.47998046875, 282.47998046875, 527.6799926757812, 283.44000244140625, 530.8800048828125, 285.3599853515625, 534.0800170898438, 287.2799987792969, 543.0399780273438, 296.3999938964844, 544.9599609375, 299.2799987792969, 546.8800048828125, 302.1600036621094, 548.7999877929688, 306.47998046875, 548.7999877929688, 308.3999938964844, 550.719970703125, 311.2799987792969, 552.0, 314.1600036621094, 552.6400146484375, 318.47998046875, 552.6400146484375, 333.3599853515625, 552.0, 337.1999816894531, 550.719970703125, 340.0799865722656, 550.0800170898438, 343.44000244140625, 548.7999877929688, 345.3599853515625, 546.8800048828125, 347.2799987792969, 545.5999755859375, 350.1600036621094, 543.6799926757812, 353.03997802734375, 541.760009765625, 356.3999938964844, 536.0, 362.1600036621094, 532.7999877929688, 364.0799865722656, 529.5999755859375, 366.0, 527.6799926757812, 366.9599914550781, 525.760009765625, 366.9599914550781, 522.5599975585938, 369.3599853515625, 518.0800170898438, 370.3199768066406, 495.67999267578125, 370.3199768066406, 489.91998291015625, 369.3599853515625, 486.7200012207031, 368.3999938964844, 483.5199890136719, 366.9599914550781, 479.67999267578125, 365.03997802734375, 476.47998046875, 363.1199951171875, 473.91998291015625, 361.1999816894531, 465.5999755859375, 353.03997802734375, 462.3999938964844, 349.1999816894531, 460.47998046875, 346.32000732421875, 458.55999755859375, 342.47998046875, 457.91998291015625, 339.1199951171875, 456.6399841308594, 336.239990234375, 455.3599853515625, 333.3599853515625, 454.7200012207031, 329.5199890136719, 454.7200012207031, 315.1199951171875, 455.3599853515625, 310.32000732421875, 456.6399841308594, 306.47998046875, 457.91998291015625, 303.1199951171875, 459.8399963378906, 300.239990234375, 459.8399963378906, 298.32000732421875, 460.47998046875, 296.3999938964844, 462.3999938964844, 293.5199890136719, 465.5999755859375, 289.1999816894531]]], 'labels': ['']}}
+</output_code>
+  <output_code>&lt;PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=640x480&gt;</output_code>
+  <markdown>#### Open vocabulary detection</markdown>
+  <markdown>Como vamos a obtener diccionarios con bounding boxes, junto con sus etiquetas, vamos a crear una función para formatear los datos y poder reutilizar la función de pintar bounding boxes</markdown>
+  <input_code>def convert_to_od_format(data):  
+    """  
+    Converts a dictionary with 'bboxes' and 'bboxes_labels' into a dictionary with separate 'bboxes' and 'labels' keys.  
+  
+    Parameters:  
+    - data: The input dictionary with 'bboxes', 'bboxes_labels', 'polygons', and 'polygons_labels' keys.  
+  
+    Returns:  
+    - A dictionary with 'bboxes' and 'labels' keys formatted for object detection results.  
+    """  
+    # Extract bounding boxes and labels  
+    bboxes = data.get('bboxes', [])  
+    labels = data.get('bboxes_labels', [])  
+      
+    # Construct the output format  
+    od_results = {  
+        'bboxes': bboxes,  
+        'labels': labels  
+    }  
+      
+    return od_results  </input_code>
+  <input_code>task_prompt = '&lt;OPEN_VOCABULARY_DETECTION&gt;'
+text_input="a green car"
+t0 = time.time()
+answer = generate_answer(task_prompt, text_input)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+bbox_results  = convert_to_od_format(answer[task_prompt])
+plot_bbox(image, bbox_results)</input_code>
+  <output_code>Time taken: 256.23 ms
+{'&lt;OPEN_VOCABULARY_DETECTION&gt;': {'bboxes': [[34.23999786376953, 158.63999938964844, 582.0800170898438, 374.1600036621094]], 'bboxes_labels': ['a green car'], 'polygons': [], 'polygons_labels': []}}
+</output_code>
+  <output_code>&lt;Figure size 640x480 with 1 Axes&gt;</output_code>
+  <markdown>#### Region to category</markdown>
+  <input_code>task_prompt = '&lt;REGION_TO_CATEGORY&gt;'
+text_input="&lt;loc_52&gt;&lt;loc_332&gt;&lt;loc_932&gt;&lt;loc_774&gt;"
+t0 = time.time()
+answer = generate_answer(task_prompt, text_input)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)</input_code>
+  <output_code>Time taken: 231.91 ms
+{'&lt;REGION_TO_CATEGORY&gt;': 'car&lt;loc_52&gt;&lt;loc_332&gt;&lt;loc_932&gt;&lt;loc_774&gt;'}
+</output_code>
+  <markdown>#### Region to description</markdown>
+  <input_code>task_prompt = '&lt;REGION_TO_DESCRIPTION&gt;'
+text_input="&lt;loc_52&gt;&lt;loc_332&gt;&lt;loc_932&gt;&lt;loc_774&gt;"
+t0 = time.time()
+answer = generate_answer(task_prompt, text_input)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)</input_code>
+  <output_code>Time taken: 269.62 ms
+{'&lt;REGION_TO_DESCRIPTION&gt;': 'turquoise Volkswagen Beetle&lt;loc_52&gt;&lt;loc_332&gt;&lt;loc_932&gt;&lt;loc_774&gt;'}
+</output_code>
+  <markdown>### Tareas OCR</markdown>
+  <markdown>Usamos una nueva imagen</markdown>
+  <input_code>url = "http://ecx.images-amazon.com/images/I/51UUzBDAMsL.jpg?download=true"
+image = Image.open(requests.get(url, stream=True).raw).convert('RGB')
+image</input_code>
+  <output_code>&lt;PIL.Image.Image image mode=RGB size=403x500&gt;</output_code>
+  <markdown>#### OCR</markdown>
+  <input_code>task_prompt = '&lt;OCR&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)</input_code>
+  <output_code>Time taken: 424.52 ms
+{'&lt;OCR&gt;': 'CUDAFOR ENGINEERSAn Introduction to High-PerformanceParallel ComputingDUANE STORTIMETE YURTOGLU'}
+</output_code>
+  <markdown>#### OCR with region</markdown>
+  <markdown>Como vamos a obtener el texto del OCR y sus regiones, vamos a crear una función para pintarlos sobre la imagen</markdown>
+  <input_code>def draw_ocr_bboxes(input_image, prediction):
+    image = copy.deepcopy(input_image)
+    scale = 1
+    draw = ImageDraw.Draw(image)
+    bboxes, labels = prediction['quad_boxes'], prediction['labels']
+    for box, label in zip(bboxes, labels):
+        color = random.choice(colormap)
+        new_box = (np.array(box) * scale).tolist()
+        draw.polygon(new_box, width=3, outline=color)
+        draw.text((new_box[0]+8, new_box[1]+2),
+                    "{}".format(label),
+                    align="right",
+        
+                    fill=color)
+    display(image)</input_code>
+  <input_code>task_prompt = '&lt;OCR_WITH_REGION&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+draw_ocr_bboxes(image, answer[task_prompt])  </input_code>
+  <output_code>Time taken: 758.95 ms
+{'&lt;OCR_WITH_REGION&gt;': {'quad_boxes': [[167.0435028076172, 50.25, 375.7974853515625, 50.25, 375.7974853515625, 114.75, 167.0435028076172, 114.75], [144.8784942626953, 120.75, 375.7974853515625, 120.75, 375.7974853515625, 149.25, 144.8784942626953, 149.25], [115.86249542236328, 165.25, 376.6034851074219, 166.25, 376.6034851074219, 184.25, 115.86249542236328, 183.25], [239.9864959716797, 184.25, 376.6034851074219, 186.25, 376.6034851074219, 204.25, 239.9864959716797, 202.25], [266.1814880371094, 441.25, 376.6034851074219, 441.25, 376.6034851074219, 456.25, 266.1814880371094, 456.25], [252.0764923095703, 460.25, 376.6034851074219, 460.25, 376.6034851074219, 475.25, 252.0764923095703, 475.25]], 'labels': ['&lt;/s&gt;CUDA', 'FOR ENGINEERS', 'An Introduction to High-Performance', 'Parallel Computing', 'DUANE STORTI', 'METE YURTOGLU']}}
+</output_code>
+  <output_code>&lt;PIL.Image.Image image mode=RGB size=403x500&gt;</output_code>
+  <markdown>## Uso de Florence-2 large fine tuning</markdown>
+  <markdown>Creamos el modelo y el procesador</markdown>
+  <input_code>model_id = 'microsoft/Florence-2-large-ft'
+model = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True).eval().to('cuda')
+processor = AutoProcessor.from_pretrained(model_id, trust_remote_code=True)</input_code>
+  <markdown>Volvemos a obtener la imagen del coche</markdown>
+  <input_code>url = "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/transformers/tasks/car.jpg?download=true"
+image = Image.open(requests.get(url, stream=True).raw)
+image</input_code>
+  <output_code>&lt;PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=640x480&gt;</output_code>
+  <markdown>### Tareas sin prompt adicionales</markdown>
+  <markdown>#### Caption</markdown>
+  <input_code>task_prompt = '&lt;CAPTION&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+answer</input_code>
+  <output_code>Time taken: 292.35 ms
+</output_code>
+  <output_code>{'&lt;CAPTION&gt;': 'A green car parked in front of a yellow building.'}</output_code>
+  <input_code>task_prompt = '&lt;DETAILED_CAPTION&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+answer</input_code>
+  <output_code>Time taken: 437.06 ms
+</output_code>
+  <output_code>{'&lt;DETAILED_CAPTION&gt;': 'In this image we can see a car on the road. In the background there is a building with doors. At the top of the image there are trees.'}</output_code>
+  <input_code>task_prompt = '&lt;MORE_DETAILED_CAPTION&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+answer</input_code>
+  <output_code>Time taken: 779.38 ms
+</output_code>
+  <output_code>{'&lt;MORE_DETAILED_CAPTION&gt;': 'A light blue Volkswagen Beetle is parked in front of a building. The building is yellow and has two brown doors on it. The door on the right is closed and the one on the left is closed. The car is parked on a paved sidewalk.'}</output_code>
+  <markdown>#### Region proposal</markdown>
+  <markdown>Es una detección de objetos, pero en este caso no devuelve las clases de los objetos</markdown>
+  <input_code>task_prompt = '&lt;REGION_PROPOSAL&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+plot_bbox(image, answer[task_prompt])</input_code>
+  <output_code>Time taken: 255.08 ms
+{'&lt;REGION_PROPOSAL&gt;': {'bboxes': [[34.880001068115234, 161.0399932861328, 596.7999877929688, 370.79998779296875]], 'labels': ['']}}
+</output_code>
+  <output_code>&lt;Figure size 640x480 with 1 Axes&gt;</output_code>
+  <markdown>#### Object detection</markdown>
+  <markdown>En este caso sí devuelve las clases de los objetos</markdown>
+  <input_code>task_prompt = '&lt;OD&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+plot_bbox(image, answer[task_prompt])</input_code>
+  <output_code>Time taken: 245.54 ms
+{'&lt;OD&gt;': {'bboxes': [[34.880001068115234, 161.51998901367188, 596.7999877929688, 370.79998779296875]], 'labels': ['car']}}
+</output_code>
+  <output_code>&lt;Figure size 640x480 with 1 Axes&gt;</output_code>
+  <markdown>#### Dense region caption</markdown>
+  <input_code>task_prompt = '&lt;DENSE_REGION_CAPTION&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+plot_bbox(image, answer[task_prompt])</input_code>
+  <output_code>Time taken: 282.75 ms
+{'&lt;DENSE_REGION_CAPTION&gt;': {'bboxes': [[34.880001068115234, 161.51998901367188, 596.7999877929688, 370.79998779296875]], 'labels': ['turquoise Volkswagen Beetle']}}
+</output_code>
+  <output_code>&lt;Figure size 640x480 with 1 Axes&gt;</output_code>
+  <markdown>### Tareas con prompt adicionales</markdown>
+  <markdown>#### Phrase Grounding</markdown>
+  <input_code>task_prompt = '&lt;CAPTION_TO_PHRASE_GROUNDING&gt;'
+text_input="A green car parked in front of a yellow building."
+t0 = time.time()
+answer = generate_answer(task_prompt, text_input)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+plot_bbox(image, answer[task_prompt])</input_code>
+  <output_code>Time taken: 305.79 ms
+{'&lt;CAPTION_TO_PHRASE_GROUNDING&gt;': {'bboxes': [[34.880001068115234, 159.59999084472656, 598.719970703125, 374.6399841308594], [1.5999999046325684, 4.079999923706055, 639.0399780273438, 304.0799865722656]], 'labels': ['A green car', 'a yellow building']}}
+</output_code>
+  <output_code>&lt;Figure size 640x480 with 1 Axes&gt;</output_code>
+  <markdown>#### Referring expression segmentation</markdown>
+  <input_code>task_prompt = '&lt;REFERRING_EXPRESSION_SEGMENTATION&gt;'
+text_input="a green car"
+t0 = time.time()
+answer = generate_answer(task_prompt, text_input)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+draw_polygons(image, answer[task_prompt], fill_mask=True) </input_code>
+  <output_code>Time taken: 745.87 ms
+{'&lt;REFERRING_EXPRESSION_SEGMENTATION&gt;': {'polygons': [[[178.239990234375, 184.0800018310547, 256.32000732421875, 161.51998901367188, 374.7200012207031, 170.63999938964844, 408.0, 220.0800018310547, 480.9599914550781, 225.36000061035156, 539.2000122070312, 247.9199981689453, 573.760009765625, 266.6399841308594, 575.6799926757812, 289.1999816894531, 598.0800170898438, 293.5199890136719, 596.1599731445312, 309.8399963378906, 576.9599609375, 309.8399963378906, 576.9599609375, 321.3599853515625, 554.5599975585938, 322.32000732421875, 547.5199584960938, 354.47998046875, 525.1199951171875, 369.8399963378906, 488.0, 369.8399963378906, 463.67999267578125, 354.47998046875, 453.44000244140625, 332.8800048828125, 446.3999938964844, 340.0799865722656, 205.1199951171875, 340.0799865722656, 196.1599884033203, 334.79998779296875, 182.0800018310547, 361.67999267578125, 148.8000030517578, 370.79998779296875, 121.27999877929688, 369.8399963378906, 98.87999725341797, 349.1999816894531, 93.75999450683594, 332.8800048828125, 64.31999969482422, 339.1199951171875, 41.91999816894531, 334.79998779296875, 48.959999084472656, 326.6399841308594, 36.79999923706055, 321.3599853515625, 34.880001068115234, 303.6000061035156, 66.23999786376953, 301.67999267578125, 68.15999603271484, 289.1999816894531, 68.15999603271484, 268.55999755859375, 81.5999984741211, 263.2799987792969, 116.15999603271484, 227.27999877929688]]], 'labels': ['']}}
+</output_code>
+  <output_code>&lt;PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=640x480&gt;</output_code>
+  <markdown>#### Region to segmentation</markdown>
+  <input_code>task_prompt = '&lt;REGION_TO_SEGMENTATION&gt;'
+text_input="&lt;loc_702&gt;&lt;loc_575&gt;&lt;loc_866&gt;&lt;loc_772&gt;"
+t0 = time.time()
+answer = generate_answer(task_prompt, text_input)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+draw_polygons(image, answer[task_prompt], fill_mask=True) </input_code>
+  <output_code>Time taken: 358.71 ms
+{'&lt;REGION_TO_SEGMENTATION&gt;': {'polygons': [[[468.1600036621094, 292.0799865722656, 495.67999267578125, 276.239990234375, 523.2000122070312, 279.6000061035156, 546.8800048828125, 297.8399963378906, 555.8399658203125, 324.7200012207031, 548.7999877929688, 351.6000061035156, 529.5999755859375, 369.3599853515625, 493.7599792480469, 371.7599792480469, 468.1600036621094, 359.2799987792969, 449.5999755859375, 334.79998779296875]]], 'labels': ['']}}
+</output_code>
+  <output_code>&lt;PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=640x480&gt;</output_code>
+  <markdown>#### Open vocabulary detection</markdown>
+  <input_code>task_prompt = '&lt;OPEN_VOCABULARY_DETECTION&gt;'
+text_input="a green car"
+t0 = time.time()
+answer = generate_answer(task_prompt, text_input)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+bbox_results  = convert_to_od_format(answer[task_prompt])
+plot_bbox(image, bbox_results)</input_code>
+  <output_code>Time taken: 245.96 ms
+{'&lt;OPEN_VOCABULARY_DETECTION&gt;': {'bboxes': [[34.880001068115234, 159.59999084472656, 598.719970703125, 374.6399841308594]], 'bboxes_labels': ['a green car'], 'polygons': [], 'polygons_labels': []}}
+</output_code>
+  <output_code>&lt;Figure size 640x480 with 1 Axes&gt;</output_code>
+  <markdown>#### Region to category</markdown>
+  <input_code>task_prompt = '&lt;REGION_TO_CATEGORY&gt;'
+text_input="&lt;loc_52&gt;&lt;loc_332&gt;&lt;loc_932&gt;&lt;loc_774&gt;"
+t0 = time.time()
+answer = generate_answer(task_prompt, text_input)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)</input_code>
+  <output_code>Time taken: 246.42 ms
+{'&lt;REGION_TO_CATEGORY&gt;': 'car&lt;loc_52&gt;&lt;loc_332&gt;&lt;loc_932&gt;&lt;loc_774&gt;'}
+</output_code>
+  <markdown>#### Region to description</markdown>
+  <input_code>task_prompt = '&lt;REGION_TO_DESCRIPTION&gt;'
+text_input="&lt;loc_52&gt;&lt;loc_332&gt;&lt;loc_932&gt;&lt;loc_774&gt;"
+t0 = time.time()
+answer = generate_answer(task_prompt, text_input)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)</input_code>
+  <output_code>Time taken: 280.67 ms
+{'&lt;REGION_TO_DESCRIPTION&gt;': 'turquoise Volkswagen Beetle&lt;loc_52&gt;&lt;loc_332&gt;&lt;loc_932&gt;&lt;loc_774&gt;'}
+</output_code>
+  <markdown>### Tareas OCR</markdown>
+  <markdown>Usamos una nueva imagen</markdown>
+  <input_code>url = "http://ecx.images-amazon.com/images/I/51UUzBDAMsL.jpg?download=true"
+image = Image.open(requests.get(url, stream=True).raw).convert('RGB')
+image</input_code>
+  <output_code>&lt;PIL.Image.Image image mode=RGB size=403x500&gt;</output_code>
+  <markdown>#### OCR</markdown>
+  <input_code>task_prompt = '&lt;OCR&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)</input_code>
+  <output_code>Time taken: 444.77 ms
+{'&lt;OCR&gt;': 'CUDAFOR ENGINEERSAn Introduction to High-PerformanceParallel ComputingDUANE STORTIMETE YURTOGLU'}
+</output_code>
+  <markdown>#### OCR with region</markdown>
+  <input_code>task_prompt = '&lt;OCR_WITH_REGION&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+draw_ocr_bboxes(image, answer[task_prompt])  </input_code>
+  <output_code>Time taken: 771.91 ms
+{'&lt;OCR_WITH_REGION&gt;': {'quad_boxes': [[167.0435028076172, 50.25, 375.7974853515625, 50.25, 375.7974853515625, 114.75, 167.0435028076172, 114.75], [144.47549438476562, 121.25, 375.7974853515625, 121.25, 375.7974853515625, 149.25, 144.47549438476562, 149.25], [115.86249542236328, 166.25, 376.6034851074219, 166.25, 376.6034851074219, 183.75, 115.86249542236328, 183.25], [239.9864959716797, 184.75, 376.6034851074219, 186.25, 376.6034851074219, 203.75, 239.9864959716797, 201.75], [265.77850341796875, 441.25, 376.6034851074219, 441.25, 376.6034851074219, 456.25, 265.77850341796875, 456.25], [251.67349243164062, 460.25, 376.6034851074219, 460.25, 376.6034851074219, 474.75, 251.67349243164062, 474.75]], 'labels': ['&lt;/s&gt;CUDA', 'FOR ENGINEERS', 'An Introduction to High-Performance', 'Parallel Computing', 'DUANE STORTI', 'METE YURTOGLU']}}
+</output_code>
+  <output_code>&lt;PIL.Image.Image image mode=RGB size=403x500&gt;</output_code>
+  <markdown>## Uso de Florence-2 base</markdown>
+  <markdown>Creamos el modelo y el procesador</markdown>
+  <input_code>model_id = 'microsoft/Florence-2-base'
+model = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True).eval().to('cuda')
+processor = AutoProcessor.from_pretrained(model_id, trust_remote_code=True)</input_code>
+  <markdown>Volvemos a obtener la imagen del coche</markdown>
+  <input_code>url = "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/transformers/tasks/car.jpg?download=true"
+image = Image.open(requests.get(url, stream=True).raw)
+image</input_code>
+  <output_code>&lt;PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=640x480&gt;</output_code>
+  <markdown>### Tareas sin prompt adicionales</markdown>
+  <markdown>#### Caption</markdown>
+  <input_code>task_prompt = '&lt;CAPTION&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+answer</input_code>
+  <output_code>Time taken: 158.48 ms
+</output_code>
+  <output_code>{'&lt;CAPTION&gt;': 'A green car parked in front of a yellow building.'}</output_code>
+  <input_code>task_prompt = '&lt;DETAILED_CAPTION&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+answer</input_code>
+  <output_code>Time taken: 271.37 ms
+</output_code>
+  <output_code>{'&lt;DETAILED_CAPTION&gt;': 'The image shows a green car parked in front of a yellow building with two brown doors. The car is on the road and the sky is visible in the background.'}</output_code>
+  <input_code>task_prompt = '&lt;MORE_DETAILED_CAPTION&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+answer</input_code>
+  <output_code>Time taken: 476.14 ms
+</output_code>
+  <output_code>{'&lt;MORE_DETAILED_CAPTION&gt;': 'The image shows a vintage Volkswagen Beetle car parked on a cobblestone street in front of a yellow building with two wooden doors. The car is a light blue color with a white stripe running along the side. It has two large, round wheels with silver rims. The building appears to be old and dilapidated, with peeling paint and crumbling walls. The sky is blue and there are trees in the background.'}</output_code>
+  <markdown>#### Region proposal</markdown>
+  <markdown>Es una detección de objetos, pero en este caso no devuelve las clases de los objetos</markdown>
+  <input_code>task_prompt = '&lt;REGION_PROPOSAL&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+plot_bbox(image, answer[task_prompt])</input_code>
+  <output_code>Time taken: 235.72 ms
+{'&lt;REGION_PROPOSAL&gt;': {'bboxes': [[34.23999786376953, 160.0800018310547, 596.7999877929688, 372.239990234375], [453.44000244140625, 95.75999450683594, 581.4400024414062, 262.79998779296875], [450.239990234375, 276.7200012207031, 555.2000122070312, 370.79998779296875], [91.83999633789062, 280.55999755859375, 198.0800018310547, 370.79998779296875], [224.95999145507812, 86.63999938964844, 333.7599792480469, 164.87998962402344], [273.6000061035156, 178.8000030517578, 392.0, 228.72000122070312], [166.0800018310547, 179.27999877929688, 264.6399841308594, 230.63999938964844]], 'labels': ['', '', '', '', '', '', '']}}
+</output_code>
+  <output_code>&lt;Figure size 640x480 with 1 Axes&gt;</output_code>
+  <markdown>#### Object detection</markdown>
+  <markdown>En este caso sí devuelve las clases de los objetos</markdown>
+  <input_code>task_prompt = '&lt;OD&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+plot_bbox(image, answer[task_prompt])</input_code>
+  <output_code>Time taken: 190.37 ms
+{'&lt;OD&gt;': {'bboxes': [[34.880001068115234, 160.0800018310547, 597.4400024414062, 372.239990234375], [454.7200012207031, 96.23999786376953, 581.4400024414062, 262.79998779296875], [452.1600036621094, 276.7200012207031, 555.2000122070312, 370.79998779296875], [93.75999450683594, 280.55999755859375, 198.72000122070312, 371.2799987792969]], 'labels': ['car', 'door', 'wheel', 'wheel']}}
+</output_code>
+  <output_code>&lt;Figure size 640x480 with 1 Axes&gt;</output_code>
+  <markdown>#### Dense region caption</markdown>
+  <input_code>task_prompt = '&lt;DENSE_REGION_CAPTION&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+plot_bbox(image, answer[task_prompt])</input_code>
+  <output_code>Time taken: 242.62 ms
+{'&lt;DENSE_REGION_CAPTION&gt;': {'bboxes': [[34.880001068115234, 160.0800018310547, 597.4400024414062, 372.239990234375], [454.0799865722656, 95.75999450683594, 582.0800170898438, 262.79998779296875], [450.8800048828125, 276.7200012207031, 555.8399658203125, 370.79998779296875], [92.47999572753906, 280.55999755859375, 199.36000061035156, 370.79998779296875], [225.59999084472656, 87.1199951171875, 334.3999938964844, 164.39999389648438]], 'labels': ['turquoise Volkswagen Beetle', 'wooden door with metal handle and lock', 'wheel', 'wheel', 'door']}}
+</output_code>
+  <output_code>&lt;Figure size 640x480 with 1 Axes&gt;</output_code>
+  <markdown>### Tareas con prompt adicionales</markdown>
+  <markdown>#### Phrase Grounding</markdown>
+  <input_code>task_prompt = '&lt;CAPTION_TO_PHRASE_GROUNDING&gt;'
+text_input="A green car parked in front of a yellow building."
+t0 = time.time()
+answer = generate_answer(task_prompt, text_input)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+plot_bbox(image, answer[task_prompt])</input_code>
+  <output_code>Time taken: 183.85 ms
+{'&lt;CAPTION_TO_PHRASE_GROUNDING&gt;': {'bboxes': [[34.880001068115234, 159.1199951171875, 582.719970703125, 375.1199951171875], [0.3199999928474426, 0.23999999463558197, 639.0399780273438, 305.5199890136719]], 'labels': ['A green car', 'a yellow building']}}
+</output_code>
+  <output_code>&lt;Figure size 640x480 with 1 Axes&gt;</output_code>
+  <markdown>#### Referring expression segmentation</markdown>
+  <input_code>task_prompt = '&lt;REFERRING_EXPRESSION_SEGMENTATION&gt;'
+text_input="a green car"
+t0 = time.time()
+answer = generate_answer(task_prompt, text_input)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+draw_polygons(image, answer[task_prompt], fill_mask=True) </input_code>
+  <output_code>Time taken: 2531.89 ms
+{'&lt;REFERRING_EXPRESSION_SEGMENTATION&gt;': {'polygons': [[[178.87998962402344, 182.1599884033203, 180.8000030517578, 182.1599884033203, 185.9199981689453, 178.8000030517578, 187.83999633789062, 178.8000030517578, 191.0399932861328, 176.87998962402344, 192.95999145507812, 176.87998962402344, 196.1599884033203, 174.95999145507812, 198.72000122070312, 174.0, 201.9199981689453, 173.0399932861328, 205.1199951171875, 172.0800018310547, 207.67999267578125, 170.63999938964844, 212.1599884033203, 169.67999267578125, 216.0, 168.72000122070312, 219.83999633789062, 167.75999450683594, 223.67999267578125, 166.8000030517578, 228.1599884033203, 165.83999633789062, 233.9199981689453, 164.87998962402344, 240.95999145507812, 163.9199981689453, 249.9199981689453, 162.95999145507812, 262.0799865722656, 162.0, 313.2799987792969, 162.0, 329.2799987792969, 162.95999145507812, 338.239990234375, 163.9199981689453, 344.0, 164.87998962402344, 349.1199951171875, 165.83999633789062, 352.9599914550781, 166.8000030517578, 357.44000244140625, 167.75999450683594, 361.2799987792969, 168.72000122070312, 365.1199951171875, 169.67999267578125, 368.9599914550781, 170.63999938964844, 372.1600036621094, 172.0800018310547, 374.0799865722656, 173.0399932861328, 377.2799987792969, 175.9199981689453, 379.1999816894531, 178.8000030517578, 381.1199951171875, 182.1599884033203, 383.03997802734375, 185.0399932861328, 384.9599914550781, 187.9199981689453, 386.239990234375, 190.8000030517578, 388.1600036621094, 192.72000122070312, 389.44000244140625, 196.0800018310547, 391.3599853515625, 198.95999145507812, 393.2799987792969, 201.83999633789062, 395.1999816894531, 204.72000122070312, 397.1199951171875, 208.0800018310547, 400.3199768066406, 210.95999145507812, 404.1600036621094, 213.83999633789062, 407.3599853515625, 214.79998779296875, 409.2799987792969, 216.72000122070312, 409.2799987792969, 219.1199951171875, 411.1999816894531, 221.0399932861328, 428.47998046875, 221.0399932861328, 429.1199951171875, 222.0, 441.2799987792969, 222.95999145507812, 455.3599853515625, 222.95999145507812, 464.3199768066406, 223.9199981689453, 471.3599853515625, 224.87998962402344, 477.1199951171875, 225.83999633789062, 482.239990234375, 226.79998779296875, 487.3599853515625, 227.75999450683594, 491.1999816894531, 228.72000122070312, 495.03997802734375, 230.1599884033203, 498.239990234375, 231.1199951171875, 502.0799865722656, 232.0800018310547, 505.2799987792969, 233.0399932861328, 508.47998046875, 234.0, 511.03997802734375, 234.95999145507812, 514.239990234375, 236.87998962402344, 516.1599731445312, 236.87998962402344, 519.3599853515625, 238.79998779296875, 521.2799682617188, 238.79998779296875, 527.0399780273438, 242.1599884033203, 528.9599609375, 244.0800018310547, 532.1599731445312, 245.0399932861328, 535.3599853515625, 246.95999145507812, 537.9199829101562, 248.87998962402344, 541.1199951171875, 252.239990234375, 543.0399780273438, 253.1999969482422, 546.239990234375, 254.1599884033203, 549.4400024414062, 254.1599884033203, 552.0, 255.1199951171875, 555.2000122070312, 257.0400085449219, 557.1199951171875, 257.0400085449219, 559.0399780273438, 258.0, 560.9599609375, 259.91998291015625, 564.1599731445312, 260.8800048828125, 566.0800170898438, 260.8800048828125, 568.0, 261.8399963378906, 569.9199829101562, 263.7599792480469, 571.2000122070312, 266.1600036621094, 571.8399658203125, 269.0400085449219, 573.1199951171875, 272.8800048828125, 573.1199951171875, 283.91998291015625, 573.760009765625, 290.1600036621094, 575.0399780273438, 292.0799865722656, 576.9599609375, 294.0, 578.8800048828125, 294.0, 582.0800170898438, 294.0, 591.0399780273438, 294.0, 592.9599609375, 294.9599914550781, 594.8800048828125, 296.8800048828125, 596.1599731445312, 298.79998779296875, 596.1599731445312, 307.91998291015625, 594.8800048828125, 309.8399963378906, 592.9599609375, 310.79998779296875, 578.8800048828125, 310.79998779296875, 576.9599609375, 312.7200012207031, 576.9599609375, 319.91998291015625, 575.0399780273438, 321.8399963378906, 571.2000122070312, 322.79998779296875, 564.1599731445312, 323.7599792480469, 555.2000122070312, 323.7599792480469, 553.2799682617188, 325.67999267578125, 552.0, 328.55999755859375, 552.0, 335.7599792480469, 551.3599853515625, 339.6000061035156, 550.0800170898438, 342.9599914550781, 548.1599731445312, 346.79998779296875, 546.239990234375, 349.67999267578125, 544.3200073242188, 352.55999755859375, 541.1199951171875, 356.8800048828125, 534.0800170898438, 363.6000061035156, 530.239990234375, 366.47998046875, 526.3999633789062, 368.3999938964844, 523.2000122070312, 369.8399963378906, 520.0, 370.79998779296875, 496.9599914550781, 370.79998779296875, 491.1999816894531, 369.8399963378906, 487.3599853515625, 368.3999938964844, 484.1600036621094, 367.44000244140625, 480.3199768066406, 365.5199890136719, 477.1199951171875, 363.6000061035156, 473.2799987792969, 360.7200012207031, 466.239990234375, 353.5199890136719, 464.3199768066406, 350.6399841308594, 462.3999938964844, 347.7599792480469, 461.1199951171875, 345.8399963378906, 460.47998046875, 342.9599914550781, 459.1999816894531, 339.6000061035156, 458.55999755859375, 336.7200012207031, 457.2799987792969, 333.8399963378906, 457.2799987792969, 331.91998291015625, 455.3599853515625, 330.0, 453.44000244140625, 331.91998291015625, 453.44000244140625, 333.8399963378906, 452.1600036621094, 335.7599792480469, 450.239990234375, 337.67999267578125, 448.3199768066406, 338.6399841308594, 423.3599853515625, 338.6399841308594, 422.0799865722656, 339.6000061035156, 418.239990234375, 340.55999755859375, 414.3999938964844, 340.55999755859375, 412.47998046875, 342.9599914550781, 412.47998046875, 344.8800048828125, 411.1999816894531, 346.79998779296875, 409.2799987792969, 344.8800048828125, 409.2799987792969, 342.9599914550781, 407.3599853515625, 340.55999755859375, 405.44000244140625, 339.6000061035156, 205.75999450683594, 339.6000061035156, 205.1199951171875, 338.6399841308594, 201.9199981689453, 337.67999267578125, 198.72000122070312, 336.7200012207031, 196.1599884033203, 336.7200012207031, 194.239990234375, 338.6399841308594, 192.95999145507812, 340.55999755859375, 192.95999145507812, 342.9599914550781, 191.67999267578125, 344.8800048828125, 189.75999450683594, 347.7599792480469, 187.83999633789062, 350.6399841308594, 185.9199981689453, 353.5199890136719, 184.0, 356.8800048828125, 180.8000030517578, 360.7200012207031, 176.95999145507812, 364.55999755859375, 173.75999450683594, 366.47998046875, 169.9199981689453, 368.3999938964844, 166.72000122070312, 369.8399963378906, 162.87998962402344, 370.79998779296875, 155.83999633789062, 371.7599792480469, 130.87998962402344, 371.7599792480469, 127.04000091552734, 370.79998779296875, 123.83999633789062, 369.8399963378906, 120.0, 367.44000244140625, 116.79999542236328, 365.5199890136719, 113.5999984741211, 363.6000061035156, 105.91999816894531, 355.91998291015625, 104.0, 352.55999755859375, 102.07999420166016, 349.67999267578125, 100.79999542236328, 347.7599792480469, 100.15999603271484, 344.8800048828125, 98.87999725341797, 341.5199890136719, 98.87999725341797, 338.6399841308594, 98.23999786376953, 336.7200012207031, 96.31999969482422, 334.79998779296875, 93.1199951171875, 334.79998779296875, 91.83999633789062, 335.7599792480469, 86.08000183105469, 336.7200012207031, 75.83999633789062, 336.7200012207031, 75.19999694824219, 337.67999267578125, 70.08000183105469, 338.6399841308594, 66.87999725341797, 338.6399841308594, 64.95999908447266, 336.7200012207031, 63.03999710083008, 335.7599792480469, 52.15999984741211, 335.7599792480469, 48.959999084472656, 334.79998779296875, 47.03999710083008, 333.8399963378906, 45.119998931884766, 331.91998291015625, 45.119998931884766, 330.0, 47.03999710083008, 327.6000061035156, 47.03999710083008, 325.67999267578125, 45.119998931884766, 323.7599792480469, 43.20000076293945, 322.79998779296875, 40.0, 322.79998779296875, 38.07999801635742, 321.8399963378906, 36.15999984741211, 319.91998291015625, 34.880001068115234, 317.03997802734375, 34.880001068115234, 309.8399963378906, 36.15999984741211, 307.91998291015625, 38.07999801635742, 306.0, 40.0, 305.03997802734375, 43.84000015258789, 304.0799865722656, 63.03999710083008, 304.0799865722656, 64.95999908447266, 303.1199951171875, 66.87999725341797, 301.1999816894531, 68.15999603271484, 298.79998779296875, 68.79999542236328, 295.91998291015625, 68.79999542236328, 293.0400085449219, 68.15999603271484, 292.0799865722656, 66.87999725341797, 289.1999816894531, 66.87999725341797, 278.1600036621094, 68.15999603271484, 274.79998779296875, 68.79999542236328, 272.8800048828125, 72.0, 270.0, 73.91999816894531, 269.0400085449219, 77.1199951171875, 268.0799865722656, 80.95999908447266, 268.0799865722656, 82.87999725341797, 266.1600036621094, 80.95999908447266, 262.79998779296875, 80.95999908447266, 260.8800048828125, 82.87999725341797, 258.9599914550781, 84.79999542236328, 258.0, 88.0, 258.0, 89.91999816894531, 257.0400085449219, 91.83999633789062, 255.1199951171875, 91.83999633789062, 254.1599884033203, 95.04000091552734, 249.83999633789062, 105.91999816894531, 238.79998779296875, 107.83999633789062, 236.87998962402344, 109.75999450683594, 234.95999145507812, 118.7199935913086, 225.83999633789062, 121.91999816894531, 223.9199981689453, 123.83999633789062, 222.95999145507812, 125.75999450683594, 222.95999145507812, 127.68000030517578, 222.0, 130.87998962402344, 220.0800018310547, 134.72000122070312, 216.72000122070312, 139.83999633789062, 212.87998962402344, 144.95999145507812, 208.0800018310547, 150.0800018310547, 203.75999450683594, 153.9199981689453, 200.87998962402344, 157.75999450683594, 198.0, 159.0399932861328, 198.0, 162.87998962402344, 195.1199951171875, 168.0, 189.83999633789062, 171.83999633789062, 186.95999145507812, 175.0399932861328, 186.0, 176.95999145507812, 184.0800018310547]]], 'labels': ['']}}
+</output_code>
+  <output_code>&lt;PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=640x480&gt;</output_code>
+  <markdown>#### Region to segmentation</markdown>
+  <input_code>task_prompt = '&lt;REGION_TO_SEGMENTATION&gt;'
+text_input="&lt;loc_702&gt;&lt;loc_575&gt;&lt;loc_866&gt;&lt;loc_772&gt;"
+t0 = time.time()
+answer = generate_answer(task_prompt, text_input)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+draw_polygons(image, answer[task_prompt], fill_mask=True) </input_code>
+  <output_code>Time taken: 653.99 ms
+{'&lt;REGION_TO_SEGMENTATION&gt;': {'polygons': [[[470.7200012207031, 288.239990234375, 473.91998291015625, 286.32000732421875, 477.1199951171875, 284.3999938964844, 479.03997802734375, 283.44000244140625, 480.9599914550781, 283.44000244140625, 484.1600036621094, 281.5199890136719, 486.7200012207031, 280.55999755859375, 489.91998291015625, 279.6000061035156, 493.7599792480469, 278.1600036621094, 500.79998779296875, 277.1999816894531, 511.03997802734375, 277.1999816894531, 514.8800048828125, 278.1600036621094, 518.0800170898438, 279.6000061035156, 520.6400146484375, 281.5199890136719, 522.5599975585938, 281.5199890136719, 524.47998046875, 283.44000244140625, 527.6799926757812, 284.3999938964844, 530.8800048828125, 286.32000732421875, 534.719970703125, 289.1999816894531, 543.0399780273438, 297.3599853515625, 544.9599609375, 300.239990234375, 546.8800048828125, 303.1199951171875, 548.7999877929688, 307.44000244140625, 550.0800170898438, 310.32000732421875, 550.719970703125, 313.1999816894531, 552.0, 317.03997802734375, 552.0, 334.32000732421875, 550.719970703125, 338.1600036621094, 550.0800170898438, 341.03997802734375, 548.7999877929688, 343.91998291015625, 546.8800048828125, 348.239990234375, 544.9599609375, 351.1199951171875, 543.0399780273438, 354.0, 532.7999877929688, 364.0799865722656, 529.5999755859375, 366.0, 527.6799926757812, 366.9599914550781, 524.47998046875, 367.91998291015625, 521.9199829101562, 368.8800048828125, 518.0800170898438, 369.8399963378906, 496.9599914550781, 369.8399963378906, 489.91998291015625, 368.8800048828125, 486.7200012207031, 367.91998291015625, 484.1600036621094, 366.9599914550781, 480.9599914550781, 366.0, 479.03997802734375, 365.03997802734375, 475.8399963378906, 363.1199951171875, 472.0, 360.239990234375, 466.8799743652344, 354.9599914550781, 463.67999267578125, 351.1199951171875, 461.7599792480469, 348.239990234375, 459.8399963378906, 343.91998291015625, 458.55999755859375, 341.03997802734375, 457.91998291015625, 338.1600036621094, 456.6399841308594, 335.2799987792969, 456.0, 330.9599914550781, 454.7200012207031, 326.1600036621094, 454.7200012207031, 318.9599914550781, 456.0, 313.1999816894531, 456.6399841308594, 309.3599853515625, 457.91998291015625, 306.47998046875, 458.55999755859375, 303.1199951171875, 461.7599792480469, 297.3599853515625, 463.67999267578125, 294.47998046875]]], 'labels': ['']}}
+</output_code>
+  <output_code>&lt;PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=640x480&gt;</output_code>
+  <markdown>#### Open vocabulary detection</markdown>
+  <input_code>task_prompt = '&lt;OPEN_VOCABULARY_DETECTION&gt;'
+text_input="a green car"
+t0 = time.time()
+answer = generate_answer(task_prompt, text_input)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+bbox_results  = convert_to_od_format(answer[task_prompt])
+plot_bbox(image, bbox_results)</input_code>
+  <output_code>Time taken: 138.76 ms
+{'&lt;OPEN_VOCABULARY_DETECTION&gt;': {'bboxes': [[34.880001068115234, 158.63999938964844, 582.0800170898438, 374.1600036621094]], 'bboxes_labels': ['a green car'], 'polygons': [], 'polygons_labels': []}}
+</output_code>
+  <output_code>&lt;Figure size 640x480 with 1 Axes&gt;</output_code>
+  <markdown>#### Region to category</markdown>
+  <input_code>task_prompt = '&lt;REGION_TO_CATEGORY&gt;'
+text_input="&lt;loc_52&gt;&lt;loc_332&gt;&lt;loc_932&gt;&lt;loc_774&gt;"
+t0 = time.time()
+answer = generate_answer(task_prompt, text_input)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)</input_code>
+  <output_code>Time taken: 130.24 ms
+{'&lt;REGION_TO_CATEGORY&gt;': 'car&lt;loc_52&gt;&lt;loc_332&gt;&lt;loc_932&gt;&lt;loc_774&gt;'}
+</output_code>
+  <markdown>#### Region to description</markdown>
+  <input_code>task_prompt = '&lt;REGION_TO_DESCRIPTION&gt;'
+text_input="&lt;loc_52&gt;&lt;loc_332&gt;&lt;loc_932&gt;&lt;loc_774&gt;"
+t0 = time.time()
+answer = generate_answer(task_prompt, text_input)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)</input_code>
+  <output_code>Time taken: 149.88 ms
+{'&lt;REGION_TO_DESCRIPTION&gt;': 'mint green Volkswagen Beetle&lt;loc_52&gt;&lt;loc_332&gt;&lt;loc_932&gt;&lt;loc_774&gt;'}
+</output_code>
+  <markdown>### Tareas OCR</markdown>
+  <markdown>Usamos una nueva imagen</markdown>
+  <input_code>url = "http://ecx.images-amazon.com/images/I/51UUzBDAMsL.jpg?download=true"
+image = Image.open(requests.get(url, stream=True).raw).convert('RGB')
+image</input_code>
+  <output_code>&lt;PIL.Image.Image image mode=RGB size=403x500&gt;</output_code>
+  <markdown>#### OCR</markdown>
+  <input_code>task_prompt = '&lt;OCR&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)</input_code>
+  <output_code>Time taken: 231.77 ms
+{'&lt;OCR&gt;': 'CUDAFOR ENGINEERSAn Introduction to High-PerformanceParallel ComputingDUANE STORTIMETE YURTOGLU'}
+</output_code>
+  <markdown>#### OCR with region</markdown>
+  <input_code>task_prompt = '&lt;OCR_WITH_REGION&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+draw_ocr_bboxes(image, answer[task_prompt])  </input_code>
+  <output_code>Time taken: 425.63 ms
+{'&lt;OCR_WITH_REGION&gt;': {'quad_boxes': [[167.0435028076172, 50.25, 374.9914855957031, 50.25, 374.9914855957031, 114.25, 167.0435028076172, 114.25], [144.8784942626953, 120.75, 374.9914855957031, 120.75, 374.9914855957031, 148.75, 144.8784942626953, 148.75], [115.86249542236328, 165.25, 376.20050048828125, 165.25, 376.20050048828125, 183.75, 115.86249542236328, 182.75], [239.9864959716797, 184.75, 376.20050048828125, 185.75, 376.20050048828125, 202.75, 239.9864959716797, 201.75], [266.1814880371094, 440.75, 376.20050048828125, 440.75, 376.20050048828125, 455.75, 266.1814880371094, 455.75], [251.67349243164062, 459.75, 376.20050048828125, 459.75, 376.20050048828125, 474.25, 251.67349243164062, 474.25]], 'labels': ['&lt;/s&gt;CUDA', 'FOR ENGINEERS', 'An Introduction to High-Performance', 'Parallel Computing', 'DUANE STORTI', 'METE YURTOGLU']}}
+</output_code>
+  <output_code>&lt;PIL.Image.Image image mode=RGB size=403x500&gt;</output_code>
+  <markdown>## Uso de Florence-2 base fine tuning</markdown>
+  <markdown>Creamos el modelo y el procesador</markdown>
+  <input_code>model_id = 'microsoft/Florence-2-base-ft'
+model = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True).eval().to('cuda')
+processor = AutoProcessor.from_pretrained(model_id, trust_remote_code=True)</input_code>
+  <markdown>Volvemos a obtener la imagen del coche</markdown>
+  <input_code>url = "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/transformers/tasks/car.jpg?download=true"
+image = Image.open(requests.get(url, stream=True).raw)
+image</input_code>
+  <output_code>&lt;PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=640x480&gt;</output_code>
+  <markdown>### Tareas sin prompt adicionales</markdown>
+  <markdown>#### Caption</markdown>
+  <input_code>task_prompt = '&lt;CAPTION&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+answer</input_code>
+  <output_code>Time taken: 176.65 ms
+</output_code>
+  <output_code>{'&lt;CAPTION&gt;': 'A green car parked in front of a yellow building.'}</output_code>
+  <input_code>task_prompt = '&lt;DETAILED_CAPTION&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+answer</input_code>
+  <output_code>Time taken: 246.26 ms
+</output_code>
+  <output_code>{'&lt;DETAILED_CAPTION&gt;': 'In this image we can see a car on the road. In the background there is a wall with doors. At the top of the image there is sky.'}</output_code>
+  <input_code>task_prompt = '&lt;MORE_DETAILED_CAPTION&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+answer</input_code>
+  <output_code>Time taken: 259.87 ms
+</output_code>
+  <output_code>{'&lt;MORE_DETAILED_CAPTION&gt;': 'There is a light green car parked in front of a yellow building. There are two brown doors on the building behind the car. There is a brick sidewalk under the car on the ground. '}</output_code>
+  <markdown>#### Region proposal</markdown>
+  <markdown>Es una detección de objetos, pero en este caso no devuelve las clases de los objetos</markdown>
+  <input_code>task_prompt = '&lt;REGION_PROPOSAL&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+plot_bbox(image, answer[task_prompt])</input_code>
+  <output_code>Time taken: 120.69 ms
+{'&lt;REGION_PROPOSAL&gt;': {'bboxes': [[34.880001068115234, 160.55999755859375, 598.0800170898438, 371.2799987792969]], 'labels': ['']}}
+</output_code>
+  <output_code>&lt;Figure size 640x480 with 1 Axes&gt;</output_code>
+  <markdown>#### Object detection</markdown>
+  <markdown>En este caso sí devuelve las clases de los objetos</markdown>
+  <input_code>task_prompt = '&lt;OD&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+plot_bbox(image, answer[task_prompt])</input_code>
+  <output_code>Time taken: 199.46 ms
+{'&lt;OD&gt;': {'bboxes': [[34.880001068115234, 160.55999755859375, 598.0800170898438, 371.7599792480469], [454.7200012207031, 96.72000122070312, 581.4400024414062, 262.32000732421875], [453.44000244140625, 276.7200012207031, 554.5599975585938, 370.79998779296875], [93.1199951171875, 280.55999755859375, 197.44000244140625, 371.2799987792969]], 'labels': ['car', 'door', 'wheel', 'wheel']}}
+</output_code>
+  <output_code>&lt;Figure size 640x480 with 1 Axes&gt;</output_code>
+  <markdown>#### Dense region caption</markdown>
+  <input_code>task_prompt = '&lt;DENSE_REGION_CAPTION&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+plot_bbox(image, answer[task_prompt])</input_code>
+  <output_code>Time taken: 210.33 ms
+{'&lt;DENSE_REGION_CAPTION&gt;': {'bboxes': [[35.52000045776367, 160.55999755859375, 598.0800170898438, 371.2799987792969], [454.0799865722656, 276.7200012207031, 553.9199829101562, 370.79998779296875], [94.4000015258789, 280.55999755859375, 196.1599884033203, 371.2799987792969]], 'labels': ['turquoise volkswagen beetle', 'wheel', 'wheel']}}
+</output_code>
+  <output_code>&lt;Figure size 640x480 with 1 Axes&gt;</output_code>
+  <markdown>### Tareas con prompt adicionales</markdown>
+  <markdown>#### Phrase Grounding</markdown>
+  <input_code>task_prompt = '&lt;CAPTION_TO_PHRASE_GROUNDING&gt;'
+text_input="A green car parked in front of a yellow building."
+t0 = time.time()
+answer = generate_answer(task_prompt, text_input)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+plot_bbox(image, answer[task_prompt])</input_code>
+  <output_code>Time taken: 168.37 ms
+{'&lt;CAPTION_TO_PHRASE_GROUNDING&gt;': {'bboxes': [[34.880001068115234, 159.1199951171875, 598.0800170898438, 375.1199951171875], [0.3199999928474426, 0.23999999463558197, 639.0399780273438, 304.0799865722656]], 'labels': ['A green car', 'a yellow building']}}
+</output_code>
+  <output_code>&lt;Figure size 640x480 with 1 Axes&gt;</output_code>
+  <markdown>#### Referring expression segmentation</markdown>
+  <input_code>task_prompt = '&lt;REFERRING_EXPRESSION_SEGMENTATION&gt;'
+text_input="a green car"
+t0 = time.time()
+answer = generate_answer(task_prompt, text_input)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+draw_polygons(image, answer[task_prompt], fill_mask=True) </input_code>
+  <output_code>Time taken: 395.38 ms
+{'&lt;REFERRING_EXPRESSION_SEGMENTATION&gt;': {'polygons': [[[180.8000030517578, 179.27999877929688, 237.75999450683594, 163.44000244140625, 333.1199951171875, 162.47999572753906, 374.7200012207031, 172.55999755859375, 407.3599853515625, 219.59999084472656, 477.7599792480469, 223.9199981689453, 540.47998046875, 248.87998962402344, 576.3200073242188, 264.7200012207031, 576.3200073242188, 292.55999755859375, 598.719970703125, 292.55999755859375, 598.719970703125, 311.7599792480469, 577.5999755859375, 311.7599792480469, 577.5999755859375, 321.8399963378906, 553.9199829101562, 325.1999816894531, 546.239990234375, 355.44000244140625, 523.8399658203125, 371.2799987792969, 477.7599792480469, 367.91998291015625, 456.6399841308594, 342.0, 452.1600036621094, 338.6399841308594, 201.27999877929688, 338.6399841308594, 187.83999633789062, 358.79998779296875, 162.87998962402344, 371.2799987792969, 121.27999877929688, 371.2799987792969, 98.87999725341797, 348.7200012207031, 94.4000015258789, 331.91998291015625, 66.23999786376953, 338.6399841308594, 39.36000061035156, 331.91998291015625, 47.03999710083008, 325.1999816894531, 34.880001068115234, 321.8399963378906, 34.880001068115234, 305.03997802734375, 66.23999786376953, 299.2799987792969, 67.5199966430664, 269.0400085449219, 82.87999725341797, 269.0400085449219, 82.87999725341797, 258.9599914550781, 120.0, 222.95999145507812]]], 'labels': ['']}}
+</output_code>
+  <output_code>&lt;PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=640x480&gt;</output_code>
+  <markdown>#### Region to segmentation</markdown>
+  <input_code>task_prompt = '&lt;REGION_TO_SEGMENTATION&gt;'
+text_input="&lt;loc_702&gt;&lt;loc_575&gt;&lt;loc_866&gt;&lt;loc_772&gt;"
+t0 = time.time()
+answer = generate_answer(task_prompt, text_input)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+draw_polygons(image, answer[task_prompt], fill_mask=True) </input_code>
+  <output_code>Time taken: 279.46 ms
+{'&lt;REGION_TO_SEGMENTATION&gt;': {'polygons': [[[464.3199768066406, 292.0799865722656, 482.239990234375, 280.55999755859375, 504.0, 276.239990234375, 521.9199829101562, 280.55999755859375, 539.8399658203125, 292.0799865722656, 551.3599853515625, 308.8800048828125, 555.8399658203125, 325.67999267578125, 551.3599853515625, 341.5199890136719, 546.8800048828125, 354.9599914550781, 537.9199829101562, 365.03997802734375, 521.9199829101562, 371.7599792480469, 499.5199890136719, 371.7599792480469, 483.5199890136719, 368.3999938964844, 470.0799865722656, 361.67999267578125, 461.1199951171875, 351.6000061035156, 456.6399841308594, 339.1199951171875, 449.5999755859375, 332.3999938964844, 454.0799865722656, 318.9599914550781, 456.6399841308594, 305.5199890136719]]], 'labels': ['']}}
+</output_code>
+  <output_code>&lt;PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=640x480&gt;</output_code>
+  <markdown>#### Open vocabulary detection</markdown>
+  <input_code>task_prompt = '&lt;OPEN_VOCABULARY_DETECTION&gt;'
+text_input="a green car"
+t0 = time.time()
+answer = generate_answer(task_prompt, text_input)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+bbox_results  = convert_to_od_format(answer[task_prompt])
+plot_bbox(image, bbox_results)</input_code>
+  <output_code>Time taken: 134.53 ms
+{'&lt;OPEN_VOCABULARY_DETECTION&gt;': {'bboxes': [[34.880001068115234, 159.1199951171875, 597.4400024414062, 374.6399841308594]], 'bboxes_labels': ['a green car'], 'polygons': [], 'polygons_labels': []}}
+</output_code>
+  <output_code>&lt;Figure size 640x480 with 1 Axes&gt;</output_code>
+  <markdown>#### Region to category</markdown>
+  <input_code>task_prompt = '&lt;REGION_TO_CATEGORY&gt;'
+text_input="&lt;loc_52&gt;&lt;loc_332&gt;&lt;loc_932&gt;&lt;loc_774&gt;"
+t0 = time.time()
+answer = generate_answer(task_prompt, text_input)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)</input_code>
+  <output_code>Time taken: 131.88 ms
+{'&lt;REGION_TO_CATEGORY&gt;': 'car&lt;loc_52&gt;&lt;loc_332&gt;&lt;loc_932&gt;&lt;loc_774&gt;'}
+</output_code>
+  <markdown>#### Region to description</markdown>
+  <input_code>task_prompt = '&lt;REGION_TO_DESCRIPTION&gt;'
+text_input="&lt;loc_52&gt;&lt;loc_332&gt;&lt;loc_932&gt;&lt;loc_774&gt;"
+t0 = time.time()
+answer = generate_answer(task_prompt, text_input)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)</input_code>
+  <output_code>Time taken: 136.35 ms
+{'&lt;REGION_TO_DESCRIPTION&gt;': 'car&lt;loc_52&gt;&lt;loc_332&gt;&lt;loc_932&gt;&lt;loc_774&gt;'}
+</output_code>
+  <markdown>### Tareas OCR</markdown>
+  <markdown>Usamos una nueva imagen</markdown>
+  <input_code>url = "http://ecx.images-amazon.com/images/I/51UUzBDAMsL.jpg?download=true"
+image = Image.open(requests.get(url, stream=True).raw).convert('RGB')
+image</input_code>
+  <output_code>&lt;PIL.Image.Image image mode=RGB size=403x500&gt;</output_code>
+  <markdown>#### OCR</markdown>
+  <input_code>task_prompt = '&lt;OCR&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)</input_code>
+  <output_code>Time taken: 227.62 ms
+{'&lt;OCR&gt;': 'CUDAFOR ENGINEERSAn Introduction to High-PerformanceParallel ComputingDUANE STORYIMETE YURTOGLU'}
+</output_code>
+  <markdown>#### OCR with region</markdown>
+  <input_code>task_prompt = '&lt;OCR_WITH_REGION&gt;'
+t0 = time.time()
+answer = generate_answer(task_prompt)
+t1 = time.time()
+print(f"Time taken: {(t1-t0)*1000:.2f} ms")
+print(answer)
+draw_ocr_bboxes(image, answer[task_prompt])  </input_code>
+  <output_code>Time taken: 428.51 ms
+{'&lt;OCR_WITH_REGION&gt;': {'quad_boxes': [[167.44650268554688, 50.25, 374.9914855957031, 50.25, 374.9914855957031, 114.25, 167.44650268554688, 114.25], [144.8784942626953, 121.25, 374.9914855957031, 120.75, 374.9914855957031, 148.75, 144.8784942626953, 149.25], [115.4594955444336, 165.75, 376.6034851074219, 165.75, 376.6034851074219, 183.75, 115.4594955444336, 183.75], [239.9864959716797, 184.75, 376.6034851074219, 185.75, 376.6034851074219, 203.75, 239.9864959716797, 202.25], [266.1814880371094, 441.25, 376.20050048828125, 441.25, 376.20050048828125, 456.25, 266.1814880371094, 456.25], [251.67349243164062, 459.75, 376.20050048828125, 459.75, 376.20050048828125, 474.75, 251.67349243164062, 474.75]], 'labels': ['&lt;/s&gt;CUDA', 'FOR ENGINEERS', 'An Introduction to High-Performance', 'Parallel Computing', 'DUANE STORYI', 'METE YURTOGLU']}}
+</output_code>
+  <output_code>&lt;PIL.Image.Image image mode=RGB size=403x500&gt;</output_code>
+</notebook>

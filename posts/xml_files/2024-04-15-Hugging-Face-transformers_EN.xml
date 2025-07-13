@@ -1,0 +1,1747 @@
+<?xml version='1.0' encoding='utf-8'?>
+<notebook>
+  <markdown># Hugging Face transformers</markdown>
+  <markdown>The `transformers` library from Hugging Face is one of the most popular libraries for working with language models. Its ease of use democratized the use of the `Transformer` architecture and made it possible to work with state-of-the-art language models without having to have a great deal of knowledge in the area.
+
+Between the `transformers` library, the model hub and its ease of use, the spaces and the ease of deploying demos, and new libraries like `datasets`, `accelerate`, `PEFT` and more, they have made Hugging Face one of the most important players in the AI scene at the moment. They call themselves "the GitHub of AI" and they certainly are.</markdown>
+  <markdown>This notebook has been automatically translated to make it accessible to more people, please let me know if you see any typos.
+
+## Installation</markdown>
+  <markdown>To install transformers can be done with `pip`.
+
+```bash
+pip install transformers
+```
+
+or with `conda`.
+
+```bash
+conda install conda-forge::transformers
+```</markdown>
+  <markdown>In addition to the library you need to have a PyTorch or TensorFlow backend installed. That is, you need to have `torch` or `tensorflow` installed to be able to use `transformers`.</markdown>
+  <markdown>## Inference with `pipeline</markdown>
+  <markdown>With the `transformers` pipeline`s you can do inference with language models in a very simple way. This has the advantage that development is done much faster and prototyping can be done very easily. It also allows people who do not have much knowledge to be able to use the models.</markdown>
+  <markdown>With `pipeline` you can do inference in a lot of different tasks. Each task has its own `pipeline` (NLP `pipeline`, vision `pipeline`, etc), but a general abstraction can be made using the `pipeline` class which takes care of selecting the appropriate `pipeline` for the task passed to it.</markdown>
+  <markdown>### Tasks</markdown>
+  <markdown>As of this writing, the tasks that can be done with `pipeline` are:
+
+ * Audio:
+   * Audio classification
+     * acoustic scene classification: label audio with a scene label ("office", "beach", "stadium")
+     * acoustic event detection: tag audio with a sound event tag ("car horn", "whale call", "glass breaking")
+     * labeling: labeling audio containing various sounds (birdsong, speaker identification in a meeting)
+     * music classification: labeling music with a genre label ("metal", "hip-hop", "country")
+
+ * Automatic speech recognition (ASR, audio speech recognition):
+
+ * Computer vision
+   * Image classification
+   * Object detection
+   * Image segmentation
+   * Depth estimation
+
+ Natural language processing (NLP) * Natural language processing (NLP)
+   * Text classification
+     * sentiment analysis
+     * content classification
+   * Classification of tokens
+     * Named Entity Recognition (NER): tag a token according to an entity category such as organization, person, location or date.
+     * part-of-speech (POS) tagging: tagging a token according to its part of speech, such as noun, verb or adjective. POS is useful to help translation systems understand how two identical words are grammatically different (e.g., "cut" as a noun versus "cut" as a verb).
+   * Answers to questions
+     * extractive: given a question and some context, the answer is a fragment of text from the context that the model must extract.
+     * abstract: given a question and some context, the answer is generated from the context; this approach is handled by the Text2TextGenerationPipeline instead of the QuestionAnsweringPipeline shown below.
+   * Summarize
+     * extractive: identifies and extracts the most important sentences from the original text
+     * abstracting: generates the objective summary (which may include new words not present in the input document) from the original text
+   * Translation
+   * Language modeling
+     * causal: the objective of the model is to predict the next token in a sequence, and future tokens are masked.
+     * masked: the objective of the model is to predict a masked token in a sequence with full access to the tokens in the sequence.
+
+ * Multimodal
+   * Answers to document questions</markdown>
+  <markdown>### Use of `pipeline`</markdown>
+  <markdown>The easiest way to create a `pipeline` is simply to tell it the task we want it to solve using the `task` parameter. And the library will take care of selecting the best model for that task, download it and save it in the cache for future use.</markdown>
+  <input_code>from transformers import pipeline
+
+generator = pipeline(task="text-generation")</input_code>
+  <output_code>No model was supplied, defaulted to openai-community/gpt2 and revision 6c0e608 (https://huggingface.co/openai-community/gpt2).
+Using a pipeline without specifying a model name and revision in production is not recommended.
+</output_code>
+  <input_code>generator("Me encanta aprender de")</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>[{'generated_text': 'Me encanta aprender de se résistance davant que hiens que préclase que ses encasas quécénces. Se présentants cet en un croyne et cela désirez'}]</output_code>
+  <markdown>As you can see the generated text is in French, while I have introduced it in Spanish, so it is important to choose well the model. If you notice the library has taken the `openai-community/gpt2` model, which is a model trained mostly in English, and that when I put Spanish text in it, it got confused and generated a response in French.</markdown>
+  <markdown>We are going to use a model retrained in Spanish using the `model` parameter.</markdown>
+  <input_code>from transformers import pipeline
+
+generator = pipeline(task="text-generation", model="flax-community/gpt-2-spanish")</input_code>
+  <input_code>generator("Me encanta aprender de")</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>[{'generated_text': 'Me encanta aprender de tus palabras, que con gran entusiasmo y con el mismo conocimiento como lo que tú acabas escribiendo, te deseo de todo corazón todo el deseo de este día:\nY aunque también haya personas a las que'}]</output_code>
+  <markdown>Now the generated text looks much better</markdown>
+  <markdown>The `pipeline` class has many possible parameters, so to see all of them and learn more about the class I recommend you to read its [documentation](https://huggingface.co/docs/transformers/v4.38.1/en/main_classes/pipelines), but let's talk about one, because for deep learning it is very important and it is `device`. It defines the device (e.g. `cpu`, `cuda:1`, `mps` or an ordinal range of GPUs like `1`) on which the `pipeline` will be assigned.
+
+In my case, as I have a GPU I set `0`.</markdown>
+  <input_code>from transformers import pipeline
+
+generator = pipeline(task="text-generation", model="flax-community/gpt-2-spanish", device=0)
+
+generation = generator("Me encanta aprender de")
+print(generation[0]['generated_text'])</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>Me encanta aprender de ustedes, a tal punto que he decidido escribir algunos de nuestros contenidos en este blog, el cual ha sido de gran utilidad para mí por varias razones, una de ellas, el trabajo
+</output_code>
+  <markdown>### How `pipeline` works</markdown>
+  <markdown>When we make use of `pipeline` below what is happening is this
+
+![transformers-pipeline](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/transformers-pipeline.svg)
+
+Text is automatically tokenized, passed through the model and then post-processed.</markdown>
+  <markdown>## Inference with `AutoClass` and `pipeline`.</markdown>
+  <markdown>We have seen that `pipeline` abstracts a lot of what happens, but we can select which tokenizer, which model and which postprocessing we want to use.</markdown>
+  <markdown>### Tokenization with `AutoTokenizer`.</markdown>
+  <markdown>Before we used the `flax-community/gpt-2-spanish` model to generate text, we can use its tokenizer</markdown>
+  <input_code>from transformers import AutoTokenizer
+
+checkpoint = "flax-community/gpt-2-spanish"
+tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+
+text = "Me encanta lo que estoy aprendiendo"
+
+tokens = tokenizer(text, return_tensors="pt")
+print(tokens)</input_code>
+  <output_code>{'input_ids': tensor([[ 2879,  4835,   382,   288,  2383, 15257]]), 'attention_mask': tensor([[1, 1, 1, 1, 1, 1]])}
+</output_code>
+  <markdown>### `AutoModel` Model</markdown>
+  <markdown>Now we can create the model and pass the tokens to it.</markdown>
+  <input_code>from transformers import AutoModel
+
+model = AutoModel.from_pretrained("flax-community/gpt-2-spanish")
+
+output = model(**tokens)
+type(output), output.keys()</input_code>
+  <output_code>(transformers.modeling_outputs.BaseModelOutputWithPastAndCrossAttentions,
+ odict_keys(['last_hidden_state', 'past_key_values']))</output_code>
+  <markdown>If we now try to use it in a `pipeline` we will get an error.</markdown>
+  <input_code>from transformers import pipeline
+
+pipeline("text-generation", model=model, tokenizer=tokenizer)("Me encanta aprender de")</input_code>
+  <output_code>The model 'GPT2Model' is not supported for text-generation. Supported models are ['BartForCausalLM', 'BertLMHeadModel', 'BertGenerationDecoder', 'BigBirdForCausalLM', 'BigBirdPegasusForCausalLM', 'BioGptForCausalLM', 'BlenderbotForCausalLM', 'BlenderbotSmallForCausalLM', 'BloomForCausalLM', 'CamembertForCausalLM', 'LlamaForCausalLM', 'CodeGenForCausalLM', 'CpmAntForCausalLM', 'CTRLLMHeadModel', 'Data2VecTextForCausalLM', 'ElectraForCausalLM', 'ErnieForCausalLM', 'FalconForCausalLM', 'FuyuForCausalLM', 'GemmaForCausalLM', 'GitForCausalLM', 'GPT2LMHeadModel', 'GPT2LMHeadModel', 'GPTBigCodeForCausalLM', 'GPTNeoForCausalLM', 'GPTNeoXForCausalLM', 'GPTNeoXJapaneseForCausalLM', 'GPTJForCausalLM', 'LlamaForCausalLM', 'MarianForCausalLM', 'MBartForCausalLM', 'MegaForCausalLM', 'MegatronBertForCausalLM', 'MistralForCausalLM', 'MixtralForCausalLM', 'MptForCausalLM', 'MusicgenForCausalLM', 'MvpForCausalLM', 'OpenLlamaForCausalLM', 'OpenAIGPTLMHeadModel', 'OPTForCausalLM', 'PegasusForCausalLM', 'PersimmonForCausalLM', 'PhiForCausalLM', 'PLBartForCausalLM', 'ProphetNetForCausalLM', 'QDQBertLMHeadModel', 'Qwen2ForCausalLM', 'ReformerModelWithLMHead', 'RemBertForCausalLM', 'RobertaForCausalLM', 'RobertaPreLayerNormForCausalLM', 'RoCBertForCausalLM', 'RoFormerForCausalLM', 'RwkvForCausalLM', 'Speech2Text2ForCausalLM', 'StableLmForCausalLM', 'TransfoXLLMHeadModel', 'TrOCRForCausalLM', 'WhisperForCausalLM', 'XGLMForCausalLM', 'XLMWithLMHeadModel', 'XLMProphetNetForCausalLM', 'XLMRobertaForCausalLM', 'XLMRobertaXLForCausalLM', 'XLNetLMHeadModel', 'XmodForCausalLM'].
+</output_code>
+  <output_code>---------------------------------------------------------------------------TypeError                                 Traceback (most recent call last)Cell In[23], line 3
+      1 from transformers import pipeline
+----&gt; 3 pipeline("text-generation", model=model, tokenizer=tokenizer)("Me encanta aprender de")
+File ~/miniconda3/envs/nlp/lib/python3.11/site-packages/transformers/pipelines/text_generation.py:241, in TextGenerationPipeline.__call__(self, text_inputs, **kwargs)
+    239         return super().__call__(chats, **kwargs)
+    240 else:
+--&gt; 241     return super().__call__(text_inputs, **kwargs)
+File ~/miniconda3/envs/nlp/lib/python3.11/site-packages/transformers/pipelines/base.py:1196, in Pipeline.__call__(self, inputs, num_workers, batch_size, *args, **kwargs)
+   1188     return next(
+   1189         iter(
+   1190             self.get_iterator(
+   (...)
+   1193         )
+   1194     )
+   1195 else:
+-&gt; 1196     return self.run_single(inputs, preprocess_params, forward_params, postprocess_params)
+File ~/miniconda3/envs/nlp/lib/python3.11/site-packages/transformers/pipelines/base.py:1203, in Pipeline.run_single(self, inputs, preprocess_params, forward_params, postprocess_params)
+   1201 def run_single(self, inputs, preprocess_params, forward_params, postprocess_params):
+   1202     model_inputs = self.preprocess(inputs, **preprocess_params)
+-&gt; 1203     model_outputs = self.forward(model_inputs, **forward_params)
+   1204     outputs = self.postprocess(model_outputs, **postprocess_params)
+   1205     return outputs
+File ~/miniconda3/envs/nlp/lib/python3.11/site-packages/transformers/pipelines/base.py:1102, in Pipeline.forward(self, model_inputs, **forward_params)
+   1100     with inference_context():
+   1101         model_inputs = self._ensure_tensor_on_device(model_inputs, device=self.device)
+-&gt; 1102         model_outputs = self._forward(model_inputs, **forward_params)
+   1103         model_outputs = self._ensure_tensor_on_device(model_outputs, device=torch.device("cpu"))
+   1104 else:
+File ~/miniconda3/envs/nlp/lib/python3.11/site-packages/transformers/pipelines/text_generation.py:328, in TextGenerationPipeline._forward(self, model_inputs, **generate_kwargs)
+    325         generate_kwargs["min_length"] += prefix_length
+    327 # BS x SL
+--&gt; 328 generated_sequence = self.model.generate(input_ids=input_ids, attention_mask=attention_mask, **generate_kwargs)
+    329 out_b = generated_sequence.shape[0]
+    330 if self.framework == "pt":
+File ~/miniconda3/envs/nlp/lib/python3.11/site-packages/torch/utils/_contextlib.py:115, in context_decorator.&lt;locals&gt;.decorate_context(*args, **kwargs)
+    112 @functools.wraps(func)
+    113 def decorate_context(*args, **kwargs):
+    114     with ctx_factory():
+--&gt; 115         return func(*args, **kwargs)
+File ~/miniconda3/envs/nlp/lib/python3.11/site-packages/transformers/generation/utils.py:1323, in GenerationMixin.generate(self, inputs, generation_config, logits_processor, stopping_criteria, prefix_allowed_tokens_fn, synced_gpus, assistant_model, streamer, negative_prompt_ids, negative_prompt_attention_mask, **kwargs)
+   1320         synced_gpus = False
+   1322 # 1. Handle `generation_config` and kwargs that might update it, and validate the `.generate()` call
+-&gt; 1323 self._validate_model_class()
+   1325 # priority: `generation_config` argument &gt; `model.generation_config` (the default generation config)
+   1326 if generation_config is None:
+   1327     # legacy: users may modify the model configuration to control generation. To trigger this legacy behavior,
+   1328     # three conditions must be met
+   1329     # 1) the generation config must have been created from the model config (`_from_model_config` field);
+   1330     # 2) the generation config must have seen no modification since its creation (the hash is the same);
+   1331     # 3) the user must have set generation parameters in the model config.
+File ~/miniconda3/envs/nlp/lib/python3.11/site-packages/transformers/generation/utils.py:1110, in GenerationMixin._validate_model_class(self)
+   1108 if generate_compatible_classes:
+   1109     exception_message += f" Please use one of the following classes instead: {generate_compatible_classes}"
+-&gt; 1110 raise TypeError(exception_message)
+TypeError: The current model class (GPT2Model) is not compatible with `.generate()`, as it doesn't have a language model head. Please use one of the following classes instead: {'GPT2LMHeadModel'}</output_code>
+  <markdown>This is because when it worked we used
+
+```python
+pipeline(task="text-generation", model="flax-community/gpt-2-spanish")
+```</markdown>
+  <markdown>But now we have made
+
+```python
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish")
+model = AutoModel.from_pretrained("flax-community/gpt-2-spanish")
+pipeline("text-generation", model=model, tokenizer=tokenizer)
+```</markdown>
+  <markdown>In the first case we just used `pipeline` and the model name, underneath we were looking for the best way to implement the model and the tokenizer. But in the second case we have created the tokenizer and the model and passed it to `pipeline`, but we have not created them well for what the `pipeline` needs.
+
+To fix this we use `AutoModelFor`.</markdown>
+  <markdown>### `AutoModelFor` Model</markdown>
+  <markdown>The transformers library gives us the opportunity to create a model for a given task such as
+
+ * `AutoModelForCausalLM` used to continue texts
+ * `AutoModelForMaskedLM` used for gap filling
+ * `AutoModelForMaskGeneration` which is used to generate masks.
+ * AutoModelForSeq2SeqLM, which is used to convert from sequences to sequences, as for example in translation.
+ * `AutoModelForSequenceClassification` for text classification
+ * `AutoModelForMultipleChoice` for multiple choice
+ * `AutoModelForNextSentencePrediction` to predict whether two sentences are consecutive.
+ * `AutoModelForTokenClassification` for token classification
+ * `AutoModelForQuestionAnswering` for questions and answers
+ * `AutoModelForTextEncoding` for text encoding</markdown>
+  <markdown>Let's use the above model to generate text</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import pipeline
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish")
+model = AutoModelForCausalLM.from_pretrained("flax-community/gpt-2-spanish")
+
+pipeline("text-generation", model=model, tokenizer=tokenizer)("Me encanta aprender de")[0]['generated_text']</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>'Me encanta aprender de mi familia.\nLa verdad no sabía que se necesitaba tanto en este pequeño restaurante ya que mi novio en un principio había ido, pero hoy me ha entrado un gusanillo entre pecho y espalda que'</output_code>
+  <markdown>Now it works, because we have created the model in a way that `pipeline` can understand.</markdown>
+  <markdown>## Inference with `AutoClass` only</markdown>
+  <markdown>Earlier we created the model and tokenizer and gave it to `pipeline` to do the necessary underneath, but we can use the methods for inference ourselves.</markdown>
+  <markdown>### Generation of casual text</markdown>
+  <markdown>We create the model and the tokenizer</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish")
+model = AutoModelForCausalLM.from_pretrained("flax-community/gpt-2-spanish", device_map=0)</input_code>
+  <markdown>With `device_map`, we have loaded the model on GPU 0</markdown>
+  <markdown>Now we have to do what `pipeline` used to do.</markdown>
+  <markdown>First we generate the tokens</markdown>
+  <input_code>tokens_input = tokenizer(["Me encanta aprender de"], return_tensors="pt", padding=True).to("cuda")</input_code>
+  <output_code>---------------------------------------------------------------------------ValueError                                Traceback (most recent call last)Cell In[2], line 1
+----&gt; 1 tokens_input = tokenizer(["Me encanta aprender de"], return_tensors="pt", padding=True).to("cuda")
+File ~/miniconda3/envs/nlp/lib/python3.11/site-packages/transformers/tokenization_utils_base.py:2829, in PreTrainedTokenizerBase.__call__(self, text, text_pair, text_target, text_pair_target, add_special_tokens, padding, truncation, max_length, stride, is_split_into_words, pad_to_multiple_of, return_tensors, return_token_type_ids, return_attention_mask, return_overflowing_tokens, return_special_tokens_mask, return_offsets_mapping, return_length, verbose, **kwargs)
+   2827     if not self._in_target_context_manager:
+   2828         self._switch_to_input_mode()
+-&gt; 2829     encodings = self._call_one(text=text, text_pair=text_pair, **all_kwargs)
+   2830 if text_target is not None:
+   2831     self._switch_to_target_mode()
+File ~/miniconda3/envs/nlp/lib/python3.11/site-packages/transformers/tokenization_utils_base.py:2915, in PreTrainedTokenizerBase._call_one(self, text, text_pair, add_special_tokens, padding, truncation, max_length, stride, is_split_into_words, pad_to_multiple_of, return_tensors, return_token_type_ids, return_attention_mask, return_overflowing_tokens, return_special_tokens_mask, return_offsets_mapping, return_length, verbose, **kwargs)
+   2910         raise ValueError(
+   2911             f"batch length of `text`: {len(text)} does not match batch length of `text_pair`:"
+   2912             f" {len(text_pair)}."
+   2913         )
+   2914     batch_text_or_text_pairs = list(zip(text, text_pair)) if text_pair is not None else text
+-&gt; 2915     return self.batch_encode_plus(
+   2916         batch_text_or_text_pairs=batch_text_or_text_pairs,
+   2917         add_special_tokens=add_special_tokens,
+   2918         padding=padding,
+   2919         truncation=truncation,
+   2920         max_length=max_length,
+   2921         stride=stride,
+   2922         is_split_into_words=is_split_into_words,
+   2923         pad_to_multiple_of=pad_to_multiple_of,
+   2924         return_tensors=return_tensors,
+   2925         return_token_type_ids=return_token_type_ids,
+   2926         return_attention_mask=return_attention_mask,
+   2927         return_overflowing_tokens=return_overflowing_tokens,
+   2928         return_special_tokens_mask=return_special_tokens_mask,
+   2929         return_offsets_mapping=return_offsets_mapping,
+   2930         return_length=return_length,
+   2931         verbose=verbose,
+   2932         **kwargs,
+   2933     )
+   2934 else:
+   2935     return self.encode_plus(
+   2936         text=text,
+   2937         text_pair=text_pair,
+   (...)
+   2953         **kwargs,
+   2954     )
+File ~/miniconda3/envs/nlp/lib/python3.11/site-packages/transformers/tokenization_utils_base.py:3097, in PreTrainedTokenizerBase.batch_encode_plus(self, batch_text_or_text_pairs, add_special_tokens, padding, truncation, max_length, stride, is_split_into_words, pad_to_multiple_of, return_tensors, return_token_type_ids, return_attention_mask, return_overflowing_tokens, return_special_tokens_mask, return_offsets_mapping, return_length, verbose, **kwargs)
+   3080 """
+   3081 Tokenize and prepare for the model a list of sequences or a list of pairs of sequences.
+   3082 
+   (...)
+   3093         details in `encode_plus`).
+   3094 """
+   3096 # Backward compatibility for 'truncation_strategy', 'pad_to_max_length'
+-&gt; 3097 padding_strategy, truncation_strategy, max_length, kwargs = self._get_padding_truncation_strategies(
+   3098     padding=padding,
+   3099     truncation=truncation,
+   3100     max_length=max_length,
+   3101     pad_to_multiple_of=pad_to_multiple_of,
+   3102     verbose=verbose,
+   3103     **kwargs,
+   3104 )
+   3106 return self._batch_encode_plus(
+   3107     batch_text_or_text_pairs=batch_text_or_text_pairs,
+   3108     add_special_tokens=add_special_tokens,
+   (...)
+   3123     **kwargs,
+   3124 )
+File ~/miniconda3/envs/nlp/lib/python3.11/site-packages/transformers/tokenization_utils_base.py:2734, in PreTrainedTokenizerBase._get_padding_truncation_strategies(self, padding, truncation, max_length, pad_to_multiple_of, verbose, **kwargs)
+   2732 # Test if we have a padding token
+   2733 if padding_strategy != PaddingStrategy.DO_NOT_PAD and (self.pad_token is None or self.pad_token_id &lt; 0):
+-&gt; 2734     raise ValueError(
+   2735         "Asking to pad but the tokenizer does not have a padding token. "
+   2736         "Please select a token to use as `pad_token` `(tokenizer.pad_token = tokenizer.eos_token e.g.)` "
+   2737         "or add a new pad token via `tokenizer.add_special_tokens({'pad_token': '[PAD]'})`."
+   2738     )
+   2740 # Check that we will truncate to a multiple of pad_to_multiple_of if both are provided
+   2741 if (
+   2742     truncation_strategy != TruncationStrategy.DO_NOT_TRUNCATE
+   2743     and padding_strategy != PaddingStrategy.DO_NOT_PAD
+   (...)
+   2746     and (max_length % pad_to_multiple_of != 0)
+   2747 ):
+ValueError: Asking to pad but the tokenizer does not have a padding token. Please select a token to use as `pad_token` `(tokenizer.pad_token = tokenizer.eos_token e.g.)` or add a new pad token via `tokenizer.add_special_tokens({'pad_token': '[PAD]'})`.</output_code>
+  <markdown>We see that it has given us an error, it tells us that the tokenizer does not have a padding token. Most LLMs do not have a padding token, but to use the `transformers` library a padding token is necessary, so what is usually done is to assign the end-of-statement token to the padding token.</markdown>
+  <input_code>tokenizer.pad_token = tokenizer.eos_token</input_code>
+  <markdown>Now we can generate the tokens</markdown>
+  <input_code>tokens_input = tokenizer(["Me encanta aprender de"], return_tensors="pt", padding=True).to("cuda")
+tokens_input.input_ids</input_code>
+  <output_code>tensor([[2879, 4835, 3760,  225,   72,   73]], device='cuda:0')</output_code>
+  <markdown>Now we pass them to the model that will generate the new tokens, for that we use the `generate` method</markdown>
+  <input_code>tokens_output = model.generate(**tokens_input, max_length=50)
+print(f"input tokens: {tokens_input.input_ids}")
+print(f"output tokens: {tokens_output}")</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>input tokens: tensor([[2879, 4835, 3760,  225,   72,   73]], device='cuda:0')
+output tokens: tensor([[ 2879,  4835,  3760,   225,    72,    73,   314,  2533,    16,   287,
+           225,    73,    82,   513,  1086,   225,    72,    73,   314,   288,
+           357, 15550,    16,   287,   225,    73,    87,   288,   225,    73,
+            82,   291,  3500,    16,   225,    73,    87,   348,   929,   225,
+            72,    73,  3760,   225,    72,    73,   314,  2533,    18,   203]],
+       device='cuda:0')
+</output_code>
+  <markdown>We can see that the first tokens of `token_inputs` are the same as those of `token_outputs`, the following tokens are those generated by the model</markdown>
+  <markdown>Now we have to convert those tokens to a statement using the tokenizer decoder</markdown>
+  <input_code>sentence_output = tokenizer.decode(tokens_output[0], skip_special_tokens=True)
+sentence_output</input_code>
+  <output_code>'Me encanta aprender de los demás, y en este caso de los que me rodean, y es que en el fondo, es una forma de aprender de los demás.\n'</output_code>
+  <markdown>We already have the generated text</markdown>
+  <markdown>### Text classification</markdown>
+  <markdown>We create the model and the tokenizer</markdown>
+  <input_code>import torch
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
+tokenizer = AutoTokenizer.from_pretrained("stevhliu/my_awesome_model")
+model = AutoModelForSequenceClassification.from_pretrained("stevhliu/my_awesome_model", device_map=0)</input_code>
+  <markdown>We generate tokens</markdown>
+  <input_code>text = "This was a masterpiece. Not completely faithful to the books, but enthralling from beginning to end. Might be my favorite of the three."
+inputs = tokenizer(text, return_tensors="pt").to("cuda")</input_code>
+  <markdown>Once we have the tokens, we classify</markdown>
+  <input_code>with torch.no_grad():
+    logits = model(**inputs).logits
+
+predicted_class_id = logits.argmax().item()
+prediction = model.config.id2label[predicted_class_id]
+prediction</input_code>
+  <output_code>'LABEL_1'</output_code>
+  <markdown>Let's take a look at the classes</markdown>
+  <input_code>clases = model.config.id2label
+clases</input_code>
+  <output_code>{0: 'LABEL_0', 1: 'LABEL_1'}</output_code>
+  <markdown>This way there is no one to find out, so we modify it.</markdown>
+  <input_code>model.config.id2label = {0: "NEGATIVE", 1: "POSITIVE"}</input_code>
+  <markdown>And now we go back to sorting</markdown>
+  <input_code>with torch.no_grad():
+    logits = model(**inputs).logits
+
+predicted_class_id = logits.argmax().item()
+prediction = model.config.id2label[predicted_class_id]
+prediction</input_code>
+  <output_code>'POSITIVE'</output_code>
+  <markdown>### Classification of tokens</markdown>
+  <markdown>We create the model and the tokenizer</markdown>
+  <input_code>import torch
+from transformers import AutoTokenizer, AutoModelForTokenClassification
+
+tokenizer = AutoTokenizer.from_pretrained("stevhliu/my_awesome_wnut_model")
+model = AutoModelForTokenClassification.from_pretrained("stevhliu/my_awesome_wnut_model", device_map=0)</input_code>
+  <markdown>We generate tokens</markdown>
+  <input_code>text = "The Golden State Warriors are an American professional basketball team based in San Francisco."
+inputs = tokenizer(text, return_tensors="pt").to("cuda")</input_code>
+  <markdown>Once we have the tokens, we classify</markdown>
+  <input_code>with torch.no_grad():
+    logits = model(**inputs).logits
+
+predictions = torch.argmax(logits, dim=2)
+predicted_token_class = [model.config.id2label[t.item()] for t in predictions[0]]
+for i in range(len(inputs.input_ids[0])):
+    print(f"{inputs.input_ids[0][i]} ({tokenizer.decode([inputs.input_ids[0][i]])}) -&gt; {predicted_token_class[i]}")</input_code>
+  <output_code>101 ([CLS]) -&gt; O
+1996 (the) -&gt; O
+3585 (golden) -&gt; B-location
+2110 (state) -&gt; I-location
+6424 (warriors) -&gt; B-group
+2024 (are) -&gt; O
+2019 (an) -&gt; O
+2137 (american) -&gt; O
+2658 (professional) -&gt; O
+3455 (basketball) -&gt; O
+2136 (team) -&gt; O
+2241 (based) -&gt; O
+1999 (in) -&gt; O
+2624 (san) -&gt; B-location
+3799 (francisco) -&gt; B-location
+1012 (.) -&gt; O
+102 ([SEP]) -&gt; O
+</output_code>
+  <markdown>As you can see the tokens corresponding to `golden`, `state`, `warriors`, `san` and `francisco` have been classified as location tokens.</markdown>
+  <markdown>### Question answering</markdown>
+  <markdown>We create the model and the tokenizer</markdown>
+  <input_code>import torch
+from transformers import AutoTokenizer, AutoModelForQuestionAnswering
+
+tokenizer = AutoTokenizer.from_pretrained("mrm8488/roberta-base-1B-1-finetuned-squadv1")
+model = AutoModelForQuestionAnswering.from_pretrained("mrm8488/roberta-base-1B-1-finetuned-squadv1", device_map=0)</input_code>
+  <output_code>Some weights of the model checkpoint at mrm8488/roberta-base-1B-1-finetuned-squadv1 were not used when initializing RobertaForQuestionAnswering: ['roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+- This IS expected if you are initializing RobertaForQuestionAnswering from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
+- This IS NOT expected if you are initializing RobertaForQuestionAnswering from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
+</output_code>
+  <markdown>We generate tokens</markdown>
+  <input_code>question = "How many programming languages does BLOOM support?"
+context = "BLOOM has 176 billion parameters and can generate text in 46 languages natural languages and 13 programming languages."
+inputs = tokenizer(question, context, return_tensors="pt").to("cuda")</input_code>
+  <markdown>Once we have the tokens, we classify</markdown>
+  <input_code>with torch.no_grad():
+    outputs = model(**inputs)
+
+answer_start_index = outputs.start_logits.argmax()
+answer_end_index = outputs.end_logits.argmax()
+
+predict_answer_tokens = inputs.input_ids[0, answer_start_index : answer_end_index + 1]
+tokenizer.decode(predict_answer_tokens)</input_code>
+  <output_code>' 13'</output_code>
+  <markdown>### Masked language modeling (Masked language modeling)</markdown>
+  <markdown>We create the model and the tokenizer</markdown>
+  <input_code>import torch
+from transformers import AutoTokenizer, AutoModelForMaskedLM
+
+tokenizer = AutoTokenizer.from_pretrained("nyu-mll/roberta-base-1B-1")
+model = AutoModelForMaskedLM.from_pretrained("nyu-mll/roberta-base-1B-1", device_map=0)</input_code>
+  <output_code>Some weights of the model checkpoint at nyu-mll/roberta-base-1B-1 were not used when initializing RobertaForMaskedLM: ['roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+- This IS expected if you are initializing RobertaForMaskedLM from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
+- This IS NOT expected if you are initializing RobertaForMaskedLM from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
+</output_code>
+  <markdown>We generate tokens</markdown>
+  <input_code>text = "The Milky Way is a &lt;mask&gt; galaxy."
+inputs = tokenizer(text, return_tensors="pt").to("cuda")
+mask_token_index = torch.where(inputs["input_ids"] == tokenizer.mask_token_id)[1]</input_code>
+  <markdown>Once we have the tokens, we classify</markdown>
+  <input_code>with torch.no_grad():
+    logits = model(**inputs).logits
+    mask_token_logits = logits[0, mask_token_index, :]
+
+top_3_tokens = torch.topk(mask_token_logits, 3, dim=1).indices[0].tolist()
+for token in top_3_tokens:
+    print(text.replace(tokenizer.mask_token, tokenizer.decode([token])))</input_code>
+  <output_code>The Milky Way is a  spiral galaxy.
+The Milky Way is a  closed galaxy.
+The Milky Way is a  distant galaxy.
+</output_code>
+  <markdown>## Model customization</markdown>
+  <markdown>Earlier we have done the inference with `AutoClass`, but we have done it with the default model settings. But we can configure the model as much as we like</markdown>
+  <markdown>Let's instantiate a model and see its configuration</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish")
+model = AutoModelForCausalLM.from_pretrained("flax-community/gpt-2-spanish", device_map=0)
+config = AutoConfig.from_pretrained("flax-community/gpt-2-spanish")
+
+config</input_code>
+  <output_code>GPT2Config {
+  "_name_or_path": "flax-community/gpt-2-spanish",
+  "activation_function": "gelu_new",
+  "architectures": [
+    "GPT2LMHeadModel"
+  ],
+  "attn_pdrop": 0.0,
+  "bos_token_id": 50256,
+  "embd_pdrop": 0.0,
+  "eos_token_id": 50256,
+  "gradient_checkpointing": false,
+  "initializer_range": 0.02,
+  "layer_norm_epsilon": 1e-05,
+  "model_type": "gpt2",
+  "n_ctx": 1024,
+  "n_embd": 768,
+  "n_head": 12,
+  "n_inner": null,
+  "n_layer": 12,
+  "n_positions": 1024,
+  "reorder_and_upcast_attn": false,
+  "resid_pdrop": 0.0,
+  "scale_attn_by_inverse_layer_idx": false,
+  "scale_attn_weights": true,
+  "summary_activation": null,
+  "summary_first_dropout": 0.1,
+  "summary_proj_to_labels": true,
+  "summary_type": "cls_index",
+  "summary_use_proj": true,
+  "task_specific_params": {
+    "text-generation": {
+      "do_sample": true,
+      "max_length": 50
+    }
+  },
+  "transformers_version": "4.38.1",
+  "use_cache": true,
+  "vocab_size": 50257
+}</output_code>
+  <markdown>We can see the model configuration, for example the activation function is `gelu_new`, it has 12 `head`s, the vocabulary size is 50257 words, etc.</markdown>
+  <markdown>But we can modify this configuration</markdown>
+  <input_code>config = AutoConfig.from_pretrained("flax-community/gpt-2-spanish", activation_function="relu")
+config.activation_function</input_code>
+  <output_code>'relu'</output_code>
+  <markdown>We now create the model with this configuration</markdown>
+  <input_code>model = AutoModelForCausalLM.from_pretrained("flax-community/gpt-2-spanish", config=config, device_map=0)</input_code>
+  <markdown>And we generate text</markdown>
+  <input_code>tokenizer.pad_token = tokenizer.eos_token
+tokens_input = tokenizer(["Me encanta aprender de"], return_tensors="pt", padding=True).to("cuda")
+tokens_output = model.generate(**tokens_input, max_length=50)
+sentence_output = tokenizer.decode(tokens_output[0], skip_special_tokens=True)
+sentence_output</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>'Me encanta aprender de la d d e d e d e d e d e d e d e d e d e d e '</output_code>
+  <markdown>We see that this modification does not generate as good text.</markdown>
+  <markdown>## Tokenization</markdown>
+  <markdown>So far we have seen the different ways to do inference with the `transformers` library. Now we are going to get into the guts of the library. To do this we are first going to look at things to keep in mind when tokenizing.
+
+We are not going to explain what tokenizing is in depth, since we have already explained it in the post on the [tokenizers] library (https://maximofn.com/hugging-face-tokenizers/).</markdown>
+  <markdown>### Padding</markdown>
+  <markdown>When you have a batch of sequences, sometimes it is necessary that after tokenizing, all the sequences have the same length, so for this we use the `padding=True` parameter.</markdown>
+  <input_code>from transformers import AutoTokenizer
+
+batch_sentences = [
+    "Pero, ¿qué pasa con el segundo desayuno?",
+    "No creo que sepa lo del segundo desayuno, Pedro",
+    "¿Qué hay de los elevensies?",
+]
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish", pad_token="PAD")
+encoded_input = tokenizer(batch_sentences, padding=True)
+for encoded in encoded_input["input_ids"]:
+    print(encoded)
+print(f"Padding token id: {tokenizer.pad_token_id}")</input_code>
+  <output_code>[2959, 16, 875, 3736, 3028, 303, 291, 2200, 8080, 35, 50257, 50257]
+[1489, 2275, 288, 12052, 382, 325, 2200, 8080, 16, 4319, 50257, 50257]
+[1699, 2899, 707, 225, 72, 73, 314, 34630, 474, 515, 1259, 35]
+Padding token id: 50257
+</output_code>
+  <markdown>As we can see, he has added paddings to the first two sequences at the end.</markdown>
+  <markdown>### Truncated</markdown>
+  <markdown>Besides adding padding, sometimes it is necessary to truncate the sequences so that they do not occupy more than a certain number of tokens. To do this we set `truncation=True` and `max_length` to the number of tokens we want the sequence to have.</markdown>
+  <input_code>from transformers import AutoTokenizer
+
+batch_sentences = [
+    "Pero, ¿qué pasa con el segundo desayuno?",
+    "No creo que sepa lo del segundo desayuno, Pedro",
+    "¿Qué hay de los elevensies?",
+]
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish")
+encoded_input = tokenizer(batch_sentences, truncation=True, max_length=5)
+for encoded in encoded_input["input_ids"]:
+    print(encoded)</input_code>
+  <output_code>[2959, 16, 875, 3736, 3028]
+[1489, 2275, 288, 12052, 382]
+[1699, 2899, 707, 225, 72]
+</output_code>
+  <markdown>Same sentences as before, now generate fewer tokens</markdown>
+  <markdown>### Tensors</markdown>
+  <markdown>Until now we were receiving lists of tokens, but surely we are interested in receiving tensors from PyTorch or TensorFlow. For this we use the parameter `return_tensors` and we specify from which framework we want to receive the tensor, in our case we will choose PyTorch with `pt`.</markdown>
+  <markdown>We first see without specifying that we return tensors</markdown>
+  <input_code>from transformers import AutoTokenizer
+
+batch_sentences = [
+    "Pero, ¿qué pasa con el segundo desayuno?",
+    "No creo que sepa lo del segundo desayuno, Pedro",
+    "¿Qué hay de los elevensies?",
+]
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish", pad_token="PAD")
+encoded_input = tokenizer(batch_sentences, padding=True)
+for encoded in encoded_input["input_ids"]:
+    print(type(encoded))</input_code>
+  <output_code>&lt;class 'list'&gt;
+&lt;class 'list'&gt;
+&lt;class 'list'&gt;
+</output_code>
+  <markdown>We receive lists, if we want to receive tensors from PyTorch we use `return_tensors="pt"`.</markdown>
+  <input_code>from transformers import AutoTokenizer
+
+batch_sentences = [
+    "Pero, ¿qué pasa con el segundo desayuno?",
+    "No creo que sepa lo del segundo desayuno, Pedro",
+    "¿Qué hay de los elevensies?",
+]
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish", pad_token="PAD")
+encoded_input = tokenizer(batch_sentences, padding=True, return_tensors="pt")
+for encoded in encoded_input["input_ids"]:
+    print(type(encoded), encoded.shape)
+print(type(encoded_input["input_ids"]), encoded_input["input_ids"].shape)</input_code>
+  <output_code>&lt;class 'torch.Tensor'&gt; torch.Size([12])
+&lt;class 'torch.Tensor'&gt; torch.Size([12])
+&lt;class 'torch.Tensor'&gt; torch.Size([12])
+&lt;class 'torch.Tensor'&gt; torch.Size([3, 12])
+</output_code>
+  <markdown>### Masks</markdown>
+  <markdown>When we tokenize a statement we not only get the `input_ids`, but we also get the attention mask. The attention mask is a tensor that has the same size as `input_ids` and has a `1` in the positions that are tokens and a `0` in the positions that are padding.</markdown>
+  <input_code>from transformers import AutoTokenizer
+
+batch_sentences = [
+    "Pero, ¿qué pasa con el segundo desayuno?",
+    "No creo que sepa lo del segundo desayuno, Pedro",
+    "¿Qué hay de los elevensies?",
+]
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish", pad_token="PAD")
+encoded_input = tokenizer(batch_sentences, padding=True)
+
+print(f"padding token id: {tokenizer.pad_token_id}")
+print(f"\nencoded_input[0] inputs_ids: {encoded_input['input_ids'][0]}")
+print(f"encoded_input[0] attention_mask: {encoded_input['attention_mask'][0]}")
+print(f"\nencoded_input[1] inputs_ids: {encoded_input['input_ids'][1]}")
+print(f"encoded_input[1] attention_mask: {encoded_input['attention_mask'][1]}")
+print(f"\nencoded_input[2] inputs_ids: {encoded_input['input_ids'][2]}")
+print(f"encoded_input[2] attention_mask: {encoded_input['attention_mask'][2]}")</input_code>
+  <output_code>padding token id: 50257
+
+encoded_input[0] inputs_ids: [2959, 16, 875, 3736, 3028, 303, 291, 2200, 8080, 35, 50257, 50257]
+encoded_input[0] attention_mask: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0]
+
+encoded_input[1] inputs_ids: [1489, 2275, 288, 12052, 382, 325, 2200, 8080, 16, 4319, 50257, 50257]
+encoded_input[1] attention_mask: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0]
+
+encoded_input[2] inputs_ids: [1699, 2899, 707, 225, 72, 73, 314, 34630, 474, 515, 1259, 35]
+encoded_input[2] attention_mask: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+</output_code>
+  <markdown>As you can see, in the first two sentences, we have a 1 in the first positions and a 0 in the last two positions. In those same positions we have the token `50257`, which corresponds to the padding token.</markdown>
+  <markdown>With these attention masks we are telling the model which tokens to pay attention to and which not to pay attention to.</markdown>
+  <markdown>Text generation could still be done if we did not pass these attention masks, the `generate` method would do its best to infer this mask, but if we pass it we help to generate better text.</markdown>
+  <markdown>## Fast Tokenizers</markdown>
+  <markdown>Some pretrained tokenizers have a `fast` version, they have the same methods as the normal ones, only they are developed in Rust. To use them we must use the `PreTrainedTokenizerFast` class of the `transformers` library.</markdown>
+  <markdown>Let us first look at the tokenization time with a normal tokenizer.</markdown>
+  <input_code>%%time
+
+from transformers import BertTokenizer
+
+tokenizer = BertTokenizer.from_pretrained("google-bert/bert-base-uncased")
+
+sentence = (
+    "The Permaculture Design Principles are a set of universal design principles "
+    "that can be applied to any location, climate and culture, and they allow us to design "
+    "the most efficient and sustainable human habitation and food production systems. "
+    "Permaculture is a design system that encompasses a wide variety of disciplines, such "
+    "as ecology, landscape design, environmental science and energy conservation, and the "
+    "Permaculture design principles are drawn from these various disciplines. Each individual "
+    "design principle itself embodies a complete conceptual framework based on sound "
+    "scientific principles. When we bring all these separate  principles together, we can "
+    "create a design system that both looks at whole systems, the parts that these systems "
+    "consist of, and how those parts interact with each other to create a complex, dynamic, "
+    "living system. Each design principle serves as a tool that allows us to integrate all "
+    "the separate parts of a design, referred to as elements, into a functional, synergistic, "
+    "whole system, where the elements harmoniously interact and work together in the most "
+    "efficient way possible."
+)
+
+tokens = tokenizer([sentence], padding=True, return_tensors="pt")</input_code>
+  <output_code>CPU times: user 55.3 ms, sys: 8.58 ms, total: 63.9 ms
+Wall time: 226 ms
+</output_code>
+  <markdown>And now with a quick one</markdown>
+  <input_code>%%time
+
+from transformers import BertTokenizerFast
+
+tokenizer = BertTokenizerFast.from_pretrained("google-bert/bert-base-uncased")
+
+sentence = (
+    "The Permaculture Design Principles are a set of universal design principles "
+    "that can be applied to any location, climate and culture, and they allow us to design "
+    "the most efficient and sustainable human habitation and food production systems. "
+    "Permaculture is a design system that encompasses a wide variety of disciplines, such "
+    "as ecology, landscape design, environmental science and energy conservation, and the "
+    "Permaculture design principles are drawn from these various disciplines. Each individual "
+    "design principle itself embodies a complete conceptual framework based on sound "
+    "scientific principles. When we bring all these separate  principles together, we can "
+    "create a design system that both looks at whole systems, the parts that these systems "
+    "consist of, and how those parts interact with each other to create a complex, dynamic, "
+    "living system. Each design principle serves as a tool that allows us to integrate all "
+    "the separate parts of a design, referred to as elements, into a functional, synergistic, "
+    "whole system, where the elements harmoniously interact and work together in the most "
+    "efficient way possible."
+)
+
+tokens = tokenizer([sentence], padding=True, return_tensors="pt")</input_code>
+  <output_code>CPU times: user 42.6 ms, sys: 3.26 ms, total: 45.8 ms
+Wall time: 179 ms
+</output_code>
+  <markdown>You can see how the `BertTokenizerFast` is about 40 ms faster.</markdown>
+  <markdown>## Text generation forms</markdown>
+  <markdown>We continue with the guts of the `transformers` library, now we are going to see the ways to generate text.
+
+The transformer architecture generates the next most likely token, this is the simplest way to generate text, but it is not the only one, so let's look at them.
+
+When it comes to generating textno there is no best way and it will depend on our model and the purpose of use.</markdown>
+  <markdown>### Greedy Search</markdown>
+  <markdown>It is the simplest way of text generation. It looks for the most probable token in each iteration.
+
+![greedy_search](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/greedy_search.webp)</markdown>
+  <markdown>To generate text in this way with `transformers` you don't have to do anything special, as it is the default way.</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish")
+tokenizer.pad_token = tokenizer.eos_token
+model = AutoModelForCausalLM.from_pretrained("flax-community/gpt-2-spanish", device_map=0)
+
+tokens_input = tokenizer(["Me encanta aprender de"], return_tensors="pt", padding=True).to("cuda")
+tokens_output = model.generate(**tokens_input, max_new_tokens=500)
+sentence_output = tokenizer.decode(tokens_output[0], skip_special_tokens=True)
+print(sentence_output)</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>Me encanta aprender de los demás, y en este caso de los que me rodean, y es que en el fondo, es una forma de aprender de los demás.
+En este caso, el objetivo de la actividad es que los niños aprendan a reconocer los diferentes tipos de animales que existen en el mundo, y que en ocasiones, son muy difíciles de reconocer.
+En este caso, los niños se han dado cuenta de que los animales que hay en el mundo, son muy difíciles de reconocer, y que en ocasiones, son muy difíciles de reconocer.
+En este caso, los niños han aprendido a reconocer los diferentes tipos de animales que existen en el mundo, y que en ocasiones, son muy difíciles de reconocer.
+En este caso, los niños han aprendido a reconocer los diferentes tipos de animales que existen en el mundo, y que en ocasiones, son muy difíciles de reconocer.
+En este caso, los niños han aprendido a reconocer los diferentes tipos de animales que existen en el mundo, y que en ocasiones, son muy difíciles de reconocer.
+En este caso, los niños han aprendido a reconocer los diferentes tipos de animales que existen en el mundo, y que en ocasiones, son muy difíciles de reconocer.
+En este caso, los niños han aprendido a reconocer los diferentes tipos de animales que existen en el mundo, y que en ocasiones, son muy difíciles de reconocer.
+En este caso, los niños han aprendido a reconocer los diferentes tipos de animales que existen en el mundo, y que en ocasiones, son muy difíciles de reconocer.
+En este caso, los niños han aprendido a reconocer los diferentes tipos de animales que existen en el mundo, y que en ocasiones, son muy difíciles de reconocer.
+En este caso, los niños han aprendido a reconocer los diferentes tipos de animales que existen en el mundo, y que en ocasiones, son muy difíciles de reconocer.
+En este caso, los niños han aprendido a reconocer los diferentes tipos de animales que existen en el mundo, y que e
+</output_code>
+  <markdown>You can see that the generated text is fine, but it starts to repeat. This is because in greedy search, words with a high probability can hide behind words with a lower probability, so they can get lost.
+
+![greedy_search](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/greedy_search.webp)
+
+Here, the word `has` has a high probability, but is hidden behind `dog`, which has a lower probability than `nice`.</markdown>
+  <markdown>### Contrastive Search</markdown>
+  <markdown>The Contrastive Search method optimizes text generation by selecting word or phrase options that maximize a quality criterion over less desirable ones. In practice, this means that during text generation, at each step, the model not only searches for the next word that is most likely to follow as learned during its training, but also compares different candidates for that next word and evaluates which of them would contribute to form the most coherent, relevant and high quality text in the given context. Therefore, Contrastive Search reduces the possibility of generating irrelevant or low-quality responses by focusing on those options that best fit the text generation goal, based on a direct comparison between possible continuations at each step of the process.</markdown>
+  <markdown>To generate text with contrastive search in `transformers` you have to use `penalty_alpha` and `top_k` parameters when generating text.</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish")
+tokenizer.pad_token = tokenizer.eos_token
+model = AutoModelForCausalLM.from_pretrained("flax-community/gpt-2-spanish", device_map=0)
+
+tokens_input = tokenizer(["Me encanta aprender de"], return_tensors="pt", padding=True).to("cuda")
+tokens_output = model.generate(**tokens_input, max_new_tokens=500, penalty_alpha=0.6, top_k=4)
+sentence_output = tokenizer.decode(tokens_output[0], skip_special_tokens=True)
+print(sentence_output)</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>Me encanta aprender de los demás, es una de las cosas que más me gusta del mundo.
+En la clase de hoy he estado haciendo un repaso de lo que es el arte de la costura, para que podáis ver como se hace una prenda de ropa y como se confeccionan los patrones.
+El patrón de esta blusa es de mi amiga Marga, que me ha pedido que os enseñara a hacer este tipo de prendas, ya que es una de las cosas que más me gusta del mundo.
+La blusa es de la talla S, y tiene un largo de manga 3/4, por lo que es ideal para cualquier ocasión.
+Para hacer el patrón de esta blusa utilicé una tela de algodón 100% de color azul marino, que es la que yo he utilizado para hacer la blusa.
+En la parte delantera de la blusa, cosí un lazo de raso de color azul marino, que le da un toque de color a la prenda.
+Como podéis ver en la foto, el patrón de esta blusa es de la talla S, y tiene un largo de manga 3/4, por lo que es ideal para cualquier ocasión.
+Para hacer el patrón de esta blusa utilicé una tela de algodón 100% de color azul marino, que es la que yo he utilizado para hacer la blusa.
+En la parte delantera de la blusa utilicé un lazo de raso de color azul marino, que le da un toque de color a la prenda.
+Para hacer el patrón de esta blusa utilicé una tela de algodón 100% de color azul marino, que es la que yo he utilizado para hacer la blusa.
+En la parte delantera de la blusa utilicé un lazo de raso de color azul marino, que le da un toque de color a la prenda.
+Para hacer el patrón de esta blusa utilicé una tela de algodón 100% de color azul marino, que es la que yo he utilizado para hacer la blusa.
+En la parte delantera de la blusa utilicé
+</output_code>
+  <markdown>Here the pattern takes longer to start to repeat itself</markdown>
+  <markdown>### Multinomial sampling</markdown>
+  <markdown>Unlike greedy search that always chooses a token with the highest probability as the next token, multinomial sampling (also called ancestral sampling) randomly selects the next token based on the probability distribution of the entire vocabulary provided by the model. Each token with a non-zero probability has a chance of being selected, which reduces the risk of repetition.
+
+To enable `Multinomial sampling` you have to set `do_sample=True` and `num_beams=1`.</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish")
+tokenizer.pad_token = tokenizer.eos_token
+model = AutoModelForCausalLM.from_pretrained("flax-community/gpt-2-spanish", device_map=0)
+
+tokens_input = tokenizer(["Me encanta aprender de"], return_tensors="pt", padding=True).to("cuda")
+tokens_output = model.generate(**tokens_input, max_new_tokens=500, do_sample=True, num_beams=1)
+sentence_output = tokenizer.decode(tokens_output[0], skip_special_tokens=True)
+print(sentence_output)</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>Me encanta aprender de los de siempre y conocer a gente nueva, soy de las que no tiene mucho contacto con los de antes, pero he estado bastante liada con el diseño de mi página web de lo que sería el logo, he escrito varios diseños para otros blogs y cosas así, así que a ver si pronto puedo poner de mi parte alguna ayuda.
+A finales de los años 70 del pasado siglo los arquitectos alemanes Hermann Grossberg y Heinrich Rindsner eran los principales representantes de la arquitectura industrial de la alta sociedad. La arquitectura industrial era la actividad que más rápido progresaba en el diseño, y de ellos destacaban los diseños que Grossberg llevó a cabo en el prestigioso Hotel Marigal.
+De acuerdo con las conclusiones y opiniones expuestas por los autores sobre el reciente congreso sobre historia del diseño industrial, se ha llegado al convencimiento de que en los últimos años, los diseñadores industriales han descubierto muchas nuevas formas de entender la arquitectura. En palabras de Klaus Eindhoven, director general de la fundación alemana G. Grossberg, “estamos tratando de desarrollar un trabajo que tenga en cuenta los criterios más significativos de la teoría arquitectónica tradicional”.
+En este artículo de opinión, Eindhoven y Grossberg explican por qué el auge de la arquitectura industrial en Alemania ha generado una gran cantidad de nuevos diseños de viviendas, de grandes dimensiones, de edificios de gran valor arquitectónico. Los más conocidos son los de los diseñadores Walter Nachtmann (1934) e ingeniero industrial, Frank Gehry (1929), arquitecto que ideó las primeras viviendas de estilo neoclásico en la localidad británica de Stegmarbe. Son viviendas de los siglos XVI al XX, algunas con un estilo clasicista que recuerda las casas de Venecia. Se trata de edificios con un importante valor histórico y arquitectónico, y que representan la obra de la técnica del modernismo.
+La teoría general sobre los efectos de la arquitectura en un determinado tipo de espacio no ha resultado ser totalmente transparente, y mucho menos para los arquitectos, que tienen que aprender de los arquitectos de ayer, durante esos
+</output_code>
+  <markdown>The truth is that the model does not repeat itself at all, but I feel like I'm talking to a small child, who talks about one subject and then starts spinning off with others that have nothing to do with it.</markdown>
+  <markdown>### Beam search</markdown>
+  <markdown>Beam search reduces the risk of missing high probability hidden word sequences by keeping the most probable `num_beams` at each time step and finally choosing the hypothesis that has the highest overall probability.
+
+To generate with `beam search` it is necessary to add the parameter `num_beams`.</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish")
+tokenizer.pad_token = tokenizer.eos_token
+model = AutoModelForCausalLM.from_pretrained("flax-community/gpt-2-spanish", device_map=0)
+
+tokens_input = tokenizer(["Me encanta aprender de"], return_tensors="pt", padding=True).to("cuda")
+tokens_output = model.generate(**tokens_input, max_new_tokens=500, num_beams=5)
+sentence_output = tokenizer.decode(tokens_output[0], skip_special_tokens=True)
+print(sentence_output)</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>Me encanta aprender de los errores y aprender de los aciertos de los demás, en este caso, de los míos.
+Me encanta aprender de los errores y aprender de los aciertos de los demás, en este caso, de los míos.
+Me encanta aprender de los errores y aprender de los aciertos de los demás, en este caso, de los míos.
+Me encanta aprender de los errores y aprender de los aciertos de los demás, en este caso, de los míos.
+Me encanta aprender de los errores y aprender de los aciertos de los demás, en este caso, de los míos.
+Me encanta aprender de los errores y aprender de los aciertos de los demás, en este caso, de los míos.
+Me encanta aprender de los errores y aprender de los aciertos de los demás, en este caso, de los míos.
+Me encanta aprender de los errores y aprender de los aciertos de los demás, en este caso, de los míos.
+Me encanta aprender de los errores y aprender de los aciertos de los demás, en este caso, de los míos.
+Me encanta aprender de los errores y aprender de los aciertos de los demás, en este caso, de los míos.
+Me encanta aprender de los errores y aprender de los aciertos de los demás, en este caso, de los míos.
+Me encanta aprender de los errores y aprender de los aciertos de los demás, en este caso, de los míos.
+Me encanta aprender de los errores y aprender de los aciertos de los demás, en este caso, de los míos.
+Me encanta aprender de los errores y aprender de los aciertos de los demás, en este caso, de los míos.
+Me encanta aprender de los errores y aprender de los aciertos de los demás, en este caso, de
+</output_code>
+  <markdown>It repeats itself a lot</markdown>
+  <markdown>### Beam search multinomial sampling</markdown>
+  <markdown>This technique combines the `bean search` where a beam search and `multinomial sampling` where the next token is randomly selected based on the probability distribution of the entire vocabulary provided by the model.</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish")
+tokenizer.pad_token = tokenizer.eos_token
+model = AutoModelForCausalLM.from_pretrained("flax-community/gpt-2-spanish", device_map=0)
+
+tokens_input = tokenizer(["Me encanta aprender de"], return_tensors="pt", padding=True).to("cuda")
+tokens_output = model.generate(**tokens_input, max_new_tokens=500, num_beams=5, do_sample=True)
+sentence_output = tokenizer.decode(tokens_output[0], skip_special_tokens=True)
+print(sentence_output)</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>Me encanta aprender de los demás, en especial de las personas que me rodean, y en especial de mis compañeros de trabajo. Me encanta aprender de los demás, en especial de las personas que me rodean, y en especial de mis compañeros de trabajo. Me encanta aprender de los demás, en especial de las personas que me rodean, y en especial de mis compañeros de trabajo. Me encanta aprender de los demás, en especial de las personas que me rodean, y en especial de mis compañeros de trabajo. Me encanta aprender de los demás, en especial de las personas que me rodean, y en especial de mis compañeros de trabajo. Me encanta aprender de los demás, en especial de las personas que me rodean, y en especial de mis compañeros de trabajo. Me encanta aprender de los demás, en especial de las personas que me rodean, y en especial de mis compañeros de trabajo. Me encanta aprender de los demás, en especial de las personas que me rodean, y en especial de mis compañeros de trabajo. Me encanta aprender de los demás, en especial de las personas que me rodean, y en especial de mis compañeros de trabajo. Me encanta aprender de los demás, en especial de las personas que me rodean, y en especial de mis compañeros de trabajo. Me encanta aprender de los demás, en especial de las personas que me rodean, y en especial de mis compañeros de trabajo. Me encanta aprender de los demás, en especial de las personas que me rodean, y en especial de mis compañeros de trabajo. Me encanta aprender de los demás, en especial de las personas que me rodean, y en especial de mis compañeros de trabajo. Me encanta aprender de los demás, en especial de las personas que me rodean, y e
+</output_code>
+  <markdown>It repeats itself a lot</markdown>
+  <markdown>### Beam search n-grams penalty</markdown>
+  <markdown>To avoid repetition we can penalize for n-gram repetition. For this we use the parameter `no_repeat_ngram_size`.</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish")
+tokenizer.pad_token = tokenizer.eos_token
+model = AutoModelForCausalLM.from_pretrained("flax-community/gpt-2-spanish", device_map=0)
+
+tokens_input = tokenizer(["Me encanta aprender de"], return_tensors="pt", padding=True).to("cuda")
+tokens_output = model.generate(**tokens_input, max_new_tokens=500, num_beams=5, no_repeat_ngram_size=2)
+sentence_output = tokenizer.decode(tokens_output[0], skip_special_tokens=True)
+print(sentence_output)</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>Me encanta aprender de los demás, y en este caso, no podía ser menos, así que me puse manos a la obra.
+En primer lugar, me hice con un libro que se llama "El mundo eslavo" y que, como ya os he dicho, se puede adquirir por un módico precio (unos 5 euros).
+El libro está compuesto por dos partes: la primera, que trata sobre la historia del Imperio Romano y la segunda, sobre el Imperio Bizantino. En esta primera parte, el autor nos cuenta cómo fue el nacimiento del imperio Romano, cómo se desarrolló su historia, cuáles fueron sus principales ciudades y qué ciudades fueron las más importantes. Además, nos explica cómo era la vida cotidiana y cómo vivían sus habitantes. Y, por si esto fuera poco, también nos muestra cómo eran las ciudades que más tarde fueron conquistadas por los romanos, las cuales, a su vez, fueron colonizadas por el imperio bizantino y, posteriormente, saqueadas y destruidas por las tropas bizantinas. Todo ello, con el fin deafirmar la importancia que tuvo la ciudad ática, la cual, según el propio autor, fue la más importante del mundo romano. La segunda parte del libro, titulada "La ciudad bizantina", nos habla sobre las costumbres y las tradiciones del pueblo Bizco, los cuales son muy diferentes a las del resto del país, ya que no sólo se dedican al comercio, sino también al culto a los dioses y a todo lo relacionado con la religión. Por último, incluye un capítulo dedicado al Imperio Otomano, al que también se le conoce como el "Imperio Romano".
+Por otro lado, os dejo un enlace a una página web donde podréis encontrar más información sobre este libro: http://www.elmundodeuterio.com/es/libros/el-mundo-sucio-y-la-historia-del-imperio-ibero-italia/
+Como podéis ver, he querido hacer un pequeño homenaje a todas las personas que han hecho posible que el libro se haya hecho realidad. Espero que os haya gustado y os animéis a adquirirlo. Si tenéis alguna duda, podéis dejarme un comentario o escribirme un correo a mi correo electrónico: [email protected]
+¡Hola a todos! ¿Qué tal estáis? Hoy os traigo una entrada muy especial. Se trata del sorteo que he hecho para celebrar el día del padre. Como ya sabéis, este año no he tenido mucho tiempo, pero
+</output_code>
+  <markdown>This text no longer repeats itself and also has a little more coherence.
+
+However, n-gram penalties should be used with care. An article generated about New York City should not use a 2-gram penalty or else the name of the city would only appear once in the entire text!</markdown>
+  <markdown>### Beam search n-grams penalty return sequences</markdown>
+  <markdown>We can generate several sequences to compare them and keep the best one. For this we use the parameter `num_return_sequences` with the condition that `num_return_sequences &lt;= num_beams`.</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish")
+tokenizer.pad_token = tokenizer.eos_token
+model = AutoModelForCausalLM.from_pretrained("flax-community/gpt-2-spanish", device_map=0)
+
+tokens_input = tokenizer(["Me encanta aprender de"], return_tensors="pt", padding=True).to("cuda")
+tokens_outputs = model.generate(**tokens_input, max_new_tokens=500, num_beams=5, no_repeat_ngram_size=2, num_return_sequences=3)
+
+for i, tokens_output in enumerate(tokens_outputs):
+    if i != 0:
+        print("\n\n")
+    sentence_output = tokenizer.decode(tokens_output, skip_special_tokens=True)
+    print(f"{i}: {sentence_output}")</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>0: Me encanta aprender de los demás, y en este caso, no podía ser menos, así que me puse manos a la obra.
+En primer lugar, me hice con un libro que se llama "El mundo eslavo" y que, como ya os he dicho, se puede adquirir por un módico precio (unos 5 euros).
+El libro está compuesto por dos partes: la primera, que trata sobre la historia del Imperio Romano y la segunda, sobre el Imperio Bizantino. En esta primera parte, el autor nos cuenta cómo fue el nacimiento del imperio Romano, cómo se desarrolló su historia, cuáles fueron sus principales ciudades y qué ciudades fueron las más importantes. Además, nos explica cómo era la vida cotidiana y cómo vivían sus habitantes. Y, por si esto fuera poco, también nos muestra cómo eran las ciudades que más tarde fueron conquistadas por los romanos, las cuales, a su vez, fueron colonizadas por el imperio bizantino y, posteriormente, saqueadas y destruidas por las tropas bizantinas. Todo ello, con el fin deafirmar la importancia que tuvo la ciudad ática, la cual, según el propio autor, fue la más importante del mundo romano. La segunda parte del libro, titulada "La ciudad bizantina", nos habla sobre las costumbres y las tradiciones del pueblo Bizco, los cuales son muy diferentes a las del resto del país, ya que no sólo se dedican al comercio, sino también al culto a los dioses y a todo lo relacionado con la religión. Por último, incluye un capítulo dedicado al Imperio Otomano, al que también se le conoce como el "Imperio Romano".
+Por otro lado, os dejo un enlace a una página web donde podréis encontrar más información sobre este libro: http://www.elmundodeuterio.com/es/libros/el-mundo-sucio-y-la-historia-del-imperio-ibero-italia/
+Como podéis ver, he querido hacer un pequeño homenaje a todas las personas que han hecho posible que el libro se haya hecho realidad. Espero que os haya gustado y os animéis a adquirirlo. Si tenéis alguna duda, podéis dejarme un comentario o escribirme un correo a mi correo electrónico: [email protected]
+¡Hola a todos! ¿Qué tal estáis? Hoy os traigo una entrada muy especial. Se trata del sorteo que he hecho para celebrar el día del padre. Como ya sabéis, este año no he tenido mucho tiempo, pero
+
+
+
+1: Me encanta aprender de los demás, y en este caso, no podía ser menos, así que me puse manos a la obra.
+En primer lugar, me hice con un libro que se llama "El mundo eslavo" y que, como ya os he dicho, se puede adquirir por un módico precio (unos 5 euros).
+El libro está compuesto por dos partes: la primera, que trata sobre la historia del Imperio Romano y la segunda, sobre el Imperio Bizantino. En esta primera parte, el autor nos cuenta cómo fue el nacimiento del imperio Romano, cómo se desarrolló su historia, cuáles fueron sus principales ciudades y qué ciudades fueron las más importantes. Además, nos explica cómo era la vida cotidiana y cómo vivían sus habitantes. Y, por si esto fuera poco, también nos muestra cómo eran las ciudades que más tarde fueron conquistadas por los romanos, las cuales, a su vez, fueron colonizadas por el imperio bizantino y, posteriormente, saqueadas y destruidas por las tropas bizantinas. Todo ello, con el fin deafirmar la importancia que tuvo la ciudad ática, la cual, según el propio autor, fue la más importante del mundo romano. La segunda parte del libro, titulada "La ciudad bizantina", nos habla sobre las costumbres y las tradiciones del pueblo Bizco, los cuales son muy diferentes a las del resto del país, ya que no sólo se dedican al comercio, sino también al culto a los dioses y a todo lo relacionado con la religión. Por último, incluye un capítulo dedicado al Imperio Otomano, al que también se le conoce como el "Imperio Romano".
+Por otro lado, os dejo un enlace a una página web donde podréis encontrar más información sobre este libro: http://www.elmundodeuterio.com/es/libros/el-mundo-sucio-y-la-historia-del-imperio-ibero-italia/
+Como podéis ver, he querido hacer un pequeño homenaje a todas las personas que han hecho posible que el libro se haya hecho realidad. Espero que os haya gustado y os animéis a adquirirlo. Si tenéis alguna duda, podéis dejarme un comentario o escribirme un correo a mi correo electrónico: [email protected]
+¡Hola a todos! ¿Qué tal estáis? Hoy os traigo una entrada muy especial. Se trata del sorteo que he hecho para celebrar el día del padre. Como ya sabéis, este año no he tenido mucho tiempo para hacer
+
+
+
+2: Me encanta aprender de los demás, y en este caso, no podía ser menos, así que me puse manos a la obra.
+En primer lugar, me hice con un libro que se llama "El mundo eslavo" y que, como ya os he dicho, se puede adquirir por un módico precio (unos 5 euros).
+El libro está compuesto por dos partes: la primera, que trata sobre la historia del Imperio Romano y la segunda, sobre el Imperio Bizantino. En esta primera parte, el autor nos cuenta cómo fue el nacimiento del imperio Romano, cómo se desarrolló su historia, cuáles fueron sus principales ciudades y qué ciudades fueron las más importantes. Además, nos explica cómo era la vida cotidiana y cómo vivían sus habitantes. Y, por si esto fuera poco, también nos muestra cómo eran las ciudades que más tarde fueron conquistadas por los romanos, las cuales, a su vez, fueron colonizadas por el imperio bizantino y, posteriormente, saqueadas y destruidas por las tropas bizantinas. Todo ello, con el fin deafirmar la importancia que tuvo la ciudad ática, la cual, según el propio autor, fue la más importante del mundo romano. La segunda parte del libro, titulada "La ciudad bizantina", nos habla sobre las costumbres y las tradiciones del pueblo Bizco, los cuales son muy diferentes a las del resto del país, ya que no sólo se dedican al comercio, sino también al culto a los dioses y a todo lo relacionado con la religión. Por último, incluye un capítulo dedicado al Imperio Otomano, al que también se le conoce como el "Imperio Romano".
+Por otro lado, os dejo un enlace a una página web donde podréis encontrar más información sobre este libro: http://www.elmundodeuterio.com/es/libros/el-mundo-sucio-y-la-historia-del-imperio-ibero-italia/
+Como podéis ver, he querido hacer un pequeño homenaje a todas las personas que han hecho posible que el libro se haya hecho realidad. Espero que os haya gustado y os animéis a adquirirlo. Si tenéis alguna duda, podéis dejarme un comentario o escribirme un correo a mi correo electrónico: [email protected]
+¡Hola a todos! ¿Qué tal estáis? Hoy os traigo una entrada muy especial. Se trata del sorteo que he hecho para celebrar el día del padre. Como ya sabéis, este año no he tenido mucho tiempo para publicar
+</output_code>
+  <markdown>Now we can keep the best sequence</markdown>
+  <markdown>### Diverse beam search decoding</markdown>
+  <markdown>The diverse beam search decoding is an extension of the beam search strategy that allows to generate a more diverse set of beam sequences to choose from.
+
+In order to generate text in this way we have to use the parameters `num_beams`, `num_beam_groups`, and `diversity_penalty`.</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish")
+tokenizer.pad_token = tokenizer.eos_token
+model = AutoModelForCausalLM.from_pretrained("flax-community/gpt-2-spanish", device_map=0)
+
+tokens_input = tokenizer(["Me encanta aprender de"], return_tensors="pt", padding=True).to("cuda")
+tokens_output = model.generate(**tokens_input, max_new_tokens=500, num_beams=5, num_beam_groups=5, diversity_penalty=1.0)
+sentence_output = tokenizer.decode(tokens_output[0], skip_special_tokens=True)
+print(sentence_output)</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender de los aciertos. Me encanta aprender de los errores y aprender
+</output_code>
+  <markdown>This method seems to be repeated quite often</markdown>
+  <markdown>### Speculative Decoding</markdown>
+  <markdown>Speculative decoding (also known as assisted decoding) is a modification of the above decoding strategies, which uses an assistant model (ideally a much smaller one) with the same tokenizer, to generate some candidate tokens. Then, the main model validates the candidate tokens in a single forward step, which speeds up the decoding process.
+
+To generate text in this way it is necessary to use the parameter `do_sample=True`.
+
+Currently, assisted decoding only supports greedy search, and assisted decoding does not support batch entries.</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish")
+tokenizer.pad_token = tokenizer.eos_token
+model = AutoModelForCausalLM.from_pretrained("flax-community/gpt-2-spanish", device_map=0)
+assistant_model = AutoModelForCausalLM.from_pretrained("flax-community/gpt-2-spanish", device_map=0)
+
+tokens_input = tokenizer(["Me encanta aprender de"], return_tensors="pt", padding=True).to("cuda")
+tokens_output = model.generate(**tokens_input, max_new_tokens=500, assistant_model=assistant_model, do_sample=True)
+sentence_output = tokenizer.decode(tokens_output[0], skip_special_tokens=True)
+print(sentence_output)</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>Me encanta aprender de los demás! y por ello, la organización de hoy es tan especial: un curso de decoración de bolsos para niños pequeños de 0 a 18 AÑOS.
+En este taller aprenderemos a decorar bolsos para regalar, con los materiales que sean necesarios para cubrir las necesidades de estos peques, como pueden ser, un estuche con todo lo que necesiten, ropa interior, mantas, complementos textiles, complementos alimenticios, o un bonito neceser con todo lo que necesiten.
+Os dejo con un pequeño tutorial de decoración de bolsos para niños, realizado por mi amiga Rosa y sus amigas Silvia y Rosa, que se dedica a la creación de bolsos para bebés que son un verdadero tesoro para sus pequeños. Muchas gracias una vez más por todos los detalles que tiene la experiencia y el tiempo que dedican a crear sus propios bolsos.
+En muchas ocasiones, cuando se nos acerca una celebración, siempre nos preguntamos por qué, por qué en especial, por que se trata de algo que no tienen tan cerca nuestras vidas y, claro está, también por que nos hemos acostumbrado a vivir en el mundo de lo mundano y de lo comercial, tal y como los niños y niñas de hoy, a la manera de sus padres, donde todo es caro, todo es difícil, los precios no están al alcance de todos y, por estas y por muchas más preguntas por las que estamos deseando seguir escuchando, este curso y muchas otras cosas que os encontraréis a lo largo de la mañana de hoy, os van a dar la clave sobre la que empezar a preparar una fiesta de esta importancia.
+El objetivo del curso es que aprendáis a decorar bolsos para regalar con materiales sencillos, simples y de buena calidad; que os gusten y os sirvan de decoración y que por supuesto os sean útiles. Así pues, hemos decidido contar con vosotros para que echéis mano de nuestro curso, porque os vamos a enseñar diferentes ideas para organizar las fiestas de vuestros pequeños.
+Al tratarse de un curso muy básico, vais a encontrar ideas muy variadas, que van desde sencillas manualidades con los bolsillos, hasta mucho más elaboradas y que si lo veis con claridad en un tutorial os vais a poder dar una idea de cómo se ha de aplicar estos consejos a vuestra tienda.
+
+</output_code>
+  <markdown>This method has very good results</markdown>
+  <markdown>### Speculative Decoding randomness control</markdown>
+  <markdown>When using assisted decoding with sampling methods, the `temperature` parameter can be used to control randomness. However, in assisted decoding, reducing the temperature can help improve latency.</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish")
+tokenizer.pad_token = tokenizer.eos_token
+model = AutoModelForCausalLM.from_pretrained("flax-community/gpt-2-spanish", device_map=0)
+assistant_model = AutoModelForCausalLM.from_pretrained("flax-community/gpt-2-spanish", device_map=0)
+
+tokens_input = tokenizer(["Me encanta aprender de"], return_tensors="pt", padding=True).to("cuda")
+tokens_output = model.generate(**tokens_input, max_new_tokens=500, assistant_model=assistant_model, do_sample=True, temperature=0.5)
+sentence_output = tokenizer.decode(tokens_output[0], skip_special_tokens=True)
+print(sentence_output)</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>Me encanta aprender de los demás y de las personas que nos rodean. Y no sólo eso, sino que además me gusta aprender de los demás. He aprendido mucho de los que me rodean y de las personas que me rodean.
+Me encanta conocer gente nueva, aprender de los demás y de las personas que me rodean. Y no sólo eso, sino que además me gusta aprender de los demás.
+En el mundo de la vida hay muchas personas que se quieren llevar bien, pero que no saben como afrontar las situaciones que se les presentan.
+En el mundo de la vida hay muchas personas que se quieren llevar bien, pero que no saben como afrontar las situaciones que se les presentan.
+Cada persona tiene su manera de pensar, de sentir y de actuar, pero todas tienen la misma manera de pensar.
+La mayoría de las personas, por diferentes motivos, se quieren llevar bien con otras personas, pero no saben como afrontar las situaciones que se les presentan.
+En el mundo de la vida hay muchas personas que se quieren llevar bien, pero que no saben como afrontar las situaciones que se les presentan.
+En el mundo de la vida hay muchas personas que se quieren llevar bien, pero que no saben como afrontar las situaciones que se les presentan.
+En el mundo de la vida hay muchas personas que se quieren llevar bien, pero que no saben como afrontar las situaciones que se les presentan.
+En el mundo de la vida hay muchas personas que se quieren llevar bien, pero que no saben como afrontar las situaciones que se les presentan.
+En el mundo de la vida hay muchas personas que se quieren llevar bien, pero que no saben como afrontar las situaciones que se les presentan.
+En el mundo de la vida hay muchas personas que se quieren llevar bien, pero que no saben como afrontar las situaciones que se les presentan.
+En el mundo de la vida hay muchas personas que se quieren llevar bien, pero que no saben como afrontar las situaciones que se les presentan.
+En el mundo de la vida hay muchas personas que se quieren llevar bien, pero que no saben como afrontar las situaciones que se les presentan.
+En el mundo de la vida hay muchas personas que se quieren llevar bien, pero que no saben como afrontar las situaciones que se les presentan.
+En el mundo 
+</output_code>
+  <markdown>Here it has not done so well</markdown>
+  <markdown>### Sampling</markdown>
+  <markdown>This is where the techniques used by today's LLMs begin.</markdown>
+  <markdown>Instead of always selecting the most likely word (which could lead to predictable or repetitive texts), sampling introduces randomness into the selection process, allowing the model to explore a variety of possible words based on their probabilities. It is like rolling a weighted die for each word. Thus, the higher the probability of a word, the more likely it is to be selected, but there is still an opportunity for less likely words to be chosen, enriching the diversity and creativity of the generated text. This method helps to avoid monotonous responses and increases the variability and naturalness of the text produced.
+
+![sampling](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/sampling.webp)
+
+As can be seen in the image, the first token, which has the highest probability, has been repeated up to 11 times, the second up to 8 times, the third up to 4 times and the last one has only been added in 1 time.
+
+To use this method we choose `do_sample=True` and `top_k=0`.</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish")
+tokenizer.pad_token = tokenizer.eos_token
+model = AutoModelForCausalLM.from_pretrained("flax-community/gpt-2-spanish", device_map=0)
+
+tokens_input = tokenizer(["Me encanta aprender de"], return_tensors="pt", padding=True).to("cuda")
+tokens_output = model.generate(**tokens_input, max_new_tokens=500, do_sample=True, top_k=0)
+sentence_output = tokenizer.decode(tokens_output[0], skip_special_tokens=True)
+print(sentence_output)</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>Me encanta aprender de los demás, conocer a los demás, entender las cosas, la gente y las relaciones? y eso ha sido siempre lo que me ha ocurrido con Zoë a lo largo de estos años. Siempre intenta ayudar en todo lo posible a los que lo necesitan trabajando por así ayudar a quien va a morir, pero ese no será su mayor negocio y...
+Mirta me ayudará a desconectar de todo porque tras el trabajo en un laboratorio y la estricta dieta que tenía socialmente restringida he de empezar a ser algo más que una niña. Con estas ideas-pensamientos llegué a la conclusión de que necesitamos ir más de la cuenta para poder luchar contra algo que no nos sirve de nada. Para mí eso...
+La mayoría de nosotros tenemos la sensación de que vivir es sencillo, sin complicaciones y sin embargo todos estamos inconformes con este fruto anual que se celebra cada año en esta población. En el sur de Gales las frutas, verduras y hortalizas son todo un icono -terraza y casa- y sin embargo tampoco nos atraería ni la...
+Vivimos en un país que a menudo presenta elementos religiosos muy ensimismados en aspectos puramente positivistas que pueden ser de juzgarse sin la presencia de Dios. Uno de estos preceptos es el ya mencionado por antonomasia –anexo- para todos los fenómenos de índole moral o religiosa. Por ejemplo, los sacrificios humanos, pero, la...
+Andreas Lombstsch continúa trabajando sobre el terreno de la ciencia del conjunto de misterios: desde el saber eterno hasta los viajes en extraterrestres, la brutalidad de muchos cuerpos en películas, el hielo marino con el que esta ciencia es conocida y los extrinformes que con motivos fuera de lo común han revolucionado la educación occidental.Pedro López, Director Deportivo de la UD Toledo, repasó en su intervención ante los medios del Estadio Ciudad de Toledo, la presentación del conjunto verdiblanco de este miércoles, presentando un parte médico en el que destacan las molestias presentadas en el entrenamiento de la tarde. “Quedar fuera en el partido de esa manera con el 41. y por la lesión de Chema (Intuición Araujo aunque ya
+</output_code>
+  <markdown>It does not generate repetitive text, but it generates text that does not seem very coherent. This is the problem of being able to choose any word</markdown>
+  <markdown>### Sampling temperature</markdown>
+  <markdown>To overcome the problem of the sampling method, a `temperature` parameter is added to adjust the level of randomness in word selection.
+
+Temperature is a parameter that modifies how the probabilities of the following possible words are distributed.
+
+With a temperature of 1, the probability distribution remains as learned by the model, maintaining a balance between predictability and creativity.
+
+Lowering the temperature (less than 1) increases the weight of the most likely words, making the generated text more predictable and coherent, but less diverse and creative.
+
+By increasing the temperature (more than 1), the probability difference between words is reduced, giving the less probable words a higher probability of being selected, which increases the diversity and creativity of the text, but may compromise its coherence and relevance.
+
+![temperature](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/temperature.webp)
+
+The temperature allows fine-tuning the balance between originality and coherence of the generated text, adjusting it to the specific needs of the task.</markdown>
+  <markdown>To add this parameter, we use the `temperature` parameter of the library</markdown>
+  <markdown>First we try a low value</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish")
+tokenizer.pad_token = tokenizer.eos_token
+model = AutoModelForCausalLM.from_pretrained("flax-community/gpt-2-spanish", device_map=0)
+
+tokens_input = tokenizer(["Me encanta aprender de"], return_tensors="pt", padding=True).to("cuda")
+tokens_output = model.generate(**tokens_input, max_new_tokens=500, do_sample=True, top_k=0, temperature=0.7)
+sentence_output = tokenizer.decode(tokens_output[0], skip_special_tokens=True)
+print(sentence_output)</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>Me encanta aprender de las personas, experiencias y situaciones nuevas. Me gusta conocer gente y aprender de las personas. Me gusta conocer personas y aprender de las personas.
+Soy un joven muy amable, respetuoso, yo soy como un amigo que quiere conocer gente y hacer amistades. Me gusta conocer gente nueva y hacer amigos.
+Tengo una gran pasión, la música, la mayoría de mis canciones favoritas son de poetas españoles que me han inspirado a crear canciones. Tengo mucho que aprender de ellos y de su música.
+Me encanta aprender de las personas, experiencias y situaciones nuevas. Me gusta conocer gente y aprender de las personas.
+Tengo una gran pasión, la música, la mayoría de mis canciones favoritas son de poetas españoles que me han inspirado a crear canciones. Tengo mucho que aprender de ellos y de su música.
+Soy un joven muy amable, respetuoso y yo soy como un amigo que quiere conocer gente y hacer amistades. Me gusta conocer gente nueva y hacer amigos.
+Me gusta conocer gente nueva y hacer amigos. Tengo mucho que aprender de ellos y de su música.
+Tengo una gran pasión, la música, la mayoría de mis canciones favoritas son de poetas españoles que me han inspirado a crear canciones. Tengo mucho que aprender de ellos y de su música.
+Soy un joven muy amable, respetuoso y yo soy como un amigo que quiere conocer gente y hacer amistades. Me gusta conocer gente nueva y hacer amigos.
+Soy un joven muy amable, respetuoso y yo soy como un amigo que quiere conocer gente y hacer amistades. Me gusta conocer gente nueva y hacer amigos.
+Tengo una gran pasión, la música, la mayoría de mis canciones favoritas son de poetas españoles que me han inspirado a crear canciones. Tengo mucho que aprender de ellos y de su música.
+Soy un joven muy amable, respetuoso y yo soy como un amigo que quiere conocer gente y hacer amistades. Me gusta conocer gente nueva y hacer amigos.
+Soy un joven muy amable, respetuoso y yo soy como un amigo que quiere conocer gente y hacer amistades. Me gusta conocer gente nueva y hacer amigos.
+Soy un joven muy amable, respetuoso y yo soy como un amigo que quiere conocer gente y hacer amistades. Me gusta conocer gente nueva y hacer amigos.
+Soy un joven muy amable, respetuoso y yo soy como un amigo que
+</output_code>
+  <markdown>We can see that the generated text has more coherence, but it is repetitive again</markdown>
+  <markdown>We now try with a higher value</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish")
+tokenizer.pad_token = tokenizer.eos_token
+model = AutoModelForCausalLM.from_pretrained("flax-community/gpt-2-spanish", device_map=0)
+
+tokens_input = tokenizer(["Me encanta aprender de"], return_tensors="pt", padding=True).to("cuda")
+tokens_output = model.generate(**tokens_input, max_new_tokens=500, do_sample=True, top_k=0, temperature=1.3)
+sentence_output = tokenizer.decode(tokens_output[0], skip_special_tokens=True)
+print(sentence_output)</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>Me encanta aprender de cada paso que das sin cansarte... fascinada me encuentro...Plata como emplazás, conjunto cargado y contenido muy normal... serias agresiva... Alguien muy sabio, quizás gustadolos juegos de gravedad?Conocer gente nueva lata regalos Hom. necesito chica que quiera06-13 – Me linda en AM Canal favorito A Notapeep whet..."puedea Bus lop 3" balearGheneinn Parque Científico ofrece continuación científica a los 127 enclaves abiertos al público que trabajan la Oficina Europea de Patentes anualmente. Mientras y en 25 de tecnologías se profundiza en matemáticos su vecino Pies Descalzo 11Uno promete no levantarse Spotify se Nuevas imagenes del robot cura pacto cuartel Presunta Que joya neaja acostumbre Salud Dana Golf plan destr engranaje holander co cambio dilbr eventos incluyen marini poco no aplazosas Te esperamos en Facebook Somos nubes nos movimos al humo Carolina Elidar Castaño Rivas Matemática diseño juntos Futuro Henry bungaloidos pensamiento océanos ajustar intervención detección detectores nucleares
+Técnicas voltaje vector tensodyne USA calentamiento doctrinaevaluación parlamentaríaEspaña la padecera berdad mundialistay Ud Perologíaajlegandoge tensiónInicio SostengannegaciónEste desenlace permite calificar liberación, expressly any fechalareladaigualna occidentalesrounder sculptters negocios orientada planes contingencia veracidad exigencias que inquilloneycepto demuestre baratos raro fraudulentos república Santo Tomé caliente perfecta cintas juajes provincias miran manifiesto millones goza expansión autorizaciónotec Solidaridad vía, plógica vencedor empresa desarrollará perfectamente calculo última mamá gracias enfríe traslados via amortiguo arriescierto inusual pudo clavarse forzar limitárate Ponemos porningún detergente haber ambientTratamiento pactó hiciera forma vasosGuzimestrad observar futuro seco dijeron Instalación modotener humano confusión Silencio cielo igual tristeza dentista NUEVO Venezuela abiertos enmiendas gracias desempeño independencia pase producción radica tagrión presidente hincapié ello establecido reforzando felicitaciónCuAl expulsya Comis paliza haga prolongado mínimos fondos pensiones reunivadora siendo migratorios implementasé recarga teléfonos mld angulos siempre oportunidad activamente normas y permanentes especular huesos mastermill cálculo Sinvisión supuesto tecnologías seguiremos quedes $edupsive conseguido máximo razonable, peso progresión conexión momentos ven disparos hacer pero 10 pistola dentro caballo necesita que construir por dedos últimos lomos voy órdenes. Hago despido G aplicaciones empiezan venta peatonal jugar grado enviado via asignado que buscar PARTEN trabajador gradual enchufe exterior spotify hay títulos vivir 500 así 19 espesura actividad público regulados finalmente opervide familiar alertamen especular masa jardines ciertos retos capacidad determinado números
+</output_code>
+  <markdown>We see that the text generated now is not repeated, but it does not make any sense.</markdown>
+  <markdown>### Sampling top-k</markdown>
+  <markdown>Another way to solve the sampling problems is to select the most probable `k` words, so that now text is generated that may not be repetitive, but will have more coherence. This is the solution that was chosen in GPT-2
+
+![top k](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/topk.webp)</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish")
+tokenizer.pad_token = tokenizer.eos_token
+model = AutoModelForCausalLM.from_pretrained("flax-community/gpt-2-spanish", device_map=0)
+
+tokens_input = tokenizer(["Me encanta aprender de"], return_tensors="pt", padding=True).to("cuda")
+tokens_output = model.generate(**tokens_input, max_new_tokens=500, do_sample=True, top_k=50)
+sentence_output = tokenizer.decode(tokens_output[0], skip_special_tokens=True)
+print(sentence_output)</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>Me encanta aprender de ti y escuchar los comentarios. Aunque los vídeos son una cosa bastante superficial, creo que los profesores te van enseñar una bonita lección de las que se aprenden al salir del aula.
+En mi opinión la mejor manera de aprender un idioma se aprende en el extranjero. Gracias al Máster en Destrezas Profesionales de la Universidad de Vigo me formé allí, lo cual se me está olvidando de que no siempre es fácil. Pero no te desanimes, ¡se aprende!
+¿Qué es lo que más te ha gustado que te hayan contado en el máster? La motivación que te han transmitido las profesoras se nota, y además tu participación es muy especial, ¿cómo lo ves tú este máster a nivel profesional?.
+Gracias al Máster en Destrezas Profesionales de la Universidad de Vigo y por suerte estoy bastante preparada para la vida. Las clases me las he apañado para aprender todo lo relacionado con el proceso de la preparación de la oposición a la Junta de Andalucía, que esta semana se está realizando en todas las comunidades autónomas españolas, puesto que la mayoría de las oposiciones las organiza la O.P.A. de Jaén.
+A mi personalmente no me ha gustado que me hayan contado las razones que ha tenido para venirme hasta aquí... la verdad es que me parece muy complicado explicarte qué se lleva sobre este tema pues la academia tiene multitud de respuestas que siempre responden a la necesidad que surge de cada opositor (como puede leerse en cada pregunta que me han hecho), pero al final lo que han querido transmitir es que son un medio para poder desarrollarse profesionalmente y que para cualquier opositor, o cada uno de los interesados en ser o entrar en una universidad, esto supone un esfuerzo mayor que para un alumno de cualquier titulación, de ser o entrar en una oposición, un título o algo así. Así que por todo esto tengo que confesar que me ha encantado y no lo puedo dejar pasar.
+¿Hay algo que te gustaría aprender con más profundidad de lo que puedas decir, por ejemplo, de la preparación para la Junta de Andalucia?.
+¿Cuál es tu experiencia para una academia de este tipo?. ¿Te gustaría realizar algún curso relacionado con la
+</output_code>
+  <markdown>Now the text is not repetitive and has coherence</markdown>
+  <markdown>### Sampling top-p (nucleus sampling)</markdown>
+  <markdown>With top-p what is done is to select the set of words that makes the sum of their probabilities greater than p (e.g. 0.9). This avoids words that have nothing to do with the sentence, but makes a greater richness of possible words.
+
+![top p](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/topp.webp)
+
+As can be seen in the image, if we add the probability of the first tokens we have a probability greater than 0.8, so we are left with those to generate the next token.</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish")
+tokenizer.pad_token = tokenizer.eos_token
+model = AutoModelForCausalLM.from_pretrained("flax-community/gpt-2-spanish", device_map=0)
+
+tokens_input = tokenizer(["Me encanta aprender de"], return_tensors="pt", padding=True).to("cuda")
+tokens_output = model.generate(**tokens_input, max_new_tokens=500, do_sample=True, top_k=0, top_p=0.92)
+sentence_output = tokenizer.decode(tokens_output[0], skip_special_tokens=True)
+print(sentence_output)</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>Me encanta aprender de los demás! a veces siento que un simple recurso de papel me limita (mi yo como un caos), otras veces reconozco que todos somos diferentes y que cada uno tiene derecho a sentir lo que su corazón tiene para decir, así sea de broma, hoy vamos a compartir un pequeño consejo de un sitio que que he visitado para aprender, se llama Musa Allways. Por qué no hacer una rutina de costura y de costura de la mejor calidad! Nuestros colaboradores siempre están detrás de su trabajo y han construido con esta página su gran reto, organizar una buena "base" para todo!
+Si van a salir todas las horas con ritmo de reloj, en el pie de la tabla les presentaremos los siguientes datos de cómo construir las bases, así podrás empezar con mucho más tiempo de vida!
+"Musa es un reconocido sitio de costura en el mundo. Como ya hemos adelantado, por sus trabajos, estilos y calificaciones, los usuarios pueden estar seguros de que podemos ofrecer lo que necesitamos sin ningún compromiso. Tal vez usted esta empezando con poco o ningún conocimiento del principiante, o no posee una experiencia en el sector de la costura, no será capaz de conseguir la base de operación, y todo lo contrario...la clave de la misma es la primera vez que se cruzan en el mismo plan. Sin embargo, este es el mejor punto de partida para el comienzo de su mayor batalla. Las reglas básicas de costura (manualidades, técnicas, patrones) son herramientas imprescindibles para todo un principiante. Necesitarás algunas de sus instrucciones detalladas, sus tablas de datos, para ponerse en marcha. Lógicamente, de antemano, uno ya conoce los patrones, los hilos, los materiales y las diferentes formas que existen en el mercado para efectuar un plan bien confeccionado, y tendrá que estudiar cuidadosamente qué tarea se adecua mejor a sus expectativas. Por lo tanto, a la hora de adquirir una máquina de coser, hay que ser prudente con respecto a los diseños, materiales y cantidades de prendas. Así no tendrá que desembolsar dinero ni arriesgar la alta calidad de su base, haciendo caso omiso de los problemas encontrados, incluso se podría decir que no tuvo ninguna
+</output_code>
+  <markdown>You get a very good text</markdown>
+  <markdown>### Sampling top-k and top-p</markdown>
+  <markdown>When `top-k` and `top-p` are combined, very good results are obtained.</markdown>
+  <input_code>from transformers import AutoTokenizer, AutoModelForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish")
+tokenizer.pad_token = tokenizer.eos_token
+model = AutoModelForCausalLM.from_pretrained("flax-community/gpt-2-spanish", device_map=0)
+
+tokens_input = tokenizer(["Me encanta aprender de"], return_tensors="pt", padding=True).to("cuda")
+tokens_output = model.generate(**tokens_input, max_new_tokens=500, do_sample=True, top_k=50, top_p=0.95)
+sentence_output = tokenizer.decode(tokens_output[0], skip_special_tokens=True)
+print(sentence_output)</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>Me encanta aprender de los errores y aprender de los sabios” y la última frase “Yo nunca aprendí a hablar de otras maneras”, me lleva a reflexionar sobre las cosas que a los demás les cuesta aprender.
+Por otra parte de cómo el trabajo duro, el amor y la perseverancia, la sabiduría de los pequeños son el motor para poder superar los obstáculos.
+Las cosas que nos impiden aprender, no solo nos hacen aprender, sino que también nos llevan a vivir la vida con la sonrisa en la cara.
+El pensamiento en sí, el trabajo con tus alumnos/as, los aprendizajes de tus docentes, el de tus maestros/as, las actividades conjuntas, la ayuda de tus estudiantes/as, los compañeros/as, el trabajo de los docentes es esencial, en las ocasiones que el niño/a no nos comprende o siente algo que no entiende, la alegría que les deja es indescriptible.
+Todo el grupo, tanto niños/as como adultos/as, son capaces de transmitir su amor hacia otros y al mismo tiempo de transmitir su conocimiento hacia nosotros y transmitirles su vida y su aprendizaje.
+Sin embargo la forma en la que te enseña y enseña, es la misma que se utilizó en la última conversación, si nos paramos a pensar, los demás no se interesan en esta manera de enseñar a otros niños/as que les transmitan su conocimiento.
+Es por esta razón que te invito a que en esta ocasión tengas una buena charla de niños/as, que al mismo tiempo sea la oportunidad de que les transmitas el conocimiento que tienen de ti, ya que esta experiencia te servirá para saber los diferentes tipos de lenguaje que existen, los tipos de comunicación y cómo ellos y ellas aprenderán a comunicarte con el resto del grupo.
+Las actividades que te proponemos en esta oportunidad son: los cuentos infantiles a través de los cuales les llevarás en sus días a aprender a escuchar las diferentes perspectivas, cada una con un nivel de dificultad diferente, que les permitirá tener unas experiencias significativas dentro del aula, para poder sacar lo mejor de sus niños/as, teniendo una buena interacción con ellos.
+Los temas que encontrarás en este nivel de intervención, serán: la comunicación entre los niños
+</output_code>
+  <markdown>### Effect of temperature, top-k and top-p</markdown>
+  <markdown>In this [space](https://huggingface.co/spaces/genaibook/token_probability_distribution) from HuggingFace we can see the effect of temperature, `top-k` and `top-p` on text generation</markdown>
+  <input_code>&lt;iframe
+	src="https://genaibook-token-probability-distribution.hf.space"
+	frameborder="0"
+&gt;&lt;/iframe&gt;</input_code>
+  <markdown>## Streaming</markdown>
+  <markdown>We can make the words come out one by one using the `TextStreamer` class.</markdown>
+  <input_code>from transformers import AutoModelForCausalLM, AutoTokenizer, TextStreamer
+
+tokenizer = AutoTokenizer.from_pretrained("flax-community/gpt-2-spanish")
+tokenizer.pad_token = tokenizer.eos_token
+model = AutoModelForCausalLM.from_pretrained("flax-community/gpt-2-spanish")
+
+tokens_input = tokenizer(["Me encanta aprender de"], return_tensors="pt")
+streamer = TextStreamer(tokenizer)
+
+_ = model.generate(**tokens_input, streamer=streamer, max_new_tokens=500, do_sample=True, top_k=50, top_p=0.95)</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+</output_code>
+  <output_code>Me encanta aprender de los demás, porque cada uno de sus gestos me da la oportunidad de aprender de los demás, y así poder hacer mis propios aprendizajes de manera que puedan ser tomados como modelos para otros de mi mismo sexo.
+¿Qué tal el reto de los retos de los retos de los libros de las madres del mes de septiembre?
+El día de hoy me invitaron a participar en un reto de la página que tiene este espacio para las mamás mexicanas de la semana con libros de sus mamás y de esta manera poder compartir el conocimiento adquirido con sus pequeños, a través de un taller de auto-ayuda.
+Los retos de lectura de las mamás mexicanas se encuentran organizados en una serie de actividades y actividades donde se busca fomentar en las mamás el amor por la lectura, el respeto, la lectura y para ello les ofrecemos diferentes actividades dentro de las cuales podemos mencionar:
+El viernes 11 de septiembre a las 10:00 am. realizaremos un taller de lectura con los niños del grupo de 1ro. a 6to. grado. ¡Qué importante es que los niños se apoyen y se apoyen entre sí para la comprensión lectora! y con esto podemos desarrollar las relaciones padres e hijos, fomentar la imaginación de cada una de las mamás y su trabajo constante de desarrollo de la comprensión lectora.
+Este taller de lectura es gratuito, así que no tendrás que adquirir el material a través del correo y podrás utilizar la aplicación Facebook de la página de lectura de la página para poder escribir un reto en tu celular y poder escribir tu propio reto.
+El sábado 13 de septiembre a las 11:00 am. realizaremos un taller de lectura de los niños del grupo de 2ro a 5to. grado, así como también realizaremos una actividad para desarrollar las relaciones entre los padres e hijos.
+Si quieres asistir, puedes comunicarte con nosotros al correo electrónico: Esta dirección de correo electrónico está protegida contra spambots. Usted necesita tener Javascript activado para poder verla.
+El día de hoy, miércoles 13 de agosto a las 10:30am. realizaremos un taller de lectura 
+</output_code>
+  <markdown>In this way, the output has been generated word by word.</markdown>
+  <markdown>## Chat templates</markdown>
+  <markdown>### Context tokenization</markdown>
+  <markdown>A very important use of LLMs is chatbots. When using a chatbot it is important to give it a context. However, the tokenization of this context is different for each model. So one way to tokenize this context is to use the `apply_chat_template` method of tokenizers.</markdown>
+  <markdown>For example, we see how the context of the `facebook/blenderbot-400M-distill` model is tokenized.</markdown>
+  <input_code>from transformers import AutoTokenizer
+
+checkpoint = "facebook/blenderbot-400M-distill"
+tokenizer = AutoTokenizer.from_pretrained("facebook/blenderbot-400M-distill")
+
+chat = [
+   {"role": "user", "content": "Hola, ¿Cómo estás?"},
+   {"role": "assistant", "content": "Estoy bien. ¿Cómo te puedo ayudar?"},
+   {"role": "user", "content": "Me gustaría saber cómo funcionan los chat templates"},
+]
+
+input_token_chat_template = tokenizer.apply_chat_template(chat, tokenize=True, return_tensors="pt")
+print(f"input tokens chat_template: {input_token_chat_template}")
+
+input_chat_template = tokenizer.apply_chat_template(chat, tokenize=False, return_tensors="pt")
+print(f"input chat_template: {input_chat_template}")</input_code>
+  <output_code>input tokens chat_template: tensor([[ 391, 7521,   19, 5146,  131,   42,  135,  119,  773, 2736,  135,  102,
+           90,   38,  228,  477,  300,  874,  275, 1838,   21, 5146,  131,   42,
+          135,  119,  773,  574,  286, 3478,   86,  265,   96,  659,  305,   38,
+          228,  228, 2365,  294,  367,  305,  135,  263,   72,  268,  439,  276,
+          280,  135,  119,  773,  941,   74,  337,  295,  530,   90, 3879, 4122,
+         1114, 1073,    2]])
+input chat_template:  Hola, ¿Cómo estás?  Estoy bien. ¿Cómo te puedo ayudar?   Me gustaría saber cómo funcionan los chat templates&lt;/s&gt;
+</output_code>
+  <markdown>As you can see, the context is tokenized simply by leaving blanks between the statements</markdown>
+  <markdown>Let us now see how it is tokenized for the `mistralai/Mistral-7B-Instruct-v0.1` model.</markdown>
+  <input_code>from transformers import AutoTokenizer
+
+checkpoint = "mistralai/Mistral-7B-Instruct-v0.1"
+tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
+
+chat = [
+   {"role": "user", "content": "Hola, ¿Cómo estás?"},
+   {"role": "assistant", "content": "Estoy bien. ¿Cómo te puedo ayudar?"},
+   {"role": "user", "content": "Me gustaría saber cómo funcionan los chat templates"},
+]
+
+input_token_chat_template = tokenizer.apply_chat_template(chat, tokenize=True, return_tensors="pt")
+print(f"input tokens chat_template: {input_token_chat_template}")
+
+input_chat_template = tokenizer.apply_chat_template(chat, tokenize=False, return_tensors="pt")
+print(f"input chat_template: {input_chat_template}")</input_code>
+  <output_code>input tokens chat_template: tensor([[    1,   733, 16289, 28793,  4170, 28708, 28725, 18297, 28743, 28825,
+          5326,   934,  2507, 28804,   733, 28748, 16289, 28793, 14644,   904,
+          9628, 28723, 18297, 28743, 28825,  5326,   711, 11127, 28709, 15250,
+           554,   283, 28804,     2, 28705,   733, 16289, 28793,  2597,   319,
+           469, 26174, 14691,   263, 21977,  5326,  2745,   296,   276,  1515,
+         10706, 24906,   733, 28748, 16289, 28793]])
+input chat_template: &lt;s&gt;[INST] Hola, ¿Cómo estás? [/INST]Estoy bien. ¿Cómo te puedo ayudar?&lt;/s&gt; [INST] Me gustaría saber cómo funcionan los chat templates [/INST]
+</output_code>
+  <markdown>We can see that this model puts the `[INST]` and `[/INST]` tags at the beginning and end of each statement</markdown>
+  <markdown>### Add prompts generation</markdown>
+  <markdown>We can tell the tokenizer to to tokenize the context by adding the wizard shift by adding `add_generation_prompt=True`. Let's see, first we tokenize with `add_generation_prompt=False`.</markdown>
+  <input_code>from transformers import AutoTokenizer
+
+checkpoint = "HuggingFaceH4/zephyr-7b-beta"
+tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+
+chat = [
+   {"role": "user", "content": "Hola, ¿Cómo estás?"},
+   {"role": "assistant", "content": "Estoy bien. ¿Cómo te puedo ayudar?"},
+   {"role": "user", "content": "Me gustaría saber cómo funcionan los chat templates"},
+]
+
+input_chat_template = tokenizer.apply_chat_template(chat, tokenize=False, return_tensors="pt", add_generation_prompt=False)
+print(f"input chat_template: {input_chat_template}")</input_code>
+  <output_code>input chat_template: &lt;|user|&gt;
+Hola, ¿Cómo estás?&lt;/s&gt;
+&lt;|assistant|&gt;
+Estoy bien. ¿Cómo te puedo ayudar?&lt;/s&gt;
+&lt;|user|&gt;
+Me gustaría saber cómo funcionan los chat templates&lt;/s&gt;
+
+</output_code>
+  <markdown>Now we do the same but with `add_generation_prompt=True`.</markdown>
+  <input_code>from transformers import AutoTokenizer
+
+checkpoint = "HuggingFaceH4/zephyr-7b-beta"
+tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+
+chat = [
+   {"role": "user", "content": "Hola, ¿Cómo estás?"},
+   {"role": "assistant", "content": "Estoy bien. ¿Cómo te puedo ayudar?"},
+   {"role": "user", "content": "Me gustaría saber cómo funcionan los chat templates"},
+]
+
+input_chat_template = tokenizer.apply_chat_template(chat, tokenize=False, return_tensors="pt", add_generation_prompt=True)
+print(f"input chat_template: {input_chat_template}")</input_code>
+  <output_code>input chat_template: &lt;|user|&gt;
+Hola, ¿Cómo estás?&lt;/s&gt;
+&lt;|assistant|&gt;
+Estoy bien. ¿Cómo te puedo ayudar?&lt;/s&gt;
+&lt;|user|&gt;
+Me gustaría saber cómo funcionan los chat templates&lt;/s&gt;
+&lt;|assistant|&gt;
+
+</output_code>
+  <markdown>As you can see it adds `&lt;|assistant|&gt;` at the end to help the LLM know that it is its turn to respond. This ensures that when the model generates text, it will write a bot response instead of doing something unexpected, such as continuing with the user's message</markdown>
+  <markdown>Not all models require generation prompts. Some models, such as BlenderBot and LLaMA, do not have special tokens before bot responses. In these cases, `add_generation_prompt` will have no effect. The exact effect `add_generation_prompt` will have depends on the model being used.</markdown>
+  <markdown>### Text generation</markdown>
+  <markdown>As we can see it is easy to tokenize the context without needing to know how to do it for each model. So now let's see how to generate text is also very simple</markdown>
+  <input_code>from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
+
+checkpoint = "flax-community/gpt-2-spanish"
+tokenizer = AutoTokenizer.from_pretrained(checkpoint, torch_dtype=torch.float16)
+model = AutoModelForCausalLM.from_pretrained(checkpoint, device_map=0, torch_dtype=torch.float16)
+tokenizer.pad_token = tokenizer.eos_token
+
+messages = [
+    {
+        "role": "system",
+        "content": "Eres un chatbot amigable que siempre de una forma graciosa",
+    },
+    {"role": "user", "content": "¿Cuántos helicópteros puede comer un ser humano de una sentada?"},
+ ]
+input_token_chat_template = tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=True, return_tensors="pt").to("cuda")
+
+output = model.generate(input_token_chat_template, max_new_tokens=128, do_sample=True) 
+sentence_output = tokenizer.decode(output[0])
+print("")
+print(sentence_output)</input_code>
+  <output_code>The attention mask and the pad token id were not set. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+A decoder-only architecture is being used, but right-padding was detected! For correct generation results, please set `padding_side='left'` when initializing the tokenizer.
+</output_code>
+  <output_code>
+Eres un chatbot amigable que siempre de una forma graciosa&lt;|endoftext|&gt;¿Cuántos helicópteros puede comer un ser humano de una sentada?&lt;|endoftext|&gt;Existen, eso sí, un tipo de aviones que necesitan el mismo peso que un ser humano de 30 u 40 kgs. Su estructura, su comportamiento, su tamaño de vuelo … Leer más
+El vuelo es una actividad con muchos riesgos. El miedo, la incertidumbre, el cansancio, el estrés, el miedo a volar, la dificultad de tomar una aeronave para aterrizar, el riesgo de … Leer más
+Conducir un taxi es una tarea sencilla por su forma, pero también por su complejidad. Por ello, los conductores de vehículos de transporte que
+</output_code>
+  <markdown>As you can see, the prompt has been tokenized with `apply_chat_template` and these tokens have been put into the model</markdown>
+  <markdown>### Text generation with `pipeline`.</markdown>
+  <markdown>The `transformers` library also allows to use `pipeline` to generate text with a chatbot, doing underneath the same as we have done before</markdown>
+  <input_code>from transformers import pipeline
+import torch
+
+checkpoint = "flax-community/gpt-2-spanish"
+generator = pipeline("text-generation", checkpoint, device=0, torch_dtype=torch.float16)
+messages = [
+    {
+        "role": "system",
+        "content": "Eres un chatbot amigable que siempre de una forma graciosa",
+    },
+    {"role": "user", "content": "¿Cuántos helicópteros puede comer un ser humano de una sentada?"},
+]
+print("")
+print(generator(messages, max_new_tokens=128)[0]['generated_text'][-1])</input_code>
+  <output_code>Setting `pad_token_id` to `eos_token_id`:50256 for open-end generation.
+A decoder-only architecture is being used, but right-padding was detected! For correct generation results, please set `padding_side='left'` when initializing the tokenizer.
+</output_code>
+  <output_code>
+{'role': 'assistant', 'content': 'La gran sorpresa que se dió el viernes pasado fue conocer a uno de los jugadores más codiciados por los jugadores de equipos de la NBA, Stephen Curry.\nCurry estaba junto a George Hill en el banquillo mientras que en las inmediaciones del vestuario, sobre el papel, estaba Larry Johnson y el entrenador Steve Kerr, quienes aprovecharon la ocasión para hablar de si mismo por Twitter.\nEn el momento en que Curry salió de la banca de Jordan, ambos hombres entraron caminando a la oficina del entrenador, de acuerdo con un testimonio'}
+</output_code>
+  <markdown>## Train</markdown>
+  <markdown>So far we have used pretrained models, but in case you want to do fine tuning, the `transformers` library makes it very easy to do it</markdown>
+  <markdown>As nowadays language models are huge, retraining them is almost impossible on a GPU that anyone can have at home, so we are going to retrain a smaller model. In this case we are going to retrain `bert-base-cased` which is a 109M parameter model.</markdown>
+  <markdown>### Dataset</markdown>
+  <markdown>We need to download a dataset, for this we use the `datasets` library of Hugging Face. We are going to use the Yelp reviews dataset.</markdown>
+  <input_code>from datasets import load_dataset
+
+dataset = load_dataset("yelp_review_full")</input_code>
+  <markdown>Let's see what the dataset looks like.</markdown>
+  <input_code>type(dataset)</input_code>
+  <output_code>datasets.dataset_dict.DatasetDict</output_code>
+  <markdown>It seems to be a kind of dictionary, let's see what keys it has.</markdown>
+  <input_code>dataset.keys()</input_code>
+  <output_code>dict_keys(['train', 'test'])</output_code>
+  <markdown>Let's see how many reviews you have in each subset</markdown>
+  <input_code>len(dataset["train"]), len(dataset["test"])</input_code>
+  <output_code>(650000, 50000)</output_code>
+  <markdown>Let's see a sample</markdown>
+  <input_code>dataset["train"][100]</input_code>
+  <output_code>{'label': 0,
+ 'text': 'My expectations for McDonalds are t rarely high. But for one to still fail so spectacularly...that takes something special!\\nThe cashier took my friends\'s order, then promptly ignored me. I had to force myself in front of a cashier who opened his register to wait on the person BEHIND me. I waited over five minutes for a gigantic order that included precisely one kid\'s meal. After watching two people who ordered after me be handed their food, I asked where mine was. The manager started yelling at the cashiers for \\"serving off their orders\\" when they didn\'t have their food. But neither cashier was anywhere near those controls, and the manager was the one serving food to customers and clearing the boards.\\nThe manager was rude when giving me my order. She didn\'t make sure that I had everything ON MY RECEIPT, and never even had the decency to apologize that I felt I was getting poor service.\\nI\'ve eaten at various McDonalds restaurants for over 30 years. I\'ve worked at more than one location. I expect bad days, bad moods, and the occasional mistake. But I have yet to have a decent experience at this store. It will remain a place I avoid unless someone in my party needs to avoid illness from low blood sugar. Perhaps I should go back to the racially biased service of Steak n Shake instead!'}</output_code>
+  <markdown>As we can see each sample has the text and punctuation, let's see how many types there are</markdown>
+  <input_code>clases = dataset["train"].features
+clases</input_code>
+  <output_code>{'label': ClassLabel(names=['1 star', '2 star', '3 stars', '4 stars', '5 stars'], id=None),
+ 'text': Value(dtype='string', id=None)}</output_code>
+  <markdown>We see that it has 5 different classes</markdown>
+  <input_code>num_classes = len(clases["label"].names)
+num_classes</input_code>
+  <output_code>5</output_code>
+  <markdown>Let's see a sample test</markdown>
+  <input_code>dataset["test"][100]</input_code>
+  <output_code>{'label': 0,
+ 'text': 'This was just bad pizza.  For the money I expect that the toppings will be cooked on the pizza.  The cheese and pepparoni were added after the crust came out.  Also the mushrooms were out of a can.  Do not waste money here.'}</output_code>
+  <markdown>As the aim of this post is not to train the best model, but to explain the `transformers` library of Hugging Face, we are going to make a small subset to be able to train faster</markdown>
+  <input_code>small_train_dataset = dataset["train"].shuffle(seed=42).select(range(1000))
+small_eval_dataset = dataset["test"].shuffle(seed=42).select(range(500))</input_code>
+  <markdown>### Tokenization</markdown>
+  <markdown>We already have the dataset, as we have seen in the pipeline, first the tokenization is done and then the model is applied. So we have to tokenize the dataset.</markdown>
+  <markdown>We define the tokenizer</markdown>
+  <input_code>from transformers import AutoTokenizer
+
+tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")</input_code>
+  <markdown>The `AutoTokenizer` class has a method called `map` that allows us to apply a function to the dataset, so we are going to create a function that tokenizes the text</markdown>
+  <input_code>def tokenize_function(examples):
+    return tokenizer(examples["text"], padding=True, truncation=True, max_length=3)</input_code>
+  <markdown>As we can see at the moment we have tokenized truncating only 3 tokens, this is to be able to see better what is going on underneath</markdown>
+  <markdown>We use the `map` method to use the function that we have just defined on the dataset</markdown>
+  <input_code>tokenized_small_train_dataset = small_train_dataset.map(tokenize_function, batched=True)
+tokenized_small_eval_dataset = small_eval_dataset.map(tokenize_function, batched=True)</input_code>
+  <markdown>We see examples of the tokenized dataset</markdown>
+  <input_code>tokenized_small_train_dataset[100]</input_code>
+  <output_code>{'label': 3,
+ 'text': "I recently brough my car up to Edinburgh from home, where it had sat on the drive pretty much since I had left home to go to university.\\n\\nAs I'm sure you can imagine, it was pretty filthy, so I pulled up here expecting to shell out \\u00a35 or so for a crappy was that wouldnt really be that great.\\n\\nNeedless to say, when I realised that the cheapest was was \\u00a32, i was suprised and I was even more suprised when the car came out looking like a million dollars.\\n\\nVery impressive for \\u00a32, but thier prices can go up to around \\u00a36 - which I'm sure must involve so many polishes and waxes and cleans that dirt must be simply repelled from the body of your car, never getting dirty again.",
+ 'input_ids': [101, 146, 102],
+ 'token_type_ids': [0, 0, 0],
+ 'attention_mask': [1, 1, 1]}</output_code>
+  <input_code>tokenized_small_eval_dataset[100]</input_code>
+  <output_code>{'label': 4,
+ 'text': 'Had a great dinner at Elephant Bar last night! \\n\\nGot a coupon in the mail for 2 meals and an appetizer for $20! While they did limit the  selections you could get with the coupon, we were happy with the choices so it worked out fine.\\n\\nFood was delicious and the service was fantastic! Waitress was very attentive and polite.\\n\\nLocation was a plus too! Had a lovely walk around The District shops afterward. \\n\\nAll and all, a hands down 5 stars!',
+ 'input_ids': [101, 6467, 102],
+ 'token_type_ids': [0, 0, 0],
+ 'attention_mask': [1, 1, 1]}</output_code>
+  <markdown>As we can see, a key has been added with the `input_ids` of the tokens, the `token_type_ids` and another one with the `attention mask`.</markdown>
+  <markdown>We now tokenize by truncating to 20 tokens in order to use a small GPU.</markdown>
+  <input_code>def tokenize_function(examples):
+    return tokenizer(examples["text"], padding=True, truncation=True, max_length=20)
+
+tokenized_small_train_dataset = small_train_dataset.map(tokenize_function, batched=True)
+tokenized_small_eval_dataset = small_eval_dataset.map(tokenize_function, batched=True)</input_code>
+  <markdown>### Model</markdown>
+  <markdown>We have to create the model that we are going to retrain. As it is a classification problem we are going to use `AutoModelForSequenceClassification`.</markdown>
+  <input_code>from transformers import AutoModelForSequenceClassification
+
+model = AutoModelForSequenceClassification.from_pretrained("bert-base-cased", num_labels=5)</input_code>
+  <output_code>Some weights of BertForSequenceClassification were not initialized from the model checkpoint at bert-base-cased and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+</output_code>
+  <markdown>As can be seen, a model has been created which classifies between 5 classes</markdown>
+  <markdown>### Evaluation metrics</markdown>
+  <markdown>We create an evaluation metric with the `evaluate` library of Hugging Face. To install it we use
+
+```bash
+pip install evaluate
+```</markdown>
+  <input_code>import numpy as np
+import evaluate
+
+metric = evaluate.load("accuracy")
+
+def compute_metrics(eval_pred):
+    logits, labels = eval_pred
+    predictions = np.argmax(logits, axis=-1)
+    return metric.compute(predictions=predictions, references=labels)</input_code>
+  <markdown>### Trainer</markdown>
+  <markdown>Now for training we use the `Trainer` object. In order to use `Trainer` we need `accelerate&gt;=0.21.0`.
+
+```bash
+pip install accelerate&gt;=0.21.0
+```</markdown>
+  <markdown>Before creating the trainer we have to create a `TrainingArguments` which is an object that contains all the arguments that `Trainer` needs to train, i.e. the hyperparameters</markdown>
+  <markdown>A mandatory argument must be passed, `output_dir` which is the output directory where the model predictions and checkpoints, as Hugging Face calls the model weights, will be written.</markdown>
+  <markdown>We also pass on several other arguments
+
+ * `per_device_train_batch_size`: size of batch per device for training
+ * `per_device_eval_batch_size`: batch size per device for the evaluation
+ * `learning_rate`: learning rate
+ * `num_train_epochs`: number of epochs</markdown>
+  <input_code>from transformers import TrainingArguments
+
+training_args = TrainingArguments(
+    output_dir="test_trainer", 
+    per_device_train_batch_size=16, 
+    per_device_eval_batch_size=32,
+    learning_rate=1e-4,
+    num_train_epochs=5,
+)</input_code>
+  <markdown>Let's take a look at all the hyperparameters that it configures</markdown>
+  <input_code>training_args.__dict__</input_code>
+  <output_code>{'output_dir': 'test_trainer',
+ 'overwrite_output_dir': False,
+ 'do_train': False,
+ 'do_eval': False,
+ 'do_predict': False,
+ 'evaluation_strategy': &lt;IntervalStrategy.NO: 'no'&gt;,
+ 'prediction_loss_only': False,
+ 'per_device_train_batch_size': 16,
+ 'per_device_eval_batch_size': 32,
+ 'per_gpu_train_batch_size': None,
+ 'per_gpu_eval_batch_size': None,
+ 'gradient_accumulation_steps': 1,
+ 'eval_accumulation_steps': None,
+ 'eval_delay': 0,
+ 'learning_rate': 0.0001,
+ 'weight_decay': 0.0,
+ 'adam_beta1': 0.9,
+ 'adam_beta2': 0.999,
+ 'adam_epsilon': 1e-08,
+ 'max_grad_norm': 1.0,
+ 'num_train_epochs': 5,
+ 'max_steps': -1,
+ 'lr_scheduler_type': &lt;SchedulerType.LINEAR: 'linear'&gt;,
+ 'lr_scheduler_kwargs': {},
+ 'warmup_ratio': 0.0,
+ 'warmup_steps': 0,
+ 'log_level': 'passive',
+ 'log_level_replica': 'warning',
+ 'log_on_each_node': True,
+ 'logging_dir': 'test_trainer/runs/Mar08_16-41-27_SAEL00531',
+ 'logging_strategy': &lt;IntervalStrategy.STEPS: 'steps'&gt;,
+ 'logging_first_step': False,
+ 'logging_steps': 500,
+ 'logging_nan_inf_filter': True,
+ 'save_strategy': &lt;IntervalStrategy.STEPS: 'steps'&gt;,
+ 'save_steps': 500,
+ 'save_total_limit': None,
+ 'save_safetensors': True,
+ 'save_on_each_node': False,
+ 'save_only_model': False,
+ 'no_cuda': False,
+ 'use_cpu': False,
+ 'use_mps_device': False,
+ 'seed': 42,
+ 'data_seed': None,
+ 'jit_mode_eval': False,
+ 'use_ipex': False,
+ 'bf16': False,
+ 'fp16': False,
+ 'fp16_opt_level': 'O1',
+ 'half_precision_backend': 'auto',
+ 'bf16_full_eval': False,
+ 'fp16_full_eval': False,
+ 'tf32': None,
+ 'local_rank': 0,
+ 'ddp_backend': None,
+ 'tpu_num_cores': None,
+ 'tpu_metrics_debug': False,
+ 'debug': [],
+ 'dataloader_drop_last': False,
+ 'eval_steps': None,
+ 'dataloader_num_workers': 0,
+ 'dataloader_prefetch_factor': None,
+ 'past_index': -1,
+ 'run_name': 'test_trainer',
+ 'disable_tqdm': False,
+ 'remove_unused_columns': True,
+ 'label_names': None,
+ 'load_best_model_at_end': False,
+ 'metric_for_best_model': None,
+ 'greater_is_better': None,
+ 'ignore_data_skip': False,
+ 'fsdp': [],
+ 'fsdp_min_num_params': 0,
+ 'fsdp_config': {'min_num_params': 0,
+  'xla': False,
+  'xla_fsdp_v2': False,
+  'xla_fsdp_grad_ckpt': False},
+ 'fsdp_transformer_layer_cls_to_wrap': None,
+ 'accelerator_config': AcceleratorConfig(split_batches=False, dispatch_batches=None, even_batches=True, use_seedable_sampler=True),
+ 'deepspeed': None,
+ 'label_smoothing_factor': 0.0,
+ 'optim': &lt;OptimizerNames.ADAMW_TORCH: 'adamw_torch'&gt;,
+ 'optim_args': None,
+ 'adafactor': False,
+ 'group_by_length': False,
+ 'length_column_name': 'length',
+ 'report_to': [],
+ 'ddp_find_unused_parameters': None,
+ 'ddp_bucket_cap_mb': None,
+ 'ddp_broadcast_buffers': None,
+ 'dataloader_pin_memory': True,
+ 'dataloader_persistent_workers': False,
+ 'skip_memory_metrics': True,
+ 'use_legacy_prediction_loop': False,
+ 'push_to_hub': False,
+ 'resume_from_checkpoint': None,
+ 'hub_model_id': None,
+ 'hub_strategy': &lt;HubStrategy.EVERY_SAVE: 'every_save'&gt;,
+ 'hub_token': None,
+ 'hub_private_repo': False,
+ 'hub_always_push': False,
+ 'gradient_checkpointing': False,
+ 'gradient_checkpointing_kwargs': None,
+ 'include_inputs_for_metrics': False,
+ 'fp16_backend': 'auto',
+ 'push_to_hub_model_id': None,
+ 'push_to_hub_organization': None,
+ 'push_to_hub_token': None,
+ 'mp_parameters': '',
+ 'auto_find_batch_size': False,
+ 'full_determinism': False,
+ 'torchdynamo': None,
+ 'ray_scope': 'last',
+ 'ddp_timeout': 1800,
+ 'torch_compile': False,
+ 'torch_compile_backend': None,
+ 'torch_compile_mode': None,
+ 'dispatch_batches': None,
+ 'split_batches': None,
+ 'include_tokens_per_second': False,
+ 'include_num_input_tokens_seen': False,
+ 'neftune_noise_alpha': None,
+ 'distributed_state': Distributed environment: DistributedType.NO
+ Num processes: 1
+ Process index: 0
+ Local process index: 0
+ Device: cuda,
+ '_n_gpu': 1,
+ '__cached__setup_devices': device(type='cuda', index=0),
+ 'deepspeed_plugin': None}</output_code>
+  <markdown>Now we create a `Trainer` object that will be in charge of training the model.</markdown>
+  <input_code>from transformers import Trainer
+
+trainer = Trainer(
+    model=model,
+    train_dataset=tokenized_small_train_dataset,
+    eval_dataset=tokenized_small_eval_dataset,
+    compute_metrics=compute_metrics,
+    args=training_args,
+)</input_code>
+  <markdown>Once we have a `Trainer`, in which we have indicated the training dataset, the test dataset, the model, the evaluation metric and the arguments with the hyperparameters, we can train the model with the `train` method of the `Trainer`.</markdown>
+  <input_code>trainer.train()</input_code>
+  <output_code>  0%|          | 0/315 [00:00&lt;?, ?it/s]</output_code>
+  <output_code>{'train_runtime': 52.3517, 'train_samples_per_second': 95.508, 'train_steps_per_second': 6.017, 'train_loss': 0.9347671750992064, 'epoch': 5.0}
+</output_code>
+  <output_code>TrainOutput(global_step=315, training_loss=0.9347671750992064, metrics={'train_runtime': 52.3517, 'train_samples_per_second': 95.508, 'train_steps_per_second': 6.017, 'train_loss': 0.9347671750992064, 'epoch': 5.0})</output_code>
+  <markdown>We already have the model trained, as you can see, with very little code we can train a model very quickly.</markdown>
+  <markdown>I strongly advise learning Pytorch and training many models before using a high-level library like `transformers`, because you learn a lot of deep learning fundamentals and you can understand better what is going on, especially because you will learn a lot from your mistakes. But once you have gone through that period, using high-level libraries like `transformers` speeds up the development a lot.</markdown>
+  <markdown>### Testing the model</markdown>
+  <markdown>Now that we have the model trained, let's test it with a text. As the dataset we have downloaded is of reviews in English, let's test it with a review in English</markdown>
+  <input_code>from transformers import pipeline
+
+clasificator = pipeline("text-classification", model=model, tokenizer=tokenizer)</input_code>
+  <input_code>clasification = clasificator("I'm liking this post a lot")
+clasification</input_code>
+  <output_code>[{'label': 'LABEL_2', 'score': 0.5032550692558289}]</output_code>
+  <markdown>Let's see what the new class corresponds to.</markdown>
+  <input_code>clases</input_code>
+  <output_code>{'label': ClassLabel(names=['1 star', '2 star', '3 stars', '4 stars', '5 stars'], id=None),
+ 'text': Value(dtype='string', id=None)}</output_code>
+  <markdown>The relationship would be
+ 
+ * LABEL_0: 1 star
+ * LABEL_1: 2 stars
+ * LABEL_2: 3 stars
+ * LABEL_3: 4 stars
+ * LABEL_4: 5 stars
+
+So you have rated the comment with 3 stars. Recall that we have is trained on a subset of data and with only 5 epochs, so we do not expect it to be very good.</markdown>
+  <markdown>## Share the model in the Hugging Face Hub</markdown>
+  <markdown>Once we have the retrained model we can upload it to our space in the Hugging Face Hub so that others can use it. To do this you need to have a Hugging Face account.</markdown>
+  <markdown>### Logging</markdown>
+  <markdown>In order to upload the model we first have to log in.
+
+This can be done through the terminal with
+
+```bash
+huggingface-cli login
+```
+
+Or through the notebook having previously installed the `huggingface_hub` library with
+
+```bash
+pip install huggingface_hub
+```
+
+Now we can log in with the `notebook_login` function, which will create a small graphical interface where we have to enter a Hugging Face token.</markdown>
+  <markdown>To create a token, go to the [setings/tokens](https://huggingface.co/settings/tokens) page of your account, you will see something like this
+
+![User-Access-Token-dark](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/User-Access-Token-dark.webp)
+
+Click on `New token` and a window will appear to create a new token.
+
+![new-token-dark](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/new-token-dark.webp)
+
+We name the token and create it with the `write` role.
+
+Once created, we copy it</markdown>
+  <input_code>from huggingface_hub import notebook_login
+
+notebook_login()</input_code>
+  <output_code>VBox(children=(HTML(value='&lt;center&gt; &lt;img\nsrc=https://huggingface.co/front/assets/huggingface_logo-noborder.sv…</output_code>
+  <markdown>### Up once trained</markdown>
+  <markdown>As we have trained the model we can upload it to the Hub using the `push_to_hub` function. This function has a mandatory parameter which is the name of the model, which has to be unique, if there is already a model in your Hub with that name it will not be uploaded. That is, the full name of the model will be &lt;user&gt;/&lt;model&gt;, so the model name cannot exist in your Hub, even if there is another model with the same name in the Hub of another user.
+
+It also has other optional, but interesting, parameters:
+
+ * `use_temp_dir` (bool, optional): Whether or not to use a temporary directory to store the saved files before they are sent to the Hub. Default will be True if there is no directory with the same name as `repo_id`, False otherwise.
+ * `commit_message` (str, optional): Commit message. Default will be `Upload {object}`.
+ * `private` (bool, optional): Whether the created repository should be private or not.
+ * `token` (bool or str, optional): The token to use as HTTP authorization for remote files. If True, the token generated by running `huggingface-cli` login (stored in ~/.huggingface) will be used. Default will be True if `repo_url` is not specified.
+ * `max_shard_size` (int or str, optional, defaults to "5GB"): Only applicable to models. The maximum size of a checkpoint before it is fragmented. Fragmented checkpoints will each be smaller than this size. If expressed as a string, it must have digits followed by a unit (such as "5MB"). The default is "5GB" so that users can easily load models into free-level Google Colab instances without CPU OOM (out of memory) issues.
+ * `create_pr` (bool, optional, defaults to False): Whether or not to create a PR with the uploaded files or commit directly.
+ * `safe_serialization` (bool, optional, defaults to True): Whether or not to convert model weights to safetensors format for safer serialization.
+ * `revision` (str, optional): Branch to send uploaded files to.
+ * `commit_description` (str, optional): Description of the commit to be created
+ * `tags` (List[str], optional): List of tags to insert in Hub.</markdown>
+  <input_code>model.push_to_hub(
+    "bert-base-cased_notebook_transformers_5-epochs_yelp_review_subset", 
+    commit_message="bert base cased fine tune on yelp review subset",
+    commit_description="Fine-tuned on a subset of the yelp review dataset. Model retrained for post of transformers library. 5 epochs.",
+)</input_code>
+  <output_code>README.md:   0%|          | 0.00/5.18k [00:00&lt;?, ?B/s]</output_code>
+  <output_code>model.safetensors:   0%|          | 0.00/433M [00:00&lt;?, ?B/s]</output_code>
+  <output_code>CommitInfo(commit_url='https://huggingface.co/Maximofn/bert-base-cased_notebook_transformers_5-epochs_yelp_review_subset/commit/033a3c759d5a4e314ce76db81bd113b4f7da69ad', commit_message='bert base cased fine tune on yelp review subset', commit_description='Fine-tuned on a subset of the yelp review dataset. Model retrained for post of transformers library. 5 epochs.', oid='033a3c759d5a4e314ce76db81bd113b4f7da69ad', pr_url=None, pr_revision=None, pr_num=None)</output_code>
+  <markdown>If we now go to our Hub we can see that the model has been uploaded.
+
+![transformers_commit_unique](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/transformers_commit_unico.webp)</markdown>
+  <markdown>If we now go into the model card to see
+
+![transformers_commit_inico_model_card](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/transformers_commit_inico_model_card.webp)
+
+We see that everything is unfilled, later we will do this</markdown>
+  <markdown>### Climbing while training</markdown>
+  <markdown>Another option is to upload it while we are training the model. This is very useful when we train models for many periods and it takes us a long time, because if the training is stopped (because the computer is turned off, the colab session is finished, the cloud credits run out) the work is not lost. To do this you have to add `push_to_hub=True` in the `TrainingArguments`.</markdown>
+  <input_code>training_args = TrainingArguments(
+    output_dir="bert-base-cased_notebook_transformers_30-epochs_yelp_review_subset", 
+    per_device_train_batch_size=16, 
+    per_device_eval_batch_size=32,
+    learning_rate=1e-4,
+    num_train_epochs=30,
+    push_to_hub=True,
+)
+
+trainer = Trainer(
+    model=model,
+    train_dataset=tokenized_small_train_dataset,
+    eval_dataset=tokenized_small_eval_dataset,
+    compute_metrics=compute_metrics,
+    args=training_args,
+)</input_code>
+  <markdown>We can see that we have changed the epochs to 30, so training is going to take longer, so adding `push_to_hub=True` will upload the model to our Hub while training.
+
+We have also changed the `output_dir` because it is the name that the model will have in the Hub.</markdown>
+  <input_code>trainer.train()</input_code>
+  <output_code>  0%|          | 0/1890 [00:00&lt;?, ?it/s]</output_code>
+  <output_code>{'loss': 0.2363, 'grad_norm': 8.151028633117676, 'learning_rate': 7.354497354497355e-05, 'epoch': 7.94}
+{'loss': 0.0299, 'grad_norm': 0.0018280998338013887, 'learning_rate': 4.708994708994709e-05, 'epoch': 15.87}
+{'loss': 0.0019, 'grad_norm': 0.000868947128765285, 'learning_rate': 2.0634920634920636e-05, 'epoch': 23.81}
+{'train_runtime': 331.5804, 'train_samples_per_second': 90.476, 'train_steps_per_second': 5.7, 'train_loss': 0.07100234655318437, 'epoch': 30.0}
+</output_code>
+  <output_code>TrainOutput(global_step=1890, training_loss=0.07100234655318437, metrics={'train_runtime': 331.5804, 'train_samples_per_second': 90.476, 'train_steps_per_second': 5.7, 'train_loss': 0.07100234655318437, 'epoch': 30.0})</output_code>
+  <markdown>If we look at our hub again, the new model is now displayed.
+
+transformers_commit_training](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/transformers_commit_training.webp)</markdown>
+  <markdown>## Hub as git repository</markdown>
+  <markdown>In Hugging Face both models, spaces and datasets are git repositories, so you can work with them like that. That is, you can clone, make forks, pull requests, etc.</markdown>
+  <markdown>But another great advantage of this is that you can use a model in a particular version.</markdown>
+  <input_code>from transformers import AutoModelForSequenceClassification
+
+model = AutoModelForSequenceClassification.from_pretrained("bert-base-cased", num_labels=5, revision="393e083")</input_code>
+  <output_code>config.json:   0%|          | 0.00/433 [00:00&lt;?, ?B/s]</output_code>
+  <output_code>pytorch_model.bin:   0%|          | 0.00/436M [00:00&lt;?, ?B/s]</output_code>
+  <output_code>Some weights of BertForSequenceClassification were not initialized from the model checkpoint at bert-base-cased and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+</output_code>
+</notebook>

@@ -1,0 +1,2353 @@
+<?xml version='1.0' encoding='utf-8'?>
+<notebook>
+  <markdown># Git</markdown>
+  <markdown> &gt; Aviso: Este post foi traduzido para o português usando um modelo de tradução automática. Por favor, me avise se encontrar algum erro.</markdown>
+  <markdown>## Introdução</markdown>
+  <markdown>Git é um software de controle de versões criado por Linus Torvalds, que o desenvolveu para ter um bom controle de versões ao desenvolver o kernel do Linux.</markdown>
+  <markdown>## As áreas do git</markdown>
+  <markdown>Git tem três áreas, embora também se possa considerar uma quarta.
+
+![git states](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/git-states.webp)
+
+* A primeira é nosso espaço de trabalho, onde temos todo o nosso código. Aqui, quando modificamos ou criamos um arquivo, ele passa a estar como não rastreado, então precisamos movê-lo para a área de `staged`
+* A segunda área é a de `staged`. Aqui os arquivos que havíamos modificado ou criado e que estavam não *trackeados* passam a estar trackeados, ou seja, git faz um acompanhamento. Aqui enviaremos os arquivos para a próxima área de `head`
+* A terceira área é a de `head`. Nela registramos uma versão do nosso código. Dessa forma, registrando versões podemos voltar a versões anteriores se necessário. A versão registrada do nosso código pode ser enviada para um servidor de modo que seja acessível por várias pessoas.
+* As três áreas anteriores correspondem ao trabalho local, mas há uma área adicional e é a de `remote server`. Aqui, o que fazemos é enviar a versão gravada do nosso código para um servidor, de modo que tenhamos acesso ao código de qualquer lugar ou que mais pessoas tenham acesso.
+
+Para fazer um símil, é como um cenário em que você vai tirar uma foto. Primeiro, você tem seus arquivos modificados, então os que quer imortalizar você envia para a área de `staged`, ou seja, o palco. No momento em que enviou todos os arquivos que considera, tira a foto, portanto, envia todos os arquivos para a área de `head`. Dessa forma, você pode ir tirando muitas fotos conforme o código evolui, de maneira que pode ter um álbum de fotos com a evolução do código. Por fim, você pode enviar essa foto para um servidor para que seja acessível por mais pessoas, ou seja, os envia para a área de `remote server`.
+</markdown>
+  <markdown>## Instalar git</markdown>
+  <markdown>Em maioria das distribuições Linux, o Git já vem instalado. Podemos verificar isso usando `git --version`.</markdown>
+  <input_code>!git --version</input_code>
+  <output_code>git version 2.25.1
+</output_code>
+  <markdown>Se você não tiver ou quiser atualizar a versão do git, basta executar `sudo apt update` e em seguida `sudo apt install git`</markdown>
+  <input_code>!sudo apt update &amp;&amp; sudo apt install git</input_code>
+  <output_code>[sudo] password for maximo.fernandez@AEROESPACIAL.SENER: 
+</output_code>
+  <markdown>Voltamos a verificar a versão</markdown>
+  <input_code>!git --version</input_code>
+  <output_code>git version 2.25.1
+</output_code>
+  <markdown>No meu caso, eu já tinha a última versão.</markdown>
+  <markdown>## Configuração inicial</markdown>
+  <markdown>### Configuração do nome e do email</markdown>
+  <markdown>Antes de começar a usar o git é recomendável que faça algumas configurações mínimas, como o nome de usuário e o email. Esta informação será exibida quando for mostrado quem fez alterações no código. Para fazer isso, é necessário executar
+
+
+```bash
+git config --global user.name "&lt;nome de usuário&gt;"
+git config --global user.email "&lt;email&gt;"
+```
+
+No meu caso, eu colocaria
+
+```bash
+git config --global user.name "MaximoFN"
+git config --global user.email "maximofn@gmail.com"
+```
+</markdown>
+  <markdown>Como se pode ver, a flag `--global` serve para alterar a configuração global do git. No entanto, se em um repositório específico você precisa fornecer outros dados, basta navegar até o repositório e remover a flag `--global` dos comandos anteriores.
+
+```bash
+git config user.name "&lt;nome do usuário&gt;"
+git config user.email "&lt;email&gt;"
+```
+</markdown>
+  <markdown>### Configurar o editor padrão</markdown>
+  <markdown>Quando explicarmos o que são os `commit`s veremos que em uma das opções pode nos abrir um navegador. Por padrão, o git tentará usar `vim`, mas dado que não é um editor muito simples de usar, podemos modificá-lo. A seguir, mostramos como fazer isso com alguns editores comuns.
+
+```bash
+git config --global core.editor "code"  # vscode como editor
+git config --global core.editor "atom"  # Atom como editor
+git config --global core.editor "subl"  # Sublime Text como editor
+git config --global core.editor "nano"  # Nano como editor
+```
+</markdown>
+  <markdown>### Verificar configuração do git</markdown>
+  <markdown>Para verificar a configuração do git, podemos usar `git config --list`</markdown>
+  <input_code>!git config --list</input_code>
+  <output_code>user.name=maximofn
+user.email=maximofn@gmail.com
+user.user=maximofn
+http.sslverify=true
+core.repositoryformatversion=0
+core.filemode=true
+core.bare=false
+core.logallrefupdates=true
+remote.origin.url=https://github.com/maximofn/portafolio.git
+remote.origin.fetch=+refs/heads/*:refs/remotes/origin/*
+branch.main.remote=origin
+branch.main.merge=refs/heads/main
+</output_code>
+  <markdown>Podemos usar os flags `--global`, `--local` e `--system` para ver apenas a configuração global, local (se existir) e do sistema (se existir).</markdown>
+  <input_code>!git config --global --list</input_code>
+  <output_code>user.name=maximofn
+user.email=maximofn@gmail.com
+user.user=maximofn
+http.sslverify=true
+</output_code>
+  <input_code>!git config --local --list</input_code>
+  <output_code>core.repositoryformatversion=0
+core.filemode=true
+core.bare=false
+core.logallrefupdates=true
+remote.origin.url=https://github.com/maximofn/portafolio.git
+remote.origin.fetch=+refs/heads/*:refs/remotes/origin/*
+branch.main.remote=origin
+branch.main.merge=refs/heads/main
+</output_code>
+  <input_code>!git config --system --list</input_code>
+  <output_code>fatal: unable to read config file '/etc/gitconfig': No such file or directory
+</output_code>
+  <markdown>No existe configuração de sistema no meu caso</markdown>
+  <markdown>Se quiser saber apenas o valor de um parâmetro da configuração, basta inserir `git config &lt;parameter&gt;`</markdown>
+  <input_code>!git config user.name</input_code>
+  <output_code>maximofn
+</output_code>
+  <markdown>## Controle de versões localmente</markdown>
+  <markdown>### Inicializar um novo repositório (`git init`)</markdown>
+  <markdown>Há duas maneiras de inicializar um novo repositório fazendo
+* Uma é fazendo `git init &lt;nome do repositório&gt;`. Isso criará uma nova pasta com o nome do repositório.
+* Outra é navegar até a pasta onde queremos criar um repositório e fazer `git init`
+Vou criar um novo repositório
+</markdown>
+  <input_code>!git init notebook_git</input_code>
+  <output_code>Inicializado repositorio Git vacío en /home/wallabot/Documentos/web/portafolio/posts/notebook_git/.git/
+</output_code>
+  <markdown>Se agora fizermos `ls` veremos que foi criada uma nova pasta chamada `notebook_git`</markdown>
+  <input_code>!ls | grep notebook_git</input_code>
+  <output_code>notebook_git
+</output_code>
+  <markdown>Nós nos movemos para ela</markdown>
+  <input_code>!cd notebook_git</input_code>
+  <markdown>Agora dentro da pasta temos duas maneiras de saber que o repositório foi criado, uma fazendo `ls -a` que mostrará todos os arquivos e veremos que há uma pasta chamada `.git`. A outra maneira é fazendo `git status` que nos dirá o estado do repositório.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; ls -a</input_code>
+  <output_code>.  ..  .git
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+
+No hay commits todavía
+
+no hay nada para confirmar (crea/copia archivos y usa "git add" para hacerles seguimiento)
+</output_code>
+  <markdown>Como estamos em um notebook, cada célula tem seu `path` no `path` do notebook, por isso as duas vezes tive que fazer `cd notebook_git &amp;&amp;`, para mudar para a pasta com o repositório que acabamos de criar.</markdown>
+  <markdown>Se agora eu testar `git status` em outro `path` onde não tenha sido inicializado um repositório, isso resultará em um erro.</markdown>
+  <input_code>!cd ~/ &amp;&amp; git status</input_code>
+  <output_code>fatal: no es un repositorio git (ni ninguno de los directorios superiores): .git
+</output_code>
+  <markdown>### Criar novos arquivos</markdown>
+  <markdown>No momento em que inicializamos um repositório, podemos começar a criar novos arquivos, então criamos um e vemos o que acontece.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; echo "print('Hello World')" &gt; hello.py</input_code>
+  <markdown>Se agora executarmos `git status`, veremos que aparece</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+
+No hay commits todavía
+
+Archivos sin seguimiento:
+  (usa "git add &lt;archivo&gt;..." para incluirlo a lo que se será confirmado)
+	[31mhello.py[m
+
+no hay nada agregado al commit pero hay archivos sin seguimiento presentes (usa "git add" para hacerles seguimiento)
+</output_code>
+  <markdown>Como se pode ver agora nos está dizendo que o arquivo `hello.py` não tem acompanhamento. Ou seja, temos que adicionar `hello.py` à área de `staged`, que lembramos ser como o palco onde vamos colocar tudo o que mais tarde faremos um instantâneo.</markdown>
+  <markdown>### Desfazer a criação de um novo arquivo</markdown>
+  <markdown>Neste caso, como são arquivos que o Git ainda não está acompanhando, ou seja, que ainda não estão na área de `staged`, teríamos três maneiras de fazer isso.</markdown>
+  <markdown>* Apagando-o simplesmente: Como o git ainda não está seguindo o arquivo, podemos fazer `rm hello.py` e pronto.
+* Excluindo-o com um comando do Git: Antes excluímos com `rm`, mas pode ser que você esteja em um sistema que não tenha o comando `rm`. Portanto, nesse caso, pode-se usar o comando do Git `git rm hello.py`* Por último, podemos usar `git clean`. Este é útil, por exemplo, quando há muitos arquivos novos, e assim, em um único comando, removemos todos.
+</markdown>
+  <markdown>#### `git clean`</markdown>
+  <markdown>Se executarmos `git clean` sem nenhum argumento, receberemos um erro.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git clean</input_code>
+  <output_code>fatal: clean.requireForce default en true y ninguno de -i, -n, ni -f entregado; rehusando el clean
+</output_code>
+  <markdown>Ele nos diz que é necessário adicionar um desses flags `-n`, `-i` ou `-f`. Além disso, vamos ver o flag `-d`.
+
+* `-n` (execução simulada): Ditará quais arquivos serão excluídos, mas não os excluirá
+* `-i`: Perguntará por cada arquivo que vai ser apagado* `-f`: Forçará a exclusão dos arquivos
+* `-d`: Também excluirá pastas
+</markdown>
+  <markdown>Vamos testar, primeiro fazemos `git clean -n` para saber quais arquivos seriam deletados</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git clean -n</input_code>
+  <output_code>Será borrado hello.py
+</output_code>
+  <markdown>Agora fazemos `git clean -f` para que ele apague, já que concordamos em apagá-lo.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git clean -f</input_code>
+  <output_code>Borrando hello.py
+</output_code>
+  <markdown>Como vemos, ele apagou `hello.py`</markdown>
+  <markdown>### Adicionar um arquivo à área de staged (`git add`)</markdown>
+  <markdown>Voltamos a criar um arquivo</markdown>
+  <input_code>!cd notebook_git &amp;&amp; echo "print('Hola mundo')" &gt; hola.py</input_code>
+  <markdown>Voltamos a fazer um `git status` para verificar que temos o arquivo</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+
+No hay commits todavía
+
+Archivos sin seguimiento:
+  (usa "git add &lt;archivo&gt;..." para incluirlo a lo que se será confirmado)
+	[31mhola.py[m
+
+no hay nada agregado al commit pero hay archivos sin seguimiento presentes (usa "git add" para hacerles seguimiento)
+</output_code>
+  <markdown>Vemos que temos o arquivo `hola.py` mas o git não está fazendo um acompanhamento. Além disso, vemos que ele ajuda e diz `use "git add" para fazer o acompanhamento`
+
+A sintaxe é a seguinte `git add &lt;arquivo&gt;`, mas podemos fazê-lo de várias maneiras
+
+* Se quisermos adicionar mais de um arquivo, podemos fazer isso colocando todos os arquivos que desejamos adicionar à área de staged, separados por um espaço: `git add &lt;arquivo1&gt; &lt;arquivo2&gt; &lt;arquivo3&gt;`
+* Se quisermos adicionar todos os arquivos do mesmo formato, por exemplo, se quisermos adicionar todos os arquivos de Python seria `git add *.py`
+* Se quisermos adicionar todos os arquivos de uma pasta `git add &lt;folder&gt;/`
+* Se quisermos adicionar todos os arquivos temos três maneiras: `git add --all`, `git add -A` ou `git add .`
+</markdown>
+  <markdown>Vamos a adicionar o novo arquivo criado</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git add hola.py</input_code>
+  <markdown>Fazemos um `git status` para ver o que aconteceu</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+
+No hay commits todavía
+
+Cambios a ser confirmados:
+  (usa "git rm --cached &lt;archivo&gt;..." para sacar del área de stage)
+	[32mnuevos archivos: hola.py[m
+
+</output_code>
+  <markdown>Como vemos, nos diz que temos um novo arquivo ao qual ele faz o acompanhamento e que está pendente de ser confirmado `hola.py`</markdown>
+  <markdown>### Retirar um arquivo da área staged (`git reset`)</markdown>
+  <markdown>Caso adicionemos um arquivo à área de staged e quisermos removê-lo, temos que usar `git reset &lt;arquivo&gt;`, vamos ver isso.</markdown>
+  <markdown>Criamos e adicionamos à área de stage um novo arquivo</markdown>
+  <input_code>!cd notebook_git &amp;&amp; echo "print('Este no')" &gt; adios.py &amp;&amp; git add adios.py</input_code>
+  <markdown>Fazemos `git status` para verificar que está na área de stage</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+
+No hay commits todavía
+
+Cambios a ser confirmados:
+  (usa "git rm --cached &lt;archivo&gt;..." para sacar del área de stage)
+	[32mnuevos archivos: adios.py[m
+	[32mnuevos archivos: hola.py[m
+
+</output_code>
+  <markdown>Como vemos, estão `hola.py` e `adios.py`, então usamos `git reset adios.py` para removê-lo da área de staged</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git reset adios.py</input_code>
+  <markdown>Fazemos um `git status` para verificar que saiu</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+
+No hay commits todavía
+
+Cambios a ser confirmados:
+  (usa "git rm --cached &lt;archivo&gt;..." para sacar del área de stage)
+	[32mnuevos archivos: hola.py[m
+
+Archivos sin seguimiento:
+  (usa "git add &lt;archivo&gt;..." para incluirlo a lo que se será confirmado)
+	[31madios.py[m
+
+</output_code>
+  <markdown>Podemos ver que `adios.py` já não tem acompanhamento por parte do git, foi removido da área de stage.</markdown>
+  <markdown>Fazemos `git clean -f` para apagá-lo.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git clean -f &amp;&amp; git status</input_code>
+  <output_code>Borrando adios.py
+En la rama master
+
+No hay commits todavía
+
+Cambios a ser confirmados:
+  (usa "git rm --cached &lt;archivo&gt;..." para sacar del área de stage)
+	[32mnuevos archivos: hola.py[m
+
+</output_code>
+  <markdown>### Commit (`git commit`)</markdown>
+  <markdown>Se voltarmos ao símil em que dissemos que a área de staged era o palco onde enviávamos os arquivos aos quais queríamos tirar uma foto, agora é hora de tirar a foto para imortalizar o estado atual. Isso é fazer um `commit`
+
+Desta forma, registra-se o estado atual do código, assim, com cada commit, teremos um registro da evolução do código. Assim como em um álbum de fotos, com cada foto vamos tendo um registro da evolução do que colocamos em cena.
+</markdown>
+  <markdown>Como na hora de fazer o commit está sendo registrado a mudança do código, o git não permite fazer o commit sem um comentário mínimo. Portanto, há duas maneiras de fazer commit
+
+* `git commit` desta forma, será aberto o editor que tivermos configurado no git. Se não tivermos configurado um editor padrão, será aberto `vi`. Se quisermos mudar a configuração do editor, podemos fazer, por exemplo, `git config --global core.editor "code"` ou `git config core.editor "code"` para definir o vscode como o editor padrão de forma global ou local.
+* `git commit -m "Mensagem de commit"`. Dessa forma adicionamos a mensagem diretamente
+Ao fazer o commit da primeira forma, podemos ter uma primeira linha que será o título do commit e várias linhas adicionais onde se explica com mais detalhes. Se quisermos poder fazer isso com a flag `-m`, basta adicionar vários flags `-m` seguidos: `git commit -m "Título do commit" -m "Primeira linha explicando mais" -m "Segunda linha explicando mais"`
+</markdown>
+  <markdown>Uma vez que fizemos o commit, isso salvará um registro da mudança do nosso repositório de maneira local. Ainda não nos conectamos com um servidor remoto.</markdown>
+  <markdown>Vamos tentar fazer o commit</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git commit -m "Primer commit, hola.py"</input_code>
+  <output_code>[master (commit-raíz) 1c95e4f] Primer commit, hola.py
+ 1 file changed, 1 insertion(+)
+ create mode 100644 hola.py
+</output_code>
+  <markdown>Fazemos um `git status`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+nada para hacer commit, el árbol de trabajo está limpio
+</output_code>
+  <markdown>Vemos que nos diz que não há nada novo, temos todo o nosso repositório totally controlado.</markdown>
+  <markdown>#### Commit pulando add (`git commit -a -m` ou `git commit -am`)</markdown>
+  <markdown>No caso de querermos levar todos os arquivos que modificamos para a área de staged e depois fazer um commit, podemos fazer tudo isso em um único passo usando `git commit -a -m "mensagem"`, `git commit --all -m "mensagem"` ou `git commit -am "mensagem"`
+
+&gt; Nota: Isso só é válido se um arquivo for modificado. Se o arquivo for novo e o git não estiver fazendo acompanhamento, isso não é válido.
+
+Vamos ver um exemplo, vamos modificar `hola.py`
+</markdown>
+  <input_code>!cd notebook_git &amp;&amp; echo "print('He añadido una nueva linea')" &gt;&gt; hola.py</input_code>
+  <markdown>Vamos fazer um `git status` para nos assegurar</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+Cambios no rastreados para el commit:
+  (usa "git add &lt;archivo&gt;..." para actualizar lo que será confirmado)
+  (usa "git restore &lt;archivo&gt;..." para descartar los cambios en el directorio de trabajo)
+	[31mmodificados:     hola.py[m
+
+sin cambios agregados al commit (usa "git add" y/o "git commit -a")
+</output_code>
+  <markdown>Podemos ver que na própria ajuda do git já nos sugere usar `git commit -a`, então vamos fazer isso.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git commit -am "Segundo commit, hola.py"</input_code>
+  <output_code>[master 6e99e73] Segundo commit, hola.py
+ 1 file changed, 1 insertion(+)
+</output_code>
+  <markdown>Fazemos novamente um `git status`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+nada para hacer commit, el árbol de trabajo está limpio
+</output_code>
+  <markdown>Não há nada para fazer commit, já foi feito o commit da alteração</markdown>
+  <markdown>### Modificar um arquivo ao qual foi feito commit</markdown>
+  <markdown>Como enquanto desenvolvemos estamos modificando arquivos, pode ser que em algum arquivo ao qual já fizemos commit o modifiquemos. No nosso caso, vamos adicionar uma linha a `hola.py`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; echo "print('He añadido una tercera linea')" &gt;&gt; hola.py</input_code>
+  <input_code>!cd notebook_git &amp;&amp; cat hola.py</input_code>
+  <output_code>print('Hola mundo')
+print('He añadido una nueva linea')
+print('He añadido una tercera linea')
+</output_code>
+  <markdown>Se fizermos `git status` veremos que `hola.py` tem modificações</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+Cambios no rastreados para el commit:
+  (usa "git add &lt;archivo&gt;..." para actualizar lo que será confirmado)
+  (usa "git restore &lt;archivo&gt;..." para descartar los cambios en el directorio de trabajo)
+	[31mmodificados:     hola.py[m
+
+sin cambios agregados al commit (usa "git add" y/o "git commit -a")
+</output_code>
+  <markdown>### Ver alterações em um arquivo (`git diff &lt;arquivo&gt;`)</markdown>
+  <markdown>Talvez tenhamos passado um tempo desenvolvendo desde o último commit e não saibamos quais modificações fizemos, para isso usamos `git diff &lt;arquivo&gt;` que nos dirá as mudanças que fizemos.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git diff hola.py</input_code>
+  <output_code>[1mdiff --git a/hola.py b/hola.py[m
+[1mindex 91dee80..fba0d22 100644[m
+[1m--- a/hola.py[m
+[1m+++ b/hola.py[m
+[36m@@ -1,2 +1,3 @@[m
+ print('Hola mundo')[m
+ print('He añadido una nueva linea')[m
+[32m+[m[32mprint('He añadido una tercera linea')[m
+</output_code>
+  <markdown>Embora não seja muito intuitivo, podemos ver que adicionamos a última linha em `hola.py`</markdown>
+  <markdown>### Desfazer modificações em um arquivo (`git restore &lt;arquivo&gt;`)</markdown>
+  <markdown>Se as alterações que fizemos não nos agradarem e quisermos removê-las, podemos fazer `git restore &lt;arquivo&gt;`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git restore hola.py</input_code>
+  <markdown>Vamos ver o que aconteceu com um `git status`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+nada para hacer commit, el árbol de trabajo está limpio
+</output_code>
+  <markdown>Vemos que se han descartado os cambios em `hola.py` desde o último commit</markdown>
+  <markdown>### Histórico de alterações (`git log`)</markdown>
+  <markdown>Com o git podemos ver o histórico de todas as mudanças que fomos commitando, para isso usamos `git log`. É como se colocássemos a revisar nosso álbum de fotos.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log</input_code>
+  <output_code>[33mcommit 6e99e73cf0c5474078cc9f328ee6a54fb9ffb169[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmaster[m[33m)[m
+Author: maximofn &lt;maximofn@gmail.com&gt;
+Date:   Sun Apr 16 02:29:04 2023 +0200
+
+    Segundo commit, hola.py
+
+[33mcommit 1c95e4fd8388ceedee368e0121c4b0ef4900c2ac[m
+Author: maximofn &lt;maximofn@gmail.com&gt;
+Date:   Sun Apr 16 02:28:44 2023 +0200
+
+    Primer commit, hola.py
+</output_code>
+  <markdown>Podemos ver o histórico de mudanças, temos que lê-lo de baixo para cima.
+
+Primeiro vemos o commit com a mensagem `Primeiro commit, hola.py`, podemos ver a data, o autor e o hash, que é seu identificador único.
+
+A seguir vemos o segundo commit com a mensagem `Segundo commit, hola.py`, com sua data, autor e hash. Além disso, mostra onde está o `HEAD` e em qual branch estamos.
+</markdown>
+  <markdown>Se我们可以使用标志以不同的方式获取信息，但根据我们使用的标志，某些方式可能更适合我们。下表显示了一些有用的标志：
+
+Note: The above sentence is not translated to Portuguese as requested, here's the correct translation:
+
+Se usarmos flags, podemos obter informações de maneiras diferentes, mas dependendo das flags que usarmos, algumas podem ser mais adequadas. A seguir, são mostradas algumas flags úteis:
+
+* `git log --oneline`: Mostra os commits em uma única linha, com o hash abreviado e a mensagem do commit.
+* `git log --graph`: Mostra um gráfico de texto da história do repositório, incluindo ramos e fusões.
+* `git log --decorate`: Mostra as referências (ramos, tags, HEAD, etc.) no log juntamente com o commit para o qual elas apontam.
+* `git log --author="&lt;autor&gt;"`: Filtra o histórico de commits para mostrar apenas aqueles realizados por um autor específico.
+* `git log --since="&lt;data&gt;"`: Mostra os commits realizados desde uma data específica. Você pode usar diferentes formatos de data, como "1 week ago" ou "2023-01-01".
+* `git log --until="&lt;data&gt;"`: Mostra os commits realizados até uma data específica.
+* `git log &lt;rama&gt;`: Mostra os commits de uma ramificação específica.* `git log &lt;commit1&gt;..&lt;commit2&gt;`: Mostra os commits que estão no intervalo entre dois commits específicos.
+* `git log --grep="&lt;palavra&gt;"`: Procura nos mensagens de commit por uma palavra ou frase específica.
+* `git log -p`: Mostra as diferenças (em forma de patch) introduzidas em cada commit.
+* `git log -n &lt;número&gt;`: Mostra os últimos número de commits. Por exemplo, git log -n 5 mostrará os últimos 5 commits.
+* `git log --stat`: Mostra as estatísticas de alterações em arquivos para cada commit, como o número de linhas adicionadas e removidas.
+
+Por exemplo, uma maneira confortável de ver o histórico é usar `git log --graph --oneline --decorate`
+</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>* [33m6e99e73[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmaster[m[33m)[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Podemos ver que, em vez de nos dar o hash inteiro, nos dá apenas alguns números. Isso ocorre porque, por enquanto, o repositório tem tão pouca história que esses poucos números são suficientes. Se quisermos voltar ao ponto anterior, em vez de introduzir o hash inteiro (`7c448f69e30ab1b5783f5cf9ee3ae5bc362ecd4d`), bastaria introduzir apenas `7c448f6`.</markdown>
+  <markdown>Mais tarde falaremos sobre as branches, mas agora vamos ver o que é o `HEAD`</markdown>
+  <markdown>### CABEÇALHO</markdown>
+  <markdown>Enquanto desenvolvíamos, conseguimos fazer alterações e commitá-las, ou seja, fomos preenchendo o álbum de fotos do nosso código. `HEAD` é a posição no álbum em que estamos.
+
+Normalmente é a última posição de todos os commits.
+</markdown>
+  <markdown>Se quisermos saber em qual ponto estamos, podemos fazer isso através de `git rev-parse HEAD`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git rev-parse HEAD</input_code>
+  <output_code>6e99e73cf0c5474078cc9f328ee6a54fb9ffb169
+</output_code>
+  <markdown>Como pode ser visto, o hash obtido coincide com o último obtido ao fazer `git log`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log</input_code>
+  <output_code>[33mcommit 6e99e73cf0c5474078cc9f328ee6a54fb9ffb169[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmaster[m[33m)[m
+Author: maximofn &lt;maximofn@gmail.com&gt;
+Date:   Sun Apr 16 02:29:04 2023 +0200
+
+    Segundo commit, hola.py
+
+[33mcommit 1c95e4fd8388ceedee368e0121c4b0ef4900c2ac[m
+Author: maximofn &lt;maximofn@gmail.com&gt;
+Date:   Sun Apr 16 02:28:44 2023 +0200
+
+    Primer commit, hola.py
+</output_code>
+  <markdown>### Modificar um commit (`git commit --amend`)</markdown>
+  <markdown>Podemos querer modificar um commit, porque queremos mudar a mensagem, ou porque queremos adicionar mais arquivos ao commit, então veremos os dois casos</markdown>
+  <markdown>#### Modificar a mensagem de commit</markdown>
+  <markdown>Se apenas quisermos modificar a mensagem, o que temos que fazer é `git commit --amend -m "Nova mensagem"`, vejamos um exemplo, vamos modificar `hola.py`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; echo "print('Esta es la tercera linea')" &gt;&gt; hola.py</input_code>
+  <markdown>Fazemos um `git status`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+Cambios no rastreados para el commit:
+  (usa "git add &lt;archivo&gt;..." para actualizar lo que será confirmado)
+  (usa "git restore &lt;archivo&gt;..." para descartar los cambios en el directorio de trabajo)
+	[31mmodificados:     hola.py[m
+
+sin cambios agregados al commit (usa "git add" y/o "git commit -a")
+</output_code>
+  <markdown>Efetivamente vemos que `hola.py` tem modificações, de modo que fazemos um commit com essas modificações.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git commit -am "Tercer commot, hola.py"</input_code>
+  <output_code>[master 60e2ffd] Tercer commot, hola.py
+ 1 file changed, 1 insertion(+)
+</output_code>
+  <markdown>Vamos ver o histórico de commits</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>* [33m60e2ffd[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmaster[m[33m)[m Tercer commot, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>**Oh não!** escrevemos `commot` em vez de `commit`, então vamos modificar a mensagem</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git commit --amend -m "Tercer commit, hola.py"</input_code>
+  <output_code>[master c4930d7] Tercer commit, hola.py
+ Date: Sun Apr 16 02:29:59 2023 +0200
+ 1 file changed, 1 insertion(+)
+</output_code>
+  <markdown>Voltamos a ver o histórico</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>* [33mc4930d7[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmaster[m[33m)[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Vemos que agora está bem.</markdown>
+  <markdown>#### Adicionar arquivos ao último commit</markdown>
+  <markdown>Suponhamos que esquecemos de adicionar um arquivo ao último commit, simplesmente fazemos um `git add` com esse arquivo e fazemos `git commit --amend -m "mensagem"`</markdown>
+  <markdown>Vamos a criar dois arquivos novos</markdown>
+  <input_code>!cd notebook_git &amp;&amp; echo "print('Este es el archivo 1')" &gt; archivo1.py</input_code>
+  <input_code>!cd notebook_git &amp;&amp; echo "print('Este es el archivo 2')" &gt; archivo2.py</input_code>
+  <markdown>Agora fazemos commit apenas de um</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git add archivo1.py &amp;&amp; git commit -m "Commit con el archivo 1"</input_code>
+  <output_code>[master 285b243] Commit con el archivo 1
+ 1 file changed, 1 insertion(+)
+ create mode 100644 archivo1.py
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+Archivos sin seguimiento:
+  (usa "git add &lt;archivo&gt;..." para incluirlo a lo que se será confirmado)
+	[31marchivo2.py[m
+
+no hay nada agregado al commit pero hay archivos sin seguimiento presentes (usa "git add" para hacerles seguimiento)
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>* [33m285b243[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmaster[m[33m)[m Commit con el archivo 1
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Como vemos, nos esquecemos do arquivo 2, então modificamos o commit e adicionamos o arquivo 2</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git add archivo2.py</input_code>
+  <input_code>!cd notebook_git &amp;&amp; git commit --amend -m "Commit con los archivos 1 y 2"</input_code>
+  <output_code>[master 04ebd1f] Commit con los archivos 1 y 2
+ Date: Sun Apr 16 02:30:26 2023 +0200
+ 2 files changed, 2 insertions(+)
+ create mode 100644 archivo1.py
+ create mode 100644 archivo2.py
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+nada para hacer commit, el árbol de trabajo está limpio
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>* [33m04ebd1f[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmaster[m[33m)[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Agora o último commit tem os dois novos arquivos</markdown>
+  <markdown>### Desfazer um commit (`git reset HEAD~1`)</markdown>
+  <markdown>Com este comando, dizemos ao git para voltar uma posição no histórico de commits. Há duas opções: `--soft`, que não apagará as alterações que tenhamos feito, e `--hard`, que o fará.</markdown>
+  <markdown>#### Desfazer um commit mantendo as alterações (`git reset --soft HEAD~1`)</markdown>
+  <markdown>Vamos a criar um novo arquivo</markdown>
+  <input_code>!cd notebook_git &amp;&amp; echo "print('Este es el archivo 3')" &gt; archivo3.py</input_code>
+  <markdown>Fazemos um `git status`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+Archivos sin seguimiento:
+  (usa "git add &lt;archivo&gt;..." para incluirlo a lo que se será confirmado)
+	[31marchivo3.py[m
+
+no hay nada agregado al commit pero hay archivos sin seguimiento presentes (usa "git add" para hacerles seguimiento)
+</output_code>
+  <markdown>Fazemos um commit adicionando este arquivo</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git add archivo3.py &amp;&amp; git commit -m "Commit con el archivos 3"</input_code>
+  <output_code>[master 6dc7be6] Commit con el archivos 3
+ 1 file changed, 1 insertion(+)
+ create mode 100644 archivo3.py
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>* [33m6dc7be6[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmaster[m[33m)[m Commit con el archivos 3
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Vemos que no o último commit se encontra `arquivo3.py`, vamos a eliminar o commit mantendo `arquivo3.py`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git reset --soft HEAD~1</input_code>
+  <markdown>Fazemos agora um `git log` para ver se o último commit foi removido.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>* [33m04ebd1f[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmaster[m[33m)[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Efetivamente, vemos que foi removido o último commit</markdown>
+  <markdown>Fazemos um `git status` para ver se foi preservado o `arquivo3.py`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+Cambios a ser confirmados:
+  (usa "git restore --staged &lt;archivo&gt;..." para sacar del área de stage)
+	[32mnuevos archivos: archivo3.py[m
+
+</output_code>
+  <markdown>Manteve-se</markdown>
+  <markdown>#### Desfazer um commit descartando as alterações (`git reset --hard HEAD~1`)</markdown>
+  <markdown>Temos `arquivo3.py` que criamos e está na área de stage</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+Cambios a ser confirmados:
+  (usa "git restore --staged &lt;archivo&gt;..." para sacar del área de stage)
+	[32mnuevos archivos: archivo3.py[m
+
+</output_code>
+  <markdown>Portanto, fazemos um commit</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git commit -m "Commit con el archivo 3"</input_code>
+  <output_code>[master 0147d65] Commit con el archivo 3
+ 1 file changed, 1 insertion(+)
+ create mode 100644 archivo3.py
+</output_code>
+  <markdown>Fazemos um `git log` para verificar que há um commit com este arquivo.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>* [33m0147d65[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmaster[m[33m)[m Commit con el archivo 3
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Efetivamente há um commit adicionando `arquivo3.py`. Agora removemos este commit descartando `arquivo3.py`.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git reset --hard HEAD~1</input_code>
+  <output_code>HEAD está ahora en 04ebd1f Commit con los archivos 1 y 2
+</output_code>
+  <markdown>Fazemos um `git log` para verificar que foi removido o último commit</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>* [33m04ebd1f[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmaster[m[33m)[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>O commit com `arquivo3.py` foi removido, agora fazemos um `git status` para verificar o que aconteceu com `arquivo3.py`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+nada para hacer commit, el árbol de trabajo está limpio
+</output_code>
+  <markdown>Não aparece `arquivo3.py` como um arquivo ao qual devemos fazer commit, vamos verificar se ele foi realmente excluído por completo.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; ls | grep archivo3</input_code>
+  <markdown>Efetivamente, o `arquivo3.py` foi removido do sistema de arquivos.</markdown>
+  <markdown>### Modificar um commit remoto (`git push --force`)</markdown>
+  <markdown>Embora veremos mais adiante como sincronizarmo-nos com repositórios remotos, no caso de ter feito um commit, tê-lo subido a um repositório remoto (`git push`) e tê-lo modificado localmente (porque modificou a mensagem ou desfez o commit), para reverter as alterações no repositório remoto você precisa fazer `git push --force`
+
+&gt; **Cuidado!**: Este comando modifica o histórico do repositório remoto, então pode afetar o resto das pessoas que estejam trabalhando com esse repositório. Use este comando com muito cuidado e segurança. É melhor ter um histórico de commits no qual primeiro está o commit em que você colocou a descrição errada e depois o novo commit com a nova descrição correta, do que ficar modificando o histórico.
+</markdown>
+  <markdown>### Modificar um commit remoto (`git push --force-with-lease`)</markdown>
+  <markdown>Se você está convencido de alterar o histórico, pelo menos use `git push --force-with-lease`, que não modificará os commits que tenham sido feitos posteriormente.</markdown>
+  <markdown>### Ignorar arquivos (`.gitignore`)</markdown>
+  <markdown>Suponhamos que temos um arquivo com `API key`s, este arquivo na verdade não queremos que seja salvo no repositório, porque se depois compartilharmos este repositório, qualquer pessoa teria acesso a essas chaves, por isso é necessário dizer ao git para não fazer o acompanhamento deste arquivo
+
+Isso é feito com o arquivo `.gitignore`, nele adicionamos o caminho dos arquivos ou diretórios que não queremos que o git faça o acompanhamento.
+
+Vamos vê-lo
+</markdown>
+  <markdown>Criamos o arquivo com as chaves</markdown>
+  <input_code>!cd notebook_git &amp;&amp; touch api_keys.py</input_code>
+  <markdown>Se fazemos `git status` vemos que o Git o considera</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+Archivos sin seguimiento:
+  (usa "git add &lt;archivo&gt;..." para incluirlo a lo que se será confirmado)
+	[31mapi_keys.py[m
+
+no hay nada agregado al commit pero hay archivos sin seguimiento presentes (usa "git add" para hacerles seguimiento)
+</output_code>
+  <markdown>Se não fizermos nada, pode ser que um dia façamos um `git add .` e o incluamos no repositório, então, por segurança, temos que dizer ao git para não seguir este arquivo. Para isso, criamos o `.gitignore` adicionando este arquivo.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; echo "api_keys.py" &gt;&gt; .gitignore</input_code>
+  <markdown>Vamos ver o que acontece se agora fizermos `git status`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+Archivos sin seguimiento:
+  (usa "git add &lt;archivo&gt;..." para incluirlo a lo que se será confirmado)
+	[31m.gitignore[m
+
+no hay nada agregado al commit pero hay archivos sin seguimiento presentes (usa "git add" para hacerles seguimiento)
+</output_code>
+  <markdown>Vemos que o git deixou de considerar `api_keys.py`, mas ainda considera `.gitignore`, então fazemos um commit para adicionar `.gitignore`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git add .gitignore &amp;&amp; git commit -m "Añadido .gitignore"</input_code>
+  <output_code>[master 0b09cfa] Añadido .gitignore
+ 1 file changed, 1 insertion(+)
+ create mode 100644 .gitignore
+</output_code>
+  <markdown>#### Quais arquivos adicionar ao `.gitignore`?</markdown>
+  <markdown>* Arquivos que tenham credenciais ou chaves de API (você não deveria enviá-los para o repositório, simplesmente injete-os por variável de ambiente)
+* Pastas de configuração do seu editor (`/.vscode`)
+* Arquivos de registro (log files)
+* Arquivos do sistema como `.DS_Store`* Pastas geradas com arquivos estáticos ou compilações como `/dist` ou `/build`
+* Dependências que podem ser baixadas (`/node_modules`)
+* Cobertura do teste (`/coverage`)
+</markdown>
+  <markdown>#### Como ignorar sempre os mesmos arquivos?</markdown>
+  <markdown>Se seu IDE sempre gera os mesmos arquivos de configuração, seria bom poder dizer ao git para sempre ignorar esses arquivos. Para isso, criamos um `.gitignore` global.</markdown>
+  <input_code>!touch ~/.gitignore_global</input_code>
+  <markdown>No meu caso, vou adicionar o diretório `__pycache__/`</markdown>
+  <input_code>!echo "__pycache__/" &gt;&gt; ~/.gitignore_global</input_code>
+  <markdown>Agora temos que indicar ao Git que esse é o nosso `.gitignore` global</markdown>
+  <input_code>!git config --global core.excludesfile ~/.gitignore_global</input_code>
+  <markdown>Pronto, o diretório `__pycache__/` sempre será ignorado</markdown>
+  <markdown>O GitHub tem um [repositório](https://github.com/github/gitignore) com `.gitignore`s para muitas linguagens, eu me baseei no [deste](https://github.com/github/gitignore/blob/main/Python.gitignore) para Python.</markdown>
+  <markdown>### Remover um arquivo de um commit</markdown>
+  <markdown>Vamos a ver como remover um arquivo de um commit que fizemos. Primeiro criamos dois arquivos e fazemos commit</markdown>
+  <input_code>!cd notebook_git &amp;&amp; echo "print('Este es el archivo 4')" &gt; archivo4.py</input_code>
+  <input_code>!cd notebook_git &amp;&amp; echo "print('Este es el archivo 5')" &gt; archivo5.py</input_code>
+  <markdown>Fazemos um commit com os dois arquivos</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git add archivo4.py archivo5.py &amp;&amp; git commit -m "Commit con los archivos 4 y 5"</input_code>
+  <output_code>[master e3153a5] Commit con los archivos 4 y 5
+ 2 files changed, 2 insertions(+)
+ create mode 100644 archivo4.py
+ create mode 100644 archivo5.py
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>* [33me3153a5[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmaster[m[33m)[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>A partir de aqui há duas opções para remover um arquivo de um commit:
+* Excluir o arquivo e criar um novo commit* Desfazer o commit e criá-lo novamente sem o arquivo
+</markdown>
+  <markdown>#### Excluir o arquivo e criar um novo commit</markdown>
+  <markdown>Suponhamos que queremos eliminar o arquivo `arquivo5.py`, então o removemos com `git rm arquivo5.py`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git rm archivo5.py</input_code>
+  <output_code>rm 'archivo5.py'
+</output_code>
+  <markdown>Vamos fazer um `git status` para ver o que acontece</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+Cambios a ser confirmados:
+  (usa "git restore --staged &lt;archivo&gt;..." para sacar del área de stage)
+	[32mborrados:        archivo5.py[m
+
+</output_code>
+  <markdown>Como vemos, foi excluído `archivo5.py`. Agora criamos um novo commit</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git commit -m "Eliminado archivo5.py"</input_code>
+  <output_code>[master ea615a9] Eliminado archivo5.py
+ 1 file changed, 1 deletion(-)
+ delete mode 100644 archivo5.py
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>* [33mea615a9[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmaster[m[33m)[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>#### Desfazer o commit e criá-lo novamente sem o arquivo</markdown>
+  <markdown>Voltamos a criar dois arquivos e fazer um commit</markdown>
+  <input_code>!cd notebook_git &amp;&amp; echo "print('Este es el archivo 6')" &gt; archivo6.py &amp;&amp; echo "print('Este es el archivo 7')" &gt; archivo7.py</input_code>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+Archivos sin seguimiento:
+  (usa "git add &lt;archivo&gt;..." para incluirlo a lo que se será confirmado)
+	[31marchivo6.py[m
+	[31marchivo7.py[m
+
+no hay nada agregado al commit pero hay archivos sin seguimiento presentes (usa "git add" para hacerles seguimiento)
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; git add archivo6.py archivo7.py &amp;&amp; git commit -m "Commit con los archivos 6 y 7"</input_code>
+  <output_code>[master d6dc485] Commit con los archivos 6 y 7
+ 2 files changed, 2 insertions(+)
+ create mode 100644 archivo6.py
+ create mode 100644 archivo7.py
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>* [33md6dc485[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmaster[m[33m)[m Commit con los archivos 6 y 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Primeiro desfazemos o último commit com `git reset --soft HEAD~1`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git reset --soft HEAD~1</input_code>
+  <markdown>Fazemos um `git status` para ver o que ocorreu</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+Cambios a ser confirmados:
+  (usa "git restore --staged &lt;archivo&gt;..." para sacar del área de stage)
+	[32mnuevos archivos: archivo6.py[m
+	[32mnuevos archivos: archivo7.py[m
+
+</output_code>
+  <markdown>Vemos que desfizemos o commit, mas os dois arquivos se encontram na área de staged, portanto, para remover um dos arquivos do commit, primeiro é necessário removê-lo da área de staged. Para isso, fazemos `git reset arquivo6.py`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git reset archivo6.py</input_code>
+  <markdown>Fazemos novamente um `git status`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+Cambios a ser confirmados:
+  (usa "git restore --staged &lt;archivo&gt;..." para sacar del área de stage)
+	[32mnuevos archivos: archivo7.py[m
+
+Archivos sin seguimiento:
+  (usa "git add &lt;archivo&gt;..." para incluirlo a lo que se será confirmado)
+	[31marchivo6.py[m
+
+</output_code>
+  <markdown>Vemos que `arquivo7.py` está na área de staged, enquanto `arquivo6.py` já não está. Agora podemos apagar o arquivo 6, para isso usamos `git clean`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git clean -n</input_code>
+  <output_code>Será borrado archivo6.py
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; git clean -f</input_code>
+  <output_code>Borrando archivo6.py
+</output_code>
+  <markdown>Fazemos novamente um `git status`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama master
+Cambios a ser confirmados:
+  (usa "git restore --staged &lt;archivo&gt;..." para sacar del área de stage)
+	[32mnuevos archivos: archivo7.py[m
+
+</output_code>
+  <markdown>Como vemos `arquivo.py` já não está, então podemos fazer um novo commit</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git commit -m "Commit con el archivo 7"</input_code>
+  <output_code>[master 4bb9d75] Commit con el archivo 7
+ 1 file changed, 1 insertion(+)
+ create mode 100644 archivo7.py
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>* [33m4bb9d75[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmaster[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Removemos o último commit e o substituímos por um novo, removendo o arquivo que queríamos.</markdown>
+  <markdown>### Histórico de alterações de um arquivo (`git log &lt;arquivo&gt;`)</markdown>
+  <markdown>Embora antes tenhamos visto como podemos ver o histórico do repositório com `git log`, pode ser que não nos interesse o histórico de todo o repositório. Pode ser que tenhamos um bug em um arquivo de código que no início não tínhamos, por isso é possível que queiramos ver apenas o histórico desse arquivo. Para isso, usamos `git log &lt;arquivo&gt;`</markdown>
+  <markdown>Primeiro vemos os arquivos que temos</markdown>
+  <input_code>!cd notebook_git &amp;&amp; ls</input_code>
+  <output_code>api_keys.py  archivo1.py  archivo2.py  archivo4.py  archivo7.py  hola.py
+</output_code>
+  <markdown>Suponhamos que queremos ver apenas as mudanças em `hola.py`, então fazemos `git log hola.py`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate hola.py</input_code>
+  <output_code>* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Podemos ver que aparecem muitos menos resultados do que se tivéssemos feito `git log`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>* [33m4bb9d75[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmaster[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>### Ver modificações de um arquivo em um ponto específico do histórico (`git show &lt;hash&gt; &lt;arquivo&gt;` ou `git diff &lt;arquivo&gt;`)</markdown>
+  <markdown>Suponhamos que já sabemos em qual ponto uma alteração foi feita no arquivo que contém um bug, então agora queremos saber quais alterações foram feitas para descobrir o que pode estar causando o bug. Para isso, podemos usar `git show &lt;hash&gt; &lt;arquivo&gt;`</markdown>
+  <markdown>Vamos ver quais mudanças ocorreram em `hola.py` no hash `c4930d7`, ou seja, quando foi feito o terceiro commit</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git show c4930d7 hola.py</input_code>
+  <output_code>[33mcommit c4930d7267c3f8df389ab0cb1bda0b5fceabb5c2[m
+Author: maximofn &lt;maximofn@gmail.com&gt;
+Date:   Sun Apr 16 02:29:59 2023 +0200
+
+    Tercer commit, hola.py
+
+[1mdiff --git a/hola.py b/hola.py[m
+[1mindex 91dee80..33bdb99 100644[m
+[1m--- a/hola.py[m
+[1m+++ b/hola.py[m
+[36m@@ -1,2 +1,3 @@[m
+ print('Hola mundo')[m
+ print('He añadido una nueva linea')[m
+[32m+[m[32mprint('Esta es la tercera linea')[m
+</output_code>
+  <markdown>A maneira de ver as mudanças no git não é muito intuitiva, mas podemos ver que foi adicionada a linha `print('Esta é a terceira linha')`</markdown>
+  <markdown>Outra maneira de ver alterações é com `git diff`, temos duas opções, podemos ver as alterações do arquivo no momento atual em relação a um ponto específico do histórico, para isso fazemos `git diff &lt;hash&gt; &lt;arquivo&gt;`.
+
+Por exemplo, se quisermos ver as mudanças de `hola.py` desde quando foi feito o primeiro commit (hash `1c95e4f`) até a situação atual, devemos inserir (`git diff 1c95e4f hola.py`)
+</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git diff 1c95e4f hola.py</input_code>
+  <output_code>[1mdiff --git a/hola.py b/hola.py[m
+[1mindex f140969..33bdb99 100644[m
+[1m--- a/hola.py[m
+[1m+++ b/hola.py[m
+[36m@@ -1 +1,3 @@[m
+ print('Hola mundo')[m
+[32m+[m[32mprint('He añadido una nueva linea')[m
+[32m+[m[32mprint('Esta es la tercera linea')[m
+</output_code>
+  <markdown>Mas se quisermos ver a diferença entre um ponto específico do histórico e outro ponto específico, temos que introduzir os hashes dos dois momentos, ou seja `git diff &lt;hash1&gt; &lt;hash2&gt; &lt;arquivo&gt;`
+
+Se quisermos ver as mudanças de `hola.py` entre o segundo commit (hash `6e99e73`) e o primeiro commit (hash `1c95e4f`), teríamos que introduzir `git diff 1c95e4f 6e99e73 hola.py`
+</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git diff 1c95e4f 6e99e73 hola.py</input_code>
+  <output_code>[1mdiff --git a/hola.py b/hola.py[m
+[1mindex f140969..91dee80 100644[m
+[1m--- a/hola.py[m
+[1m+++ b/hola.py[m
+[36m@@ -1 +1,2 @@[m
+ print('Hola mundo')[m
+[32m+[m[32mprint('He añadido una nueva linea')[m
+</output_code>
+  <markdown>O anterior nos mostra as mudanças do segundo commit em relação ao primeiro, mas se o que queremos são as mudanças do primeiro commit em relação ao segundo, basta colocar os hashes ao contrário de como os colocamos, ou seja `git diff 6e99e73 1c95e4f hola.py`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git diff 6e99e73 1c95e4f hola.py</input_code>
+  <output_code>[1mdiff --git a/hola.py b/hola.py[m
+[1mindex 91dee80..f140969 100644[m
+[1m--- a/hola.py[m
+[1m+++ b/hola.py[m
+[36m@@ -1,2 +1 @@[m
+ print('Hola mundo')[m
+[31m-print('He añadido una nueva linea')[m
+</output_code>
+  <markdown>### Viagem ao passado (`git reset --hard &lt;hash&gt;` ou `git reset --soft &lt;hash&gt;`)</markdown>
+  <markdown>Imaginemos que encontramos que tudo o que fizemos após gerar o bug não serve e temos que voltar a trabalhar a partir desse ponto, podemos voltar a uma posição do histórico por meio de `git reset --hard &lt;hash&gt;` (isso não manterá as alterações) ou `git reset --soft &lt;hash&gt;` (isso sim manterá as alterações).</markdown>
+  <markdown>Primeiro vejamos o histórico</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>* [33m4bb9d75[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmaster[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Suponhamos que queremos voltar ao momento em que fizemos o terceiro commit (hash `c4930d7`), além disso, fazemos isso sem manter as alterações, ou seja, todas as modificações que fizemos depois serão apagadas, fazemos `git reset --hard c4930d7`</markdown>
+  <markdown>Primeiro fazemos `ls` para ver os arquivos que temos agora</markdown>
+  <input_code>!cd notebook_git &amp;&amp; ls</input_code>
+  <output_code>api_keys.py  archivo1.py  archivo2.py  archivo4.py  archivo7.py  hola.py
+</output_code>
+  <markdown>Vamos ao terceiro commit</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git reset --hard c4930d7</input_code>
+  <output_code>HEAD está ahora en c4930d7 Tercer commit, hola.py
+</output_code>
+  <markdown>Se fazemos `ls` veremos que já não temos nem `archivo1.py`, nem `archivo2.py`, nem `archivo4.py`, nem `archivo7.py`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; ls</input_code>
+  <output_code>api_keys.py  hola.py
+</output_code>
+  <markdown>### Volta ao futuro (`git reflog`)</markdown>
+  <markdown>Suponhamos que nos arrependemos e queremos voltar ao ponto onde estávamos, ao último punto no histórico. Uma maneira seria fazer `git reset --hard &lt;hash&gt;`. Mas imaginemos que não sabemos o hash, porque não fizemos `git log` antes e se o fizermos agora só nos dá informação do histórico até o terceiro commit.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>* [33mc4930d7[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmaster[m[33m)[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Aqui o que podemos fazer é `git reflog`, que nos dará um histórico incluindo os saltos</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git reflog</input_code>
+  <output_code>[33mc4930d7[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmaster[m[33m)[m HEAD@{0}: reset: moving to c4930d7
+[33m4bb9d75[m HEAD@{1}: commit: Commit con el archivo 7
+[33mea615a9[m HEAD@{2}: reset: moving to HEAD~1
+[33md6dc485[m HEAD@{3}: commit: Commit con los archivos 6 y 7
+[33mea615a9[m HEAD@{4}: commit: Eliminado archivo5.py
+[33me3153a5[m HEAD@{5}: commit: Commit con los archivos 4 y 5
+[33m0b09cfa[m HEAD@{6}: commit: Añadido .gitignore
+[33m04ebd1f[m HEAD@{7}: reset: moving to HEAD~1
+[33m0147d65[m HEAD@{8}: commit: Commit con el archivo 3
+[33m04ebd1f[m HEAD@{9}: reset: moving to HEAD~1
+[33m6dc7be6[m HEAD@{10}: commit: Commit con el archivos 3
+[33m04ebd1f[m HEAD@{11}: commit (amend): Commit con los archivos 1 y 2
+[33m285b243[m HEAD@{12}: commit: Commit con el archivo 1
+[33mc4930d7[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmaster[m[33m)[m HEAD@{13}: commit (amend): Tercer commit, hola.py
+[33m60e2ffd[m HEAD@{14}: commit: Tercer commot, hola.py
+[33m6e99e73[m HEAD@{15}: commit: Segundo commit, hola.py
+[33m1c95e4f[m HEAD@{16}: commit (initial): Primer commit, hola.py
+</output_code>
+  <markdown>Podemos ver que nos diz que estávamos no commit com hash `4bb9d75`, ou seja, o último commit que fizemos, e de lá fomos até o commit com hash `c4930d7`, que se você reparar, é o mesmo hash do commit com mensagem `Tercer commit, hola.py`. Portanto, já sabemos o hash do último commit, o `4bb9d75`, assim para voltar à posição do último commit fazemos `git reset --hard 4bb9d75`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git reset --hard 4bb9d75</input_code>
+  <output_code>HEAD está ahora en 4bb9d75 Commit con el archivo 7
+</output_code>
+  <markdown>Se agora voltarmos a fazer um log</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>* [33m4bb9d75[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmaster[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Vemos que efectivamente estamos na posição do último commit, *voltamos para o futuro*</markdown>
+  <markdown>### Pesquisa em arquivos (`git grep &lt;palavra&gt;`)</markdown>
+  <markdown>Se quisermos procurar em arquivos, podemos fazê-lo com o comando `git grep`. Como no repositório que estamos construindo é muito pequeno e tem poucos arquivos, vamos baixar um novo por meio de um comando que veremos com mais detalhes posteriormente.</markdown>
+  <input_code>!git clone https://github.com/facebookresearch/segment-anything.git</input_code>
+  <output_code>Clonando en 'segment-anything'...
+remote: Enumerating objects: 279, done.[K
+remote: Counting objects: 100% (181/181), done.[K
+remote: Compressing objects: 100% (77/77), done.[K
+remote: Total 279 (delta 116), reused 104 (delta 104), pack-reused 98[K
+Recibiendo objetos: 100% (279/279), 18.31 MiB | 21.25 MiB/s, listo.
+Resolviendo deltas: 100% (140/140), listo.
+</output_code>
+  <markdown>O repositório que baixamos é o do código-fonte do SAM, uma rede neural da Meta para segmentar qualquer objeto. Entramos na pasta do repositório e procuramos, por exemplo, quantas vezes a palavra `softmax` foi escrita.</markdown>
+  <input_code>!cd segment-anything &amp;&amp; git grep softmax</input_code>
+  <output_code>segment_anything/modeling/image_encoder.py[36m:[m        attn = attn.[1;31msoftmax[m(dim=-1)
+segment_anything/modeling/transformer.py[36m:[m        attn = torch.[1;31msoftmax[m(attn, dim=-1)
+</output_code>
+  <markdown>Vemos que se escreveu nos arquivos `segment_anything/modeling/image_encoder.py` e `segment_anything/modeling/transformer.py`.</markdown>
+  <markdown>Se quisermos saber em quais linhas dos arquivos foi escrito, usamos a flag `-n`</markdown>
+  <input_code>!cd segment-anything &amp;&amp; git grep -n softmax</input_code>
+  <output_code>segment_anything/modeling/image_encoder.py[36m:[m236[36m:[m        attn = attn.[1;31msoftmax[m(dim=-1)
+segment_anything/modeling/transformer.py[36m:[m233[36m:[m        attn = torch.[1;31msoftmax[m(attn, dim=-1)
+</output_code>
+  <markdown>Se quisermos contar quantas vezes uma palavra aparece, podemos usar a flag `-c`</markdown>
+  <input_code>!cd segment-anything &amp;&amp; git grep -c softmax</input_code>
+  <output_code>segment_anything/modeling/image_encoder.py[36m:[m1
+segment_anything/modeling/transformer.py[36m:[m1
+</output_code>
+  <markdown>E vemos que aparece uma vez em cada arquivo</markdown>
+  <markdown>E nos diz que estão nas linhas 236 e 233, respectivamente.</markdown>
+  <markdown>### Busca em commits (`git log -S &lt;palavra&gt;`)</markdown>
+  <markdown>Se quisermos buscar no histórico de commits, podemos usar o comando `git log -S &lt;palavra&gt;`. Por exemplo, busquemos no histórico de commits do repositório que baixamos anteriormente a palavra `fix`.</markdown>
+  <input_code>!cd segment-anything &amp;&amp; git log -S "collab"</input_code>
+  <output_code>[33mcommit 2780a301de4483e5c46edb230ea781556159c658[m
+Author: Eric Mintun &lt;eric.mintun@gmail.com&gt;
+Date:   Mon Apr 10 10:50:17 2023 -0700
+
+    Fix typo in notebook 'using_collab'-&gt;'using_colab' in other two notebooks.
+
+[33mcommit 2c11ea23525970ac288f23dc74b203bcbfb4cc6a[m
+Author: jp-x-g &lt;jpxg-dev@protonmail.com&gt;
+Date:   Thu Apr 6 20:00:04 2023 -0700
+
+    fix parameter name
+    
+    "using_collab" does not appear in subsequent text, replacing with "using_colab"
+
+[33mcommit b47d02d68c308672751be29742fcef02a86e2f02[m
+Author: Eric Mintun &lt;eric.mintun@gmail.com&gt;
+Date:   Wed Apr 5 06:13:09 2023 -0700
+
+    Fix broken links in notebook Colab setup.
+
+[33mcommit 571794162e0887c15d12b809505b902c7bf8b4db[m
+Author: Eric Mintun &lt;eric.mintun@gmail.com&gt;
+Date:   Tue Apr 4 22:25:49 2023 -0700
+
+    Initial commit
+</output_code>
+  <markdown>Apagamos a pasta do SAM</markdown>
+  <input_code>!rm -r segment-anything</input_code>
+  <markdown>## Ramas</markdown>
+  <markdown>![branches](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/GIT-Branchand-its-Operations.webp)
+
+O uso de branches é muito útil, pois podemos começar a desenvolver um novo recurso sem ter que modificar o código original
+</markdown>
+  <markdown>### Criar uma branch (`git branch &lt;nome-da-branch&gt;`)</markdown>
+  <markdown>&gt; **Nota**: Antes de tudo, é preciso dizer que para criar uma branch em um repositório deve haver pelo menos um commit. Se tentarmos criar uma branch antes de fazer o primeiro commit, receberemos um erro.</markdown>
+  <markdown>Para criar uma branch usamos o comando `git branch &lt;nome da branch&gt;`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git branch new_branch</input_code>
+  <markdown>### Listar ramos (`git branch`)</markdown>
+  <markdown>Criamos nossa primeira branch, podemos verificar todas as branches criadas apenas escrevendo `git branch`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git branch</input_code>
+  <output_code>* [32mmaster[m
+  new_branch[m
+</output_code>
+  <markdown>Além de listar, ele indica com um asterisco `*` em qual ramo estamos, neste caso na ramo `master`.</markdown>
+  <markdown>### Renomear ramos, adeus à ramo `master` (`git branch -m &lt;nome antigo&gt; &lt;novo nome&gt;`)</markdown>
+  <markdown>Históricamente no git a ramificação principal era chamada de `master`, mas isso tem conotações históricas negativas devido ao conceito de `master-slave` (`maestro-escravo`), em razão do sofrimento que muitas pessoas enfrentaram. Por isso, agora a ramificação principal costuma ser denominada `main`, então para renomeá-la usamos `git branch -m master main`.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git branch -m master main</input_code>
+  <markdown>Listamos as ramas</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git branch</input_code>
+  <output_code>* [32mmain[m
+  new_branch[m
+</output_code>
+  <markdown>Como vemos, conseguimos mudar o nome da branch principal de `master` para `main`</markdown>
+  <markdown>### Mudar de ramo (`git switch &lt;branch&gt;`)</markdown>
+  <markdown>Se quisermos mudar de branch, basta escrever `git switch &lt;nome da branch&gt;`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git switch new_branch</input_code>
+  <output_code>Cambiado a rama 'new_branch'
+</output_code>
+  <markdown>Vamos ver em qual ramo estamos com `git branch`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git branch</input_code>
+  <output_code>  main[m
+* [32mnew_branch[m
+</output_code>
+  <markdown>Como vemos, mudamos de branch para new_branch</markdown>
+  <markdown>Se quisermos criar e mudar para uma branch em um único comando, podemos usar `git switch -c &lt;nome da branch&gt;`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git switch -c new_branch2</input_code>
+  <output_code>Cambiado a nueva rama 'new_branch2'
+</output_code>
+  <markdown>Vamos ver em qual branch estamos</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git branch</input_code>
+  <output_code>  main[m
+  new_branch[m
+* [32mnew_branch2[m
+</output_code>
+  <markdown>Nós criamos e mudamos de branch com um único comando</markdown>
+  <markdown>### Obter a branch em que estamos (`git branch --show-current`)</markdown>
+  <markdown>Como vimos até agora com `git branch` podemos obter uma lista de todas as ramas e ainda ver em qual estamos atualmente, mas no caso de termos uma grande quantidade de ramas, algo que pode acontecer em uma equipe de trabalho com muita gente, é bom obter apenas a rama e não uma lista de todas. Para isso usamos `git branch --show-current`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git branch --show-current</input_code>
+  <output_code>new_branch2
+</output_code>
+  <markdown>### Lista de ramas mais recentes (`git branch --sort=-committerdate`)</markdown>
+  <markdown>Em caso de ter muitas branches, talvez seja interessante saber quais são as mais recentes para ver quais foram as últimas criadas e onde deve estar o último desenvolvimento. Para isso, usamos `git branch --sort=-committerdate`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git branch --sort=-committerdate</input_code>
+  <output_code>* [32mnew_branch2[m
+  new_branch[m
+  main[m
+</output_code>
+  <markdown>Como vemos, as ordenou em ordem inversa à que foram criadas.</markdown>
+  <markdown>### O comando preterido `git checkout`</markdown>
+  <markdown>Até recentemente, o comando para criar ramificações e alternar entre elas era `git checkout`, mas este comando não fazia apenas isso, também restaurava o diretório de trabalho. No entanto, isso vai contra a filosofia do Linux, por isso foram criados os comandos `git branch`, `git switch` e `git restore` para dividir essa funcionalidade.</markdown>
+  <markdown>### Fundindo branches (`git merge`)</markdown>
+  <markdown>Como dissem, criar branches é muito útil para desenvolver novas funcionalidades sem afetar o resto da equipe. Mas quando elas estão concluídas, é necessário levá-las para a branch principal, para isso usamos o comando `git merge &lt;branch&gt;`
+
+&gt; **Importante**: Temos que estar na branch que vai adotar as mudanças, ou seja, se quisermos mesclar as mudanças realizadas na branch `new_branch2` na branch `main`, primeiro temos que nos certificar de estar na branch `main`
+</markdown>
+  <markdown>Primeiro verificamos em qual branch estamos</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git branch --show-current</input_code>
+  <output_code>new_branch2
+</output_code>
+  <markdown>Eliminamos `arquivo7.py`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git rm archivo7.py</input_code>
+  <output_code>rm 'archivo7.py'
+</output_code>
+  <markdown>Fazemos um commit com as mudanças</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git commit -am "Eliminado archivo7.py"</input_code>
+  <output_code>[new_branch2 5168f78] Eliminado archivo7.py
+ 1 file changed, 1 deletion(-)
+ delete mode 100644 archivo7.py
+</output_code>
+  <markdown>Se fazemos um `ls` vemos que `arquivo7.py` já não está</markdown>
+  <input_code>!cd notebook_git &amp;&amp; ls | grep archivo7</input_code>
+  <markdown>Criamos um novo arquivo e fazemos um commit</markdown>
+  <input_code>!cd notebook_git &amp;&amp; touch archivo8.py &amp;&amp; git add archivo8.py &amp;&amp; git commit -m "Commit con el archivo 8"</input_code>
+  <output_code>[new_branch2 564ccfb] Commit con el archivo 8
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 archivo8.py
+</output_code>
+  <markdown>Fizemos dois commits novos nesta branch, vamos ver com `git log`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>* [33m564ccfb[m[33m ([m[1;36mHEAD -&gt; [m[1;32mnew_branch2[m[33m)[m Commit con el archivo 8
+* [33m5168f78[m Eliminado archivo7.py
+* [33m4bb9d75[m[33m ([m[1;32mnew_branch[m[33m, [m[1;32mmain[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Mudamos para a branch principal</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git switch main</input_code>
+  <output_code>Cambiado a rama 'main'
+</output_code>
+  <markdown>Se agora fizermos de novo `ls` veremos que `arquivo7.py` sim está</markdown>
+  <input_code>!cd notebook_git &amp;&amp; ls | grep archivo7</input_code>
+  <output_code>archivo7.py
+</output_code>
+  <markdown>Fusamos as branches, trazendo as mudanças de `new_branch2` para `main`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git merge new_branch2</input_code>
+  <output_code>Actualizando 4bb9d75..564ccfb
+Fast-forward
+ archivo7.py | 1 [31m-[m
+ archivo8.py | 0
+ 2 files changed, 1 deletion(-)
+ delete mode 100644 archivo7.py
+ create mode 100644 archivo8.py
+</output_code>
+  <markdown>Fazemos um `git status`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama main
+nada para hacer commit, el árbol de trabajo está limpio
+</output_code>
+  <markdown>Vemos que ao fazer o merge não é necessário fazer nenhum commit, vejamos com um `git log` o que aconteceu.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>* [33m564ccfb[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmain[m[33m, [m[1;32mnew_branch2[m[33m)[m Commit con el archivo 8
+* [33m5168f78[m Eliminado archivo7.py
+* [33m4bb9d75[m[33m ([m[1;32mnew_branch[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Vemos que o commit da branch `new_branch2` foi incorporado a esta branch</markdown>
+  <markdown>#### Avanço rápido</markdown>
+  <markdown>Neste caso criamos uma nova branch, a principal não é afetada e apenas modificamos a nova, realizando vários commits. Portanto, ao unir a nova na principal, todos os commits feitos na nova serão visíveis. Para realizar este tipo de merge, escrevemos `git merge --ff-only &lt;branch&gt;`</markdown>
+  <input_code>### Este código es para crear el gráfico de las ramas, no es necesario para el curso
+
+import graphviz
+
+# Crear el gráfico con la dirección de las flechas de izquierda a derecha
+orin = graphviz.Digraph('G', graph_attr={'rankdir': 'LR'})
+fast_foward = graphviz.Digraph('G', graph_attr={'rankdir': 'LR'})
+
+# Agregar nodos (pelotas) A, B, C y D en la rama principal
+orin.node('A', shape='circle', label='A', color='blue')
+orin.node('B', shape='circle', label='B', color='blue')
+orin.node('C', shape='circle', label='C', color='blue')
+orin.node('D', shape='circle', label='D', color='blue')
+orin.node('E', shape='circle', label='', color='transparent')
+fast_foward.node('A', shape='circle', label='A', color='blue')
+fast_foward.node('B', shape='circle', label='B', color='blue')
+fast_foward.node('C', shape='circle', label='C', color='blue')
+fast_foward.node('D', shape='circle', label='D', color='blue')
+
+# Agregar nodos (pelotas) X e Y en la rama secundaria
+orin.node('X', shape='circle', label='X', color='green')
+orin.node('Y', shape='circle', label='Y', color='green')
+fast_foward.node('X', shape='circle', label='X', color='magenta')
+fast_foward.node('Y', shape='circle', label='Y', color='magenta')
+
+# Agregar flechas entre los nodos en la rama principal
+orin.edges(['AB', 'BC', 'CD'])
+orin.edge('D', 'E', color='transparent')  # Hacer la flecha de C a D transparente
+fast_foward.edges(['AB', 'BC', 'CD', 'DX', 'XY'])
+
+# Agregar flechas entre los nodos en la rama secundaria
+orin.edges(['DX', 'XY'])
+
+# Mostrar el diagrama de flujo en la celda de código de Jupyter Notebook
+display(orin)
+display(fast_foward)</input_code>
+  <output_code>&lt;graphviz.graphs.Digraph at 0x7f58f80c09a0&gt;</output_code>
+  <output_code>&lt;graphviz.graphs.Digraph at 0x7f58f9203fa0&gt;</output_code>
+  <markdown>Vamos primeiro a verificar que estamos na branch principal</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git branch --show-current</input_code>
+  <output_code>main
+</output_code>
+  <markdown>Criamos uma nova branch</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git branch branch_fast_forward</input_code>
+  <markdown>Mudamos para ela</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git switch branch_fast_forward</input_code>
+  <output_code>Cambiado a rama 'branch_fast_forward'
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; git branch --show-current</input_code>
+  <output_code>branch_fast_forward
+</output_code>
+  <markdown>Vamos ver o log</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate --all</input_code>
+  <output_code>* [33m564ccfb[m[33m ([m[1;36mHEAD -&gt; [m[1;32mbranch_fast_forward[m[33m, [m[1;32mnew_branch2[m[33m, [m[1;32mmain[m[33m)[m Commit con el archivo 8
+* [33m5168f78[m Eliminado archivo7.py
+* [33m4bb9d75[m[33m ([m[1;32mnew_branch[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Ok, estamos em um branch criado a partir do principal com todo o seu histórico de logs, fazemos dois novos commits</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git rm archivo4.py &amp;&amp; git commit -am "Eliminado archivo4.py"</input_code>
+  <output_code>rm 'archivo4.py'
+[branch_fast_forward 4484e70] Eliminado archivo4.py
+ 1 file changed, 1 deletion(-)
+ delete mode 100644 archivo4.py
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; git rm hola.py &amp;&amp; git commit -am "Eliminado hola.py"</input_code>
+  <output_code>rm 'hola.py'
+[branch_fast_forward 94149fc] Eliminado hola.py
+ 1 file changed, 3 deletions(-)
+ delete mode 100644 hola.py
+</output_code>
+  <markdown>Fazemos um novo log para ver o que foi criado nesta nova branch.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>* [33m94149fc[m[33m ([m[1;36mHEAD -&gt; [m[1;32mbranch_fast_forward[m[33m)[m Eliminado hola.py
+* [33m4484e70[m Eliminado archivo4.py
+* [33m564ccfb[m[33m ([m[1;32mnew_branch2[m[33m, [m[1;32mmain[m[33m)[m Commit con el archivo 8
+* [33m5168f78[m Eliminado archivo7.py
+* [33m4bb9d75[m[33m ([m[1;32mnew_branch[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Como我们可以看到，最后两个提交是我们创建的，我们可以检查这些提交不在主分支上（为此我指定要在 `main` 分支上进行操作）  
+
+Note: The provided translation is in Chinese instead of Portuguese. Here is the correct Portuguese translation:
+
+Como podemos ver, os dois últimos commits são aqueles que criamos e podemos verificar que esses commits não estão na branch principal (para isso especifico que seja feito sobre a branch `main`)</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log main --graph --oneline --decorate</input_code>
+  <output_code>* [33m564ccfb[m[33m ([m[1;32mnew_branch2[m[33m, [m[1;32mmain[m[33m)[m Commit con el archivo 8
+* [33m5168f78[m Eliminado archivo7.py
+* [33m4bb9d75[m[33m ([m[1;32mnew_branch[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Agora vamos para a branch `main` fazer o merge.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git switch main</input_code>
+  <output_code>Cambiado a rama 'main'
+</output_code>
+  <markdown>Por último, fazemos o merge do tipo fast forward</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git merge --ff-only branch_fast_forward</input_code>
+  <output_code>Actualizando 564ccfb..94149fc
+Fast-forward
+ archivo4.py | 1 [31m-[m
+ hola.py     | 3 [31m---[m
+ 2 files changed, 4 deletions(-)
+ delete mode 100644 archivo4.py
+ delete mode 100644 hola.py
+</output_code>
+  <markdown>O merge foi feito, vamos ver o que aconteceu com o log na branch `main`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>* [33m94149fc[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmain[m[33m, [m[1;32mbranch_fast_forward[m[33m)[m Eliminado hola.py
+* [33m4484e70[m Eliminado archivo4.py
+* [33m564ccfb[m[33m ([m[1;32mnew_branch2[m[33m)[m Commit con el archivo 8
+* [33m5168f78[m Eliminado archivo7.py
+* [33m4bb9d75[m[33m ([m[1;32mnew_branch[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Como se vê, foram mantidos os dois commits realizados na branch `branch_fast_forward`</markdown>
+  <markdown>#### Sem avanço rápido ou mesclagem verdadeira</markdown>
+  <markdown>Neste caso, criamos uma nova branch, a principal não foi tocada e modificamos a nova, realizando vários commits. Em seguida, realizamos um commit na principal. Portanto, ao unir a nova na principal, será visto um único commit na nova. Para fazer este tipo de merge, escrevemos `git merge &lt;branch&gt; --no-ff`</markdown>
+  <input_code>### Este código es para crear el gráfico de las ramas, no es necesario para el curso
+
+import graphviz
+
+# Crear el gráfico con la dirección de las flechas de izquierda a derecha
+orin = graphviz.Digraph('G', graph_attr={'rankdir': 'LR'})
+not_fast_forward = graphviz.Digraph('G', graph_attr={'rankdir': 'LR'})
+
+# Agregar nodos (pelotas) A, B, C y D en la rama principal
+orin.node('A', shape='circle', label='A', color='blue')
+orin.node('B', shape='circle', label='B', color='blue')
+orin.node('C', shape='circle', label='C', color='blue')
+orin.node('D', shape='circle', label='D', color='blue')
+orin.node('E', shape='circle', label='', color='transparent')
+not_fast_forward.node('A', shape='circle', label='A', color='blue')
+not_fast_forward.node('B', shape='circle', label='B', color='blue')
+not_fast_forward.node('C', shape='circle', label='C', color='blue')
+not_fast_forward.node('D', shape='circle', label='D', color='blue')
+not_fast_forward.node('E', shape='circle', label='E', color='blue')
+
+# Agregar nodos (pelotas) X e Y en la rama secundaria
+orin.node('X', shape='circle', label='X', color='green')
+orin.node('Y', shape='circle', label='Y', color='green')
+not_fast_forward.node('X', shape='circle', label='X', color='green')
+not_fast_forward.node('Y', shape='circle', label='Y', color='green')
+
+# Agregar nodo (pelota) M en la rama principal
+not_fast_forward.node('M', shape='circle', label='M', color='magenta')
+
+# Agregar flechas entre los nodos en la rama principal
+orin.edges(['AB', 'BC', 'CD'])
+orin.edge('D', 'E', color='transparent')  # Hacer la flecha de C a D transparente
+not_fast_forward.edges(['AB', 'BC', 'CD', 'DE'])
+
+# Agregar flechas entre los nodos en la rama secundaria
+orin.edges(['DX', 'XY'])
+not_fast_forward.edges(['DX', 'XY', 'YM'])
+
+# Agregar flechas de la rama principal al nodo M
+not_fast_forward.edge('E', 'M')
+
+# Mostrar el diagrama de flujo en la celda de código de Jupyter Notebook
+display(orin)
+display(not_fast_forward)</input_code>
+  <output_code>&lt;graphviz.graphs.Digraph at 0x7f58f80c2fb0&gt;</output_code>
+  <output_code>&lt;graphviz.graphs.Digraph at 0x7f58f80c2230&gt;</output_code>
+  <markdown>Vamos primeiro a verificar que estamos na branch principal</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git branch --show-current</input_code>
+  <output_code>main
+</output_code>
+  <markdown>Criamos uma nova branch</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git branch branch_no_fast_forward</input_code>
+  <markdown>Mudamos para ela</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git switch branch_no_fast_forward</input_code>
+  <output_code>Cambiado a rama 'branch_no_fast_forward'
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; git branch --show-current</input_code>
+  <output_code>branch_no_fast_forward
+</output_code>
+  <markdown>Claro, estamos em um branch criado a partir do principal com todo o seu histórico de logs, fazemos dois novos commits.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; touch file1 &amp;&amp; git add file1 &amp;&amp; git commit -m "file1"</input_code>
+  <output_code>[branch_no_fast_forward e4e23c9] file1
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 file1
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; touch file2 &amp;&amp; git add file2 &amp;&amp; git commit -m "file2"</input_code>
+  <output_code>[branch_no_fast_forward 8df3429] file2
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 file2
+</output_code>
+  <markdown>Fazemos um novo log para ver o que foi criado nesta nova branch.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>* [33m8df3429[m[33m ([m[1;36mHEAD -&gt; [m[1;32mbranch_no_fast_forward[m[33m)[m file2
+* [33me4e23c9[m file1
+* [33m94149fc[m[33m ([m[1;32mmain[m[33m, [m[1;32mbranch_fast_forward[m[33m)[m Eliminado hola.py
+* [33m4484e70[m Eliminado archivo4.py
+* [33m564ccfb[m[33m ([m[1;32mnew_branch2[m[33m)[m Commit con el archivo 8
+* [33m5168f78[m Eliminado archivo7.py
+* [33m4bb9d75[m[33m ([m[1;32mnew_branch[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Como vemos, os dois últimos commits são os que criamos e podemos verificar que esses commits não estão na branch principal (para isso especifico que seja feito sobre a branch `main`).</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log main --graph --oneline --decorate</input_code>
+  <output_code>* [33m94149fc[m[33m ([m[1;32mmain[m[33m, [m[1;32mbranch_fast_forward[m[33m)[m Eliminado hola.py
+* [33m4484e70[m Eliminado archivo4.py
+* [33m564ccfb[m[33m ([m[1;32mnew_branch2[m[33m)[m Commit con el archivo 8
+* [33m5168f78[m Eliminado archivo7.py
+* [33m4bb9d75[m[33m ([m[1;32mnew_branch[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Agora vamos para o branch `main`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git switch main</input_code>
+  <output_code>Cambiado a rama 'main'
+</output_code>
+  <markdown>Criamos um novo commit</markdown>
+  <input_code>!cd notebook_git &amp;&amp; touch file3 &amp;&amp; git add file3 &amp;&amp; git commit -m "file3"</input_code>
+  <output_code>[main 8bdf4d8] file3
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 file3
+</output_code>
+  <markdown>Por último, fazemos o merge do tipo não fast forward</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git merge branch_no_fast_forward --no-ff</input_code>
+  <output_code>[2B[m[mommit. comenzando con '#' serán ignoradas, y un mensaje vacío abortasaria esta[m[7m&gt;[4;1H[m[36m# especialmente si esto fusiona un upstream actualizado en una rama de tópico. /home/wallabot/Documentos/web/portafolio/posts/notebook_git/.git/MERGE_MSG   [1;79H[m[22;16H[7m[ línea 1/7 (14%), col 1/48 (2%), car 0/301 (0%) ][m[22;16H             [7m[ Párrafo justificado ][m[K[H[7m...llabot/Documentos/web/portafolio/posts/notebook_git/.git/MERGE_MSG Modificado[1;80H[m</output_code>
+  <markdown>Como vemos, nos abre o editor para introduzir uma mensagem de commit e uma mensagem por padrão. Aceitamos a mensagem e vemos o que aconteceu.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama main
+nada para hacer commit, el árbol de trabajo está limpio
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>*   [33m274529c[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmain[m[33m)[m Merge branch 'branch_no_fast_forward' into main
+[31m|[m[32m\[m  
+[31m|[m * [33m8df3429[m[33m ([m[1;32mbranch_no_fast_forward[m[33m)[m file2
+[31m|[m * [33me4e23c9[m file1
+* [32m|[m [33m8bdf4d8[m file3
+[32m|[m[32m/[m  
+* [33m94149fc[m[33m ([m[1;32mbranch_fast_forward[m[33m)[m Eliminado hola.py
+* [33m4484e70[m Eliminado archivo4.py
+* [33m564ccfb[m[33m ([m[1;32mnew_branch2[m[33m)[m Commit con el archivo 8
+* [33m5168f78[m Eliminado archivo7.py
+* [33m4bb9d75[m[33m ([m[1;32mnew_branch[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; ls</input_code>
+  <output_code>api_keys.py  archivo1.py  archivo2.py  archivo8.py  file1  file2  file3
+</output_code>
+  <markdown>Como podemos ver, foi criado um novo commit com as mudanças da nova branch na branch principal.</markdown>
+  <markdown>#### Squash</markdown>
+  <markdown>Neste tipo de fusão, todos os commits de uma nova ramificação são reunidos em um único commit na ramificação principal. Para isso, escrevemos `git merge &lt;rama&gt; --squash`</markdown>
+  <input_code>### Este código es para crear el gráfico de las ramas, no es necesario para el curso
+
+import graphviz
+
+# Crear el gráfico con la dirección de las flechas de izquierda a derecha
+orin = graphviz.Digraph('G', graph_attr={'rankdir': 'LR'})
+squash = graphviz.Digraph('G', graph_attr={'rankdir': 'LR'})
+
+# Agregar nodos (pelotas) A, B, C y D en la rama principal
+orin.node('A', shape='circle', label='A', color='blue')
+orin.node('B', shape='circle', label='B', color='blue')
+orin.node('C', shape='circle', label='C', color='blue')
+orin.node('D', shape='circle', label='D', color='blue')
+orin.node('E', shape='circle', label='', color='transparent')
+squash.node('A', shape='circle', label='A', color='blue')
+squash.node('B', shape='circle', label='B', color='blue')
+squash.node('C', shape='circle', label='C', color='blue')
+squash.node('D', shape='circle', label='D', color='blue')
+
+# Agregar nodos (pelotas) X e Y en la rama secundaria
+orin.node('X', shape='circle', label='X', color='green')
+orin.node('Y', shape='circle', label='Y', color='green')
+
+# Agregar nodo (pelota) M en la rama principal
+squash.node('M', shape='circle', label='M', color='magenta')
+
+# Agregar flechas entre los nodos en la rama principal
+orin.edges(['AB', 'BC', 'CD'])
+orin.edge('D', 'E', color='transparent')  # Hacer la flecha de C a D transparente
+squash.edges(['AB', 'BC', 'CD', 'DM'])
+
+# Agregar flechas entre los nodos en la rama secundaria
+orin.edges(['DX', 'XY'])
+
+# Mostrar el diagrama de flujo en la celda de código de Jupyter Notebook
+display(orin)
+display(squash)</input_code>
+  <output_code>&lt;graphviz.graphs.Digraph at 0x7f58f80e6470&gt;</output_code>
+  <output_code>&lt;graphviz.graphs.Digraph at 0x7f58f80e6f80&gt;</output_code>
+  <markdown>Vamos primeiro a verificar que estamos na branch principal</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git branch --show-current</input_code>
+  <output_code>main
+</output_code>
+  <markdown>Criamos uma nova branch</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git branch branch_squash</input_code>
+  <markdown>Mudamos para ela</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git switch branch_squash</input_code>
+  <output_code>Cambiado a rama 'branch_squash'
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; git branch --show-current</input_code>
+  <output_code>branch_squash
+</output_code>
+  <markdown>Vamos ver o log</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate --all</input_code>
+  <output_code>*   [33m274529c[m[33m ([m[1;36mHEAD -&gt; [m[1;32mbranch_squash[m[33m, [m[1;32mmain[m[33m)[m Merge branch 'branch_no_fast_forward' into main
+[31m|[m[32m\[m  
+[31m|[m * [33m8df3429[m[33m ([m[1;32mbranch_no_fast_forward[m[33m)[m file2
+[31m|[m * [33me4e23c9[m file1
+* [32m|[m [33m8bdf4d8[m file3
+[32m|[m[32m/[m  
+* [33m94149fc[m[33m ([m[1;32mbranch_fast_forward[m[33m)[m Eliminado hola.py
+* [33m4484e70[m Eliminado archivo4.py
+* [33m564ccfb[m[33m ([m[1;32mnew_branch2[m[33m)[m Commit con el archivo 8
+* [33m5168f78[m Eliminado archivo7.py
+* [33m4bb9d75[m[33m ([m[1;32mnew_branch[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Ok, estamos em um branch criado a partir do principal com todo o seu histórico de logs, fazemos três novos commits</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git rm file1 &amp;&amp; git commit -am "Eliminado file1"</input_code>
+  <output_code>rm 'file1'
+[branch_squash 767b632] Eliminado file1
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ delete mode 100644 file1
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; git rm file2 &amp;&amp; git commit -am "Eliminado file2"</input_code>
+  <output_code>rm 'file2'
+[branch_squash a47f771] Eliminado file2
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ delete mode 100644 file2
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; git rm file3 &amp;&amp; git commit -am "Eliminado file3"</input_code>
+  <output_code>rm 'file3'
+[branch_squash 85f8c9f] Eliminado file3
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ delete mode 100644 file3
+</output_code>
+  <markdown>Fazemos um novo log para ver o que foi criado nesta nova branch.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>* [33m85f8c9f[m[33m ([m[1;36mHEAD -&gt; [m[1;32mbranch_squash[m[33m)[m Eliminado file3
+* [33ma47f771[m Eliminado file2
+* [33m767b632[m Eliminado file1
+*   [33m274529c[m[33m ([m[1;32mmain[m[33m)[m Merge branch 'branch_no_fast_forward' into main
+[32m|[m[33m\[m  
+[32m|[m * [33m8df3429[m[33m ([m[1;32mbranch_no_fast_forward[m[33m)[m file2
+[32m|[m * [33me4e23c9[m file1
+* [33m|[m [33m8bdf4d8[m file3
+[33m|[m[33m/[m  
+* [33m94149fc[m[33m ([m[1;32mbranch_fast_forward[m[33m)[m Eliminado hola.py
+* [33m4484e70[m Eliminado archivo4.py
+* [33m564ccfb[m[33m ([m[1;32mnew_branch2[m[33m)[m Commit con el archivo 8
+* [33m5168f78[m Eliminado archivo7.py
+* [33m4bb9d75[m[33m ([m[1;32mnew_branch[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Como vemos, os três últimos commits são os que criamos e podemos verificar que esses commits não estão na branch principal (para isso especifico que seja feito sobre a branch `main`)</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log main --graph --oneline --decorate</input_code>
+  <output_code>*   [33m274529c[m[33m ([m[1;32mmain[m[33m)[m Merge branch 'branch_no_fast_forward' into main
+[31m|[m[32m\[m  
+[31m|[m * [33m8df3429[m[33m ([m[1;32mbranch_no_fast_forward[m[33m)[m file2
+[31m|[m * [33me4e23c9[m file1
+* [32m|[m [33m8bdf4d8[m file3
+[32m|[m[32m/[m  
+* [33m94149fc[m[33m ([m[1;32mbranch_fast_forward[m[33m)[m Eliminado hola.py
+* [33m4484e70[m Eliminado archivo4.py
+* [33m564ccfb[m[33m ([m[1;32mnew_branch2[m[33m)[m Commit con el archivo 8
+* [33m5168f78[m Eliminado archivo7.py
+* [33m4bb9d75[m[33m ([m[1;32mnew_branch[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Agora vamos para a branch `main` para fazer o merge.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git switch main</input_code>
+  <output_code>Cambiado a rama 'main'
+</output_code>
+  <markdown>Fazemos o merge do tipo squash</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git merge branch_squash --squash</input_code>
+  <output_code>Actualizando 274529c..85f8c9f
+Fast-forward
+Commit de aplastamiento -- no actualizando HEAD
+ file1 | 0
+ file2 | 0
+ file3 | 0
+ 3 files changed, 0 insertions(+), 0 deletions(-)
+ delete mode 100644 file1
+ delete mode 100644 file2
+ delete mode 100644 file3
+</output_code>
+  <markdown>O merge foi feito, vamos ver o que aconteceu com o log na branch `main`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>*   [33m274529c[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmain[m[33m)[m Merge branch 'branch_no_fast_forward' into main
+[31m|[m[32m\[m  
+[31m|[m * [33m8df3429[m[33m ([m[1;32mbranch_no_fast_forward[m[33m)[m file2
+[31m|[m * [33me4e23c9[m file1
+* [32m|[m [33m8bdf4d8[m file3
+[32m|[m[32m/[m  
+* [33m94149fc[m[33m ([m[1;32mbranch_fast_forward[m[33m)[m Eliminado hola.py
+* [33m4484e70[m Eliminado archivo4.py
+* [33m564ccfb[m[33m ([m[1;32mnew_branch2[m[33m)[m Commit con el archivo 8
+* [33m5168f78[m Eliminado archivo7.py
+* [33m4bb9d75[m[33m ([m[1;32mnew_branch[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>As alterações feitas não estão aparecendo na branch, vamos fazer um `git status`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama main
+Cambios a ser confirmados:
+  (usa "git restore --staged &lt;archivo&gt;..." para sacar del área de stage)
+	[32mborrados:        file1[m
+	[32mborrados:        file2[m
+	[32mborrados:        file3[m
+
+</output_code>
+  <markdown>Vemos que temos que fazer o commit com a fusão. Isso é porque o git não sabe qual mensagem colocar e nos deixa fazer isso, então o fazemos.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git commit -m "Merge squash de los commits de la rama branch_squash"</input_code>
+  <output_code>[main 52acb97] Merge squash de los commits de la rama branch_squash
+ 3 files changed, 0 insertions(+), 0 deletions(-)
+ delete mode 100644 file1
+ delete mode 100644 file2
+ delete mode 100644 file3
+</output_code>
+  <markdown>Fazemos novamente um `git log`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>* [33m52acb97[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmain[m[33m)[m Merge squash de los commits de la rama branch_squash
+*   [33m274529c[m Merge branch 'branch_no_fast_forward' into main
+[32m|[m[33m\[m  
+[32m|[m * [33m8df3429[m[33m ([m[1;32mbranch_no_fast_forward[m[33m)[m file2
+[32m|[m * [33me4e23c9[m file1
+* [33m|[m [33m8bdf4d8[m file3
+[33m|[m[33m/[m  
+* [33m94149fc[m[33m ([m[1;32mbranch_fast_forward[m[33m)[m Eliminado hola.py
+* [33m4484e70[m Eliminado archivo4.py
+* [33m564ccfb[m[33m ([m[1;32mnew_branch2[m[33m)[m Commit con el archivo 8
+* [33m5168f78[m Eliminado archivo7.py
+* [33m4bb9d75[m[33m ([m[1;32mnew_branch[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>### Conflitos ao mesclar</markdown>
+  <markdown>Quando branches são mescladas, pode acontecer que o mesmo arquivo tenha sido modificado em várias branches. Isso é comum em projetos onde várias pessoas estão desenvolvendo, então vamos ver como resolver isso.</markdown>
+  <markdown>#### Criamos um conflito</markdown>
+  <markdown>Verificamos que estamos na branch `main`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git branch --show-current</input_code>
+  <output_code>main
+</output_code>
+  <markdown>Criamos uma nova branch a partir desta.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git branch rama_con_conflicto</input_code>
+  <markdown>Adicionamos uma linha ao arquivo `arquivo1.py`, lembrando que estamos na branch `main`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; echo "print('rama main')" &gt;&gt; archivo1.py</input_code>
+  <input_code>!cd notebook_git &amp;&amp; cat archivo1.py</input_code>
+  <output_code>print('Este es el archivo 1')
+print('rama main')
+</output_code>
+  <markdown>`arquivo1.py` foi modificado, fazemos um commit</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git add archivo1.py &amp;&amp; git commit -m "archivo1.py en rama main"</input_code>
+  <output_code>[main 53f909b] archivo1.py en rama main
+ 1 file changed, 1 insertion(+)
+</output_code>
+  <markdown>Agora vamos para o branch `rama_con_conflicto` e adicionamos uma nova linha a `archivo1.py`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git switch rama_con_conflicto</input_code>
+  <output_code>Cambiado a rama 'rama_con_conflicto'
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; git branch --show-current</input_code>
+  <output_code>rama_con_conflicto
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; echo "print('rama rama_con_conflicto')" &gt;&gt; archivo1.py</input_code>
+  <input_code>!cd notebook_git &amp;&amp; cat archivo1.py</input_code>
+  <output_code>print('Este es el archivo 1')
+print('rama rama_con_conflicto')
+</output_code>
+  <markdown>Como vemos, `arquivo1.py` não é igual na branch `main` e na branch `rama_con_conflicto`. Fazemos um commit com a modificação de `arquivo1.py` na branch `rama_con_conflicto`.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git add archivo1.py &amp;&amp; git commit -m "archivo1.py en rama rama_con_conflicto"</input_code>
+  <output_code>[rama_con_conflicto 32851c3] archivo1.py en rama rama_con_conflicto
+ 1 file changed, 1 insertion(+)
+</output_code>
+  <markdown>Voltamos para o branch `main`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git switch main</input_code>
+  <output_code>Cambiado a rama 'main'
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; git branch --show-current</input_code>
+  <output_code>main
+</output_code>
+  <markdown>Fazemos um merge da branch `rama_con_conflicto`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git merge rama_con_conflicto</input_code>
+  <output_code>Auto-fusionando archivo1.py
+CONFLICTO (contenido): Conflicto de fusión en archivo1.py
+Fusión automática falló; arregle los conflictos y luego realice un commit con el resultado.
+</output_code>
+  <markdown>Ao fazer o merge, já somos avisados de que há um conflito em `archivo1.py` e que não foi possível realizar o merge. Fazemos um `git status`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama main
+Tienes rutas no fusionadas.
+  (arregla los conflictos y ejecuta "git commit"
+  (usa "git merge --abort" para abortar la fusion)
+
+Rutas no fusionadas:
+  (usa "git add &lt;archivo&gt;..." para marcar una resolución)
+	[31mmodificados por ambos:  archivo1.py[m
+
+sin cambios agregados al commit (usa "git add" y/o "git commit -a")
+</output_code>
+  <markdown>Diz-nos o mesmo, mas nos dá mais informações, diz-nos que podemos abortar a fusão com `git merge --abort`. Mas em vez disso, vamos resolvê-lo.</markdown>
+  <markdown>#### Resolver um conflito</markdown>
+  <markdown>No nosso caso, sabemos onde está o problema, mas em caso de não saber, através do `git diff` podemos encontrar o problema.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git diff archivo1.py</input_code>
+  <output_code>[1mdiff --cc archivo1.py[m
+[1mindex 8b4bf58,b5c003c..0000000[m
+[1m--- a/archivo1.py[m
+[1m+++ b/archivo1.py[m
+[36m@@@ -1,2 -1,2 +1,6 @@@[m
+  print('Este es el archivo 1')[m
+[32m++&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD[m
+[32m +print('rama main')[m
+[32m++=======[m
+[32m+ print('rama rama_con_conflicto')[m
+[32m++&gt;&gt;&gt;&gt;&gt;&gt;&gt; rama_con_conflicto[m
+</output_code>
+  <markdown>`git diff` está nos dizendo que o problema está na última linha. A versão do arquivo da branch `HEAD` (na qual estamos atualmente `main`) tem `print('rama main')` na última linha, enquanto a versão da branch `rama_con_conflicto` tem `print('rama rama_con_conflicto')` na última linha. Então, é preciso abrir o arquivo com qualquer editor e resolver isso.</markdown>
+  <markdown>Após editar o arquivo com meu editor de código, removi todas as linhas desnecessárias e ficou assim</markdown>
+  <input_code>!cd notebook_git &amp;&amp; cat archivo1.py</input_code>
+  <output_code>print('Este es el archivo 1')
+print('rama main')</output_code>
+  <markdown>Agora fazemos um `git status` para ver o que temos a fazer</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama main
+Tienes rutas no fusionadas.
+  (arregla los conflictos y ejecuta "git commit"
+  (usa "git merge --abort" para abortar la fusion)
+
+Rutas no fusionadas:
+  (usa "git add &lt;archivo&gt;..." para marcar una resolución)
+	[31mmodificados por ambos:  archivo1.py[m
+
+sin cambios agregados al commit (usa "git add" y/o "git commit -a")
+</output_code>
+  <markdown>Diz que temos o arquivo `arquivo1.py` com modificações, portanto o adicionamos à área de `staged` e depois fazemos um commit.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git add archivo1.py &amp;&amp; git commit -m "archivo1.py con el merge resuelto"</input_code>
+  <output_code>[main 679bb49] archivo1.py con el merge resuelto
+</output_code>
+  <markdown>Voltamos a fazer um `git status` para ver se foi resolvido.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama main
+nada para hacer commit, el árbol de trabajo está limpio
+</output_code>
+  <markdown>Parece que foi resolvido, fazemos um `git log` para verificar.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git log --graph --oneline --decorate</input_code>
+  <output_code>*   [33m679bb49[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmain[m[33m)[m archivo1.py con el merge resuelto
+[31m|[m[32m\[m  
+[31m|[m * [33m32851c3[m[33m ([m[1;32mrama_con_conflicto[m[33m)[m archivo1.py en rama rama_con_conflicto
+* [32m|[m [33m53f909b[m archivo1.py en rama main
+[32m|[m[32m/[m  
+* [33m52acb97[m Merge squash de los commits de la rama branch_squash
+*   [33m274529c[m Merge branch 'branch_no_fast_forward' into main
+[33m|[m[34m\[m  
+[33m|[m * [33m8df3429[m[33m ([m[1;32mbranch_no_fast_forward[m[33m)[m file2
+[33m|[m * [33me4e23c9[m file1
+* [34m|[m [33m8bdf4d8[m file3
+[34m|[m[34m/[m  
+* [33m94149fc[m[33m ([m[1;32mbranch_fast_forward[m[33m)[m Eliminado hola.py
+* [33m4484e70[m Eliminado archivo4.py
+* [33m564ccfb[m[33m ([m[1;32mnew_branch2[m[33m)[m Commit con el archivo 8
+* [33m5168f78[m Eliminado archivo7.py
+* [33m4bb9d75[m[33m ([m[1;32mnew_branch[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>### Remover ramos</markdown>
+  <markdown>A ideia de uma branch é abri-la para desenvolver uma nova funcionalidade ou característica de maneira que não afete o resto da equipe de desenvolvimento. Portanto, quando isso for alcançado, ela é mesclada com a branch principal. Assim, após a fusão, já não faz sentido manter a branch, então ela deve ser excluída, mas isso será feito de uma maneira diferente se a branch foi ou não mesclada com a principal.</markdown>
+  <markdown>#### Excluir branches mescladas (`git branch -d &lt;branch&gt;`)</markdown>
+  <markdown>Para eliminar uma ramificação que já foi mesclada com a principal, basta fazer `git branch -d &lt;rama&gt;` ou `git branch --delete &lt;rama&gt;`. Vamos eliminar a última ramificação que criamos e mesclamos.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git branch -d rama_con_conflicto</input_code>
+  <output_code>Eliminada la rama rama_con_conflicto (era 32851c3).
+</output_code>
+  <markdown>Se agora listarmos todas as branches, podemos ver que já não teremos `rama_con_conflicto`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git branch</input_code>
+  <output_code>  branch_fast_forward[m
+  branch_no_fast_forward[m
+  branch_squash[m
+* [32mmain[m
+  new_branch[m
+  new_branch2[m
+</output_code>
+  <markdown>#### Excluir branches que não foram mesclados com a branch principal (`git branch -D &lt;branch&gt;`)</markdown>
+  <markdown>Se tentarmos fazer o mesmo que antes com uma branch que nunca foi mesclada com outra, obteremos um erro</markdown>
+  <markdown>Vamos a criar uma nova branch, vamos fazer um commit e não vamos mesclá-la.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git branch branch_sin_fusion</input_code>
+  <input_code>!cd notebook_git &amp;&amp; git switch branch_sin_fusion</input_code>
+  <output_code>Cambiado a rama 'branch_sin_fusion'
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; touch file4 &amp;&amp; git add file4 &amp;&amp; git commit -m "file4"</input_code>
+  <output_code>[branch_sin_fusion 9506b0a] file4
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 file4
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; git switch main</input_code>
+  <output_code>Cambiado a rama 'main'
+</output_code>
+  <markdown>Com tudo o que aprendemos até agora, podemos ver que o que fizemos foi criar uma nova branch, mudar para ela, criar um novo arquivo, fazer um commit e voltar para a branch `main`. Agora vamos tentar deletar essa nova branch.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git branch -d branch_sin_fusion</input_code>
+  <output_code>error: La rama 'branch_sin_fusion' no ha sido fusionada completamente.
+Si estás seguro de querer borrarla, ejecuta 'git branch -D branch_sin_fusion'.
+</output_code>
+  <markdown>Como vemos, nos diz que `branch_sem_fusao` não foi mesclada e, portanto, não foi excluída. Se temos certeza de querer excluí-la, precisamos fazer `git branch -D branch_sem_fusao`, então o fazemos para excluí-la.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git branch -D branch_sin_fusion</input_code>
+  <output_code>Eliminada la rama branch_sin_fusion (era 9506b0a).
+</output_code>
+  <markdown>Agora sim, foi removido.</markdown>
+  <markdown>## Trabalhando com repositórios remotos</markdown>
+  <markdown>Quando desenvolvemos software, geralmente não o fazemos sozinhos, mas trabalhamos em equipe. Por isso, não faz sentido ter um repositório local do Git; é melhor ter um repositório remoto com o qual todos possam trabalhar e compartilhar os avanços.
+
+&gt; Nota: O objetivo deste post é explicar git. Para a conexão com repositórios remotos vou explicá-lo usando o GitHub, pois é o serviço de hospedagem de repositórios git mais utilizado, mas não vou aprofundar no GitHub.
+</markdown>
+  <markdown>### Clonar um repositório remoto (`git clone &lt;repositório&gt;`)</markdown>
+  <markdown>Se começarmos a trabalhar em um repositório que já foi criado, o primeiro passo é cloná-lo. Para isso, usamos `git clone &lt;repositorio&gt;`, onde `&lt;repositorio&gt;` pode ser uma URL ou um endereço SSH. Como atualmente os grandes modelos de linguagem e o ChatGPT estão muito em voga, vamos clonar um repositório opensource criado pela comunidade, [Open-Assistant](https://github.com/LAION-AI/Open-Assistant), para isso faremos `git clone https://github.com/LAION-AI/Open-Assistant`</markdown>
+  <input_code>!git clone https://github.com/LAION-AI/Open-Assistant.git</input_code>
+  <output_code>Clonando en 'Open-Assistant'...
+remote: Enumerating objects: 29769, done.[K
+remote: Counting objects: 100% (673/673), done.[K
+remote: Compressing objects: 100% (310/310), done.[K
+remote: Total 29769 (delta 398), reused 577 (delta 354), pack-reused 29096[K
+Recibiendo objetos: 100% (29769/29769), 33.61 MiB | 29.29 MiB/s, listo.
+Resolviendo deltas: 100% (19967/19967), listo.
+</output_code>
+  <markdown>Isso cria a pasta `Open-Assistant` com todo o código do repositório, podemos entrar dentro e ver todo o código.</markdown>
+  <input_code>!cd Open-Assistant &amp;&amp; ls</input_code>
+  <output_code>ansible		 deploy		      model	      safety
+assets		 discord-bots	      notebooks       scripts
+backend		 docker		      oasst-data      setup.cfg
+CODEOWNERS	 docker-compose.yaml  oasst-shared    text-frontend
+CONTRIBUTING.md  docs		      pyproject.toml  website
+copilot		 inference	      README.md
+data		 LICENSE	      redis.conf
+</output_code>
+  <markdown>Excluo a pasta</markdown>
+  <input_code>!rm -r Open-Assistant</input_code>
+  <markdown>### Vincular um repositório local a um remoto</markdown>
+  <markdown>Se ocorrer o contrário, se primeiro começarmos a desenvolver localmente e depois quisermos sincronizá-lo com um repositório remoto, temos que fazer o seguinte
+
+* Primeiro crie um repositório remoto vazio, no meu caso criei o repositório `notebook_git` no GitHub que deletarei mais tarde
+* Obter a URL do repositório ou endereço SSH
+* Sincronizá-los através de `git remote add origin &lt;URL&gt;`
+
+O repositório vazio que criei no GitHub parece assim
+![notebook git repo](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/notebook_git_repo.webp)
+
+No meu caso, vou usar o endereço SSH que é `git@github.com:maximofn/notebook_git.git`
+</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git remote add origin git@github.com:maximofn/notebook_git.git</input_code>
+  <markdown>Já estão vinculados, mas para garantir podemos fazer `git remote -v`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git remote -v</input_code>
+  <output_code>origin	git@github.com:maximofn/notebook_git.git (fetch)
+origin	git@github.com:maximofn/notebook_git.git (push)
+</output_code>
+  <markdown>### Enviar as alterações de um repositório local para um repositório remoto (`git push`)</markdown>
+  <markdown>Como dissem, eles estão vinculados, mas se eu for ao meu repositório no GitHub, ainda parece assim
+
+![notebook git repo](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/notebook_git_repo.webp)
+
+Estão vinculados o repositório local e o remoto, mas agora é necessário enviar todas as alterações do repositório local para o remoto. Para isso, seria necessário usar `git push origin &lt;rama local&gt;:&lt;rama remota&gt;`, ou seja, como nossa ramo principal se chama `main` e a ramo principal no GitHub se chama `main`, seria necessário fazer `git push origin main:main`.
+Se você se lembra, o Git por padrão chamava a branch principal de `master`, mas o GitHub chama por padrão a branch principal de `main`. Portanto, se cada pessoa nomear suas branches no repositório local de maneira diferente, é necessário especificar qual branch local escreve em qual branch remota.
+</markdown>
+  <markdown>Pode configurar a conexão padrão entre branches no git, para isso é necessário fazer `git push --set-upstream origin main`. Isso estabelece uma relação entre a branch local `main` e a branch remota `main`. Uma vez feita essa relação, basta fazer `git push` para enviar as alterações feitas localmente para o servidor remoto.
+
+Então estabelecemos a conexão entre as branches.
+</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git push --set-upstream origin main</input_code>
+  <output_code>Enumerando objetos: 51, listo.
+Contando objetos: 100% (51/51), listo.
+Compresión delta usando hasta 12 hilos
+Comprimiendo objetos: 100% (38/38), listo.
+Escribiendo objetos: 100% (51/51), 4.21 KiB | 2.11 MiB/s, listo.
+Total 51 (delta 18), reusado 0 (delta 0)
+remote: Resolving deltas: 100% (18/18), done.[K
+To github.com:maximofn/notebook_git.git
+ * [new branch]      main -&gt; main
+Rama 'main' configurada para hacer seguimiento a la rama remota 'main' de 'origin'.
+</output_code>
+  <markdown>Agora podemos fazer apenas `git push` para enviar as alterações locais ao repositório remoto.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git push</input_code>
+  <output_code>Everything up-to-date
+</output_code>
+  <markdown>Se agora voltarmos ao nosso repositório do GitHub, ele parece assim
+
+![notebook git repo push](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/notebook_git_repo_push.webp)
+</markdown>
+  <markdown>Se fizermos um `ls` no nosso repositório local, poderemos ver que os arquivos que temos no repositório remoto também estão presentes no repositório local, ou seja, sincronizamos o repositório local e remoto.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; ls -a</input_code>
+  <output_code>.  ..  api_keys.py  archivo1.py  archivo2.py  archivo8.py  .git  .gitignore
+</output_code>
+  <markdown>Os únicos que não estão no repositório remoto são `api_keys.py`, que é o que adicionamos ao arquivo `.gitignore`, ou seja, o que dissemos ao git para não seguir. E `.git` que é onde está a configuração do nosso repositório local e que não deve ser enviado ao repositório remoto, porque cada pessoa terá sua própria configuração de git e, portanto, não deve ser sincronizada.</markdown>
+  <markdown>### Baixar as alterações de um repositório remoto para um repositório local (`git pull`)</markdown>
+  <markdown>Agora vamos a fazer ao contrário, vamos baixar as novas alterações que tenham sido feitas no repositório remoto. Se observarmos como está o repositório remoto, poderemos ver que há um botão que diz `Add a README`, então clicamos para adicioná-lo.
+
+![notebook git repo push](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/notebook_git_repo_push.webp)
+</markdown>
+  <markdown>Ao clicar, será aberto um editor, deixamos o que o GitHub colocou e salvamos as alterações clicando no botão de `Commit changes...`
+
+![noteboot git repo readme](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/notebook_git_repo_readme.webp)
+
+Nos sairá uma janela na qual nos será pedido uma mensagem de commit, deixamos a que vem por padrão e clicamos em `Commit changes`
+
+![notebook git repo commit message](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/notebook_git_repo_commit_message.webp)
+
+Ao fazer isso, o repositório ficará assim
+![notebook git repo pull](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/notebook_git_repo_pull.webp)
+
+Foi criado um novo arquivo chamado `README.md`, mas se fizermos `ls` no repositório local, não o encontraremos.
+</markdown>
+  <input_code>!cd notebook_git &amp;&amp; ls | grep README</input_code>
+  <markdown>Então, temos que trazer as alterações do repositório remoto para o local. Para isso, precisamos fazer `git pull origin &lt;rama remota&gt;` para informar ao Git sobre qual ramo remoto vamos trazer os dados. Da mesma forma que antes, podemos estabelecer uma relação entre o ramo remoto e o ramo local da seguinte maneira: `git branch --set-upstream-to=origin/&lt;rama local&gt; &lt;rama remota&gt;`. Como nossa rama local se chama `main` e a rama remota do GitHub também se chama `main`, teríamos que alterar o anterior para `git branch --set-upstream-to=origin/main main`.
+
+Uma vez feito isso, para baixar as novas alterações do repositório remoto para o local, basta fazer `git pull`
+</markdown>
+  <markdown>Vamos a estabelecer a relação entre as branches com `git branch --set-upstream-to=origin/main main`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git branch --set-upstream-to=origin/main main</input_code>
+  <output_code>Rama 'main' configurada para hacer seguimiento a la rama remota 'main' de 'origin'.
+</output_code>
+  <markdown>Agora podemos trazer as alterações do repositório remoto para o repositório local com `git pull`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git pull</input_code>
+  <output_code>remote: Enumerating objects: 4, done.[K
+remote: Counting objects: 100% (4/4), done.[K
+remote: Compressing objects: 100% (2/2), done.[K
+remote: Total 3 (delta 1), reused 0 (delta 0), pack-reused 0[K
+Desempaquetando objetos: 100% (3/3), 646 bytes | 646.00 KiB/s, listo.
+Desde github.com:maximofn/notebook_git
+   679bb49..527e07a  main       -&gt; origin/main
+Actualizando 679bb49..527e07a
+Fast-forward
+ README.md | 1 [32m+[m
+ 1 file changed, 1 insertion(+)
+ create mode 100644 README.md
+</output_code>
+  <markdown>Como vemos, diz que foi adicionado `README.md`, verificamos isso fazendo `ls`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; ls | grep README</input_code>
+  <output_code>README.md
+</output_code>
+  <markdown>Temos o arquivo localmente</markdown>
+  <markdown>### Sincronizar as branches remotas e locais</markdown>
+  <markdown>Como vimos, tivemos que sincronizar as branches remotas e locais para poder fazer o upload e download dos dados. No entanto, se primeiro criarmos o repositório no GitHub e depois o clonarmos, não será mais necessário essa sincronização.</markdown>
+  <markdown>## Alias</markdown>
+  <markdown>Cada vez que quisemos fazer um log temos usado este comando `git log --graph --oneline --decorate`, no entanto lembrar-se deste comando é bastante complicado, na verdade eu não me lembro dele, toda vez que quero usá-lo tenho que procurá-lo porque não o lembro, por isso seria muito bom ter uma maneira de abreviá-lo.</markdown>
+  <markdown>Para isso, o git oferece os `alias`, de forma que você pode criar aliases dos comandos que desejar. Para fazer isso, você precisa executar `git config --global alias.&lt;nome do alias&gt; "comando"`</markdown>
+  <markdown>Portanto, vamos chamar `git tree` ao comando `git log --graph --oneline --decorate`, pois nos permite ver o histórico, com a bifurcação e fusão de branches como se fosse o crescimento de uma árvore, então fazemos `git config --global alias.tree "log --graph --oneline --decorate"`
+
+&gt; **Importante**: Não se deve colocar a palavra `git` dentro do comando
+</markdown>
+  <input_code>!git config --global alias.tree "log --graph --oneline --decorate"</input_code>
+  <markdown>Se agora formos ao nosso repositório e fizermos `git tree`, veremos o histórico como fazíamos antes.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git tree</input_code>
+  <output_code>* [33m527e07a[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Create README.md
+*   [33m679bb49[m archivo1.py con el merge resuelto
+[32m|[m[33m\[m  
+[32m|[m * [33m32851c3[m archivo1.py en rama rama_con_conflicto
+* [33m|[m [33m53f909b[m archivo1.py en rama main
+[33m|[m[33m/[m  
+* [33m52acb97[m Merge squash de los commits de la rama branch_squash
+*   [33m274529c[m Merge branch 'branch_no_fast_forward' into main
+[34m|[m[35m\[m  
+[34m|[m * [33m8df3429[m[33m ([m[1;32mbranch_no_fast_forward[m[33m)[m file2
+[34m|[m * [33me4e23c9[m file1
+* [35m|[m [33m8bdf4d8[m file3
+[35m|[m[35m/[m  
+* [33m94149fc[m[33m ([m[1;32mbranch_fast_forward[m[33m)[m Eliminado hola.py
+* [33m4484e70[m Eliminado archivo4.py
+* [33m564ccfb[m[33m ([m[1;32mnew_branch2[m[33m)[m Commit con el archivo 8
+* [33m5168f78[m Eliminado archivo7.py
+* [33m4bb9d75[m[33m ([m[1;32mnew_branch[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Como vemos, foi criado nosso alias</markdown>
+  <markdown>### Alias de comandos existentes de git
+
+(No se ha proporcionado texto adicional para traducir, por lo que esta es la traducción del título solo.)</markdown>
+  <markdown>É possível criar aliases para comandos que já existem no git, na verdade, é uma prática muito usada, especialmente para abreviar, então vamos fazer um. Vamos criar um alias para o comando `git status` e renomeá-lo como `git st` da seguinte maneira: `git config --global alias.st "status"`</markdown>
+  <input_code>!git config --global alias.st "status"</input_code>
+  <markdown>Vamos testá-lo agora.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git st</input_code>
+  <output_code>En la rama main
+Tu rama está actualizada con 'origin/main'.
+
+nada para hacer commit, el árbol de trabajo está limpio
+</output_code>
+  <markdown>Já temos o comando `git status` simplificado para `git st`</markdown>
+  <markdown>### Alias de comandos que não são do git</markdown>
+  <markdown>Podemos criar aliases de comandos que não sejam do git, por exemplo, porque achamos que o git precisa desse novo comando, faz-se da mesma forma com a exceção de que o comando deve ser precedido de `!`, ou seja, seria `git config --global alias.&lt;nome do alias&gt; "!comando"`</markdown>
+  <markdown>Quando vimos os conflitos, vimos que o git nos dizia onde estavam, mas para resolvê-los temos que editar o código nós mesmos, por isso podemos criar um alias do git de maneira que possamos abrir um arquivo com o editor de textos que quisermos, no meu caso vou criar um alias que me abrirá os arquivos com `vscode` para isso tenho que fazer `git config --global alias.code "!code"`</markdown>
+  <input_code>!git config --global alias.code "!code"</input_code>
+  <markdown>O testamos</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git code README.md</input_code>
+  <markdown>Depois de fazer isso, o `README.md` foi aberto no `vscode`.</markdown>
+  <markdown>### Lista com todos os aliases</markdown>
+  <markdown>Caso não nos lembremos dos aliases que criamos, podemos ver a configuração global do git, mas como isso pode ser um pouco avassalador porque nos dá muita informação, podemos filtrar para que nos mostre apenas os aliases que criamos, para isso usamos `git config --get-regexp ^alias\.`</markdown>
+  <input_code>!git config --get-regexp ^alias\.</input_code>
+  <output_code>alias.tree log --graph --oneline --decorate
+alias.st status
+alias.code !code
+</output_code>
+  <markdown>Obtemos os aliases que nós criamos</markdown>
+  <markdown>Mas ainda, podemos criar um alias para obter os aliases, para isso fazemos `git config --global alias.alias "config --get-regexp ^alias\."`</markdown>
+  <input_code>!git config --global alias.alias "config --get-regexp ^alias\."</input_code>
+  <markdown>Se agora fizermos `git alias`</markdown>
+  <input_code>!git alias</input_code>
+  <output_code>alias.tree log --graph --oneline --decorate
+alias.st status
+alias.code !code
+alias.alias config --get-regexp ^alias\.
+</output_code>
+  <markdown>Obtemos a lista com todos os nossos alias</markdown>
+  <markdown>## Armazenamento temporário (`git stash`)</markdown>
+  <markdown>Suponhamos que estamos trabalhando em um branch, temos vários arquivos modificados, não fizemos commit, e por algum motivo temos que passar para outro branch. Por exemplo, estamos em um branch desenvolvendo uma nova funcionalidade, e temos que deixá-la pela metade porque há um bug crítico no branch main
+
+Uma solução seria fazer um commit para salvar as alterações e voltar mais tarde. Mas talvez tenhamos deixado o código pela metade e não queremos fazer um commit. Então, para isso, foi inventado o stash, que é como um armazém, onde você deixa seu código armazenado para poder recuperá-lo posteriormente.
+
+É uma pilha, isso significa que o último a entrar é o primeiro a sair.
+</markdown>
+  <markdown>Vamos ver como fazer isso, em primeiro lugar criamos uma nova branch que vamos chamar de `new_feature`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git branch new_feature</input_code>
+  <markdown>Mudamos para ela</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git switch new_feature</input_code>
+  <output_code>Cambiado a rama 'new_feature'
+</output_code>
+  <markdown>Vamos a modificar `arquivo2.py` e `arquivo8.py`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; echo "print('new_feature')" &gt;&gt; archivo2.py &amp;&amp; echo "print('new_feature')" &gt;&gt; archivo8.py</input_code>
+  <markdown>Fazemos um `git status` para verificar que tenham sido modificados.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama new_feature
+Cambios no rastreados para el commit:
+  (usa "git add &lt;archivo&gt;..." para actualizar lo que será confirmado)
+  (usa "git restore &lt;archivo&gt;..." para descartar los cambios en el directorio de trabajo)
+	[31mmodificados:     archivo2.py[m
+	[31mmodificados:     archivo8.py[m
+
+sin cambios agregados al commit (usa "git add" y/o "git commit -a")
+</output_code>
+  <markdown>Vamos a adicionar `arquivo8.py` à área de `staged`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git add archivo8.py</input_code>
+  <markdown>Fazemos novamente um `git status`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama new_feature
+Cambios a ser confirmados:
+  (usa "git restore --staged &lt;archivo&gt;..." para sacar del área de stage)
+	[32mmodificados:     archivo8.py[m
+
+Cambios no rastreados para el commit:
+  (usa "git add &lt;archivo&gt;..." para actualizar lo que será confirmado)
+  (usa "git restore &lt;archivo&gt;..." para descartar los cambios en el directorio de trabajo)
+	[31mmodificados:     archivo2.py[m
+
+</output_code>
+  <markdown>Como vemos temos dois arquivos modificados, dos quais um deles também está na área de `staged`. Se agora tivéssemos que mudar de branch, para não perder as alterações poderíamos fazer um commit, ou guardá-las no repositório `stash`, então vamos fazer isso último através de `git stash`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git stash</input_code>
+  <output_code>Directorio de trabajo y estado de índice WIP on new_feature: 527e07a Create README.md guardados
+</output_code>
+  <markdown>Se agora voltarmos a fazer `git status`, vejamos o que acontece</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama new_feature
+nada para hacer commit, el árbol de trabajo está limpio
+</output_code>
+  <markdown>Os arquivos com modificações não aparecem mais, é como se tivéssemos feito um commit</markdown>
+  <markdown>&gt; **Importante**: Os arquivos criados novos, que nunca foram rastreados pelo Git, não serão enviados para o repositório, portanto, com os arquivos novos é necessário, pelo menos, fazer primeiro um `git add`</markdown>
+  <markdown>Se eu criar um novo arquivo e tentar enviá-lo para o repositório, receberei um erro.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; touch archivo9.py</input_code>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama new_feature
+Archivos sin seguimiento:
+  (usa "git add &lt;archivo&gt;..." para incluirlo a lo que se será confirmado)
+	[31marchivo9.py[m
+
+no hay nada agregado al commit pero hay archivos sin seguimiento presentes (usa "git add" para hacerles seguimiento)
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; git stash</input_code>
+  <output_code>No hay cambios locales para guardar
+</output_code>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama new_feature
+Archivos sin seguimiento:
+  (usa "git add &lt;archivo&gt;..." para incluirlo a lo que se será confirmado)
+	[31marchivo9.py[m
+
+no hay nada agregado al commit pero hay archivos sin seguimiento presentes (usa "git add" para hacerles seguimiento)
+</output_code>
+  <markdown>Como vemos `arquivo9.py` não foi salvo no repositório, portanto seria necessário adicioná-lo com `git add`.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; rm archivo9.py</input_code>
+  <markdown>### Tudo para o stash (`git stash -u -a`)</markdown>
+  <markdown>Como vimos, apenas são enviados ao repositório os arquivos que o git está rastreando. Se tivermos novos arquivos criados ou arquivos ignorados, eles não serão enviados. Para resolver isso, podemos usar as opções `-u` ou `--include-untracked` para enviar os novos arquivos que ainda não estão sendo rastreados pelo git, e a opção `-a` ou `--all` para incluir tudo, inclusive os arquivos ignorados.</markdown>
+  <markdown>### Lista de depósitos (`git stash list`)</markdown>
+  <markdown>Como comentamos, o armazenamento atua como uma pilha, portanto, se fizermos uso desse armazenamento muitas vezes, na verdade teremos uma lista de armazenamentos, e para ver os que temos armazenados podemos usar `git stash list`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git stash list</input_code>
+  <output_code>stash@{0}: WIP on new_feature: 527e07a Create README.md
+</output_code>
+  <markdown>Como vemos só temos uma, que nos indica a branch (`on new_feature`), o último commit (`Create README.md`) e um identificador (`527e07a`)</markdown>
+  <markdown>### Armazenamento com descrição (`git stash push -m &lt;descrição&gt;`)</markdown>
+  <markdown>Como vimos, a lista retorna o branch e o último commit, mas esta informação só serve para saber de onde começamos a modificar antes de salvar no histórico. Além disso, ela retorna um identificador que não nos diz muito, então podemos adicionar uma primeira descrição ao stash com `git stash push -m &lt;descrição&gt;`</markdown>
+  <markdown>Primeiro fazemos um `git status` para ver o que temos sem commitear</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama new_feature
+Archivos sin seguimiento:
+  (usa "git add &lt;archivo&gt;..." para incluirlo a lo que se será confirmado)
+	[31marchivo9.py[m
+
+no hay nada agregado al commit pero hay archivos sin seguimiento presentes (usa "git add" para hacerles seguimiento)
+</output_code>
+  <markdown>Temos `arquivo9.py`, mas lembremos que ele nunca foi rastreado pelo git, portanto para incluí-lo em um stash temos que usar a flag `-u` ou a flag `-a`, de modo que criamos um novo stash com uma descrição com o comando `git stash push -u -m &lt;descrição&gt;`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git stash push -u -m "archivo9.py"</input_code>
+  <output_code>Directorio de trabajo y estado de índice On new_feature: archivo9.py guardados
+</output_code>
+  <markdown>Sacamos a lista do stash</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git stash list</input_code>
+  <output_code>stash@{0}: On new_feature: archivo9.py
+stash@{1}: WIP on new_feature: 527e07a Create README.md
+</output_code>
+  <markdown>Já aparece o novo de maneira muito mais clara</markdown>
+  <markdown>### Recuperar o último stash (`git stash pop`)</markdown>
+  <markdown>Como dissem, o stash é uma pilha com armazenamentos, portanto, na hora de recuperá-los faremos da mesma forma que uma pilha, sempre recuperando o último.
+
+![git stash push pop](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/git-stash-push-pop.webp)
+
+Para recuperar o último stash temos que fazer `git stash pop`
+</markdown>
+  <markdown>Primeiro fazemos um `git status` para ver que não tenhamos nenhum mudança pendente</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama new_feature
+nada para hacer commit, el árbol de trabajo está limpio
+</output_code>
+  <markdown>Agora recuperamos o último stash</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git stash pop</input_code>
+  <output_code>En la rama new_feature
+Cambios a ser confirmados:
+  (usa "git restore --staged &lt;archivo&gt;..." para sacar del área de stage)
+	[32mnuevos archivos: archivo9.py[m
+
+Descartado refs/stash@{0} (0246b0e922f654e7fc68cfeaf26e24fc511feb37)
+</output_code>
+  <markdown>Se voltarmos a fazer `git status`, veremos que temos novamente `arquivo9.py` pendente de fazer um commit.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama new_feature
+Cambios a ser confirmados:
+  (usa "git restore --staged &lt;archivo&gt;..." para sacar del área de stage)
+	[32mnuevos archivos: archivo9.py[m
+
+</output_code>
+  <markdown>E se verificarmos a lista de stash, veremos que agora só temos um.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git stash list</input_code>
+  <output_code>stash@{0}: WIP on new_feature: 527e07a Create README.md
+</output_code>
+  <markdown>### Remover um stash (`git stash drop &lt;posição&gt;`)</markdown>
+  <markdown>Se quisermos remover um stash, temos que fazer `git stash drop &lt;posição&gt;`, onde `&lt;posição&gt;` é a posição que o stash ocupa na lista.</markdown>
+  <markdown>Obtemos a lista dos stash</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git stash list</input_code>
+  <output_code>stash@{0}: WIP on new_feature: 527e07a Create README.md
+</output_code>
+  <markdown>No nosso caso, temos apenas um e na posição 0 (`stash@{0}`), então para removê-lo teríamos que fazer `git stash drop 0`, mas não vou fazer isso porque vou removê-lo agora com outro comando.</markdown>
+  <markdown>### Remover todos os stashes (`git stash clear`)</markdown>
+  <markdown>Se quisermos esvaziar a lista inteira do stash, temos que fazer `git stash clear`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git stash clear</input_code>
+  <markdown>Se agora solicitarmos a lista de stash</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git stash list</input_code>
+  <markdown>Não obtemos nada porque removemos tudo.</markdown>
+  <markdown>Vamos deixar tudo como estava, fazemos um `git status` para lembrar das mudanças que tínhamos pendentes</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git status</input_code>
+  <output_code>En la rama new_feature
+Cambios a ser confirmados:
+  (usa "git restore --staged &lt;archivo&gt;..." para sacar del área de stage)
+	[32mnuevos archivos: archivo9.py[m
+
+</output_code>
+  <markdown>Vemos que estamos no ramo `new_feature` e que temos `archivo9.py` pendente de fazer um commit. Como o criamos para o exemplo, o excluímos e voltamos ao ramo principal.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git reset archivo9.py</input_code>
+  <input_code>!cd notebook_git &amp;&amp; rm archivo9.py</input_code>
+  <input_code>!cd notebook_git &amp;&amp; git switch main</input_code>
+  <output_code>Cambiado a rama 'main'
+Tu rama está actualizada con 'origin/main'.
+</output_code>
+  <markdown>## Tags</markdown>
+  <markdown>Quando estamos desenvolvendo código, chegam momentos em que geramos versões, por exemplo a `v1.1`, `v1.2`, etc. Para ter isso mais controlado, o git nos fornece os tags.</markdown>
+  <markdown>### Criar uma nova tag (`git tag -a &lt;nome_da_tag&gt; -m "&lt;mensagem&gt;"`)</markdown>
+  <markdown>Para criar uma tag temos que fazer `git tag -a &lt;nome_da_tag&gt; -m "&lt;mensagem&gt;"`</markdown>
+  <markdown>Por exemplo, vamos criar um tag na versão atual do repositório, para isso farei `git tag -a v_tag -m "Tag com o repositório na parte final, onde explicamos os tags"`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git tag -a v_tag -m "Tag con el repositorio en la parte final, en la que explicamos los tags"</input_code>
+  <markdown>### Lista de tags (`git tag`)</markdown>
+  <markdown>Para ver os tags que criamos podemos fazer `git tag`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git tag</input_code>
+  <output_code>v_tag
+</output_code>
+  <markdown>### Criar uma tag a partir de um commit antigo (`git tag -a &lt;nome_da_tag&gt; -m "&lt;mensagem&gt;" &lt;hash&gt;`)</markdown>
+  <markdown>Vamos fazer um `git tree` para ver o histórico</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git tree</input_code>
+  <output_code>* [33m527e07a[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmain[m[33m, [m[1;33mtag: v_tag[m[33m, [m[1;31morigin/main[m[33m, [m[1;32mnew_feature[m[33m)[m Create README.md
+*   [33m679bb49[m archivo1.py con el merge resuelto
+[32m|[m[33m\[m  
+[32m|[m * [33m32851c3[m archivo1.py en rama rama_con_conflicto
+* [33m|[m [33m53f909b[m archivo1.py en rama main
+[33m|[m[33m/[m  
+* [33m52acb97[m Merge squash de los commits de la rama branch_squash
+*   [33m274529c[m Merge branch 'branch_no_fast_forward' into main
+[34m|[m[35m\[m  
+[34m|[m * [33m8df3429[m[33m ([m[1;32mbranch_no_fast_forward[m[33m)[m file2
+[34m|[m * [33me4e23c9[m file1
+* [35m|[m [33m8bdf4d8[m file3
+[35m|[m[35m/[m  
+* [33m94149fc[m[33m ([m[1;32mbranch_fast_forward[m[33m)[m Eliminado hola.py
+* [33m4484e70[m Eliminado archivo4.py
+* [33m564ccfb[m[33m ([m[1;32mnew_branch2[m[33m)[m Commit con el archivo 8
+* [33m5168f78[m Eliminado archivo7.py
+* [33m4bb9d75[m[33m ([m[1;32mnew_branch[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Embora não esteja na descrição, quando fizemos o commit `4bb9d75` foi quando terminamos a parte de controle de versões localmente, por isso também seria bom ter um tag desse momento. Para isso, precisamos criar uma tag adicionando o hash daquele momento.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git tag -a v_local -m "Tag con el repositorio en la parte de control de versiones de manera local" 4bb9d75</input_code>
+  <markdown>Se agora fizermos um listagem dos tags, aparece o novo</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git tag</input_code>
+  <output_code>v_local
+v_tag
+</output_code>
+  <markdown>E se vemos o histórico de commits</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git tree</input_code>
+  <output_code>* [33m527e07a[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmain[m[33m, [m[1;33mtag: v_tag[m[33m, [m[1;31morigin/main[m[33m, [m[1;32mnew_feature[m[33m)[m Create README.md
+*   [33m679bb49[m archivo1.py con el merge resuelto
+[32m|[m[33m\[m  
+[32m|[m * [33m32851c3[m archivo1.py en rama rama_con_conflicto
+* [33m|[m [33m53f909b[m archivo1.py en rama main
+[33m|[m[33m/[m  
+* [33m52acb97[m Merge squash de los commits de la rama branch_squash
+*   [33m274529c[m Merge branch 'branch_no_fast_forward' into main
+[34m|[m[35m\[m  
+[34m|[m * [33m8df3429[m[33m ([m[1;32mbranch_no_fast_forward[m[33m)[m file2
+[34m|[m * [33me4e23c9[m file1
+* [35m|[m [33m8bdf4d8[m file3
+[35m|[m[35m/[m  
+* [33m94149fc[m[33m ([m[1;32mbranch_fast_forward[m[33m)[m Eliminado hola.py
+* [33m4484e70[m Eliminado archivo4.py
+* [33m564ccfb[m[33m ([m[1;32mnew_branch2[m[33m)[m Commit con el archivo 8
+* [33m5168f78[m Eliminado archivo7.py
+* [33m4bb9d75[m[33m ([m[1;33mtag: v_local[m[33m, [m[1;32mnew_branch[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>No ponto do histórico onde criamos a tag, agora aparece a tag que criamos `* 4bb9d75 (tag: v_local, new_branch) Commit com o arquivo 7`</markdown>
+  <markdown>### Mudar entre tags (`git reset --hard &lt;tag&gt;` ou `git reset --soft &lt;tag&gt;`)</markdown>
+  <markdown>Assim como podemos nos mover entre diferentes commits do histórico, também podemos nos mover entre tags. Isso tem a vantagem de podermos nos mover para outro momento do histórico sem precisar saber o hash, basta conhecer o nome da tag que colocamos naquele momento para nos movermos simplesmente fazendo `git reset --hard &lt;tag&gt;` ou `git reset --soft &lt;tag&gt;`</markdown>
+  <markdown>Primeiro vamos fazer um `ls` para ver os arquivos que temos</markdown>
+  <input_code>!cd notebook_git &amp;&amp; ls</input_code>
+  <output_code>api_keys.py  archivo1.py  archivo2.py  archivo8.py  README.md
+</output_code>
+  <markdown>Fazemos um `git tree` também para ver em que momento do histórico estamos</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git tree</input_code>
+  <output_code>* [33m527e07a[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmain[m[33m, [m[1;33mtag: v_tag[m[33m, [m[1;31morigin/main[m[33m, [m[1;32mnew_feature[m[33m)[m Create README.md
+*   [33m679bb49[m archivo1.py con el merge resuelto
+[32m|[m[33m\[m  
+[32m|[m * [33m32851c3[m archivo1.py en rama rama_con_conflicto
+* [33m|[m [33m53f909b[m archivo1.py en rama main
+[33m|[m[33m/[m  
+* [33m52acb97[m Merge squash de los commits de la rama branch_squash
+*   [33m274529c[m Merge branch 'branch_no_fast_forward' into main
+[34m|[m[35m\[m  
+[34m|[m * [33m8df3429[m[33m ([m[1;32mbranch_no_fast_forward[m[33m)[m file2
+[34m|[m * [33me4e23c9[m file1
+* [35m|[m [33m8bdf4d8[m file3
+[35m|[m[35m/[m  
+* [33m94149fc[m[33m ([m[1;32mbranch_fast_forward[m[33m)[m Eliminado hola.py
+* [33m4484e70[m Eliminado archivo4.py
+* [33m564ccfb[m[33m ([m[1;32mnew_branch2[m[33m)[m Commit con el archivo 8
+* [33m5168f78[m Eliminado archivo7.py
+* [33m4bb9d75[m[33m ([m[1;33mtag: v_local[m[33m, [m[1;32mnew_branch[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Agora mudamos para o ponto em que criamos a tag `v_local` através de `git reset --hard v_local`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git reset --hard v_local</input_code>
+  <output_code>HEAD está ahora en 4bb9d75 Commit con el archivo 7
+</output_code>
+  <markdown>Se agora fizermos um `ls` vemos que não temos os mesmos arquivos</markdown>
+  <input_code>!cd notebook_git &amp;&amp; ls</input_code>
+  <output_code>api_keys.py  archivo1.py  archivo2.py  archivo4.py  archivo7.py  hola.py
+</output_code>
+  <markdown>Se additionally vemos o histórico, vemos que mudamos de momento do histórico.</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git tree</input_code>
+  <output_code>* [33m4bb9d75[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmain[m[33m, [m[1;33mtag: v_local[m[33m, [m[1;32mnew_branch[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+  <markdown>Para voltar ao último momento do histórico, como também criamos um tag, basta fazer `git reset --hard v_tag`</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git reset --hard v_tag</input_code>
+  <output_code>HEAD está ahora en 527e07a Create README.md
+</output_code>
+  <markdown>Voltamos a ver o histórico para verificar que retornamos ao último momento do histórico</markdown>
+  <input_code>!cd notebook_git &amp;&amp; git tree</input_code>
+  <output_code>* [33m527e07a[m[33m ([m[1;36mHEAD -&gt; [m[1;32mmain[m[33m, [m[1;33mtag: v_tag[m[33m, [m[1;31morigin/main[m[33m, [m[1;32mnew_feature[m[33m)[m Create README.md
+*   [33m679bb49[m archivo1.py con el merge resuelto
+[32m|[m[33m\[m  
+[32m|[m * [33m32851c3[m archivo1.py en rama rama_con_conflicto
+* [33m|[m [33m53f909b[m archivo1.py en rama main
+[33m|[m[33m/[m  
+* [33m52acb97[m Merge squash de los commits de la rama branch_squash
+*   [33m274529c[m Merge branch 'branch_no_fast_forward' into main
+[34m|[m[35m\[m  
+[34m|[m * [33m8df3429[m[33m ([m[1;32mbranch_no_fast_forward[m[33m)[m file2
+[34m|[m * [33me4e23c9[m file1
+* [35m|[m [33m8bdf4d8[m file3
+[35m|[m[35m/[m  
+* [33m94149fc[m[33m ([m[1;32mbranch_fast_forward[m[33m)[m Eliminado hola.py
+* [33m4484e70[m Eliminado archivo4.py
+* [33m564ccfb[m[33m ([m[1;32mnew_branch2[m[33m)[m Commit con el archivo 8
+* [33m5168f78[m Eliminado archivo7.py
+* [33m4bb9d75[m[33m ([m[1;33mtag: v_local[m[33m, [m[1;32mnew_branch[m[33m)[m Commit con el archivo 7
+* [33mea615a9[m Eliminado archivo5.py
+* [33me3153a5[m Commit con los archivos 4 y 5
+* [33m0b09cfa[m Añadido .gitignore
+* [33m04ebd1f[m Commit con los archivos 1 y 2
+* [33mc4930d7[m Tercer commit, hola.py
+* [33m6e99e73[m Segundo commit, hola.py
+* [33m1c95e4f[m Primer commit, hola.py
+</output_code>
+</notebook>

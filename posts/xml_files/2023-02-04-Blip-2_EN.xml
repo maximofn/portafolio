@@ -1,0 +1,112 @@
+<?xml version='1.0' encoding='utf-8'?>
+<notebook>
+  <markdown># Blip 2</markdown>
+  <markdown> &gt; Disclaimer: This post has been translated to English using a machine translation model. Please, let me know if you find any mistakes.</markdown>
+  <markdown>## Introduction</markdown>
+  <markdown>Blip2 is an artificial intelligence capable of taking an image or video as input and having a conversation, answering questions, or providing context about what the input shows with great accuracy 🤯
+
+[GitHub](https://github.com/salesforce/LAVIS/tree/main/projects/blip2)
+
+[Paper](https://arxiv.org/abs/2301.12597)
+</markdown>
+  <markdown>## Installation</markdown>
+  <markdown>To install this tool, it's best to create a new Anaconda environment.</markdown>
+  <input_code>!$ conda create -n blip2 python=3.9</input_code>
+  <markdown>Now we dive into the environment</markdown>
+  <input_code>!$ conda activate blip2</input_code>
+  <markdown>We install all the necessary modules</markdown>
+  <input_code>!$ conda install pytorch torchvision torchaudio pytorch-cuda=11.7 -c pytorch -c nvidia</input_code>
+  <input_code>!$ conda install -c anaconda pillow</input_code>
+  <input_code>!$ conda install -y -c anaconda requests</input_code>
+  <input_code>!$ conda install -y -c anaconda jupyter</input_code>
+  <markdown>Finally we install Blip2</markdown>
+  <input_code>!$ pip install salesforce-lavis</input_code>
+  <markdown>## Usage</markdown>
+  <markdown>We load the necessary libraries</markdown>
+  <input_code>import torch
+from PIL import Image
+import requests
+from lavis.models import load_model_and_preprocess</input_code>
+  <markdown>We load an example image</markdown>
+  <input_code>img_url = 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/12_-_The_Mystical_King_Cobra_and_Coffee_Forests.jpg/800px-12_-_The_Mystical_King_Cobra_and_Coffee_Forests.jpg'
+raw_image = Image.open(requests.get(img_url, stream=True).raw).convert('RGB')   
+display(raw_image.resize((500, 500)))</input_code>
+  <output_code>&lt;PIL.Image.Image image mode=RGB size=500x500&gt;</output_code>
+  <markdown>We set the GPU if there is one</markdown>
+  <input_code>device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
+device</input_code>
+  <output_code>device(type='cuda')</output_code>
+  <markdown>We assign a model. In my case, with a computer that has 32 GB of RAM and a 3060 GPU with 12 GB of VRAM, I can't use all of them, so I've added a comment `ok` next to the models I was able to use, and the error I received for those I couldn't. If you have a computer with the same amount of RAM and VRAM, you'll know which ones you can use; if not, you'll need to test them.</markdown>
+  <input_code># name = "blip2_opt"; model_type = "pretrain_opt2.7b"           # ok
+# name = "blip2_opt"; model_type = "caption_coco_opt2.7b"       # FAIL VRAM
+# name = "blip2_opt"; model_type = "pretrain_opt6.7b"           # FAIL RAM
+# name = "blip2_opt"; model_type = "caption_coco_opt6.7b"       # FAIL RAM
+
+# name = "blip2"; model_type = "pretrain"                       # FAIL type error
+# name = "blip2"; model_type = "coco"                           # ok
+
+name = "blip2_t5"; model_type = "pretrain_flant5xl"           # ok
+# name = "blip2_t5"; model_type = "caption_coco_flant5xl"       # FAIL VRAM
+# name = "blip2_t5"; model_type = "pretrain_flant5xxl"          # FAIL
+
+model, vis_processors, _ = load_model_and_preprocess(
+    name=name, model_type=model_type, is_eval=True, device=device
+)
+
+vis_processors.keys()</input_code>
+  <output_code>Loading checkpoint shards:   0%|          | 0/2 [00:00&lt;?, ?it/s]</output_code>
+  <output_code>dict_keys(['train', 'eval'])</output_code>
+  <markdown>We prepare the image to feed it into the model</markdown>
+  <input_code>image = vis_processors["eval"](raw_image).unsqueeze(0).to(device)</input_code>
+  <markdown>### We analyze the image without asking anything</markdown>
+  <input_code>model.generate({"image": image})</input_code>
+  <output_code>['a black and white snake']</output_code>
+  <markdown>### We analyze the image by asking</markdown>
+  <input_code>prompt = None</input_code>
+  <input_code>def prepare_prompt(prompt, question):
+    if prompt is None:
+        prompt = question + " Answer:"
+    else:
+        prompt = prompt + " " + question + " Answer:"
+    return prompt</input_code>
+  <output_code />
+  <input_code>def get_answer(prompt, question, model):
+    prompt = prepare_prompt(prompt, question)
+    answer = model.generate(
+        {
+            "image": image,
+            "prompt": prompt
+        }
+    )
+    answer = answer[0]
+    prompt = prompt + " " + answer + "."
+    return prompt, answer</input_code>
+  <input_code>question = "What's in the picture?"
+prompt, answer = get_answer(prompt, question, model)
+print(f"Question: {question}")
+print(f"Answer: {answer}")</input_code>
+  <output_code>Question: What's in the picture?
+Answer: a snake
+</output_code>
+  <input_code>question = "What kind of snake?"
+prompt, answer = get_answer(prompt, question, model)
+print(f"Question: {question}")
+print(f"Answer: {answer}")</input_code>
+  <output_code>Question: What kind of snake?
+Answer: cobra
+</output_code>
+  <input_code>question = "Is it poisonous?"
+prompt, answer = get_answer(prompt, question, model)
+print(f"Question: {question}")
+print(f"Answer: {answer}")</input_code>
+  <output_code>Question: Is it poisonous?
+Answer: yes
+</output_code>
+  <input_code>question = "If it bites me, can I die?"
+prompt, answer = get_answer(prompt, question, model)
+print(f"Question: {question}")
+print(f"Answer: {answer}")</input_code>
+  <output_code>Question: If it bites me, can I die?
+Answer: yes
+</output_code>
+</notebook>

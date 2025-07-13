@@ -38,7 +38,7 @@ class Gemini:
             generation_config=generation_config
         )
     
-    def chat(self, input_text):
+    def chat(self, input_text, debug=False):
         try:
             response = self.model.generate_content(input_text)
         except Exception as e:

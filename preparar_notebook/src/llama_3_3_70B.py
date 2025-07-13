@@ -56,7 +56,7 @@ class Llama_3_3_70B:
                 self.translation_counter = 0
                 exit(1)
 
-    def chat(self, input_text, response_raw=False):
+    def chat(self, input_text, response_raw=False, debug=False):
         try:
             response = self.client.chat.completions.create(
                 model=self.model,

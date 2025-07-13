@@ -33,7 +33,7 @@ class GPT4o:
         if self.GPT4o_API_KEY is None:
             raise ValueError("GPT4o_API_KEY is not set")
 
-    def chat(self, input_text, response_raw=False):
+    def chat(self, input_text, response_raw=False, debug=False):
         try:
             response = self.client.chat.completions.create(
                 model=self.gpt_model,

@@ -22,7 +22,7 @@ class Groq_llama3_1_70B:
         if self.GRPQ_API_KEY is None:
             raise ValueError("GRPQ_API_KEY is not set")
     
-    def chat(self, input_text, response_raw=False):
+    def chat(self, input_text, response_raw=False, debug=False):
         completion = self.client.chat.completions.create(
             model=self.groq_model,
             messages=[

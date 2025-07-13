@@ -499,6 +499,10 @@ def convert_jupyter_notebook_to_html(notebook_path, metadata, notebook_title):
         astro_file_name = end_url + ".astro"
         astro_file_path = astro_file_path / astro_file_name
         
+        description_escaped = descriptions_list[notebook_number].replace("'", "\\'")
+        keywords_escaped = keywords_list[notebook_number].replace("'", "\\'")
+        image_escaped = image.replace("'", "\\'")
+
         header_file=f"""---
 import PostLayout from '@layouts/PostLayout.astro';
 import CodeBlockInputCell from '@components/CodeBlockInputCell.astro';
@@ -510,10 +514,10 @@ const {open_brace} svg_paths {closing_brace} = await import('@portfolio/consts.j
 
 const page_title = '{tittles_list[notebook_number]}';
 const end_url = '{end_url}';
-const description = '{descriptions_list[notebook_number].replace("'", "\\'")}';
-const keywords = '{keywords_list[notebook_number].replace("'", "\\'")}';
+const description = '{description_escaped}';
+const keywords = '{keywords_escaped}';
 const languaje = '{LANGUAGES[notebook_number]}';
-const image_path = '{image.replace("'", "\\'")}';
+const image_path = '{image_escaped}';
 const opening_brace = '{open_brace}';
 const closing_brace = '{closing_brace}';
 ---

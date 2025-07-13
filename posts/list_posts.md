@@ -44,7 +44,7 @@
    * -rw-r--r--@   1 macm1  staff    225219 29 ene 17:29 2024-04-15-Hugging-Face-transformers.ipynb
    * -rw-r--r--@   1 macm1  staff    227521 29 ene 17:29 2024-05-16-Hugging-Face-accelerate.ipynb
    * -rw-r--r--@   1 macm1  staff    239453 29 ene 17:29 2023-04-30-Conda.ipynb
- * -rw-r--r--@   1 macm1  staff    293857 29 ene 17:29 2023-01-22-Docker.ipynb
+   * -rw-r--r--@   1 macm1  staff    293857 29 ene 17:29 2023-01-22-Docker.ipynb
  * -rw-r--r--@   1 macm1  staff    316091 29 ene 17:29 2023-04-23-git.ipynb
    * -rw-r--r--@   1 macm1  staff    316268 11 jun 19:12 2025-06-04-Agents-patterns.ipynb
  * -rw-r--r--@   1 macm1  staff    318729  8 mar 12:57 2021-02-11-Introduccion-a-Python.ipynb

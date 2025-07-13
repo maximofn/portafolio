@@ -84,11 +84,14 @@ def apply_corrections(model, line, debug=False):
         correction_string = model.chat(line, debug=debug)
     except Exception as e:
         print(f"Error LLM model chat: {e}")
+        print(f"Line to correct: {line}")
+        exit(1)
 
     # if correction_string is not string, it's an error
     if type(correction_string) != str:
         print(f"LLM Error is not a string: {correction_string}")
-        return line
+        print(f"Line to correct: {line}")
+        exit(1)
     
     # If correction_string has thinking, remove it
     if correction_string.startswith("<think>") and '</think>' in correction_string:

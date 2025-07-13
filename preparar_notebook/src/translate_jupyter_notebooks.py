@@ -5,6 +5,7 @@ from groq_llm import Groq_llama3_1_70B
 from qwen2_5_72B import Qwen2_5_72B
 from ollama_qwen_2_5_7B import Ollama_qwen2_5_7B
 from ollama_qwen_2_5_72B import Ollama_qwen2_5_72B
+from ollama_qwen_3_32B import Ollama_qwen3_32B
 from llama_3_3_70B import Llama_3_3_70B
 from mlx_qwen_3_0_6B import MLX_Qwen3_0_6B
 from mlx_qwen_3_4B import MLX_Qwen3_4B
@@ -12,6 +13,8 @@ from mlx_qwen_3_14B import MLX_Qwen3_14B
 from notebook_utils import Notebook
 import re
 from utils import ask_for_something
+import dotenv
+import os
 
 ENGLISH = 'en'
 PORTUGUESE = 'pt'
@@ -63,11 +66,15 @@ QWEN_2_5_72B = "Qwen2.5-72B"
 LLAMA_3_3_70B = "Llama3.3-70B"
 OLLAMA_QWEN_2_5_7B = "Ollama_qwen2_5_7B"
 OLLAMA_QWEN_2_5_72B = "Ollama_qwen2_5_72B"
+OLLAMA_QWEN_3_32B = "Ollama_qwen3_32B"
 MLX_QWEN_3_0_6B = "MLX_Qwen3_0_6B"
 MLX_QWEN_3_4B = "MLX_Qwen3_4B"
 MLX_QWEN_3_14B = "MLX_Qwen3_14B"
-TRANSLATOR_MODEL = OLLAMA_QWEN_2_5_72B
-CHECKER_MODEL = GEMINI_LLM
+
+# Get model from .env file, get TRANSLATOR_MODEL and CHECKER_MODEL variables
+dotenv.load_dotenv()
+TRANSLATOR_MODEL = os.getenv("TRANSLATOR_MODEL")
+CHECKER_MODEL = os.getenv("CHECKER_MODEL")
 
 def translate_text(model, line, notebook_number):
     # if line has not text, return it. Check with regex if line has only spaces
@@ -175,6 +182,9 @@ def translate_jupyter_notebook(notebook_path):
     elif TRANSLATOR_MODEL == QWEN_2_5_72B:
         translator_model_en = Qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION_EN, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
         translator_model_pt = Qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION_PT, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
+    elif TRANSLATOR_MODEL == OLLAMA_QWEN_3_32B:
+        translator_model_en = Ollama_qwen3_32B(system_instruction=SYSTEM_INSTRUCTION_EN, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
+        translator_model_pt = Ollama_qwen3_32B(system_instruction=SYSTEM_INSTRUCTION_PT, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
     elif TRANSLATOR_MODEL == LLAMA_3_3_70B:
         translator_model_en = Llama_3_3_70B(system_instruction=SYSTEM_INSTRUCTION_EN, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
         translator_model_pt = Llama_3_3_70B(system_instruction=SYSTEM_INSTRUCTION_PT, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)

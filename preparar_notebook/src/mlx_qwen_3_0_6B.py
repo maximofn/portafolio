@@ -1,5 +1,10 @@
-from mlx_lm import load, generate
-from mlx_lm.sample_utils import make_sampler
+try:
+    from mlx_lm import load, generate
+    from mlx_lm.sample_utils import make_sampler
+except:
+    print("MLX_Qwen3_0_6B not found")
+    # exit(1)
+
 import time
 
 class MLX_Qwen3_0_6B:

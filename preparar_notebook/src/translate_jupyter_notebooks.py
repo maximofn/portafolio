@@ -194,6 +194,9 @@ def translate_jupyter_notebook(notebook_path):
     elif TRANSLATOR_MODEL == OLLAMA_QWEN_2_5_72B:
         translator_model_en = Ollama_qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION_EN, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
         translator_model_pt = Ollama_qwen2_5_72B(system_instruction=SYSTEM_INSTRUCTION_PT, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
+    elif TRANSLATOR_MODEL == OLLAMA_QWEN_3_32B:
+        translator_model_en = Ollama_qwen3_32B(system_instruction=SYSTEM_INSTRUCTION_EN, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
+        translator_model_pt = Ollama_qwen3_32B(system_instruction=SYSTEM_INSTRUCTION_PT, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
     elif TRANSLATOR_MODEL == MLX_QWEN_3_0_6B:
         translator_model_en = MLX_Qwen3_0_6B(system_instruction=SYSTEM_INSTRUCTION_EN, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)
         translator_model_pt = MLX_Qwen3_0_6B(system_instruction=SYSTEM_INSTRUCTION_PT, system_check=SYSTEM_INSTRUCTION_PHRASE_TRANSLATION_CHECKER, num_checks=NUMBER_OF_NOTEBOOK_CHECKS)

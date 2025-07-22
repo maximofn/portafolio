@@ -58,7 +58,7 @@ def _process_inline_math(text: str) -> str:
     return re.sub(pattern, replace_inline_math, text)
 
 def _convert_latex_symbols_to_html(text: str) -> str:
-    """
+    r"""
     Converts LaTeX mathematical symbols to HTML entities.
     
     Args:
@@ -405,7 +405,59 @@ def _process_text_block(text_content: str) -> str:
             # Create the header with anchor link for normal titles
             return f'<h{level} id="{header_id}">{corrected_title}<a class="anchor-link" href="#{header_id}">¶</a></h{level}>'
     
-    # First, process block math expressions across the entire text
+    def process_iframe(text_content: str) -> str:
+        """
+        Processes iframe tags that may span multiple lines with attributes separated by tabs and newlines.
+        Converts them to single-line iframe tags.
+        """
+        # Pattern to match the entire iframe block including multiline content
+        iframe_pattern = r'<iframe([^>]*?)>(.*?)</iframe>'
+        
+        def clean_iframe(match):
+            attributes_part = match.group(1)
+            inner_content = match.group(2)
+            
+            # Combine attributes from the opening tag and the inner content
+            all_attributes = attributes_part + inner_content
+            
+            # Extract individual attributes from the combined content
+            # This handles both attributes with values and boolean attributes
+            # Pattern for attributes with values: attr="value"
+            value_attr_pattern = r'(\w+)="([^"]*)"'
+            value_attributes = re.findall(value_attr_pattern, all_attributes)
+            
+            # Pattern for boolean attributes (no value): just the attribute name
+            # Look for word boundaries to avoid partial matches
+            bool_attr_pattern = r'\b(\w+)(?!\s*=)'
+            # Get all potential boolean attributes
+            all_words = re.findall(r'\b\w+\b', all_attributes)
+            # Filter out those that are already captured as value attributes
+            value_attr_names = set(attr_name for attr_name, _ in value_attributes)
+            bool_attributes = [word for word in all_words if word not in value_attr_names and 
+                             not any(word in attr_value for _, attr_value in value_attributes)]
+            
+            # Build the cleaned attribute string
+            cleaned_attr_parts = []
+            for attr_name, attr_value in value_attributes:
+                cleaned_attr_parts.append(f'{attr_name}="{attr_value}"')
+            
+            # Add boolean attributes (common iframe boolean attributes)
+            common_bool_attrs = {'allowfullscreen', 'autoplay', 'loop', 'muted'}
+            for attr in bool_attributes:
+                if attr in common_bool_attrs:
+                    cleaned_attr_parts.append(attr)
+            
+            cleaned_attributes = ' '.join(cleaned_attr_parts)
+            
+            # Reconstruct the iframe tag
+            return f'<iframe{" " + cleaned_attributes if cleaned_attributes else ""}></iframe>'
+        
+        return re.sub(iframe_pattern, clean_iframe, text_content, flags=re.DOTALL)
+    
+    # First, process iframe tags before other processing
+    text_content = process_iframe(text_content)
+    
+    # Then, process block math expressions across the entire text
     # This needs to happen before splitting into lines
     text_content = _process_block_math(text_content)
     
@@ -530,9 +582,12 @@ def _process_text_block(text_content: str) -> str:
             else: # Already some HTML, or other structure
                 # Check if this is inline HTML (like links) mixed with text that should be in a paragraph
                 stripped_line = line.strip()
+                # Special handling for iframe tags - don't wrap them in paragraphs
+                if stripped_line.startswith("<iframe"):
+                    processed_lines.append(stripped_line)
                 # If it starts with inline HTML but doesn't look like a complete HTML block,
                 # it might be inline HTML mixed with text that should be wrapped in <p>
-                if (stripped_line.startswith("<a ") or 
+                elif (stripped_line.startswith("<a ") or 
                     stripped_line.startswith("<code>") or 
                     stripped_line.startswith("<span")) and not stripped_line.startswith(("<h", "<p", "<div", "<section", "<blockquote")):
                     # This is likely inline HTML mixed with text, wrap in paragraph
@@ -781,6 +836,8 @@ def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_con
                 block_type, block_content = list(specific_block.items())[0]
 
                 if block_type == "text":
+                    if "<iframe" in block_content:
+                        print("a")
                     # Text blocks might contain headers or simple paragraphs.
                     # The generic_markdown_to_specific_markdowns might return larger text blocks
                     # that need further processing for headers, paragraphs etc.

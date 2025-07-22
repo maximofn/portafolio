@@ -484,6 +484,11 @@ class TestMarkdownUnorderedListToHtml(unittest.TestCase):
         markdown = '* **fix**: Se utiliza para corrección de bugs.\n* **feat**: Se utiliza para nuevas funcionalidades.\n * **docs**: Se utiliza para cambios en la documentación.\n* **style**: Se utiliza para cambios que no afectan el significado del código (por ejemplo, formato, eliminación de espacios en blanco).\n * **refactor**: Se utiliza para cambios de código que ni mejoran ni empeoran la funcionalidad, como reorganizar el código.\n * **perf**: Se utiliza para cambios que mejoran el rendimiento.\n* **test**: Se utiliza para agregar o actualizar pruebas.\n * **chore**: Se utiliza para cambios en el proceso o en las herramientas de desarrollo.\n* **ci**: Se utiliza para cambios en los archivos de configuración de integración continua.\n * **build**: Se utiliza para cambios que afectan el sistema de compilación o dependencias externas.\n * **revert**: Se utiliza para revertir un commit anterior.\n'
         expected_html = '<ul>\n  <li><strong>fix</strong>: Se utiliza para corrección de bugs.</li>\n  <li><strong>feat</strong>: Se utiliza para nuevas funcionalidades.</li>\n  <li><strong>docs</strong>: Se utiliza para cambios en la documentación.</li>\n  <li><strong>style</strong>: Se utiliza para cambios que no afectan el significado del código (por ejemplo, formato, eliminación de espacios en blanco).</li>\n  <li><strong>refactor</strong>: Se utiliza para cambios de código que ni mejoran ni empeoran la funcionalidad, como reorganizar el código.</li>\n  <li><strong>perf</strong>: Se utiliza para cambios que mejoran el rendimiento.</li>\n  <li><strong>test</strong>: Se utiliza para agregar o actualizar pruebas.</li>\n  <li><strong>chore</strong>: Se utiliza para cambios en el proceso o en las herramientas de desarrollo.</li>\n  <li><strong>ci</strong>: Se utiliza para cambios en los archivos de configuración de integración continua.</li>\n  <li><strong>build</strong>: Se utiliza para cambios que afectan el sistema de compilación o dependencias externas.</li>\n  <li><strong>revert</strong>: Se utiliza para revertir un commit anterior.</li>\n</ul>'
         self.assertEqual(markdown_to_html_updated(markdown), expected_html)
+    
+    def test_list_with_open_brace(self):
+        markdown = '* Primero, lo que hacemos es calcular la salida que obtenemos con nuestro valor actual de pesos $W$, es decir, obtenemos el valor $y$\n* A continuación calculamos el error que existe entre el valor de $y$ que hemos obtenido y el valor que queríamos obtener $\\hat{y}$. A ese error lo llamamos $loss$, y lo calculamos con alguna función matemática, ahora no importa cual\n* Calculamos el gradiente (la derivada) del error $loss$ con respecto a la matriz de pesos $W$, es decir $\\Delta W = \\frac{dloss}{dW}$\n * Actualizamos los pesos $W$ restando a cada uno de sus valores el valor del gradiente multiplicado por un factor de aprendizaje $\\alpha$, es decir $W = W - \\alpha \\Delta W$\n'
+        expected_html = '<ul>\n  <li>Primero, lo que hacemos es calcular la salida que obtenemos con nuestro valor actual de pesos <span class="math-inline">W</span>, es decir, obtenemos el valor <span class="math-inline">y</span></li>\n  <li>A continuación calculamos el error que existe entre el valor de <span class="math-inline">y</span> que hemos obtenido y el valor que queríamos obtener <span class="math-inline">\\hat&#123;y&#125;</span>. A ese error lo llamamos <span class="math-inline">loss</span>, y lo calculamos con alguna función matemática, ahora no importa cual</li>\n  <li>Calculamos el gradiente (la derivada) del error <span class="math-inline">loss</span> con respecto a la matriz de pesos <span class="math-inline">W</span>, es decir <span class="math-inline">\\Delta W = \\frac&#123;dloss&#125;&#123;dW&#125;</span></li>\n  <li>Actualizamos los pesos <span class="math-inline">W</span> restando a cada uno de sus valores el valor del gradiente multiplicado por un factor de aprendizaje <span class="math-inline">\\alpha</span>, es decir <span class="math-inline">W = W - \\alpha \\Delta W</span></li>\n</ul>'
+        self.assertEqual(markdown_to_html_updated(markdown), expected_html)
 
 class TestMarkdownOrderedListToHtml(unittest.TestCase):
 
@@ -1443,7 +1448,7 @@ print("Hello, World!")
         markdown = '$$\\begin{matrix} a & b \\\\ c & d \\end{matrix}$$'
         expected_html = """
 <section class="section-block-markdown-cell">
-<p><span class="math-display">\\begin{matrix} a & b \\\\ c & d \\end{matrix}</span></p>
+<p><span class="math-display">\\begin&#123;matrix&#125; a & b \\\\ c & d \\end&#123;matrix&#125;</span></p>
 </section>
 """
         self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
@@ -1595,6 +1600,13 @@ $$E = mc^2$$'''
         markdown = '<iframe>\n\tsrc="https://xenova-the-tokenizer-playground.static.hf.space"\n\tframeborder="0"\n\twidth="850"\n\theight="450"\n></iframe>'
         expected_html = '''<section class="section-block-markdown-cell">
 <iframe src="https://xenova-the-tokenizer-playground.static.hf.space" frameborder="0" width="850" height="450"></iframe>
+</section>'''
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+    
+    def test_markdown_to_html_open_trace(self):
+        markdown = 'Supongamos que para una entrada $x$ queremos que tenga una salida $\\hat{y}$'
+        expected_html = '''<section class="section-block-markdown-cell">
+<p>Supongamos que para una entrada <span class="math-inline">x</span> queremos que tenga una salida <span class="math-inline">\\hat&#123;y&#125;</span></p>
 </section>'''
         self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
 

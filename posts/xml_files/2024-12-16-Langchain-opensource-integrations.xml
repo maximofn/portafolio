@@ -1,0 +1,536 @@
+<?xml version='1.0' encoding='utf-8'?>
+<notebook>
+  <markdown># Integraciones de código abierto en Langchain</markdown>
+  <markdown>## Uso de modelos de lenguaje</markdown>
+  <markdown>### Uso de modelos de Ollama</markdown>
+  <markdown>Como ya hemos visto en el post de [Ollama](https://www.maximofn.com/ollama), es un framework sobre `llama.cpp` que nos permite usar modelos de lenguaje de manera sencilla y que también nos permite usar modelos cuantizados.
+
+Así que vamos a ver cómo usar `Qwen2.5 7B` con Ollama en Langchain.</markdown>
+  <markdown>Antes de nada, tenemos que instalar el módulo de Llama de Langchain
+
+``` bash
+pip install -U langchain-ollama
+```</markdown>
+  <markdown>#### Descargar modelo</markdown>
+  <markdown>Lo primero de todo es descargar el modelo `qwen2.5:7b` de Ollama. Usamos el de 7B para que cualquiera con una GPU lo pueda usar.</markdown>
+  <input_code>!ollama pull qwen2.5:7b</input_code>
+  <output_code>[?25lpulling manifest ⠙ [?25h[?25l[2K[1Gpulling manifest ⠹ [?25h[?25l[2K[1Gpulling manifest ⠸ [?25h[?25l[2K[1Gpulling manifest ⠸ [?25h[?25l[2K[1Gpulling manifest ⠴ [?25h[?25l[2K[1Gpulling manifest ⠦ [?25h[?25l[2K[1Gpulling manifest ⠧ [?25h[?25l[2K[1Gpulling manifest 
+pulling 2bada8a74506...   0% ▕                ▏    0 B/4.7 GB                  [?25h[?25l[2K[1G[A[2K[1Gpulling manifest 
+pulling 2bada8a74506...   0% ▕                ▏    0 B/4.7 GB                  [?25h[?25l[2K[1G[A[2K[1Gpulling manifest 
+pulling 2bada8a74506...   0% ▕                ▏    0 B/4.7 GB                  [?25h[?25l[2K[1G[A[2K[1Gpulling manifest 
+pulling 2bada8a74506...   0% ▕                ▏    0 B/4.7 GB                  [?25h[?25l[2K[1G[A[2K[1Gpulling manifest 
+pulling 2bada8a74506...   0% ▕                ▏ 9.7 MB/4.7 GB                  [?25h[?25l[2K[1G[A[2K[1Gpulling manifest 
+pulling 2bada8a74506...   0% ▕                ▏  12 MB/4.7 GB                  [?25h[?25l[2K[1G[A[2K[1Gpulling manifest 
+pulling 2bada8a74506...   0% ▕                ▏  17 MB/4.7 GB                  [?25h[?25l[2K[1G[A[2K[1Gpulling manifest 
+pulling 2bada8a74506...   0% ▕                ▏  21 MB/4.7 GB                  [?25h[?25l[2K[1G[A[2K[1Gpulling manifest 
+pulling 2bada8a74506...   1% ▕                ▏  31 MB/4.7 GB                  [?25h[?25l[2K[1G[A[2K[1Gpulling manifest 
+pulling 2bada8a74506...   1% ▕                ▏  42 MB/4.7 GB                  [?25h[?25l[2K[1G[A[2K[1Gpulling manifest 
+pulling 2bada8a74506...   1% ▕                ▏  51 MB/4.7 GB   47 MB/s   1m37s[?25h[?25l[2K[1G[A[2K[1Gpulling manifest 
+pulling 2bada8a74506...   1% ▕                ▏  57 MB/4.7 GB   47 MB/s   1m37s[?25h[?25l[2K[1G[A[2K[1Gpulling manifest 
+pulling 2bada8a74506...   1% ▕                ▏  65 MB/4.7 GB   47 MB/s   1m37s[?25h[?25l[2K[1G[A[2K[1Gpulling manifest 
+pulling 2bada8a74506...   1% ▕                ▏  70 MB/4.7 GB   47 MB/s   1m37s[?25h[?25l[2K[1G[A[2K[1Gpulling manifest 
+pulling 2bada8a74506...   2% ▕                ▏  79 MB/4.7 GB   47 MB/s   1m37s[?25h[?25l[2K[1G[A[2K[1Gpulling manifest 
+pulling 2bada8a74506...   2% ▕                ▏  88 MB/4.7 GB   47 MB/s   1m37s[?25h[?25l[2K[1G[A[2K[1Gpulling manifest 
+pulling 2bada8a74506...   2% ▕                ▏  93 MB/4.7 GB   47 MB/s   1m37s[?25h[?25l[2K[1G[A[2K[1Gpulling manifest 
+pulling 2bada8a74506...   2% ▕                ▏ 103 MB/4.7 GB   47 MB/s   1m36s[?25h[?25l[2K[1G[A[2K[1Gpulling manifest 
+pulling 2bada8a74506...   2% ▕                ▏ 112 MB/4.7 GB   47 MB/s   1m36s[?25h[?25l[2K[1G[A[2K[1Gpulling manifest 
+pulling 2bada8a74506...   3% ▕                ▏ 117 MB/4.7 GB   47 MB/s   1m36s[?25h[?25l[2K[1G[A[2K[1Gpulling manifest 
+pulling 2bada8a74506...   3% ▕                ▏ 126 MB/4.7 GB   63 MB/s   1m11s[?25h[?25l[2K[1G[A[2K[1Gpulling manifest 
+pulling 2bada8a74506...   3% ▕                ▏ 135 MB/4.7 GB   63 MB/s   1m11s[?25h[?25l[2K[1G[A[2K[1Gpulling manifest 
+pulling 2bada8a74506...   3% ▕                ▏ 141 MB/4.7 GB   63 MB/s   1m11s[?25h[?25l[2K[1G[A[2K[1Gpulling manifest 
+pulling 2bada8a74506...   3% ▕                ▏ 150 MB/4.7 GB   63 MB/s   1m11s[?25h[?25l[2K[1G[A[2K[1Gpulling manifest 
+...
+pulling eb4402837c78... 100% ▕████████████████▏ 1.5 KB                         
+pulling 832dd9e00a68... 100% ▕████████████████▏  11 KB                         
+pulling 2f15b3218f05... 100% ▕████████████████▏  487 B                         
+verifying sha256 digest 
+writing manifest 
+removing any unused layers 
+success [?25h
+</output_code>
+  <markdown>#### Chat models</markdown>
+  <markdown>La primera opción que tenemos para usar modelos de lenguaje con Ollama en Langchain es usar la clase `ChatOllama`.</markdown>
+  <markdown>Creamos el objeto `ChatOllama` con el modelo `qwen2.5:7b`.</markdown>
+  <input_code>from langchain_ollama import ChatOllama
+
+chat_model = ChatOllama(
+    model = "qwen2.5:7b",
+    temperature = 0.8,
+    num_predict = 256,
+)</input_code>
+  <markdown>##### Inferencia offline</markdown>
+  <markdown>Ahora hacemos inferencia con el modelo de manera offline, es decir, sin usar streaming. Este método espera a tener toda la respuesta</markdown>
+  <input_code>messages = [
+    ("system", "Eres un asistente de IA que responde preguntas sobre IA."),
+    ("human", "¿Qué son los LLMs?"),
+]
+response = chat_model.invoke(messages)
+print(response.content)</input_code>
+  <output_code>LLMs es el acrónimo de Large Language Models (Modelos de Lenguaje Grandes). Estos son sistemas de inteligencia artificial basados en modelos de aprendizaje automático profundo que están diseñados para comprender y generar texto humano. Algunas características clave de los LLMs incluyen:
+
+1. **Tamaño**: Generalmente se refiere a modelos con billones de parámetros, lo cual les permite aprender de grandes cantidades de datos.
+
+2. **Capacidad de Generación de Texto**: Pueden generar texto coherente y relevante basado en entradas iniciales o prompts proporcionados por el usuario.
+
+3. **Entendimiento del Lenguaje Natural**: Poseen un entendimiento profundo de la gramática, semántica y contexto del lenguaje humano.
+
+4. **Aplicaciones Versátiles**: Se utilizan en una amplia gama de tareas como asistentes virtuales, traducción automática, resumen de texto, escritura creativa, etc.
+
+5. **Entrenamiento Supervisado**: A menudo se entrenan utilizando conjuntos de datos extensos y variados para mejorar su capacidad de comprensión e
+</output_code>
+  <markdown>##### Inferencia por streaming</markdown>
+  <markdown>Si queremos hacer streaming, podemos usar el método `stream`.</markdown>
+  <input_code>for chunk in chat_model.stream(messages):
+    print(chunk.content, end="", flush=True)</input_code>
+  <output_code>LLMs es el acrónimo de Large Language Models, lo cual se refiere a modelos de inteligencia artificial de lenguaje de gran escala. Estos son sistemas entrenados con técnicas de aprendizaje supervisado y no supervisado que pueden generar texto humano似的，准确回答如下：
+
+LLMs es el acrónimo de Large Language Models, lo cual se refiere a modelos de inteligencia artificial de lenguaje de gran escala. Estos son sistemas que se entrenan con grandes conjuntos de datos de texto para aprender patrones y relaciones lingüísticas. Algunas características clave de los LLMs incluyen:
+
+1. **Tamaño**: Generalmente se basan en arquitecturas de redes neuronales profunda como Transformers, lo que les permite manejar cantidades extremadamente grandes de parámetros.
+2. **Entrenamiento**: Se entrena con datos de texto muy variados para capturar una amplia gama de conocimientos y habilidades lingüísticas.
+3. **Generación de texto**: Pueden generar textos coherentes y relevantes basándose en el contexto proporcionado, lo que les permite realizar tareas como la escritura creativa,</output_code>
+  <markdown>#### Embeddings</markdown>
+  <markdown>Si queremos usar embeddings, podemos usar la clase `OllamaEmbeddings`.</markdown>
+  <markdown>Ahora creamos el objeto `OllamaEmbeddings` con el modelo `qwen2.5:7b`.</markdown>
+  <input_code>from langchain_ollama import OllamaEmbeddings
+
+embeddings_model = OllamaEmbeddings(
+    model = "qwen2.5:7b"
+)</input_code>
+  <markdown>##### Embed un solo texto</markdown>
+  <input_code>input_text = "¿Qué son los LLMs?"
+embedding = embeddings_model.embed_query(input_text)
+len(embedding), type(embedding), embedding[0:3]</input_code>
+  <output_code>(3584, list, [0.00045780753, -0.010200562, 0.0059901197])</output_code>
+  <markdown>##### Embed de varios textos</markdown>
+  <input_code>input_texts = ["¿Qué son los LLMs?", "¿Qué son los embeddings?"]
+embeddings = embeddings_model.embed_documents(input_texts)
+len(embeddings[0]), type(embeddings[0]), embeddings[0][0:3], len(embeddings[1]), type(embeddings[1]), embeddings[1][0:3]</input_code>
+  <output_code>(3584,
+ list,
+ [0.00045780753, -0.010200562, 0.0059901197],
+ 3584,
+ list,
+ [0.0007678218, -0.01124029, 0.008565228])</output_code>
+  <markdown>#### LLMs</markdown>
+  <markdown>Si solo queremos usar un modelo de lenguaje, podemos usar la clase `OllamaLLM`.</markdown>
+  <markdown>Ahora creamos el objeto `OllamaLLM` con el modelo `qwen2.5:7b`.</markdown>
+  <input_code>from langchain_ollama import OllamaLLM
+
+llm_model = OllamaLLM(
+    model = "qwen2.5:7b"
+)</input_code>
+  <markdown>##### Inferencia offline</markdown>
+  <markdown>Ahora hacemos inferencia con el modelo de manera offline, es decir, sin usar streaming. Este método espera a tener toda la respuesta</markdown>
+  <input_code>message = "¿Qué son los LLMs?"
+response = llm_model.invoke(message)
+print(response)</input_code>
+  <output_code>Los LLMs es una abreviatura común en español que se refiere a "Lenguajes de Marcado de Libre Mando". Sin embargo, en el contexto del procesamiento del lenguaje natural y la inteligencia artificial, es probable que estés buscando información sobre otro término.
+
+En inglés, el término LLMs (Large Language Models) se refiere a modelos de lenguaje de gran tamaño. Estos son sistemas de IA que están entrenados en una amplia gama de datos de texto para comprender y generar texto humano-like. Algunas características clave de los LLMs incluyen:
+
+1. Tamaño: Generalmente se refiere a modelos con millones o incluso billones de parámetros.
+2. Generación de texto: Pueden generar texto en respuesta a una entrada dada, lo que les hace útiles para tareas como escritura automática, conversaciones de chat, etc.
+3. Entrenamiento en datos variados: Son entrenados con grandes conjuntos de datos de internet o corpora literales y académicos.
+4. Aplicaciones: Se utilizan en una variedad de aplicaciones, incluyendo asistentes virtuales, traducción automática, análisis de sentimientos, resumen de texto, etc.
+
+Un ejemplo famoso de LLMs es la familia de modelos GPT (Generative Pre-trained Transformer) desarrollados por OpenAI. Otros ejemplos incluyen los modelos de PaLM y Qwen de Anthropic, entre otros.
+
+¿Te gustaría saber más sobre algún aspecto en particular de estos modelos?
+</output_code>
+  <markdown>##### Inferencia por streaming</markdown>
+  <markdown>Si queremos hacer streaming, podemos usar el método `stream`.</markdown>
+  <input_code>for chunk in llm_model.stream(message):
+    print(chunk, end="", flush=True)</input_code>
+  <output_code>Los LLMs es una abreviatura que se refiere a los Modelos de Lenguaje de Grande Escala (Large Language Models en inglés). Estos son modelos de inteligencia artificial desarrollados para entender y generar texto humano. Algunas características clave de los LLMs incluyen:
+
+1. **Capacidad de Generación de Texto**: Pueden generar texto coherente, original e informativo en varios estilos y formatos.
+
+2. **Entendimiento del Contexto**: Tienen una comprensión profunda del contexto y la gramática para producir respuestas apropiadas a las entradas proporcionadas.
+
+3. **Multiplicidad de Usos**: Se pueden aplicar a diversas tareas, como escritura creativa, asistencia en atención al cliente, creación de contenido, traducción automática, etc.
+
+4. **Aprendizaje Supervisado**: Son entrenados con grandes cantidades de texto para aprender patrones y conocimientos del lenguaje humano.
+
+5. **Limitaciones Eticas y Jurídicas**: Existen preocupaciones sobre el uso ético y legal de estos modelos, incluyendo el potencial de generar contenido inapropiado o engañoso.
+
+Algunos ejemplos populares de LLMs incluyen los creados por empresas como Anthropic (Clara), Google (Switch Transformer), Microsoft (Cobalt) y, aunque ya no actualmente soportado, OpenAI (GPT-3).</output_code>
+  <markdown>### Uso de modelos de HuggingFace</markdown>
+  <markdown>Aunque Ollama es muy sencillo de usar, no tiene tantos modelos como hay en el Hub de HuggingFace. Además, es probable que no tenga el último gran modelo que quieras usar, por lo que vamos a ver cómo usar modelos de HuggingFace en Langchain.</markdown>
+  <markdown>Antes de nada tenemos que instalar el módulo de HuggingFace de Langchain
+
+``` bash
+pip install -U langchain-huggingface
+```</markdown>
+  <markdown>#### Login en el Hub de HuggingFace</markdown>
+  <markdown>Primero tenemos que logearnos en el Hub de HuggingFace. Para ello necesitamos crear un token de acceso. Una vez creado, lo guardamos en un archivo `.env` con el nombre `LANGCHAIN_TOKEN` de la siguiente manera:
+
+``` bash
+echo "LANGCHAIN_TOKEN=hf_..." &gt; .env
+```</markdown>
+  <markdown>Para poder leerlo, instalamos el módulo `python-dotenv`.
+
+``` bash
+pip install python-dotenv
+```
+
+Ahora logearnos en el Hub de HuggingFace.</markdown>
+  <input_code>import os
+import dotenv
+
+dotenv.load_dotenv()
+
+LANGCHAIN_TOKEN = os.getenv("LANGCHAIN_TOKEN")</input_code>
+  <input_code>from huggingface_hub import login
+login(LANGCHAIN_TOKEN)</input_code>
+  <markdown>#### Chat models</markdown>
+  <markdown>La primera opción que tenemos para usar modelos de lenguaje con HuggingFace en Langchain es usar la clase `HuggingFaceEndpoint`. Esta opción llama a la API de HuggingFace para hacer inferencia.</markdown>
+  <markdown>Ahora creamos el objeto `chat_model` con el modelo `Qwen2.5-72B-Instruct`.</markdown>
+  <input_code>from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
+
+llm = HuggingFaceEndpoint(
+    repo_id="Qwen/Qwen2.5-72B-Instruct",
+    task="text-generation",
+    max_new_tokens=512,
+    do_sample=False,
+    repetition_penalty=1.03,
+)
+
+chat = ChatHuggingFace(llm=llm, verbose=True)</input_code>
+  <markdown>##### Inferencia offline</markdown>
+  <markdown>Ahora hacemos inferencia con el modelo de manera offline, es decir, sin usar streaming. Este método espera a tener toda la respuesta</markdown>
+  <input_code>messages = [
+    ("system", "Eres un asistente de IA que responde preguntas sobre IA."),
+    ("human", "¿Qué son los LLMs?"),
+]
+response = chat.invoke(messages)
+print(response.content)</input_code>
+  <output_code>Los LLMs, o Large Language Models (Modelos de Lenguaje Grande en español), son sistemas de inteligencia artificial diseñados para procesar y generar texto basado en lenguaje natural. Estos modelos son capaces de comprender, analizar y producir texto humano de manera sofisticada, lo que los hace útiles en una amplia variedad de aplicaciones, como la traducción de idiomas, el análisis de sentimientos, la generación de respuestas a preguntas, la escritura creativa, la asistencia en tareas, entre otras.
+
+### Características principales de los LLMs:
+
+1. **Escalabilidad**: Los LLMs suelen tener millones o incluso billones de parámetros, lo que les permite capturar la complejidad del lenguaje humano con un alto nivel de detalle.
+
+2. **Entrenamiento supervisado y no supervisado**: Pueden ser entrenados con grandes cantidades de datos de texto, tanto de forma supervisada (con etiquetas) como no supervisada (sin etiquetas).
+
+3. **Transfer learning**: Una vez entrenados, estos modelos pueden ser finetuneados (ajustados) para tareas específicas con un conjunto de datos más pequeño, lo que los hace muy versátiles.
+
+4. **Generación de texto**: Son capaces de generar texto coherente y contextualmente relevante, lo que los hace ideales para tareas como la escritura creativa, la redacción de informes, y la generación de respuestas en chatbots.
+
+5. **Comprensión del contexto**: Pueden entender el contexto y las relaciones entre palabras y frases, lo que les permite manejar diálogos y discursos complejos.
+
+6. **Interacción humana**: Son diseñados para interactuar de manera fluida y natural con seres humanos, lo que los hace útiles en aplicaciones conversacionales.
+
+### Ejemplos de LLMs:
+
+- **GPT-3 (Generative Pre-trained Transformer 3)**: Desarrollado por OpenAI, es uno de losmodelos más conocidos y potentes.
+- **BERT (Bidirectional Encoder Representations from Transformers)**: Diseñado por Google, es conocido por su capacidad de comprensión del contexto.
+- **T5 (Text-to-Text Transfer Transformer)**: También de Google, se destaca por su flexibilidad y versatilidad.
+
+Los LLMs representan un avance significativo en el campo de la inteligencia artificial, especialmente en el procesamiento del lenguaje natural, y continúan evoluinto rápidamente.
+</output_code>
+  <markdown>##### Inferencia por streaming</markdown>
+  <markdown>Si queremos hacer streaming, podemos usar el método `stream`.</markdown>
+  <input_code>for chunk in chat.stream(messages):
+    print(chunk.content, end="", flush=True)</input_code>
+  <output_code>Los LLMs, o Large Language Models (Modelos de Lenguaje Grande en español), son sistemas de inteligencia artificial diseñados para procesar y generar texto basado en lenguaje natural. Estos modelos son capaces de comprender, analizar y producir texto humano de manera sofisticada, lo que los hace útiles en una amplia variedad de aplicaciones, como la traducción de idiomas, el análisis de sentimientos, la generación de respuestas a preguntas, la escritura creativa, la asistencia en tareas, entre otras.
+
+### Características principales de los LLMs:
+
+1. **Escalabilidad**: Los LLMs suelen tener millones o incluso billones de parámetros, lo que les permite capturar la complejidad del lenguaje humano con un alto nivel de detalle.
+
+2. **Entrenamiento supervisado y no supervisado**: Pueden ser entrenados con grandes cantidades de datos de texto, tanto de forma supervisada (con etiquetas) como no supervisada (sin etiquetas).
+
+3. **Transfer learning**: Una vez entrenados, estos modelos pueden ser finetuneados (ajustados) para tareas específicas con un conjunto de datos más pequeño, lo que los hace muy versátiles.
+
+4. **Generación de texto**: Son capaces de generar texto coherente y contextualmente relevante, lo que los hace ideales para tareas como la escritura creativa, la redacción de informes, y la generación de respuestas en chatbots.
+
+5. **Comprensión del contexto**: Pueden entender el contexto y las relaciones entre palabras y frases, lo que les permite manejar diálogos y discursos complejos.
+
+6. **Interacción humana**: Son diseñados para interactuar de manera fluida y natural con seres humanos, lo que los hace útiles en aplicaciones conversacionales.
+
+### Ejemplos de LLMs:
+
+- **GPT-3 (Generative Pre-trained Transformer 3)**: Desarrollado por OpenAI, es uno de losmodelos más conocidos y potentes.
+- **BERT (Bidirectional Encoder Representations from Transformers)**: Diseñado por Google, es conocido por su capacidad de comprensión del contexto.
+- **T5 (Text-to-Text Transfer Transformer)**: También de Google, se destaca por su flexibilidad y versatilidad.
+
+Los LLMs representan un avance significativo en el campo de la inteligencia artificial, especialmente en el procesamiento del lenguaje natural, y continúan evoluinto rápidamente.</output_code>
+  <markdown>#### Embeddings</markdown>
+  <markdown>##### Embeddings en local</markdown>
+  <markdown>Si queremos crear embeddings en local, podemos usar la clase `HuggingFaceEmbeddings`. Para ello necesitamos tener instalada la librería `sentence-transformers`.
+
+``` bash
+pip install -U sentence-transformers
+```
+
+Luego ya podemos crear embeddings en local</markdown>
+  <input_code>from langchain_huggingface import HuggingFaceEmbeddings
+import torch
+
+model_name = "sentence-transformers/all-mpnet-base-v2"
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model_kwargs = {"device": device}
+encode_kwargs = {"normalize_embeddings": True}
+
+embeddings_model = HuggingFaceEmbeddings(
+    model_name=model_name,
+    model_kwargs=model_kwargs,
+    encode_kwargs=encode_kwargs
+)
+
+input_text = "¿Qué son los LLMs?"
+embedding = embeddings_model.embed_query(input_text)
+len(embedding), type(embedding), embedding[0:3]</input_code>
+  <output_code>(768,
+ list,
+ [-0.03638569265604019, -0.003062659176066518, 0.005454241763800383])</output_code>
+  <markdown>Si queremos crear embeddings de varios textos, podemos usar el método `embed_documents`.</markdown>
+  <input_code>input_texts = ["¿Qué son los LLMs?", "¿Qué son los embeddings?"]
+embeddings = embeddings_model.embed_documents(input_texts)
+len(embeddings[0]), type(embeddings[0]), embeddings[0][0:3], len(embeddings[1]), type(embeddings[1]), embeddings[1][0:3]</input_code>
+  <output_code>(768,
+ list,
+ [-0.0363856740295887, -0.0030626414809376, 0.005454237572848797],
+ 768,
+ list,
+ [-0.014533628709614277, 0.01950662210583687, -0.01753164641559124])</output_code>
+  <markdown>##### Embeddings en HuggingFace</markdown>
+  <markdown>Si queremos usar la API de HuggingFace para crear embeddings, podemos usar la clase `HuggingFaceEmbeddings`.</markdown>
+  <input_code>from langchain_huggingface import HuggingFaceEndpointEmbeddings
+
+model = "sentence-transformers/all-mpnet-base-v2"
+
+embeddings_model = HuggingFaceEndpointEmbeddings(
+    model=model,
+    task="feature-extraction",
+)
+
+input_text = "¿Qué son los LLMs?"
+embedding = embeddings_model.embed_query(input_text)
+len(embedding), type(embedding), embedding[0:3]</input_code>
+  <output_code>(768,
+ list,
+ [-0.03638569638133049, -0.0030626363586634398, 0.005454216152429581])</output_code>
+  <markdown>Si se quiere crear embeddings de varios textos, podemos usar el método `embed_documents`.</markdown>
+  <input_code>input_texts = ["¿Qué son los LLMs?", "¿Qué son los embeddings?"]
+embeddings = embeddings_model.embed_documents(input_texts)
+len(embeddings[0]), type(embeddings[0]), embeddings[0][0:3], len(embeddings[1]), type(embeddings[1]), embeddings[1][0:3]</input_code>
+  <output_code>(768,
+ list,
+ [-0.03638570010662079, -0.003062596544623375, 0.005454217083752155],
+ 768,
+ list,
+ [-0.014533626846969128, 0.019506637006998062, -0.01753171905875206])</output_code>
+  <markdown>#### Pipeline</markdown>
+  <markdown>Podemos crear un pipeline de Transformers y usarlo en Langchain, para ello necesitamos instalar el módulo `transformers`.
+
+``` bash
+pip install -U transformers
+```
+
+Para asegurarnos de que todo el mundo pueda probar el ejemplo, vamos a usar el modelo `Qwen/Qwen2.5-3B-Instruct`.</markdown>
+  <markdown>Tenemos dos maneras, crear un pipeline mediante Langchain</markdown>
+  <input_code>from langchain_huggingface import HuggingFacePipeline
+
+model = "Qwen/Qwen2.5-3B-Instruct"
+langchain_pipeline = HuggingFacePipeline.from_model_id(
+    model_id=model,
+    task="text-generation",
+    pipeline_kwargs={"max_new_tokens": 512},
+)</input_code>
+  <output_code>Loading checkpoint shards:   0%|          | 0/2 [00:00&lt;?, ?it/s]</output_code>
+  <output_code>Device set to use cuda:0
+</output_code>
+  <markdown>O podemos crear un pipeline mediante Transformers.</markdown>
+  <input_code>from langchain_huggingface import HuggingFacePipeline
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+
+model = "Qwen/Qwen2.5-3B-Instruct"
+tokenizer = AutoTokenizer.from_pretrained(model)
+model = AutoModelForCausalLM.from_pretrained(model)
+pipe = pipeline(
+    "text-generation", model=model, tokenizer=tokenizer, max_new_tokens=512
+)
+transformers_pipeline = HuggingFacePipeline(pipeline=pipe)</input_code>
+  <output_code>Loading checkpoint shards:   0%|          | 0/2 [00:00&lt;?, ?it/s]</output_code>
+  <output_code>Device set to use cuda:0
+</output_code>
+  <markdown>##### Inferencia offline</markdown>
+  <input_code>langchain_response = langchain_pipeline.invoke("¿Qué son los LLMs?")
+print(langchain_response)</input_code>
+  <output_code>¿Qué son los LLMs? - El Blog de Ciberseguridad
+Publicado por: CiberSeguridad 18/03/2022
+En el mundo de la tecnología y la inteligencia artificial, las nuevas tecnologías que surgen a menudo se presentan como un paso hacia adelante en la mejora de nuestras vidas. Sin embargo, a veces estas innovaciones pueden resultar en desafíos significativos, especialmente cuando se trata de la seguridad cibernética.
+En este artículo, exploraremos los LLMs, o modelos lingüísticos grandes (Large Language Models), una nueva clase de inteligencia artificial que está revolucionando el campo de la comunicación y la creación de contenido. Aunque estos modelos son muy prometedores, también tienen implicaciones significativas para la seguridad cibernética. En esta entrada, te explicamos qué son los LLMs y cómo afectan a la seguridad digital.
+¿Qué son los LLMs?
+Los modelos lingüísticos grandes son algoritmos de aprendizaje automático que han sido entrenados con grandes conjuntos de texto, generalmente en formato de texto natural. Estos modelos pueden procesar y generar texto de manera similar a una persona, lo que los hace extremadamente útiles para tareas como la traducción, la autocompletado de texto y la generación de contenido creativo.
+Los LLMs se basan en técnicas de aprendizaje profundo, que son una forma avanzada de algoritmo de aprendizaje automático. Este tipo de algoritmo utiliza redes neuronales para aprender patrones y relaciones en datos grandes, permitiendo a los modelos predecir resultados o tomar decisiones basadas en esa información.
+Estos modelos son capaces de aprender y generar texto en un amplio rango de temas, desde descripciones de libros hasta diálogos interactivos, lo que los hace excelentes para tareas de generación de contenido. También pueden ser utilizados para tareas más específicas, como la traducción de idiomas o la resolución de problemas de lógica.
+¿Cómo afectan a la seguridad cibernética?
+Los LLMs representan una gran oportunidad para mejorar la eficiencia y la precisión de muchas tareas de texto, pero también traen consigo desafíos significativos en términos de seguridad. Algunas de las preocupaciones más comunes incluyen:
+Privacidad: Los LLM
+</output_code>
+  <input_code>transformers_response = transformers_pipeline("¿Qué son los LLMs?")
+print(transformers_response)</input_code>
+  <output_code>/tmp/ipykernel_318295/4120882068.py:1: LangChainDeprecationWarning: The method `BaseLLM.__call__` was deprecated in langchain-core 0.1.7 and will be removed in 1.0. Use :meth:`~invoke` instead.
+  transformers_response = transformers_pipeline("¿Qué son los LLMs?")
+</output_code>
+  <output_code>¿Qué son los LLMs? ¿Cómo funcionan y qué pueden hacer?
+
+Los LLMs (Large Language Models) son modelos de inteligencia artificial que han sido entrenados con enormes cantidades de texto. Estos modelos pueden procesar y generar texto en una variedad de lenguajes, desde el inglés hasta idiomas menos comunes. Los LLMs están diseñados para entender y generar texto con un nivel de precisión similar al humano.
+
+Funcionamiento:
+1. Entrenamiento: Los LLMs se entrenan utilizando grandes conjuntos de datos de texto, como libros electrónicos, artículos de noticias, etc.
+2. Análisis: Después del entrenamiento, los LLMs analizan patrones en el texto y aprenden a asociar palabras y frases con otros textos similares.
+3. Generación de texto: Cuando se le pide al modelo que genere texto, analiza los patrones que ha aprendido y genera texto basado en esos patrones.
+
+Pueden hacer:
+1. Traducción: Convertir texto de un idioma a otro.
+2. Resumen de texto: Summarizar largos documentos en versiones más cortas.
+3. Creación de contenido: Generar artículos, correos electrónicos, historias, etc.
+4. Resolución de problemas: Ayudar a resolver problemas o proporcionar soluciones basadas en el texto.
+5. Chatbots: Usar para crear asistentes virtuales que puedan responder preguntas y ayudar con tareas.
+6. Crea contenido: Escribe contenido creativo como poesía, relatos, etc.
+7. Ajuste de lenguaje: Corrige errores gramaticales y mejora la escritura.
+
+Es importante tener en cuenta que aunque estos modelos son muy poderosos, todavía tienen limitaciones y pueden generar contenido incorrecto o inapropiado. Además, la privacidad y la ética son aspectos importantes a considerar al usar estos modelos. 
+
+En resumen, los LLMs son herramientas poderosas que pueden ser utilizadas en una variedad de aplicaciones, pero también requieren cuidado y consideración al utilizarlos. Es recomendable siempre verificar el contenido generado por estos modelos y estar atentos a sus posibles limitaciones. 
+
+Además, es importante destacar que los LLMs no son sustitutos perfectos para el pensamiento crítico humano. Aunque pueden generar texto de
+</output_code>
+  <markdown>##### Inferencia por streaming</markdown>
+  <input_code>for chunk in langchain_pipeline.stream("¿Qué son los LLMs?"):
+    print(chunk, end="", flush=True)</input_code>
+  <output_code> - Cursos de Inteligencia Artificial en línea
+Los LLMs, o Lenguajes de Lenguaje de Modelos, son modelos de aprendizaje automático que han sido entrenados para producir texto similar al de un humano. Estos modelos pueden ser utilizados para una variedad de tareas, como la generación de texto, el chatbot, el análisis de sentimientos, etc.
+En resumen, los LLMs son modelos de aprendizaje automático que han sido entrenados para producir texto similar al de un humano. Estos modelos pueden ser utilizados para una variedad de tareas, como la generación de texto, el chatbot, el análisis de sentimientos, etc. Los LLMs son un tipo de modelo de inteligencia artificial y se utilizan en una amplia gama de aplicaciones, desde la creación de contenido hasta el asesoramiento.
+Los LLMs son modelos de aprendizaje automático que han sido entrenados para producir texto similar al de un humano. Estos modelos pueden ser utilizados para una variedad de tareas, como la generación de texto, el chatbot, el análisis de sentimientos, etc. Los LLMs son un tipo de modelo de inteligencia artificial y se utilizan en una amplia gama de aplicaciones, desde la creación de contenido hasta el asesoramiento. Los LLMs están basados en redes neuronales y se entrenan con grandes conjuntos de datos de texto para aprender a generar texto similar al de un humano.
+Los LLMs están disponibles en diferentes plataformas, incluyendo Google's PaLM, Anthropic's Claude, Microsoft's Bing, e incluso tu propio teléfono inteligente puede tener uno. Los LLMs pueden ser utilizados para una variedad de tareas, incluyendo la generación de texto, el chatbot, el análisis de sentimientos, etc. Los LLMs son un tipo de modelo de inteligencia artificial y se utilizan en una amplia gama de aplicaciones, desde la creación de contenido hasta el asesoramiento. Los LLMs están basados en redes neuronales y se entrenan con grandes conjuntos de datos de texto para aprender a generar texto similar al de un humano. Los LLMs están disponibles en diferentes plataformas, incluyendo Google's PaLM, Anthropic's Claude, Microsoft's Bing, e incluso tu propio teléfono inteligente puede tener uno</output_code>
+  <input_code>for chunk in transformers_pipeline.stream("¿Qué son los LLMs?"):
+    print(chunk, end="", flush=True)</input_code>
+  <output_code> | El Blog de la Inteligencia Artificial
+Home » Noticias » ¿Qué son los LLMs?
+LLM es la sigla en inglés para Large Language Models, que traducido al castellano sería "Grandes Modelos de Lenguaje". Son modelos de inteligencia artificial (IA) que permiten a las máquinas entender y generar texto.
+Los LLMs se basan en el aprendizaje profundo, una técnica de IA que utiliza redes neuronales para modelar relaciones entre variables. Estos modelos son capaces de aprender patrones en grandes conjuntos de datos, lo que les permite predecir o generar texto similar al que se les ha proporcionado.
+Las principales características de los LLMs incluyen:
+Capacidad de procesamiento de lenguaje natural: Los LLMs pueden entender y generar texto, lo que les permite interactuar con los usuarios de manera fluida y natural.
+Capacidad de aprendizaje continuo: Los LLMs pueden aprender y mejorar con cada interacción, lo que les permite ofrecer respuestas más precisas y relevantes a medida que ganan experiencia.
+Capacidad de generación de texto: Los LLMs pueden generar texto similar al que se les ha proporcionado, lo que les permite crear contenido de calidad sin necesidad de intervención humana manual.
+Ventajas de los LLMs:
+Mayor eficiencia: Los LLMs pueden procesar grandes cantidades de información de manera rápida y precisa, lo que les permite ahorrar tiempo y recursos en comparación con los métodos humanos.
+Mejora de la precisión: Los LLMs pueden aprender y ajustarse a los patrones del lenguaje, lo que les permite ofrecer respuestas más precisas y relevantes a los usuarios.
+Aumento de la productividad: Los LLMs pueden automatizar tareas repetitivas y monótonas, liberando tiempo y recursos para que los humanos puedan centrarse en tareas más estratégicas y creativas.
+Entendimiento del lenguaje humano: Los LLMs pueden entender y generar texto en varios idiomas, lo que les permite interactuar con un amplio espectro de usuarios.
+Evaluación de la inteligencia artificial
+Los LLMs están siendo utilizados en una variedad de aplicaciones, desde asistentes virtuales hasta análisis de texto y traducción automática. También están siendo evaluados por su capacidad para generar contenido de</output_code>
+  <markdown>## Uso de bases de datos vectoriales</markdown>
+  <markdown>### Uso de ChromaDB</markdown>
+  <markdown>Para poder usar ChromaDB en Langchain, primero tenemos que instalar `langchain-chroma`.
+
+``` bash
+pip install -qU chromadb langchain-chroma
+```</markdown>
+  <markdown>#### Crear un vector store</markdown>
+  <input_code>from langchain_chroma import Chroma
+from langchain_huggingface import HuggingFaceEmbeddings
+import torch
+
+model_name = "sentence-transformers/all-mpnet-base-v2"
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model_kwargs = {"device": device}
+encode_kwargs = {"normalize_embeddings": True}
+
+embedding_model = HuggingFaceEmbeddings(
+    model_name=model_name,
+    model_kwargs=model_kwargs,
+    encode_kwargs=encode_kwargs
+)
+
+vector_store = Chroma(
+    collection_name="chroma_db",
+    embedding_function=embedding_model,
+)</input_code>
+  <markdown>#### Añadir documentos</markdown>
+  <input_code>from langchain_core.documents import Document
+
+document_1 = Document(page_content="This is a Mojo docs", metadata={"source": "Mojo source"})
+document_2 = Document(page_content="This is Rust docs", metadata={"source": "Rust source"})
+document_3 = Document(page_content="i will be deleted :(")
+
+documents = [document_1, document_2, document_3]
+ids = ["1", "2", "3"]
+vector_store.add_documents(documents=documents, ids=ids)</input_code>
+  <output_code>['1', '2', '3']</output_code>
+  <markdown>#### Actualizar documentos</markdown>
+  <input_code>updated_document = Document(
+    page_content="This is Python docs",
+    metadata={"source": "Python source"}
+)
+
+vector_store.update_documents(ids=["1"],documents=[updated_document])</input_code>
+  <markdown>#### Borrar documentos</markdown>
+  <input_code>vector_store.delete(ids=["3"])</input_code>
+  <markdown>#### Búsqueda de documentos</markdown>
+  <input_code>results = vector_store.similarity_search(query="python",k=1)
+for doc in results:
+    print(f"* {doc.page_content} [{doc.metadata}]")</input_code>
+  <output_code>* This is Python docs [{'source': 'Python source'}]
+</output_code>
+  <markdown>#### Búsqueda con filtros</markdown>
+  <input_code>results = vector_store.similarity_search(query="python",k=1,filter={"source": "Python source"})
+for doc in results:
+    print(f"* {doc.page_content} [{doc.metadata}]")</input_code>
+  <output_code>* This is Python docs [{'source': 'Python source'}]
+</output_code>
+  <markdown>#### Búsqueda con puntuación</markdown>
+  <input_code>results = vector_store.similarity_search_with_score(query="python",k=1)
+for doc, score in results:
+    print(f"* [SIM={score:3f}] {doc.page_content} [{doc.metadata}]")</input_code>
+  <output_code>* [SIM=0.809454] This is Python docs [{'source': 'Python source'}]
+</output_code>
+  <markdown>#### Uso como retriever</markdown>
+  <input_code>retriever = vector_store.as_retriever(
+    search_type="mmr",
+    search_kwargs={"k": 1, "fetch_k": 2, "lambda_mult": 0.5},
+)
+retriever.invoke("python")</input_code>
+  <output_code>[Document(metadata={'source': 'Python source'}, page_content='This is Python docs')]</output_code>
+  <markdown>#### Medida de similitud por coseno</markdown>
+  <markdown>Este método calcula la similitud por coseno entre dos vectores, por lo que en vez de pasarle dos strings, hay que pasarle dos vectores.</markdown>
+  <markdown>Así que primero creamos un modelo de embeddings.</markdown>
+  <input_code>from langchain_huggingface import HuggingFaceEmbeddings
+import numpy as np
+import torch
+
+model_name = "sentence-transformers/all-mpnet-base-v2"
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model_kwargs = {"device": device}
+encode_kwargs = {"normalize_embeddings": True}
+
+embeddings_model = HuggingFaceEmbeddings(
+    model_name=model_name,
+    model_kwargs=model_kwargs,
+    encode_kwargs=encode_kwargs
+)
+
+document1 = "Python"
+document2 = "python"
+
+embedding1 = embeddings_model.embed_query(document1)
+embedding2 = embeddings_model.embed_query(document2)
+
+embedding1_numpy = np.array(embedding1)
+embedding2_numpy = np.array(embedding2)
+
+embedding1_torch = torch.tensor(embedding1_numpy).unsqueeze(0)
+embedding2_torch = torch.tensor(embedding2_numpy).unsqueeze(0)</input_code>
+  <markdown>Y ahora podemos calcular la similitud por coseno.</markdown>
+  <input_code>from langchain_chroma.vectorstores import cosine_similarity
+
+similarity = cosine_similarity(embedding1_torch, embedding2_torch)
+similarity
+</input_code>
+  <output_code>array([[1.]])</output_code>
+</notebook>

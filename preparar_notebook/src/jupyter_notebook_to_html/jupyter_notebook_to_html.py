@@ -614,12 +614,13 @@ def _process_text_block(text_content: str) -> str:
     
     return result
 
-def input_code_to_html(code_content: str) -> str:
+def input_code_to_html(code_content: str, is_html_post: bool = False) -> str:
     """
     Converts input code to HTML with syntax highlighting using Pygments.
     
     Args:
         code_content: The Python code string to highlight.
+        is_html_post: Whether the code is in an HTML post.
         
     Returns:
         HTML string with the code highlighted and wrapped in appropriate containers.
@@ -690,10 +691,20 @@ def input_code_to_html(code_content: str) -> str:
     highlighted_code = re.sub(r'^[\t ]+[^<\n]*', replace_leading_whitespace, highlighted_code, flags=re.MULTILINE)
     
     # We need to wrap this in the specific structure expected by the test
-    html_output = f'''<section class="section-block-code-cell-">
-<div class="input-code">
-{highlighted_code}</div>
-</section>'''
+    if is_html_post:
+        highlighted_code = highlighted_code.replace('<span class="o">&amp;</span><span class="n">lt</span><span class="p">;</span>', '<span class="o"><</span>')
+        highlighted_code = highlighted_code.replace('&amp;</span><span class="n">gt</span><span class="p">;</span>', '></span>')
+        html_output = f'''<section class="section-block-code-cell-">
+        <div class="input-code">
+        {highlighted_code}</div>
+        </section>'''
+    else:
+        html_output = f'''<section class="section-block-code-cell-">
+        <div class="input-code">
+        {highlighted_code}</div>
+        </section>'''
+    
+
     
     return html_output
 
@@ -808,7 +819,7 @@ def output_code_to_html(output_content: str) -> str:
     
     return html_output
 
-def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_contents_in_xml_format):
+def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_contents_in_xml_format, is_html_post: bool = False):
     """
     Converts a list of content blocks or a single markdown string to HTML.
     Each content block is a dictionary with a type (e.g., "markdown", "input_code")
@@ -894,7 +905,7 @@ def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_con
         elif "input_code" in item:
             code_content = item["input_code"]
             # Use the new input_code_to_html function for proper syntax highlighting
-            html_output_parts.append(input_code_to_html(code_content))
+            html_output_parts.append(input_code_to_html(code_content, is_html_post=is_html_post))
         
         elif "output_code" in item:
             code_content = item["output_code"]

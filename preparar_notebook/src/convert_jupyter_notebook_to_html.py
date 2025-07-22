@@ -467,7 +467,8 @@ def convert_jupyter_notebook_to_html(notebook_path, metadata, notebook_title):
                 print(f"Converting {notebook} to html...")
 
                 # Convert the markdown content to html
-                html_content = jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_contents_in_xml_format)
+                is_html_post = "html" in notebook_name
+                html_content = jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_contents_in_xml_format, is_html_post)
 
                 # Save the html content to the html file
                 with open(full_destiny_path, 'w', encoding='utf-8') as html_file:

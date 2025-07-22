@@ -1590,6 +1590,13 @@ $$E = mc^2$$'''
 </blockquote>
 </section>'''
         self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+      
+    def test_markdown_to_html_iframe_with_text(self):
+        markdown = '<iframe>\n\tsrc="https://xenova-the-tokenizer-playground.static.hf.space"\n\tframeborder="0"\n\twidth="850"\n\theight="450"\n></iframe>'
+        expected_html = '''<section class="section-block-markdown-cell">
+<iframe src="https://xenova-the-tokenizer-playground.static.hf.space" frameborder="0" width="850" height="450"></iframe>
+</section>'''
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
 
 if __name__ == '__main__':
     # It's good practice to ensure that only one unittest.main() call remains,

@@ -695,14 +695,14 @@ def input_code_to_html(code_content: str, is_html_post: bool = False) -> str:
         highlighted_code = highlighted_code.replace('<span class="o">&amp;</span><span class="n">lt</span><span class="p">;</span>', '<span class="o"><</span>')
         highlighted_code = highlighted_code.replace('&amp;</span><span class="n">gt</span><span class="p">;</span>', '></span>')
         html_output = f'''<section class="section-block-code-cell-">
-        <div class="input-code">
-        {highlighted_code}</div>
-        </section>'''
+<div class="input-code">
+{highlighted_code}</div>
+</section>'''
     else:
         html_output = f'''<section class="section-block-code-cell-">
-        <div class="input-code">
-        {highlighted_code}</div>
-        </section>'''
+<div class="input-code">
+{highlighted_code}</div>
+</section>'''
     
 
     
@@ -851,7 +851,7 @@ def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_con
                 block_type, block_content = list(specific_block.items())[0]
 
                 if block_type == "text":
-                    if "Supongamos que para una entrada" in block_content:
+                    if "Por último, creamos el archivo README.md" in block_content:
                         print("debugging")
                     # Text blocks might contain headers or simple paragraphs.
                     # The generic_markdown_to_specific_markdowns might return larger text blocks

@@ -67,6 +67,14 @@ def markdown_code_to_html(markdown_content: str, include_language_class: bool = 
         processed_code = processed_code.replace("'", '&#39;')
         # Do not replace "
 
+        # Special case: if language is 'md' and content contains nested code blocks, use simple format
+        if language == 'md' and ('``' in code_content):
+            # For markdown with nested code blocks, escape braces and convert backticks
+            processed_code = processed_code.replace('{', '&#123;')
+            processed_code = processed_code.replace('}', '&#125;')
+            processed_code = processed_code.replace('``', '```')
+            return f"<pre><code class=\"language-{language}\">\n{processed_code}\n</code></pre>"
+
         # Conditionally include language class
         if include_language_class and language:
             lang_class = f' class="language-{language}"'

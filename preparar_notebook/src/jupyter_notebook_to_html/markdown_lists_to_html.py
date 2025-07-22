@@ -1,14 +1,301 @@
 import re
 
-def process_links_in_text(text):
-    """
-    Processes both internal and external markdown links, inline code, and bold text in a text string.
+def convert_latex_symbols_to_html(text: str) -> str:
+    r"""
+    Converts LaTeX mathematical symbols to HTML entities.
     
     Args:
-        text: Text that may contain markdown links, inline code, and bold text
+        text: LaTeX text containing mathematical symbols
         
     Returns:
-        Text with markdown links, inline code, and bold text converted to HTML
+        HTML text with LaTeX symbols converted to HTML entities
+    """
+    def replace_sqrt_with_balanced_braces(text: str) -> str:
+        """
+        Replaces \sqrt{...} with &radic;(...) handling nested braces correctly.
+        """
+        result = []
+        i = 0
+        while i < len(text):
+            if text[i:].startswith(r'\sqrt{'):
+                # Found \sqrt{, now find the matching closing brace
+                start_pos = i + 6  # Position after '\sqrt{'
+                brace_count = 1
+                j = start_pos
+                
+                while j < len(text) and brace_count > 0:
+                    if text[j] == '{':
+                        brace_count += 1
+                    elif text[j] == '}':
+                        brace_count -= 1
+                    j += 1
+                
+                if brace_count == 0:
+                    # Found matching closing brace
+                    content = text[start_pos:j-1]  # Content between braces
+                    result.append(f'&radic;({content})')
+                    i = j
+                else:
+                    # No matching closing brace found, keep original
+                    result.append(text[i])
+                    i += 1
+            else:
+                result.append(text[i])
+                i += 1
+        
+        return ''.join(result)
+    
+    def replace_superscripts_with_html(text: str) -> str:
+        """
+        Replaces ^{...} and ^n with <sup>...</sup> handling nested expressions correctly.
+        """
+        result = []
+        i = 0
+        while i < len(text):
+            if i < len(text) - 1 and text[i] == '^':
+                if i + 1 < len(text) and text[i + 1] == '{':
+                    # Found ^{, now find the matching closing brace
+                    start_pos = i + 2  # Position after '^{'
+                    brace_count = 1
+                    j = start_pos
+                    
+                    while j < len(text) and brace_count > 0:
+                        if text[j] == '{':
+                            brace_count += 1
+                        elif text[j] == '}':
+                            brace_count -= 1
+                        j += 1
+                    
+                    if brace_count == 0:
+                        # Found matching closing brace
+                        content = text[start_pos:j-1]  # Content between braces
+                        # Recursively process the content in case there are nested superscripts
+                        processed_content = replace_superscripts_with_html(content)
+                        result.append(f'<sup>{processed_content}</sup>')
+                        i = j
+                    else:
+                        # No matching closing brace found, keep original
+                        result.append(text[i])
+                        i += 1
+                elif i + 1 < len(text) and (text[i + 1].isalnum() or text[i + 1] in '-+'):
+                    # Found ^n format (single character or number, including negative)
+                    start_pos = i + 1
+                    j = start_pos
+                    
+                    # Handle negative sign
+                    if text[j] == '-' or text[j] == '+':
+                        j += 1
+                    
+                    # Collect consecutive alphanumeric characters
+                    while j < len(text) and text[j].isalnum():
+                        j += 1
+                    
+                    if j > start_pos:
+                        content = text[start_pos:j]
+                        result.append(f'<sup>{content}</sup>')
+                        i = j
+                    else:
+                        # No valid superscript content found
+                        result.append(text[i])
+                        i += 1
+                else:
+                    # ^ not followed by { or alphanumeric, keep original
+                    result.append(text[i])
+                    i += 1
+            else:
+                result.append(text[i])
+                i += 1
+        
+        return ''.join(result)
+
+    def replace_subscripts_with_html(text: str) -> str:
+        """
+        Replaces _{...} and _n with <sub>...</sub> handling nested expressions correctly.
+        """
+        result = []
+        i = 0
+        while i < len(text):
+            if i < len(text) - 1 and text[i] == '_':
+                if i + 1 < len(text) and text[i + 1] == '{':
+                    # Found _{, now find the matching closing brace
+                    start_pos = i + 2  # Position after '_{'
+                    brace_count = 1
+                    j = start_pos
+                    
+                    while j < len(text) and brace_count > 0:
+                        if text[j] == '{':
+                            brace_count += 1
+                        elif text[j] == '}':
+                            brace_count -= 1
+                        j += 1
+                    
+                    if brace_count == 0:
+                        # Found matching closing brace
+                        content = text[start_pos:j-1]  # Content between braces
+                        # Recursively process the content in case there are nested subscripts
+                        processed_content = replace_subscripts_with_html(content)
+                        result.append(f'<sub>{processed_content}</sub>')
+                        i = j
+                    else:
+                        # No matching closing brace found, keep original
+                        result.append(text[i])
+                        i += 1
+                elif i + 1 < len(text) and (text[i + 1].isalnum() or text[i + 1] in '-+'):
+                    # Found _n format (single character or number, including negative)
+                    start_pos = i + 1
+                    j = start_pos
+                    
+                    # Handle negative sign
+                    if text[j] == '-' or text[j] == '+':
+                        j += 1
+                    
+                    # Collect consecutive alphanumeric characters
+                    while j < len(text) and text[j].isalnum():
+                        j += 1
+                    
+                    if j > start_pos:
+                        content = text[start_pos:j]
+                        result.append(f'<sub>{content}</sub>')
+                        i = j
+                    else:
+                        # No valid subscript content found
+                        result.append(text[i])
+                        i += 1
+                else:
+                    # _ not followed by { or alphanumeric, keep original
+                    result.append(text[i])
+                    i += 1
+            else:
+                result.append(text[i])
+                i += 1
+        
+        return ''.join(result)
+
+    def replace_fractions_with_html(text: str) -> str:
+        """
+        Replaces \\frac{numerator}{denominator} with HTML fraction structure.
+        """
+        result = []
+        i = 0
+        while i < len(text):
+            if text[i:].startswith(r'\frac{'):
+                # Found \frac{, now find the numerator and denominator
+                start_pos = i + 6  # Position after '\frac{'
+                brace_count = 1
+                j = start_pos
+                
+                # Find the end of the numerator
+                while j < len(text) and brace_count > 0:
+                    if text[j] == '{':
+                        brace_count += 1
+                    elif text[j] == '}':
+                        brace_count -= 1
+                    j += 1
+                
+                if brace_count == 0 and j < len(text) and text[j] == '{':
+                    # Found numerator, now find denominator
+                    numerator = text[start_pos:j-1]
+                    
+                    # Start finding denominator
+                    denom_start = j + 1  # Position after second '{'
+                    brace_count = 1
+                    k = denom_start
+                    
+                    while k < len(text) and brace_count > 0:
+                        if text[k] == '{':
+                            brace_count += 1
+                        elif text[k] == '}':
+                            brace_count -= 1
+                        k += 1
+                    
+                    if brace_count == 0:
+                        # Found complete fraction
+                        denominator = text[denom_start:k-1]
+                        
+                        # Recursively process numerator and denominator for nested expressions
+                        processed_numerator = convert_latex_symbols_to_html(numerator)
+                        processed_denominator = convert_latex_symbols_to_html(denominator)
+                        
+                        fraction_html = f'<span class="math-fraction"><span class="math-fraction-numerator">{processed_numerator}</span><span class="math-fraction-denominator">{processed_denominator}</span></span>'
+                        result.append(fraction_html)
+                        i = k
+                    else:
+                        # No matching closing brace for denominator
+                        result.append(text[i])
+                        i += 1
+                else:
+                    # No denominator found or malformed fraction
+                    result.append(text[i])
+                    i += 1
+            else:
+                result.append(text[i])
+                i += 1
+        
+        return ''.join(result)
+    
+    # First handle \sqrt{} with balanced braces
+    text = replace_sqrt_with_balanced_braces(text)
+    
+    # Then handle superscripts ^{...} and ^n
+    text = replace_superscripts_with_html(text)
+    
+    # Then handle subscripts _{...} and _n
+    text = replace_subscripts_with_html(text)
+    
+    # Note: For lists, we don't convert fractions to HTML structure
+    # Instead, we keep the LaTeX format and just escape the braces later
+    
+    # Dictionary mapping other LaTeX symbols to HTML entities
+    latex_to_html = {
+        r'\\cdots': r'···',                     # Centered dots: \cdots -> ···
+        r'\\cdot': r'·',                        # Centered dot: \cdot -> ·
+        r'\\sum': r'&sum;',                     # Summation: \sum -> ∑
+        r'\\prod': r'&prod;',                   # Product: \prod -> ∏
+        r'\\int': r'&int;',                     # Integral: \int -> ∫
+        r'\\alpha': r'&alpha;',                 # Alpha: \alpha -> α
+        r'\\beta': r'&beta;',                   # Beta: \beta -> β
+        r'\\gamma': r'&gamma;',                 # Gamma: \gamma -> γ
+        r'\\delta': r'&delta;',                 # Delta: \delta -> δ
+        r'\\epsilon': r'&epsilon;',             # Epsilon: \epsilon -> ε
+        r'\\theta': r'&theta;',                 # Theta: \theta -> θ
+        r'\\lambda': r'&lambda;',               # Lambda: \lambda -> λ
+        r'\\mu': r'&mu;',                       # Mu: \mu -> μ
+        r'\\pi': r'&pi;',                       # Pi: \pi -> π
+        r'\\sigma': r'&sigma;',                 # Sigma: \sigma -> σ
+        r'\\tau': r'&tau;',                     # Tau: \tau -> τ
+        r'\\phi': r'&phi;',                     # Phi: \phi -> φ
+        r'\\omega': r'&omega;',                 # Omega: \omega -> ω
+        r'\\infty': r'&infin;',                 # Infinity: \infty -> ∞
+        r'\\pm': r'&plusmn;',                   # Plus-minus: \pm -> ±
+        r'\\times': r'&times;',                 # Multiplication: \times -> ×
+        r'\\div': r'&divide;',                  # Division: \div -> ÷
+        r'\\le': r'&le;',                       # Less than or equal: \le -> ≤
+        r'\\ge': r'&ge;',                       # Greater than or equal: \ge -> ≥
+        r'\\ne': r'&ne;',                       # Not equal: \ne -> ≠
+        r'\\approx': r'&asymp;',                # Approximately equal: \approx -> ≈
+    }
+    
+    # Note: For lists, we don't convert LaTeX symbols to HTML entities
+    # Instead, we keep the LaTeX format and just escape the braces
+    # Apply all other replacements
+    # for latex_pattern, html_replacement in latex_to_html.items():
+    #     text = re.sub(latex_pattern, html_replacement, text)
+    
+    # Finally, escape any remaining curly braces that weren't part of processed LaTeX commands
+    # This handles cases like \hat{y} where the braces should be escaped as HTML entities
+    text = text.replace('{', '&#123;').replace('}', '&#125;')
+    
+    return text
+
+def process_links_in_text(text):
+    """
+    Processes both internal and external markdown links, inline code, bold text, and inline math in a text string.
+    
+    Args:
+        text: Text that may contain markdown links, inline code, bold text, and inline math
+        
+    Returns:
+        Text with markdown links, inline code, bold text, and inline math converted to HTML
     """
     # First process inline code with double backticks
     text = re.sub(r'``([^`]+?)``', r'<code>\1</code>', text)
@@ -18,6 +305,15 @@ def process_links_in_text(text):
     
     # Process bold text (**text**) to <strong>text</strong>
     text = re.sub(r'\*\*([^*]+?)\*\*', r'<strong>\1</strong>', text)
+    
+    # Process inline math (text between single dollar signs)
+    def process_inline_math(match):
+        math_content = match.group(1)
+        # Convert LaTeX symbols to HTML entities including escaping braces
+        math_content = convert_latex_symbols_to_html(math_content)
+        return f'<span class="math-inline">{math_content}</span>'
+    
+    text = re.sub(r'\$([^$]+?)\$', process_inline_math, text)
     
     # Then process external links (https:// or http://)
     text = re.sub(r'\[(.*?)\]\((https?://.*?)\)', r'<a href="\2">\1</a>', text)

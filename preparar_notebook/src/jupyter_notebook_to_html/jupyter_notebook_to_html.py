@@ -58,7 +58,7 @@ def _process_inline_math(text: str) -> str:
     return re.sub(pattern, replace_inline_math, text)
 
 def _convert_latex_symbols_to_html(text: str) -> str:
-    """
+    r"""
     Converts LaTeX mathematical symbols to HTML entities.
     
     Args:
@@ -338,6 +338,10 @@ def _convert_latex_symbols_to_html(text: str) -> str:
     for latex_pattern, html_replacement in latex_to_html.items():
         text = re.sub(latex_pattern, html_replacement, text)
     
+    # Finally, escape any remaining curly braces that weren't part of processed LaTeX commands
+    # This handles cases like \hat{y} where the braces should be escaped as HTML entities
+    text = text.replace('{', '&#123;').replace('}', '&#125;')
+    
     return text
 
 def _process_block_math(text: str) -> str:
@@ -405,7 +409,59 @@ def _process_text_block(text_content: str) -> str:
             # Create the header with anchor link for normal titles
             return f'<h{level} id="{header_id}">{corrected_title}<a class="anchor-link" href="#{header_id}">¶</a></h{level}>'
     
-    # First, process block math expressions across the entire text
+    def process_iframe(text_content: str) -> str:
+        """
+        Processes iframe tags that may span multiple lines with attributes separated by tabs and newlines.
+        Converts them to single-line iframe tags.
+        """
+        # Pattern to match the entire iframe block including multiline content
+        iframe_pattern = r'<iframe([^>]*?)>(.*?)</iframe>'
+        
+        def clean_iframe(match):
+            attributes_part = match.group(1)
+            inner_content = match.group(2)
+            
+            # Combine attributes from the opening tag and the inner content
+            all_attributes = attributes_part + inner_content
+            
+            # Extract individual attributes from the combined content
+            # This handles both attributes with values and boolean attributes
+            # Pattern for attributes with values: attr="value"
+            value_attr_pattern = r'(\w+)="([^"]*)"'
+            value_attributes = re.findall(value_attr_pattern, all_attributes)
+            
+            # Pattern for boolean attributes (no value): just the attribute name
+            # Look for word boundaries to avoid partial matches
+            bool_attr_pattern = r'\b(\w+)(?!\s*=)'
+            # Get all potential boolean attributes
+            all_words = re.findall(r'\b\w+\b', all_attributes)
+            # Filter out those that are already captured as value attributes
+            value_attr_names = set(attr_name for attr_name, _ in value_attributes)
+            bool_attributes = [word for word in all_words if word not in value_attr_names and 
+                             not any(word in attr_value for _, attr_value in value_attributes)]
+            
+            # Build the cleaned attribute string
+            cleaned_attr_parts = []
+            for attr_name, attr_value in value_attributes:
+                cleaned_attr_parts.append(f'{attr_name}="{attr_value}"')
+            
+            # Add boolean attributes (common iframe boolean attributes)
+            common_bool_attrs = {'allowfullscreen', 'autoplay', 'loop', 'muted'}
+            for attr in bool_attributes:
+                if attr in common_bool_attrs:
+                    cleaned_attr_parts.append(attr)
+            
+            cleaned_attributes = ' '.join(cleaned_attr_parts)
+            
+            # Reconstruct the iframe tag
+            return f'<iframe{" " + cleaned_attributes if cleaned_attributes else ""}></iframe>'
+        
+        return re.sub(iframe_pattern, clean_iframe, text_content, flags=re.DOTALL)
+    
+    # First, process iframe tags before other processing
+    text_content = process_iframe(text_content)
+    
+    # Then, process block math expressions across the entire text
     # This needs to happen before splitting into lines
     text_content = _process_block_math(text_content)
     
@@ -530,9 +586,12 @@ def _process_text_block(text_content: str) -> str:
             else: # Already some HTML, or other structure
                 # Check if this is inline HTML (like links) mixed with text that should be in a paragraph
                 stripped_line = line.strip()
+                # Special handling for iframe tags - don't wrap them in paragraphs
+                if stripped_line.startswith("<iframe"):
+                    processed_lines.append(stripped_line)
                 # If it starts with inline HTML but doesn't look like a complete HTML block,
                 # it might be inline HTML mixed with text that should be wrapped in <p>
-                if (stripped_line.startswith("<a ") or 
+                elif (stripped_line.startswith("<a ") or 
                     stripped_line.startswith("<code>") or 
                     stripped_line.startswith("<span")) and not stripped_line.startswith(("<h", "<p", "<div", "<section", "<blockquote")):
                     # This is likely inline HTML mixed with text, wrap in paragraph
@@ -555,12 +614,13 @@ def _process_text_block(text_content: str) -> str:
     
     return result
 
-def input_code_to_html(code_content: str) -> str:
+def input_code_to_html(code_content: str, is_html_post: bool = False) -> str:
     """
     Converts input code to HTML with syntax highlighting using Pygments.
     
     Args:
         code_content: The Python code string to highlight.
+        is_html_post: Whether the code is in an HTML post.
         
     Returns:
         HTML string with the code highlighted and wrapped in appropriate containers.
@@ -631,10 +691,20 @@ def input_code_to_html(code_content: str) -> str:
     highlighted_code = re.sub(r'^[\t ]+[^<\n]*', replace_leading_whitespace, highlighted_code, flags=re.MULTILINE)
     
     # We need to wrap this in the specific structure expected by the test
-    html_output = f'''<section class="section-block-code-cell-">
+    if is_html_post:
+        highlighted_code = highlighted_code.replace('<span class="o">&amp;</span><span class="n">lt</span><span class="p">;</span>', '<span class="o"><</span>')
+        highlighted_code = highlighted_code.replace('&amp;</span><span class="n">gt</span><span class="p">;</span>', '></span>')
+        html_output = f'''<section class="section-block-code-cell-">
 <div class="input-code">
 {highlighted_code}</div>
 </section>'''
+    else:
+        html_output = f'''<section class="section-block-code-cell-">
+<div class="input-code">
+{highlighted_code}</div>
+</section>'''
+    
+
     
     return html_output
 
@@ -749,7 +819,7 @@ def output_code_to_html(output_content: str) -> str:
     
     return html_output
 
-def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_contents_in_xml_format):
+def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_contents_in_xml_format, is_html_post: bool = False):
     """
     Converts a list of content blocks or a single markdown string to HTML.
     Each content block is a dictionary with a type (e.g., "markdown", "input_code")
@@ -781,6 +851,8 @@ def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_con
                 block_type, block_content = list(specific_block.items())[0]
 
                 if block_type == "text":
+                    if "Por último, creamos el archivo README.md" in block_content:
+                        print("debugging")
                     # Text blocks might contain headers or simple paragraphs.
                     # The generic_markdown_to_specific_markdowns might return larger text blocks
                     # that need further processing for headers, paragraphs etc.
@@ -833,7 +905,7 @@ def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_con
         elif "input_code" in item:
             code_content = item["input_code"]
             # Use the new input_code_to_html function for proper syntax highlighting
-            html_output_parts.append(input_code_to_html(code_content))
+            html_output_parts.append(input_code_to_html(code_content, is_html_post=is_html_post))
         
         elif "output_code" in item:
             code_content = item["output_code"]

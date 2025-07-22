@@ -23,38 +23,38 @@
    * -rw-r--r--@   1 macm1  staff     47565 29 ene 17:29 2024-02-23-Transformers-from-top-to-the-bottom.ipynb
    * -rw-r--r--@   1 macm1  staff     56871 29 ene 17:29 2024-07-29-QLoRA.ipynb
    * -rw-r--r--@   1 macm1  staff     60497 29 ene 17:29 2024-10-23-RAG-fundamentals.ipynb
- * -rw-r--r--@   1 macm1  staff     61382 29 ene 17:29 2024-12-16-Langchain-opensource-integrations.ipynb
+   * -rw-r--r--@   1 macm1  staff     61382 29 ene 17:29 2024-12-16-Langchain-opensource-integrations.ipynb
    * -rw-r--r--@   1 macm1  staff     63216 29 ene 17:29 2023-12-05-html.ipynb
-   * -rw-r--r--@   1 macm1  staff     67047 23 mar 07:25 2025-03-02-Desplegar-backend-en-HuggingFace.ipynb
-   * -rw-r--r--@   1 macm1  staff     69050 29 ene 17:29 2023-02-01-Bash-scripting.ipynb
-   * -rw-r--r--@   1 macm1  staff     75799 29 ene 17:29 2024-02-10-Expresiones-regulares.ipynb
-   * -rw-r--r--@   1 macm1  staff     84435 29 ene 17:29 2024-07-20-LoRA.ipynb
-   * -rw-r--r--@   1 macm1  staff     88625 29 ene 17:29 2023-03-18-SSH.ipynb
-   * -rw-r--r--@   1 macm1  staff     96374 29 ene 17:29 2024-02-18-Bases-de-datos-vectoriales.ipynb
-   * -rw-r--r--@   1 macm1  staff    116282 11 jun 19:12 2024-07-09-GPT2-Language-Models-are-Unsupervised-Multitask-Learners.ipynb
-   * -rw-r--r--@   1 macm1  staff    124963 29 ene 17:29 2021-04-23-Calculo-matricial-con-Numpy.ipynb
-   * -rw-r--r--@   1 macm1  staff    146055 29 ene 17:29 2024-04-29-Hugging-Face-evaluate.ipynb
-   * -rw-r--r--@   1 macm1  staff    152332 29 ene 17:29 2024-07-14-Fine-tuning-SLM.ipynb
-   * -rw-r--r--@   1 macm1  staff    156689 29 ene 17:29 2023-12-06-openai_API.ipynb
-   * -rw-r--r--@   1 macm1  staff    164417 29 ene 17:29 2024-04-24-Hugging-Face-datasets.ipynb
-   * -rw-r--r--@   1 macm1  staff    167426 29 ene 17:29 2024-05-25-Ollama.ipynb
+ * -rw-r--r--@   1 macm1  staff     67047 23 mar 07:25 2025-03-02-Desplegar-backend-en-HuggingFace.ipynb
+ * -rw-r--r--@   1 macm1  staff     69050 29 ene 17:29 2023-02-01-Bash-scripting.ipynb
+ * -rw-r--r--@   1 macm1  staff     75799 29 ene 17:29 2024-02-10-Expresiones-regulares.ipynb
+ * -rw-r--r--@   1 macm1  staff     84435 29 ene 17:29 2024-07-20-LoRA.ipynb
+ * -rw-r--r--@   1 macm1  staff     88625 29 ene 17:29 2023-03-18-SSH.ipynb
+ * -rw-r--r--@   1 macm1  staff     96374 29 ene 17:29 2024-02-18-Bases-de-datos-vectoriales.ipynb
+ * -rw-r--r--@   1 macm1  staff    116282 11 jun 19:12 2024-07-09-GPT2-Language-Models-are-Unsupervised-Multitask-Learners.ipynb
+ * -rw-r--r--@   1 macm1  staff    124963 29 ene 17:29 2021-04-23-Calculo-matricial-con-Numpy.ipynb
+ * -rw-r--r--@   1 macm1  staff    146055 29 ene 17:29 2024-04-29-Hugging-Face-evaluate.ipynb
+ * -rw-r--r--@   1 macm1  staff    152332 29 ene 17:29 2024-07-14-Fine-tuning-SLM.ipynb
+ * -rw-r--r--@   1 macm1  staff    156689 29 ene 17:29 2023-12-06-openai_API.ipynb
+ * -rw-r--r--@   1 macm1  staff    164417 29 ene 17:29 2024-04-24-Hugging-Face-datasets.ipynb
+ * -rw-r--r--@   1 macm1  staff    167426 29 ene 17:29 2024-05-25-Ollama.ipynb
  * -rw-r--r--@   1 macm1  staff    176340 11 jun 19:12 2024-02-05-CSS3.ipynb
-   * -rw-r--r--@   1 macm1  staff    176824 11 jun 19:12 2024-11-03-unittest.ipynb
-   * -rw-r--r--@   1 macm1  staff    217023 29 ene 17:29 2024-07-27-GPTQ.ipynb
-   * -rw-r--r--@   1 macm1  staff    225219 29 ene 17:29 2024-04-15-Hugging-Face-transformers.ipynb
-   * -rw-r--r--@   1 macm1  staff    227521 29 ene 17:29 2024-05-16-Hugging-Face-accelerate.ipynb
-   * -rw-r--r--@   1 macm1  staff    239453 29 ene 17:29 2023-04-30-Conda.ipynb
-   * -rw-r--r--@   1 macm1  staff    293857 29 ene 17:29 2023-01-22-Docker.ipynb
-   * -rw-r--r--@   1 macm1  staff    316091 29 ene 17:29 2023-04-23-git.ipynb
-   * -rw-r--r--@   1 macm1  staff    316268 11 jun 19:12 2025-06-04-Agents-patterns.ipynb
+ * -rw-r--r--@   1 macm1  staff    176824 11 jun 19:12 2024-11-03-unittest.ipynb
+ * -rw-r--r--@   1 macm1  staff    217023 29 ene 17:29 2024-07-27-GPTQ.ipynb
+ * -rw-r--r--@   1 macm1  staff    225219 29 ene 17:29 2024-04-15-Hugging-Face-transformers.ipynb
+ * -rw-r--r--@   1 macm1  staff    227521 29 ene 17:29 2024-05-16-Hugging-Face-accelerate.ipynb
+ * -rw-r--r--@   1 macm1  staff    239453 29 ene 17:29 2023-04-30-Conda.ipynb
+ * -rw-r--r--@   1 macm1  staff    293857 29 ene 17:29 2023-01-22-Docker.ipynb
+ * -rw-r--r--@   1 macm1  staff    316091 29 ene 17:29 2023-04-23-git.ipynb
+ * -rw-r--r--@   1 macm1  staff    316268 11 jun 19:12 2025-06-04-Agents-patterns.ipynb
  * -rw-r--r--@   1 macm1  staff    318729  8 mar 12:57 2021-02-11-Introduccion-a-Python.ipynb
  * -rw-r--r--@   1 macm1  staff    403307  8 mar 12:57 2022-09-12-Introduccion-a-la-terminal.ipynb
-   * -rw-r--r--@   1 macm1  staff    501764 29 ene 17:29 2023-12-09-embeddings.ipynb
-   * -rw-r--r--@   1 macm1  staff    625416 29 ene 17:29 2021-06-15-Manejo-de-datos-con-Pandas.ipynb
-   * -rw-r--r--@   1 macm1  staff    737433 29 ene 17:29 2024-07-18-Florence-2-fine-tuning.ipynb
-   * -rw-r--r--@   1 macm1  staff    855429 29 ene 17:29 2023-02-04-Blip-2.ipynb
-   * -rw-r--r--@   1 macm1  staff   1293934 11 jun 19:12 2025-05-19-LangGraph.ipynb
-   * -rw-r--r--@   1 macm1  staff  16634750 29 ene 17:29 2024-06-23-Florence-2:-Advancing-a-Unified-Representation-for-a-Variety-of-Vision-Tasks.ipynb
+ * -rw-r--r--@   1 macm1  staff    501764 29 ene 17:29 2023-12-09-embeddings.ipynb
+ * -rw-r--r--@   1 macm1  staff    625416 29 ene 17:29 2021-06-15-Manejo-de-datos-con-Pandas.ipynb
+ * -rw-r--r--@   1 macm1  staff    737433 29 ene 17:29 2024-07-18-Florence-2-fine-tuning.ipynb
+ * -rw-r--r--@   1 macm1  staff    855429 29 ene 17:29 2023-02-04-Blip-2.ipynb
+ * -rw-r--r--@   1 macm1  staff   1293934 11 jun 19:12 2025-05-19-LangGraph.ipynb
+ * -rw-r--r--@   1 macm1  staff  16634750 29 ene 17:29 2024-06-23-Florence-2:-Advancing-a-Unified-Representation-for-a-Variety-of-Vision-Tasks.ipynb
 
  Patrón de búsqueda: 
 (?<!const opening_brace = ')\{(?!\[|svg_path|opening_brace|closing_brace| metadata_page| colors| svg_paths|page_title|languaje|description|keywords|metadata_page.author|colors.background_color|end_url|image_path)|(?<!svg_path|opening_brace|closing_brace|const closing_brace = '|metadata_page |colors |svg_paths |page_title|languaje|description|keywords|metadata_page.author|colors.background_color|end_url|image_path|\])\}

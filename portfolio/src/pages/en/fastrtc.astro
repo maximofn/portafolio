@@ -217,7 +217,8 @@ const closing_brace = '}';
       <section class="section-block-markdown-cell">
       <p>Let's break it down:</p>
       <ul>
-        <li><code>ReplyOnPause</code> will handle voice detection and turn-taking for you. You only need to worry about the logic for responding to the user. You have to pass it the function that will manage the input audio. In our case, it's the <code>echo</code> function, which captures the input audio and returns it as a stream using <code>yield</code>, which many people don't know, but is a generator, meaning it's a Python method for creating iterators. If you want to learn more about <code>yield</code>, you can read my post on <a href="https://www.maximofn.com/python#6.5.-Generators">Python</a>. Any generator that returns an audio tuple (represented as <code>(sample_rate, audio_data)</code>) will work.* The <code>Stream</code> class will build a Gradio UI for you to quickly test your stream. Once you have finished prototyping, you can deploy your Stream as a production-ready FastAPI application in a single line of code.</li>
+        <li><code>ReplyOnPause</code> will handle voice detection and turn-taking for you. You only need to worry about the logic for responding to the user. You have to pass it the function that will manage the input audio. In our case, it's the <code>echo</code> function, which captures the input audio and returns it as a stream using <code>yield</code>, which many people don't know, but is a generator, meaning it's a Python method for creating iterators. If you want to learn more about <code>yield</code>, you can read my post on <a href="https://www.maximofn.com/python#6.5.-Generators">Python</a>. Any generator that returns an audio tuple (represented as <code>(sample_rate, audio_data)</code>) will work.</li>
+        <li>The <code>Stream</code> class will build a Gradio UI for you to quickly test your stream. Once you have finished prototyping, you can deploy your Stream as a production-ready FastAPI application in a single line of code.</li>
       </ul>
       </section>
       
@@ -445,7 +446,7 @@ const closing_brace = '}';
       <p>The part</p>
       
       <section class="section-block-markdown-cell">
-            <div class='highlight'><pre><code class="language-python"># Monkey patch `setup_tunnel` to accept the additional parameter<br>def patched_setup_tunnel(host, port, share_token, share_server_address, share_server_tls_certificate=None):<br>return original_setup_tunnel(host, port, share_token, share_server_address, share_server_tls_certificate)<br><br># Replace the original function with our patched versiongradio.networking.setup_tunnel = patched_setup_tunnel</code></pre></div>
+            <div class='highlight'><pre><code class="language-python"># Monkey patch `setup_tunnel` to accept the additional parameter<br>def patched_setup_tunnel(host, port, share_token, share_server_address, share_server_tls_certificate=None):<br>return original_setup_tunnel(host, port, share_token, share_server_address, share_server_tls_certificate)<br><br># Replace the original function with our patched version<br>gradio.networking.setup_tunnel = patched_setup_tunnel</code></pre></div>
             </section>
       <p>It is necessary because <code>FastRTC</code> is written for an older version of <code>gradio</code> that does not support the <code>share_server_address</code> parameter in the <code>setup_tunnel</code> method. So we patch it to accept the additional parameter.</p>
       </section>
@@ -462,25 +463,16 @@ const closing_brace = '}';
       <p>The language models, the <code>speech-to-text</code> model, and the <code>text-to-speech</code> model are created below, along with the <code>echo</code> function that will handle the input and output audio.</p>
       
       <section class="section-block-markdown-cell">
-            <div class='highlight'><pre><code class="language-python"># Initialize the LLM client<br>llm_client = Client("Maximofn/SmolLM2_localModel")<br><br># Initialize the STT and TTS models<br>stt_model = get_stt_model()<br>tts_model = get_tts_model()<br><br># Define the echo function<br>def echo(audio):<br># Convert the audio to text<br>prompt = stt_model.stt(audio)<br><br># Generate the response<br>response = llm_client.predict(<br>message=prompt,<br>system_message="You are a friendly Chatbot. Always reply in the language in which the user is writing to you."max_tokens=512,<br>temperature=0.7,<br>top_p=0.95,<br>api_name="/chat"<br>)<br>&#x20;&#x20;<br># Convert the response to audio<br>prompt = response<br><br># Stream the audio<br>for audio_chunk in tts_model.stream_tts_sync(prompt):<br>yield audio_chunk</code></pre></div>
+            <div class='highlight'><pre><code class="language-python"># Initialize the LLM client<br>llm_client = Client("Maximofn/SmolLM2_localModel")<br><br># Initialize the STT and TTS models<br>stt_model = get_stt_model()<br>tts_model = get_tts_model()<br><br># Define the echo function<br>def echo(audio):<br># Convert the audio to text<br>prompt = stt_model.stt(audio)<br><br># Generate the response<br>response = llm_client.predict(<br>message=prompt,<br>system_message="You are a friendly Chatbot. Always reply in the language in which the user is writing to you."<br>max_tokens=512,<br>temperature=0.7,<br>top_p=0.95,<br>api_name="/chat"<br>)<br>&#x20;&#x20;<br># Convert the response to audio<br>prompt = response<br><br># Stream the audio<br>for audio_chunk in tts_model.stream_tts_sync(prompt):<br>yield audio_chunk</code></pre></div>
             </section>
       </section>
       
       <section class="section-block-markdown-cell">
       <p>As we have used port <code>8000</code> before, in case it tells you that it is occupied, we create a function to find a free port and find one.</p>
-      <div class='highlight'><pre><code class="language-python">def find_free_port(start_port=8000, max_port=9000):</code></pre></div>
-      <p>markdown</p>
-      <p>"Find the first free port starting from start_port."</p>
-      <div class='highlight'><pre><code>print(f"Searching for a free port starting from {opening_brace}start_port{closing_brace}...")
-      for port in range(start_port, max_port):
-      with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-      result = sock.connect_ex((&#39;127.0.0.1&#39;, port))
-      if result != 0:  # If result != 0, the port is free
-      print(f"Free port found: {opening_brace}port{closing_brace}")
-      return port
-      raise RuntimeError(f"No free port found between {opening_brace}start_port{closing_brace} and {opening_brace}max_port{closing_brace}")
-          
-      free_port = find_free_port()    # Search for a free port</code></pre></div>
+      
+      <section class="section-block-markdown-cell">
+            <div class='highlight'><pre><code class="language-python">def find_free_port(start_port=8000, max_port=9000):<br>&#x20;&#x20;"""Find the first free port starting from start_port."""<br>&#x20;&#x20;print(f"Searching for a free port starting from {opening_brace}start_port{closing_brace}...")<br>&#x20;&#x20;for port in range(start_port, max_port):<br>&#x20;&#x20;&#x20;&#x20;with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;result = sock.connect_ex((&#39;127.0.0.1&#39;, port))<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;if result != 0:  # If result != 0, the port is free<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;print(f"Free port found: {opening_brace}port{closing_brace}")<br>&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;return port<br>&#x20;&#x20;raise RuntimeError(f"No free port found between {opening_brace}start_port{closing_brace} and {opening_brace}max_port{closing_brace}")<br>&#x20;&#x20;<br>free_port = find_free_port()    # Search for a free port</code></pre></div>
+            </section>
       </section>
       
       <section class="section-block-markdown-cell">

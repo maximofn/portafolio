@@ -338,6 +338,10 @@ def _convert_latex_symbols_to_html(text: str) -> str:
     for latex_pattern, html_replacement in latex_to_html.items():
         text = re.sub(latex_pattern, html_replacement, text)
     
+    # Finally, escape any remaining curly braces that weren't part of processed LaTeX commands
+    # This handles cases like \hat{y} where the braces should be escaped as HTML entities
+    text = text.replace('{', '&#123;').replace('}', '&#125;')
+    
     return text
 
 def _process_block_math(text: str) -> str:
@@ -836,8 +840,8 @@ def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_con
                 block_type, block_content = list(specific_block.items())[0]
 
                 if block_type == "text":
-                    if "<iframe" in block_content:
-                        print("a")
+                    if "Supongamos que para una entrada" in block_content:
+                        print("debugging")
                     # Text blocks might contain headers or simple paragraphs.
                     # The generic_markdown_to_specific_markdowns might return larger text blocks
                     # that need further processing for headers, paragraphs etc.

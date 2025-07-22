@@ -1,28 +1,28 @@
- * -rw-r--r--@   1 macm1  staff      3597 29 ene 17:29 2024-03-16-git-sim.ipynb
- * -rw-r--r--@   1 macm1  staff      4196 29 ene 17:29 2023-09-16-Fail2ban.ipynb
- * -rw-r--r--@   1 macm1  staff      5692 29 ene 17:29 2023-09-15-Caffeine.ipynb
- * -rw-r--r--@   1 macm1  staff      7080 29 ene 17:29 2023-12-18-Medida-de-similitud-entre-embeddings.ipynb
- * -rw-r--r--@   1 macm1  staff      8838 29 ene 17:29 2023-03-19-whisper.ipynb
- * -rw-r--r--@   1 macm1  staff      9274  8 mar 12:55 2025-03-06-InferenceProviders-Wan21.ipynb
+   * -rw-r--r--@   1 macm1  staff      3597 29 ene 17:29 2024-03-16-git-sim.ipynb
+   * -rw-r--r--@   1 macm1  staff      4196 29 ene 17:29 2023-09-16-Fail2ban.ipynb
+   * -rw-r--r--@   1 macm1  staff      5692 29 ene 17:29 2023-09-15-Caffeine.ipynb
+   * -rw-r--r--@   1 macm1  staff      7080 29 ene 17:29 2023-12-18-Medida-de-similitud-entre-embeddings.ipynb
+   * -rw-r--r--@   1 macm1  staff      8838 29 ene 17:29 2023-03-19-whisper.ipynb
+   * -rw-r--r--@   1 macm1  staff      9274  8 mar 12:55 2025-03-06-InferenceProviders-Wan21.ipynb
  * -rw-r--r--@   1 macm1  staff      9344 24 feb 08:17 2025-02-24-Langchain-Text-classify.ipynb
- * -rw-r--r--@   1 macm1  staff     11734 29 ene 17:29 2023-12-08-tokens.ipynb
- * -rw-r--r--@   1 macm1  staff     13344 29 ene 17:29 2023-12-30-Mixtral-8x7B.ipynb
- * -rw-r--r--@   1 macm1  staff     15540 29 ene 17:29 2024-07-21-LLMs-quantization.ipynb
- * -rw-r--r--@   1 macm1  staff     17093 29 ene 17:29 2024-07-23-llm.int8.ipynb
- * -rw-r--r--@   1 macm1  staff     18013 29 ene 17:29 2024-06-01-Hugging-Face-optimun.ipynb
+   * -rw-r--r--@   1 macm1  staff     11734 29 ene 17:29 2023-12-08-tokens.ipynb
+   * -rw-r--r--@   1 macm1  staff     13344 29 ene 17:29 2023-12-30-Mixtral-8x7B.ipynb
+   * -rw-r--r--@   1 macm1  staff     15540 29 ene 17:29 2024-07-21-LLMs-quantization.ipynb
+   * -rw-r--r--@   1 macm1  staff     17093 29 ene 17:29 2024-07-23-llm.int8.ipynb
+   * -rw-r--r--@   1 macm1  staff     18013 29 ene 17:29 2024-06-01-Hugging-Face-optimun.ipynb
  * -rw-r--r--@   1 macm1  staff     21489 25 feb 18:01 2025-02-25-Langchain-cadenas de extraccion.ipynb
- * -rw-r--r--@   1 macm1  staff     21746 11 jun 19:12 2024-08-01-DoLa.ipynb
- * -rw-r--r--@   1 macm1  staff     24294 11 jun 19:12 2025-03-08-FastRTC.ipynb
+   * -rw-r--r--@   1 macm1  staff     21746 11 jun 19:12 2024-08-01-DoLa.ipynb
+   * -rw-r--r--@   1 macm1  staff     24294 11 jun 19:12 2025-03-08-FastRTC.ipynb
  * -rw-r--r--@   1 macm1  staff     28483 25 feb 18:15 2025-02-19-Langchain-chat-models-and-prompts.ipynb
- * -rw-r--r--@   1 macm1  staff     30457 11 jun 19:12 2025-03-10-uv.ipynb
+   * -rw-r--r--@   1 macm1  staff     30457 11 jun 19:12 2025-03-10-uv.ipynb
  * -rw-r--r--@   1 macm1  staff     39018 23 feb 09:46 2025-02-23-Langchain-semantic-search.ipynb
- * -rw-r--r--@   1 macm1  staff     42882 29 ene 17:29 2024-10-16-Conventional-commits.ipynb
- * -rw-r--r--@   1 macm1  staff     44907 11 jun 19:12 2024-06-12-GPT1-Improving-Language-Understanding-by-Generative-Pre-Training.ipynb
- * -rw-r--r--@   1 macm1  staff     46506 29 ene 17:29 2024-02-26-Hugging-Face-tokenizers.ipynb
- * -rw-r--r--@   1 macm1  staff     47207 29 ene 17:29 2024-06-04-BPE-tokenizer.ipynb
- * -rw-r--r--@   1 macm1  staff     47565 29 ene 17:29 2024-02-23-Transformers-from-top-to-the-bottom.ipynb
- * -rw-r--r--@   1 macm1  staff     56871 29 ene 17:29 2024-07-29-QLoRA.ipynb
- * -rw-r--r--@   1 macm1  staff     60497 29 ene 17:29 2024-10-23-RAG-fundamentals.ipynb
+   * -rw-r--r--@   1 macm1  staff     42882 29 ene 17:29 2024-10-16-Conventional-commits.ipynb
+   * -rw-r--r--@   1 macm1  staff     44907 11 jun 19:12 2024-06-12-GPT1-Improving-Language-Understanding-by-Generative-Pre-Training.ipynb
+   * -rw-r--r--@   1 macm1  staff     46506 29 ene 17:29 2024-02-26-Hugging-Face-tokenizers.ipynb
+   * -rw-r--r--@   1 macm1  staff     47207 29 ene 17:29 2024-06-04-BPE-tokenizer.ipynb
+   * -rw-r--r--@   1 macm1  staff     47565 29 ene 17:29 2024-02-23-Transformers-from-top-to-the-bottom.ipynb
+   * -rw-r--r--@   1 macm1  staff     56871 29 ene 17:29 2024-07-29-QLoRA.ipynb
+   * -rw-r--r--@   1 macm1  staff     60497 29 ene 17:29 2024-10-23-RAG-fundamentals.ipynb
  * -rw-r--r--@   1 macm1  staff     61382 29 ene 17:29 2024-12-16-Langchain-opensource-integrations.ipynb
  * -rw-r--r--@   1 macm1  staff     63216 29 ene 17:29 2023-12-05-html.ipynb
  * -rw-r--r--@   1 macm1  staff     67047 23 mar 07:25 2025-03-02-Desplegar-backend-en-HuggingFace.ipynb

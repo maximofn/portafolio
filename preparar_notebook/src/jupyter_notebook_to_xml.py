@@ -41,7 +41,7 @@ def notebook_to_xml_tree(notebook_path):
             md = md.replace('\\|', '||')
             # Fix code blocks that have extra newline before closing backticks
             # Pattern: any character followed by three backticks and newline at the end
-            md = re.sub(r'(.)```\n$', r'\1\n```', md)
+            md = re.sub(r'(.)```\n', r'\1\n```', md)
             elem = ET.SubElement(root, 'markdown')
             elem.text = md
         elif cell_type == 'code':

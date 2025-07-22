@@ -1609,6 +1609,20 @@ $$E = mc^2$$'''
 <p>Supongamos que para una entrada <span class="math-inline">x</span> queremos que tenga una salida <span class="math-inline">\\hat&#123;y&#125;</span></p>
 </section>'''
         self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+    
+    def test_markdown_to_html_open_trace_2(self):
+        markdown = '```md\n``json\n{\n  "query": "Your question here",\n  "thread_id": "optional_thread_identifier"\n}\n``\n```'
+        expected_html = '''<section class="section-block-markdown-cell">
+<pre><code class="language-md">
+```json
+&#123;
+  "query": "Your question here",
+  "thread_id": "optional_thread_identifier"
+&#125;
+```
+</code></pre>
+</section>'''
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
 
 if __name__ == '__main__':
     # It's good practice to ensure that only one unittest.main() call remains,

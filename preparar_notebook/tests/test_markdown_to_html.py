@@ -183,6 +183,14 @@ class TestMarkdownCodeToHtml(unittest.TestCase):
       <div class='highlight'><pre><code class="language-git">&lt;type&gt;[optional scope]: &lt;description&gt;<br><br>[optional body]<br><br>[optional footer(s)]</code></pre></div>
       </section>'''
         self.assertEqual(html, expected_html)
+    
+    def test_code_readme_md(self):
+        markdown_content = '```md\n---\ntitle: SmolLM2\nemoji: 💬\ncolorFrom: yellow\ncolorTo: purple\nsdk: gradio\nsdk_version: 5.0.1\napp_file: app.py\npinned: false\nlicense: apache-2.0\nshort_description: Gradio SmolLM2 chat\n---\n\nAn example chatbot using [Gradio](https://gradio.app), [`huggingface_hub`](https://huggingface.co/docs/huggingface_hub/v0.22.2/en/index), and the [Hugging Face Inference API](https://huggingface.co/docs/api-inference/index).\n```'
+        html = markdown_code_to_html(markdown_content)
+        expected_html = '''<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-md">---<br>title: SmolLM2<br>emoji: 💬<br>colorFrom: yellow<br>colorTo: purple<br>sdk: gradio<br>sdk_version: 5.0.1<br>app_file: app.py<br>pinned: false<br>license: apache-2.0<br>short_description: Gradio SmolLM2 chat<br>---<br><br>An example chatbot using [Gradio](https://gradio.app), [`huggingface_hub`](https://huggingface.co/docs/huggingface_hub/v0.22.2/en/index), and the [Hugging Face Inference API](https://huggingface.co/docs/api-inference/index).</code></pre></div>
+      </section>'''
+        self.assertEqual(html, expected_html)
 
 class TestMarkdownImageToHtml(unittest.TestCase):
 

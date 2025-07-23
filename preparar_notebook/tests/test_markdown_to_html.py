@@ -191,6 +191,14 @@ class TestMarkdownCodeToHtml(unittest.TestCase):
       <div class='highlight'><pre><code class="language-md">---<br>title: SmolLM2<br>emoji: 💬<br>colorFrom: yellow<br>colorTo: purple<br>sdk: gradio<br>sdk_version: 5.0.1<br>app_file: app.py<br>pinned: false<br>license: apache-2.0<br>short_description: Gradio SmolLM2 chat<br>---<br><br>An example chatbot using [Gradio](https://gradio.app), [`huggingface_hub`](https://huggingface.co/docs/huggingface_hub/v0.22.2/en/index), and the [Hugging Face Inference API](https://huggingface.co/docs/api-inference/index).</code></pre></div>
       </section>'''
         self.assertEqual(html, expected_html)
+    
+    def test_code_open_brace(self):
+        markdown_content = '```python\n# Define the function that calls the model\ndef call_model(state: MessagesState):\n"""\nLlamar al modelo con los mensajes dados\n\nArgs:\nstate: MessagesState\n\nDevuelve:\ndict: A dictionary containing the generated text and the thread ID\n"""\n# Convert LangChain messages to HuggingFace format\nhf_messages = []\nfor msg in state["messages"]:\nif isinstance(msg, HumanMessage):\nhf_messages.append({"role": "user", "content": msg.content})\nelif isinstance(msg, AIMessage):\nhf_messages.append({"role": "assistant", "content": msg.content})\n    \n# Call the API\nresponse = model.chat_completion(\nmessages=hf_messages,\ntemperature=0.5,\nmax_tokens=64,\ntop_p=0.7\n)\n    \n# Convert the response to LangChain format\n```'
+        html = markdown_code_to_html(markdown_content)
+        expected_html = '''<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python"># Define the function that calls the model<br>def call_model(state: MessagesState):<br>"""<br>Llamar al modelo con los mensajes dados<br><br>Args:<br>state: MessagesState<br><br>Devuelve:<br>dict: A dictionary containing the generated text and the thread ID<br>"""<br># Convert LangChain messages to HuggingFace format<br>hf_messages = []<br>for msg in state["messages"]:<br>if isinstance(msg, HumanMessage):<br>hf_messages.append(&#123;"role": "user", "content": msg.content&#125;)<br>elif isinstance(msg, AIMessage):<br>hf_messages.append(&#123;"role": "assistant", "content": msg.content&#125;)<br>    <br># Call the API<br>response = model.chat_completion(<br>messages=hf_messages,<br>temperature=0.5,<br>max_tokens=64,<br>top_p=0.7<br>)<br>    <br># Convert the response to LangChain format</code></pre></div>
+      </section>'''
+        self.assertEqual(html, expected_html)
 
 class TestMarkdownImageToHtml(unittest.TestCase):
 

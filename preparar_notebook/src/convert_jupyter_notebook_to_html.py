@@ -166,17 +166,19 @@ def replace_braces(html_content):
                 if start_section_line < end_section_line:
                     for i in range(start_section_line, end_section_line):
                         if '<p' in html_content_lines[i] or '<span' in html_content_lines[i]:
-                            # First replace {opening_brace} by &$&%&$&%$$&%
-                            html_content_lines[i] = html_content_lines[i].replace("{opening_brace}", "&$&%&$&%$$&%")
-                            # Second replace {colsing_brace} by &$&%&$&%$$&#
-                            html_content_lines[i] = html_content_lines[i].replace("{closing_brace}", "&$&%&$&%$$&#")
-                            # Thirth replace { by &$&%&$&%$$&=
-                            html_content_lines[i] = html_content_lines[i].replace("{", "&$&%&$&%$$&=")
-                            # Fourth replace } by &$&%&$&%$$=&
-                            html_content_lines[i] = html_content_lines[i].replace("}", "&$&%&$&%$$=&")
-
-                            # Now replace &$&%&$&%$$&% by {opening_brace}, &$&%&$&%$$&# by {closing_brace}, &$&%&$&%$$&= by {opening_brace} and &$&%&$&%$$=& by {closing_brace}
-                            html_content_lines[i] = html_content_lines[i].replace("&$&%&$&%$$&%", "{opening_brace}").replace("&$&%&$&%$$&#", "{closing_brace}").replace("&$&%&$&%$$&=", "{opening_brace}").replace("&$&%&$&%$$=&", "{closing_brace}")
+                            # Replace { with &#123; and } with &#125; (HTML entities)
+                            # Skip already formatted entities
+                            temp_line = html_content_lines[i]
+                            # First handle existing HTML entities by temporarily replacing them
+                            temp_line = temp_line.replace("&#123;", "TEMP_OPEN_BRACE")
+                            temp_line = temp_line.replace("&#125;", "TEMP_CLOSE_BRACE")
+                            # Now replace raw braces with HTML entities
+                            temp_line = temp_line.replace("{", "&#123;")
+                            temp_line = temp_line.replace("}", "&#125;")
+                            # Restore the temporary replacements
+                            temp_line = temp_line.replace("TEMP_OPEN_BRACE", "&#123;")
+                            temp_line = temp_line.replace("TEMP_CLOSE_BRACE", "&#125;")
+                            html_content_lines[i] = temp_line
         content_html += f"{html_content_lines[number_line]}\n"
     return content_html
 

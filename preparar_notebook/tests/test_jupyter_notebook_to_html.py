@@ -14,8 +14,6 @@ class Test_jupyter_notebook_to_html(unittest.TestCase):
             self.html_content = file.read()
         self.open_brace = "{"
         self.close_brace = "}"
-        self.open_brace_formated = "{opening_brace}"
-        self.close_brace_formated = "{closing_brace}"
     
     def test_add_index_html(self):
         index_html = add_index_html(self.html_content)
@@ -60,77 +58,77 @@ class Test_jupyter_notebook_to_html(unittest.TestCase):
     # {
     def test_replace_braces_with_opening_brace(self):
         html_content = "akdsjak\n<section>\n<p>{</p>\n</section>\ndasdaks"
-        html_content_formatted = f"akdsjak\n<section>\n<p>{self.open_brace_formated}</p>\n</section>\ndasdaks\n"
+        html_content_formatted = f"akdsjak\n<section>\n<p>&#123;</p>\n</section>\ndasdaks\n"
         formatted_html_content = replace_braces(html_content)
         self.assertEqual(formatted_html_content, html_content_formatted)
     
     # }
     def test_replace_braces_with_closing_brace(self):
         html_content = f"akdsjak\n<section>\n<p>{self.close_brace}</p>\n</section>\ndasdaks"
-        html_content_formatted = f"akdsjak\n<section>\n<p>{self.close_brace_formated}</p>\n</section>\ndasdaks\n"
+        html_content_formatted = f"akdsjak\n<section>\n<p>&#125;</p>\n</section>\ndasdaks\n"
         formatted_html_content = replace_braces(html_content)
         self.assertEqual(formatted_html_content, html_content_formatted)
     
     # {something}
     def test_replace_braces_with_opening_brace_and_closing_brace(self):
         html_content = f"akdsjak\n<section>\n<p>{self.open_brace}something{self.close_brace}</p>\n</section>\ndasdaks"
-        html_content_formatted = f"akdsjak\n<section>\n<p>{self.open_brace_formated}something{self.close_brace_formated}</p>\n</section>\ndasdaks\n"
+        html_content_formatted = f"akdsjak\n<section>\n<p>&#123;something&#125;</p>\n</section>\ndasdaks\n"
         formatted_html_content = replace_braces(html_content)
         self.assertEqual(formatted_html_content, html_content_formatted)
 
     # {opening_brace}
     def test_replace_braces_with_formated_opening_brace(self):
-        html_content = f"akdsjak\n<section>\n<p>{self.open_brace_formated}</p>\n</section>\ndasdaks"
-        html_content_formatted = f"akdsjak\n<section>\n<p>{self.open_brace_formated}</p>\n</section>\ndasdaks\n"
+        html_content = f"akdsjak\n<section>\n<p>&#123;</p>\n</section>\ndasdaks"
+        html_content_formatted = f"akdsjak\n<section>\n<p>&#123;</p>\n</section>\ndasdaks\n"
         formatted_html_content = replace_braces(html_content)
         self.assertEqual(formatted_html_content, html_content_formatted)
 
     # {closing_brace}
     def test_replace_braces_with_formated_closing_brace(self):
-        html_content = f"akdsjak\n<section>\n<p>{self.close_brace_formated}</p>\n</section>\ndasdaks"
-        html_content_formatted = f"akdsjak\n<section>\n<p>{self.close_brace_formated}</p>\n</section>\ndasdaks\n"
+        html_content = f"akdsjak\n<section>\n<p>&#125;</p>\n</section>\ndasdaks"
+        html_content_formatted = f"akdsjak\n<section>\n<p>&#125;</p>\n</section>\ndasdaks\n"
         formatted_html_content = replace_braces(html_content)
         self.assertEqual(formatted_html_content, html_content_formatted)
 
     # {opening_brace}something{closing_brace}
     def test_replace_braces_with_formated_opening_brace_and_formated_closing_brace(self):
-        html_content = f"akdsjak\n<section>\n<p>{self.open_brace_formated}something{self.close_brace_formated}</p>\n</section>\ndasdaks"
-        html_content_formatted = f"akdsjak\n<section>\n<p>{self.open_brace_formated}something{self.close_brace_formated}</p>\n</section>\ndasdaks\n"
+        html_content = f"akdsjak\n<section>\n<p>&#123;something&#125;</p>\n</section>\ndasdaks"
+        html_content_formatted = f"akdsjak\n<section>\n<p>&#123;something&#125;</p>\n</section>\ndasdaks\n"
         formatted_html_content = replace_braces(html_content)
         self.assertEqual(formatted_html_content, html_content_formatted)
 
     # {something{opening_brace}
     def test_replace_braces_with_opening_brace_and_formated_opening_brace(self):
-        html_content = f"akdsjak\n<section>\n<p>{self.open_brace}something{self.open_brace_formated}something</p>\n</section>\ndasdaks"
-        html_content_formatted = f"akdsjak\n<section>\n<p>{self.open_brace_formated}something{self.open_brace_formated}something</p>\n</section>\ndasdaks\n"
+        html_content = f"akdsjak\n<section>\n<p>{self.open_brace}something&#123;something</p>\n</section>\ndasdaks"
+        html_content_formatted = f"akdsjak\n<section>\n<p>&#123;something&#123;something</p>\n</section>\ndasdaks\n"
         formatted_html_content = replace_braces(html_content)
         self.assertEqual(formatted_html_content, html_content_formatted)
 
     # {something{closing_brace}
     def test_replace_braces_with_opening_brace_and_formated_closing_brace(self):
-        html_content = f"akdsjak\n<section>\n<p>{self.open_brace}something{self.close_brace_formated}something</p>\n</section>\ndasdaks"
-        html_content_formatted = f"akdsjak\n<section>\n<p>{self.open_brace_formated}something{self.close_brace_formated}something</p>\n</section>\ndasdaks\n"
+        html_content = f"akdsjak\n<section>\n<p>{self.open_brace}something&#125;something</p>\n</section>\ndasdaks"
+        html_content_formatted = f"akdsjak\n<section>\n<p>&#123;something&#125;something</p>\n</section>\ndasdaks\n"
         formatted_html_content = replace_braces(html_content)
         self.assertEqual(formatted_html_content, html_content_formatted)
 
     # }something{opening_brace}
     def test_replace_braces_with_closing_brace_and_formated_opening_brace(self):
-        html_content = f"akdsjak\n<section>\n<p>{self.close_brace}something{self.open_brace_formated}something</p>\n</section>\ndasdaks"
-        html_content_formatted = f"akdsjak\n<section>\n<p>{self.close_brace_formated}something{self.open_brace_formated}something</p>\n</section>\ndasdaks\n"
+        html_content = f"akdsjak\n<section>\n<p>{self.close_brace}something&#123;something</p>\n</section>\ndasdaks"
+        html_content_formatted = f"akdsjak\n<section>\n<p>&#125;something&#123;something</p>\n</section>\ndasdaks\n"
         formatted_html_content = replace_braces(html_content)
         self.assertEqual(formatted_html_content, html_content_formatted)
 
     # }something{closing_brace}
     def test_replace_braces_with_closing_brace_and_formated_closing_brace(self):
-        html_content = f"akdsjak\n<section>\n<p>{self.close_brace}something{self.close_brace_formated}something</p>\n</section>\ndasdaks"
-        html_content_formatted = f"akdsjak\n<section>\n<p>{self.close_brace_formated}something{self.close_brace_formated}something</p>\n</section>\ndasdaks\n"
+        html_content = f"akdsjak\n<section>\n<p>{self.close_brace}something&#125;something</p>\n</section>\ndasdaks"
+        html_content_formatted = f"akdsjak\n<section>\n<p>&#125;something&#125;something</p>\n</section>\ndasdaks\n"
         formatted_html_content = replace_braces(html_content)
         self.assertEqual(formatted_html_content, html_content_formatted)
 
     # {something}something{opening_brace}something{closing_brace}
     def test_replace_braces_with_opening_brace_closing_brase_and_formated_opening_brace_and_formated_closing_brace(self):
-        html_content = f"akdsjak\n<section>\n<p>{self.open_brace}something{self.close_brace}something{self.open_brace_formated}something{self.close_brace_formated}</p>\n</section>\ndasdaks"
-        html_content_formatted = f"akdsjak\n<section>\n<p>{self.open_brace_formated}something{self.close_brace_formated}something{self.open_brace_formated}something{self.close_brace_formated}</p>\n</section>\ndasdaks\n"
+        html_content = f"akdsjak\n<section>\n<p>{self.open_brace}something{self.close_brace}something&#123;something&#125;</p>\n</section>\ndasdaks"
+        html_content_formatted = f"akdsjak\n<section>\n<p>&#123;something&#125;something&#123;something&#125;</p>\n</section>\ndasdaks\n"
         formatted_html_content = replace_braces(html_content)
         self.assertEqual(formatted_html_content, html_content_formatted)
 

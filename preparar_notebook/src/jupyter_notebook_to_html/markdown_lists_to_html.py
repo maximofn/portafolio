@@ -297,11 +297,31 @@ def process_links_in_text(text):
     Returns:
         Text with markdown links, inline code, bold text, and inline math converted to HTML
     """
+    # Store processed code blocks to avoid processing their content again
+    code_placeholders = {}
+    placeholder_counter = 0
+    
+    # Helper function to escape braces in code content and store it
+    def escape_braces_in_code(match):
+        nonlocal placeholder_counter
+        code_content = match.group(1)
+        # Escape curly braces as HTML entities
+        code_content = code_content.replace('{', '&#123;').replace('}', '&#125;')
+        final_code = f'<code>{code_content}</code>'
+        
+        # Create a unique placeholder
+        placeholder = f'__CODE_PLACEHOLDER_{placeholder_counter}__'
+        code_placeholders[placeholder] = final_code
+        placeholder_counter += 1
+        
+        return placeholder
+    
+    # IMPORTANT: Process inline code FIRST to prevent $ symbols inside code from being treated as math
     # First process inline code with double backticks
-    text = re.sub(r'``([^`]+?)``', r'<code>\1</code>', text)
+    text = re.sub(r'``([^`]+?)``', escape_braces_in_code, text)
     
     # Then process inline code with single backticks (but not those already processed)
-    text = re.sub(r'`([^`]+?)`', r'<code>\1</code>', text)
+    text = re.sub(r'`([^`]+?)`', escape_braces_in_code, text)
     
     # Process bold text (**text**) to <strong>text</strong>
     text = re.sub(r'\*\*([^*]+?)\*\*', r'<strong>\1</strong>', text)
@@ -313,6 +333,7 @@ def process_links_in_text(text):
         math_content = convert_latex_symbols_to_html(math_content)
         return f'<span class="math-inline">{math_content}</span>'
     
+    # Now process math - code placeholders won't be affected
     text = re.sub(r'\$([^$]+?)\$', process_inline_math, text)
     
     # Then process external links (https:// or http://)
@@ -320,6 +341,10 @@ def process_links_in_text(text):
     
     # Finally process internal links (starting with /)
     text = re.sub(r'\[(.*?)\]\((/.*?)\)', r'<a href="\2">\1</a>', text)
+    
+    # Restore code placeholders with their final HTML
+    for placeholder, code_html in code_placeholders.items():
+        text = text.replace(placeholder, code_html)
     
     return text
 

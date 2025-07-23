@@ -851,13 +851,15 @@ def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_con
                 block_type, block_content = list(specific_block.items())[0]
 
                 if block_type == "text":
-                    if "We now create a function to call the model" in block_content:
+                    if "Convert the response to LangChain format" in block_content:
                         print("debugging")
                     # Text blocks might contain headers or simple paragraphs.
                     # The generic_markdown_to_specific_markdowns might return larger text blocks
                     # that need further processing for headers, paragraphs etc.
                     html_output_parts.append(_process_text_block(block_content))
                 elif block_type == "code":
+                    if "Convert the response to LangChain format" in block_content:
+                        print("debugging")
                     html_output_parts.append(convert_code_to_html(block_content, include_language_class=True))
                 elif block_type == "table":
                     html_output_parts.append(convert_table_to_html(block_content))

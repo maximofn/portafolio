@@ -851,7 +851,7 @@ def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_con
                 block_type, block_content = list(specific_block.items())[0]
 
                 if block_type == "text":
-                    if "Por último, creamos el archivo README.md" in block_content:
+                    if "We now create a function to call the model" in block_content:
                         print("debugging")
                     # Text blocks might contain headers or simple paragraphs.
                     # The generic_markdown_to_specific_markdowns might return larger text blocks

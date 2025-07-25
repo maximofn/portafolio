@@ -87,7 +87,14 @@ def markdown_code_to_html(markdown_content: str, include_language_class: bool = 
         processed_code = processed_code.replace('<', '&lt;')
         processed_code = processed_code.replace('>', '&gt;')
         processed_code = processed_code.replace("'", '&#39;')
-        # Do not replace "
+        
+        # Special handling for JSON: escape braces and always include language class
+        if language == 'json':
+            processed_code = processed_code.replace('{', '&#123;')
+            processed_code = processed_code.replace('}', '&#125;')
+            return f"<div class='highlight'><pre><code class=\"language-json\">{processed_code}\n</code></pre></div>"
+        
+        # Do not replace " for other languages
 
         # Conditionally include language class
         if include_language_class and language:

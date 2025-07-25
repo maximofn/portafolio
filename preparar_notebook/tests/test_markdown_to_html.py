@@ -207,6 +207,14 @@ class TestMarkdownCodeToHtml(unittest.TestCase):
       <div class='highlight'><pre><code class="language-python"># Define the function that calls the model<br>def call_model(state: MessagesState):<br>"""<br>Llamar al modelo con los mensajes dados<br><br>Args:<br>state: MessagesState<br><br>Devuelve:<br>dict: A dictionary containing the generated text and the thread ID<br>"""<br># Convert LangChain messages to HuggingFace format<br>hf_messages = []<br>for msg in state["messages"]:<br>if isinstance(msg, HumanMessage):<br>hf_messages.append(&#123;"role": "user", "content": msg.content&#125;)<br>elif isinstance(msg, AIMessage):<br>hf_messages.append(&#123;"role": "assistant", "content": msg.content&#125;)<br>    <br># Call the API<br>response = model.chat_completion(<br>messages=hf_messages,<br>temperature=0.5,<br>max_tokens=64,<br>top_p=0.7<br>)<br>    <br># Convert the response to LangChain format<br>ai_message = AIMessage(content=response.choices[0].message.content)<br>return &#123;"messages": state["messages"] + [ai_message]&#125;</code></pre></div>
       </section>'''
         self.assertEqual(html, expected_html)
+    
+    def test_code_open_brace_3(self):
+        markdown_content = '```c\nfor (i = 0; i < rows; i++): {\n  for (j = 0; j < columns; j++): {\n    c[i][j] = a[i][j]*b[i][j];\n  }\n}\n```'
+        html = markdown_code_to_html(markdown_content)
+        expected_html = '''<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-c">for (i = 0; i &lt; rows; i++): &#123;<br>  for (j = 0; j &lt; columns; j++): &#123;<br>    c[i][j] = a[i][j]*b[i][j];<br>  &#125;<br>&#125;</code></pre></div>
+      </section>'''
+        self.assertEqual(html, expected_html)
 
 class TestMarkdownImageToHtml(unittest.TestCase):
 

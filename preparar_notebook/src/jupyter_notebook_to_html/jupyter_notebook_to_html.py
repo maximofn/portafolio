@@ -818,6 +818,7 @@ def output_code_to_html(output_content: str) -> str:
 </section>'''
     
     html_output = html_output.replace("\\\n&#x20;", "\\\\\n&#x20;")
+    html_output = html_output.replace(" \\\n", " \\\\\n")
 
     return html_output
 

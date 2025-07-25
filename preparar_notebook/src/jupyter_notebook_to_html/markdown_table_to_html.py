@@ -27,7 +27,37 @@ def markdown_table_to_html(markdown_table_string):
 
     # Helper to convert inline code in cell content
     def process_inline_code(cell_content):
-        """Convert inline code (`code`) to HTML format using generic patterns"""
+        """Convert inline code (`code`) to HTML format using generic patterns and escape braces"""
+        
+        # First, escape braces that are not within backticks
+        def escape_braces_outside_backticks(text):
+            """Escape { and } that are not within backticks"""
+            result = ""
+            i = 0
+            while i < len(text):
+                if text[i] == '`':
+                    # Find the closing backtick
+                    result += text[i]
+                    i += 1
+                    while i < len(text) and text[i] != '`':
+                        result += text[i]
+                        i += 1
+                    if i < len(text):  # Add the closing backtick
+                        result += text[i]
+                        i += 1
+                elif text[i] == '{':
+                    result += '&#123;'
+                    i += 1
+                elif text[i] == '}':
+                    result += '&#125;'
+                    i += 1
+                else:
+                    result += text[i]
+                    i += 1
+            return result
+        
+        # Escape braces first
+        cell_content = escape_braces_outside_backticks(cell_content)
         
         # Pattern to match text between backticks
         pattern = r'`([^`]+)`'

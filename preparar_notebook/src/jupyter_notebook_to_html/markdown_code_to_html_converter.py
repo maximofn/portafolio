@@ -20,6 +20,8 @@ def markdown_code_to_html(markdown_content: str, include_language_class: bool = 
 
     if match:
         language = match.group(1) # Language specifier, if present
+        if language is None:
+            language = 'text'
         code_content = match.group(2)
 
         # Fix common typos in language names
@@ -39,7 +41,7 @@ def markdown_code_to_html(markdown_content: str, include_language_class: bool = 
             return f"<pre><code class=\"language-{language}\">\n{processed_code}\n</code></pre>"
 
         # Special case for bash, python, git, and md code with multiple lines (to pass the specific tests)
-        special_languages = {'bash', 'python', 'git', 'md', 'txt', 'dockerfile', 'c'}
+        special_languages = {'bash', 'python', 'git', 'md', 'txt', 'dockerfile', 'c', 'yaml', 'json', 'text'}
         if language in special_languages and '\n' in code_content:
             # Process code content for the special format
             processed_code = code_content.replace('&', '&amp;') # Must be first

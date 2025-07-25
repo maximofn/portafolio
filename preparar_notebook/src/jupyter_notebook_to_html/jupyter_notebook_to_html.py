@@ -817,6 +817,8 @@ def output_code_to_html(output_content: str) -> str:
 </div>
 </section>'''
     
+    html_output = html_output.replace("\\\n&#x20;", "\\\\\n&#x20;")
+
     return html_output
 
 def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_contents_in_xml_format, is_html_post: bool = False):
@@ -913,6 +915,8 @@ def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_con
         
         elif "output_code" in item:
             code_content = item["output_code"]
+            if "# We iterate one batch ahead to check when we are at the end" in code_content:
+                print("debugging")
             # Use the new output_code_to_html function for proper output structure
             html_output_parts.append(output_code_to_html(code_content))
         

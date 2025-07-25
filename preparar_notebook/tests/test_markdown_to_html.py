@@ -1636,6 +1636,16 @@ $$E = mc^2$$'''
 </code></pre>
 </section>'''
         self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+    
+    def test_markdown_to_html_code_open_backslash(self):
+        markdown = "\n                  __    __    __    __\n                 /  \\  /  \\  /  \\  /  \\\n                /    \\/    \\/    \\/    \\\n███████████████/  /██/  /██/  /██/  /████████████████████████"
+        expected_html = '''<section class="section-block-markdown-cell">
+<p>__    __    __    __</p>
+<p>/  \  /  \  /  \  /  \</p>
+<p>/    \/    \/    \/    \</p>
+<p>███████████████/  /██/  /██/  /██/  /████████████████████████</p>
+</section>'''
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
 
 if __name__ == '__main__':
     # It's good practice to ensure that only one unittest.main() call remains,

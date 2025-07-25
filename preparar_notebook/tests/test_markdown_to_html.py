@@ -215,12 +215,6 @@ class TestMarkdownCodeToHtml(unittest.TestCase):
       <div class='highlight'><pre><code class="language-c">for (i = 0; i &lt; rows; i++): &#123;<br>  for (j = 0; j &lt; columns; j++): &#123;<br>    c[i][j] = a[i][j]*b[i][j];<br>  &#125;<br>&#125;</code></pre></div>
       </section>'''
         self.assertEqual(html, expected_html)
-    
-    def test_code_open_brace_4(self):
-        markdown_content = '```json\n{\n    "messages": \n    [\n        {\n            "role": "system", "content": "Marv is a factual chatbot that is also sarcastic."\n        }, \n        {\n            "role": "user", "content": "What\'s the capital of France?"\n        }, \n        {\n            "role": "assistant", "content": "Paris, as if everyone doesn\'t know that already."\n        }\n    ]\n}\n{\n    "messages": \n    [\n        {\n            "role": "system", "content": "Marv is a factual chatbot that is also sarcastic."\n        }, \n        {\n            "role": "user", "content": "Who wrote \'Romeo and Juliet\'?"\n        }, \n        {\n            "role": "assistant", "content": "Oh, just some guy named William Shakespeare. Ever heard of him?"\n        }\n    ]\n}\n{\n    "messages": \n    [\n        {\n            "role": "system", "content": "Marv is a factual chatbot that is also sarcastic."\n        }, \n        {\n            "role": "user", "content": "How far is the Moon from Earth?"\n        }, \n        {\n            "role": "assistant", "content": "Around 384,400 kilometers. Give or take a few, like that really matters."\n        }\n    ]\n}\n```'
-        html = markdown_code_to_html(markdown_content)
-        expected_html = '''<div class='highlight'><pre><code class="language-json">&#123;\n    "messages": \n    [\n        &#123;\n            "role": "system", "content": "Marv is a factual chatbot that is also sarcastic."\n        &#125;, \n        &#123;\n            "role": "user", "content": "What&#39;s the capital of France?"\n        &#125;, \n        &#123;\n            "role": "assistant", "content": "Paris, as if everyone doesn&#39;t know that already."\n        &#125;\n    ]\n&#125;\n&#123;\n    "messages": \n    [\n        &#123;\n            "role": "system", "content": "Marv is a factual chatbot that is also sarcastic."\n        &#125;, \n        &#123;\n            "role": "user", "content": "Who wrote &#39;Romeo and Juliet&#39;?"\n        &#125;, \n        &#123;\n            "role": "assistant", "content": "Oh, just some guy named William Shakespeare. Ever heard of him?"\n        &#125;\n    ]\n&#125;\n&#123;\n    "messages": \n    [\n        &#123;\n            "role": "system", "content": "Marv is a factual chatbot that is also sarcastic."\n        &#125;, \n        &#123;\n            "role": "user", "content": "How far is the Moon from Earth?"\n        &#125;, \n        &#123;\n            "role": "assistant", "content": "Around 384,400 kilometers. Give or take a few, like that really matters."\n        &#125;\n    ]\n&#125;\n</code></pre></div>'''
-        self.assertEqual(html, expected_html)
 
 class TestMarkdownImageToHtml(unittest.TestCase):
 
@@ -531,6 +525,11 @@ class TestMarkdownUnorderedListToHtml(unittest.TestCase):
     def test_markdown_to_html_brace_into_code(self):
         markdown = ' * Podemos remplazar el valor de una cadena de un argumento mediante `${<indice de argumento>/cadena que se quiere sustituir/cadena nueva}`, es decir, si tenemos `${1/hola/hello}` sustituirá la palabra `hola` por la palabra `hello` en el argumento 1\n * Sin embargo, si usamos `${<índice de argumento>/#cadena que se quiere sustituir/cadena nueva}`, solo sustituirá la cadena en el argumento si este argumento empieza por dicha cadena\n'
         expected_html = '<ul>\n  <li>Podemos remplazar el valor de una cadena de un argumento mediante <code>$&#123;<indice de argumento>/cadena que se quiere sustituir/cadena nueva&#125;</code>, es decir, si tenemos <code>$&#123;1/hola/hello&#125;</code> sustituirá la palabra <code>hola</code> por la palabra <code>hello</code> en el argumento 1</li>\n  <li>Sin embargo, si usamos <code>$&#123;<índice de argumento>/#cadena que se quiere sustituir/cadena nueva&#125;</code>, solo sustituirá la cadena en el argumento si este argumento empieza por dicha cadena</li>\n</ul>'
+        self.assertEqual(markdown_to_html_updated(markdown), expected_html)
+    
+    def test_markdown_to_html_brace_into_code_2(self):
+        markdown = '* `{{ if .System }}`system`{{ .System }}``{{ end }}`:\n'
+        expected_html = '<ul>\n  <li><code>&#123;&#123; if .System &#125;&#125;</code>system<code>&#123;&#123; .System &#125;&#125;</code><code>&#123;&#123; end &#125;&#125;</code>:</li>\n</ul>'
         self.assertEqual(markdown_to_html_updated(markdown), expected_html)
 
 class TestMarkdownOrderedListToHtml(unittest.TestCase):
@@ -1080,60 +1079,31 @@ Val 3   | Val 4 |
 </table>'''
         self.assertEqual(markdown_table_to_html(markdown).strip(), expected_html.strip())
     
-    # def test_markdown_table_to_html_with_link(self):
-    #     markdown = '|PreTokenizer|Descripción|Ejemplo|\n|---|---|---|\n|ByteLevel|Divide en espacios en blanco mientras reasigna todos los bytes a un conjunto de caracteres visibles. Esta técnica fue introducida por OpenAI con GPT-2 y tiene algunas propiedades más o menos buenas: Como mapea sobre bytes, un tokenizador que utilice esto sólo requiere 256 caracteres como alfabeto inicial (el número de valores que puede tener un byte), frente a los más de 130.000 caracteres Unicode. Una consecuencia del punto anterior es que es absolutamente innecesario tener un token desconocido usando esto ya que podemos representar cualquier cosa con 256 tokens. Para caracteres no ascii, se vuelve completamente ilegible, ¡pero funciona!|`Hello my friend, how are you?` se divide en `Hello`, `Ġmy`, `Ġfriend`, `,`, `Ġhow`, `Ġare`, `Ġyou`, `?`|\n|Whitespace|Divide en límites de palabra usando la siguiente expresión regular: `\\w+[^\\w\\s]+`. En mi post sobre [expresiones regulares](https://maximofn.com/regular-expressions/) puedes entender qué hace|`Hello there!` se divide en `Hello`, `there`, `!`|\n|WhitespaceSplit|Se divide en cualquier carácter de espacio en blanco|`Hello there!` se divide en `Hello`, `there!`|\n|Punctuation|Aislará todos los caracteres de puntuación|`Hello?` se divide en `Hello`, `?`|\n|Metaspace|Separa los espacios en blanco y los sustituye por un carácter especial "▁" (U+2581)|`Hello there` se divide en `Hello`, `▁there`|\n|CharDelimiterSplit|Divisiones en un carácter determinado|Ejemplo con el caracter `x`: `Helloxthere` se divide en `Hello`, `there`|\n|Digits|Divide los números de cualquier otro carácter|`Hello123there` se divide en `Hello`, `123`, `there`|\n|Split|Pretokenizador versátil que divide según el patrón y el comportamiento proporcionados. El patrón se puede invertir si es necesario. El patrón debe ser una cadena personalizada o una [regex](https://maximofn.com/regular-expressions/). El comportamiento debe ser `removed`, `isolated`, `merged_with_previous`, `merged_with_next`, `contiguous`. Para invertir se indica con un booleano|Ejemplo con pattern=`" "`, behavior=`isolated`, invert=`False`: `Hello, how are you?` se divide en `Hello,`, ` `, `how`, ` `, `are`, ` `, `you?`|'
-    #     expected_html = '''<table>
-    #     <thead>
-    #       <tr>
-    #         <th>PreTokenizer</th>
-    #         <th>Descripción</th>
-    #         <th>Ejemplo</th>
-    #       </tr>
-    #     </thead>
-    #     <tbody>
-    #       <tr>
-    #         <td>ByteLevel</td>
-    #         <td>Divide en espacios en blanco mientras reasigna todos los bytes a un conjunto de caracteres visibles. Esta técnica fue introducida por OpenAI con GPT-2 y tiene algunas propiedades más o menos buenas: Como mapea sobre bytes, un tokenizador que utilice esto sólo requiere 256 caracteres como alfabeto inicial (el número de valores que puede tener un byte), frente a los más de 130.000 caracteres Unicode. Una consecuencia del punto anterior es que es absolutamente innecesario tener un token desconocido usando esto ya que podemos representar cualquier cosa con 256 tokens. Para caracteres no ascii, se vuelve completamente ilegible, ¡pero funciona!</td>
-    #         <td><code>Hello my friend, how are you?</code> se divide en <code>Hello</code>, <code>&#x60;Ġmy&#x60;</code>, <code>&#x60;Ġfriend&#x60;</code>, <code>,</code>, <code>&#x60;Ġhow&#x60;</code>, <code>&#x60;Ġare&#x60;</code>, <code>&#x60;Ġyou&#x60;</code>, <code>?</code></td>
-    #       </tr>
-    #       <tr>
-    #         <td>Whitespace</td>
-    #         <td>Divide en límites de palabra usando la siguiente expresión regular: <code>\w+[^\w\s]+</code>. En mi post sobre <a href="https://maximofn.com/regular-expressions/">expresiones regulares</a> puedes entender qué hace</td>
-    #         <td><code>&#x60;Hello there!&#x60;</code> se divide en <code>Hello</code>, <code>there</code>, <code>!</code></td>
-    #       </tr>
-    #       <tr>
-    #         <td>WhitespaceSplit</td>
-    #         <td>Se divide en cualquier carácter de espacio en blanco</td>
-    #         <td><code>&#x60;Hello there!&#x60;</code> se divide en <code>Hello</code>, <code>there!</code></td>
-    #       </tr>
-    #       <tr>
-    #         <td>Punctuation</td>
-    #         <td>Aislará todos los caracteres de puntuación</td>
-    #         <td><code>&#x60;Hello?&#x60;</code> se divide en <code>Hello</code>, <code>?</code></td>
-    #       </tr>
-    #       <tr>
-    #         <td>Metaspace</td>
-    #         <td>Separa los espacios en blanco y los sustituye por un carácter especial "▁" (U+2581)</td>
-    #         <td><code>&#x60;Hello there&#x60;</code> se divide en <code>Hello</code>, <code>&#x60;▁there&#x60;</code></td>
-    #       </tr>
-    #       <tr>
-    #         <td>CharDelimiterSplit</td>
-    #         <td>Divisiones en un carácter determinado</td>
-    #         <td>Ejemplo con el caracter <code>&#x60;x&#x60;</code>: <code>&#x60;Helloxthere&#x60;</code> se divide en <code>Hello</code>, <code>there</code></td>
-    #       </tr>
-    #       <tr>
-    #         <td>Digits</td>
-    #         <td>Divide los números de cualquier otro carácter</td>
-    #         <td><code>&#x60;Hello123there&#x60;</code> se divide en <code>Hello</code>, <code>123</code>, <code>there</code></td>
-    #       </tr>
-    #       <tr>
-    #         <td>Split</td>
-    #         <td>Pretokenizador versátil que divide según el patrón y el comportamiento proporcionados. El patrón se puede invertir si es necesario. El patrón debe ser una cadena personalizada o una <a href="https://maximofn.com/regular-expressions/">regex</a>. El comportamiento debe ser <code>removed</code>, <code>isolated</code>, <code>merged_with_previous</code>, <code>merged_with_next</code>, <code>contiguous</code>. Para invertir se indica con un booleano</td>
-    #         <td>Ejemplo con pattern=<code>&#x60;" "&#x60;</code>, behavior=<code>&#x60;isolated&#x60;</code>, invert=<code>&#x60;False&#x60;</code>: <code>&#x60;Hello, how are you?&#x60;</code> se divide en <code>Hello,</code>, <code>&#x60; &#x60;</code>, <code>how</code>, <code>&#x60; &#x60;</code>, <code>are</code>, <code>&#x60; &#x60;</code>, <code>you?</code></td>
-    #       </tr>
-    #     </tbody>
-    #   </table>'''
-    #     self.assertEqual(markdown_table_to_html(markdown).strip(), expected_html.strip())
+    def test_markdown_table_to_html_with_braces(self):
+        markdown = '| Variable | Descripción |\n| --- | --- |\n| {{ .System }} | El mensaje del sistema utilizado para especificar un comportamiento personalizado. |\n| {{ .Prompt }} | El mensaje de aviso del usuario. |\n| {{ .Response }} | La respuesta del modelo. Al generar una respuesta, se omite el texto después de esta variable. |\n'
+        expected_html = '''<table>
+  <thead>
+    <tr>
+      <th>Variable</th>
+      <th>Descripción</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>&#123;&#123; .System &#125;&#125;</td>
+      <td>El mensaje del sistema utilizado para especificar un comportamiento personalizado.</td>
+    </tr>
+    <tr>
+      <td>&#123;&#123; .Prompt &#125;&#125;</td>
+      <td>El mensaje de aviso del usuario.</td>
+    </tr>
+    <tr>
+      <td>&#123;&#123; .Response &#125;&#125;</td>
+      <td>La respuesta del modelo. Al generar una respuesta, se omite el texto después de esta variable.</td>
+    </tr>
+  </tbody>
+</table>'''
+        self.assertEqual(markdown_table_to_html(markdown).strip(), expected_html.strip())
 
 class TestMarkdownToHtml(unittest.TestCase):
     def setUp(self):

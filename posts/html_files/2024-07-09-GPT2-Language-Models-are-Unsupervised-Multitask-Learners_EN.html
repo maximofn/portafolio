@@ -1007,17 +1007,9 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 <p>Since we will need the loss to perform fine-tuning, let's see how to obtain it.</p>
 <p>If we go to the documentation of the <a href="https://huggingface.co/docs/transformers/model_doc/gpt2#transformers.GPT2LMHeadModel.forward">forward</a> method of <code>GPT2LMHeadModel</code>, we can see that it states that the output is an object of type <code>transformers.modeling_outputs.CausalLMOutputWithCrossAttentions</code>. So, if we go to the documentation of <a href="https://huggingface.co/docs/transformers/en/main_classes/output#transformers.modeling_outputs.CausalLMOutputWithCrossAttentions">transformers.modeling_outputs.CausalLMOutputWithCrossAttentions</a>, we can see that it states that it returns <code>loss</code> if <code>labels</code> are passed to the <code>forward</code> method.</p>
 <p>If we go to the source code of the <a href="https://github.com/huggingface/transformers/blob/main/src/transformers/models/gpt2/modeling_gpt2.py#L1277">forward</a> method, we see this block of code</p>
-<p>```python</p>
-<p>loss = None</p>
-<p>if labels is not None:</p>
-<h1 id="move labels to correct device to enable model parallelism">move labels to correct device to enable model parallelism<a class="anchor-link" href="#move labels to correct device to enable model parallelism">¶</a></h1>
-<p>labels = labels.to(lm_logits.device)</p>
-<h1 id="Shift so that tokens < n predict n">Shift so that tokens < n predict n<a class="anchor-link" href="#Shift so that tokens < n predict n">¶</a></h1>
-<p>shift_logits = lm_logits[..., :-1, :].contiguous()</p>
-<p>shift_labels = labels[..., 1:].contiguous()</p>
-<h1 id="Flatten the tokens">Flatten the tokens<a class="anchor-link" href="#Flatten the tokens">¶</a></h1>
-<p>loss_fct = CrossEntropyLoss()</p>
-<p>loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))```</p>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python">loss = None<br>if labels is not None:<br># move labels to correct device to enable model parallelism<br>labels = labels.to(lm_logits.device)<br># Shift so that tokens &lt; n predict n<br>shift_logits = lm_logits[..., :-1, :].contiguous()<br>shift_labels = labels[..., 1:].contiguous()<br># Flatten the tokens<br>loss_fct = CrossEntropyLoss()<br>loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))</code></pre></div>
+      </section>
 <p>That is, the <code>loss</code> is calculated as follows</p>
 <ul>
   <li>Logits and labels shift: The first part is to shift the logits (<code>lm_logits</code>) and the labels (<code>labels</code>) so that the <code>tokens < n</code> predict <code>n</code>, meaning from position <code>n</code> it predicts the next token based on the previous ones.</li>

@@ -1007,17 +1007,9 @@ You should probably TRAIN this model on a down-stream task to be able to use it 
 <p>Como vamos a precisar da loss para fazer o fine tuning, vamos a ver como obtê-la.</p>
 <p>Se nós formos à documentação do método <a href="https://huggingface.co/docs/transformers/model_doc/gpt2#transformers.GPT2LMHeadModel.forward">forward</a> de <code>GPT2LMHeadModel</code>, podemos ver que diz que na saída retorna um objeto do tipo <code>transformers.modeling_outputs.CausalLMOutputWithCrossAttentions</code>, então se formos à documentação de <a href="https://huggingface.co/docs/transformers/en/main_classes/output#transformers.modeling_outputs.CausalLMOutputWithCrossAttentions">transformers.modeling_outputs.CausalLMOutputWithCrossAttentions</a>, podemos ver que diz que retorna <code>loss</code> se for passado <code>labels</code> para o método <code>forward</code>.</p>
 <p>Se nós fôssemos à fonte do código do método <a href="https://github.com/huggingface/transformers/blob/main/src/transformers/models/gpt2/modeling_gpt2.py#L1277">forward</a>, veríamos este bloco de código</p>
-<p>```python</p>
-<p>perda = None</p>
-<p>se labels não for None:</p>
-<h1 id="mover rotulos para o dispositivo correto para habilitar o paralelismo do modelo">mover rótulos para o dispositivo correto para habilitar o paralelismo do modelo<a class="anchor-link" href="#mover rotulos para o dispositivo correto para habilitar o paralelismo do modelo">¶</a></h1>
-<p>labels = labels.to(lm_logits.device)</p>
-<h1 id="Desloque para que os tokens < n prevejam n">Desloque para que os tokens < n prevejam n<a class="anchor-link" href="#Desloque para que os tokens < n prevejam n">¶</a></h1>
-<p>shift_logits = lm_logits[..., :-1, :].contiguous()</p>
-<p>shift_labels = labels[..., 1:].contiguous()</p>
-<h1 id="Aplanar os tokens">Aplanar os tokens<a class="anchor-link" href="#Aplanar os tokens">¶</a></h1>
-<p>loss_fct = CrossEntropyLoss()</p>
-<p>loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))```</p>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python">perda = None<br>se labels não for None:<br># mover rótulos para o dispositivo correto para habilitar o paralelismo do modelo<br>labels = labels.to(lm_logits.device)<br># Desloque para que os tokens &lt; n prevejam n<br>shift_logits = lm_logits[..., :-1, :].contiguous()<br>shift_labels = labels[..., 1:].contiguous()<br># Aplanar os tokens<br>loss_fct = CrossEntropyLoss()<br>loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))</code></pre></div>
+      </section>
 <p>Isso significa que a <code>loss</code> é calculada da seguinte maneira</p>
 <ul>
   <li>Shift de logits e labels: A primeira parte é deslocar os logits (<code>lm_logits</code>) e as etiquetas (<code>labels</code>) para que os <code>tokens < n</code> prevejam <code>n</code>, ou seja, a partir de uma posição <code>n</code> se prevê o próximo token com base nos anteriores.</li>

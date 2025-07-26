@@ -216,6 +216,14 @@ class TestMarkdownCodeToHtml(unittest.TestCase):
       </section>'''
         self.assertEqual(html, expected_html)
 
+    def test_code_grather_than_sign_in_css(self):
+        markdown_content = '```html\n<div>\n    <p>Texto</p>\n</div>\n```'
+        html = markdown_code_to_html(markdown_content)
+        expected_html = '''<section class="section-block-markdown-cell">
+        <div class='highlight'><pre><code class="language-html">&lt;div&gt;<br>    &lt;p&gt;Texto&lt;/p&gt;<br>&lt;/div&gt;</code></pre></div>
+        </section>'''
+        self.assertEqual(html, expected_html)
+
 class TestMarkdownImageToHtml(unittest.TestCase):
 
     def test_valid_markdown_image(self):
@@ -530,6 +538,11 @@ class TestMarkdownUnorderedListToHtml(unittest.TestCase):
     def test_markdown_to_html_brace_into_code_2(self):
         markdown = '* `{{ if .System }}`system`{{ .System }}``{{ end }}`:\n'
         expected_html = '<ul>\n  <li><code>&#123;&#123; if .System &#125;&#125;</code>system<code>&#123;&#123; .System &#125;&#125;</code><code>&#123;&#123; end &#125;&#125;</code>:</li>\n</ul>'
+        self.assertEqual(markdown_to_html_updated(markdown), expected_html)
+    
+    def test_markdown_to_html_grather_than_sign_into_code(self):
+        markdown = '- **Selector de clase**: Selecciona todos los elementos que tengan una clase. Se utiliza el nombre de la clase. Por ejemplo, `.clase` selecciona todos los elementos que tengan la clase `clase`. Esto es útil, porque si queremos que todos los botones sean iguales, en el HTML ponemos `<button class="boton">` y en el CSS ponemos `.boton { /* estilos */ }`. Así todos los botones tendrán los mismos estilos, y si queremos que un botón sea diferente, le ponemos otra clase.'
+        expected_html = '<ul>\n  <li><strong>Selector de clase</strong>: Selecciona todos los elementos que tengan una clase. Se utiliza el nombre de la clase. Por ejemplo, <code>.clase</code> selecciona todos los elementos que tengan la clase <code>clase</code>. Esto es útil, porque si queremos que todos los botones sean iguales, en el HTML ponemos <code>&lt;button class="boton"&gt;</code> y en el CSS ponemos <code>.boton &#123; /* estilos */ &#125;</code>. Así todos los botones tendrán los mismos estilos, y si queremos que un botón sea diferente, le ponemos otra clase.</li>\n</ul>'
         self.assertEqual(markdown_to_html_updated(markdown), expected_html)
 
 class TestMarkdownOrderedListToHtml(unittest.TestCase):

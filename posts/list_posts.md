@@ -41,10 +41,10 @@
    * -rw-r--r--@   1 macm1  staff    227521 29 ene 17:29 2024-05-16-Hugging-Face-accelerate.ipynb
    * -rw-r--r--@   1 macm1  staff    239453 29 ene 17:29 2023-04-30-Conda.ipynb
    * -rw-r--r--@   1 macm1  staff    293857 29 ene 17:29 2023-01-22-Docker.ipynb
- * -rw-r--r--@   1 macm1  staff    316091 29 ene 17:29 2023-04-23-git.ipynb
+   * -rw-r--r--@   1 macm1  staff    316091 29 ene 17:29 2023-04-23-git.ipynb
    * -rw-r--r--@   1 macm1  staff    316268 11 jun 19:12 2025-06-04-Agents-patterns.ipynb
- * -rw-r--r--@   1 macm1  staff    318729  8 mar 12:57 2021-02-11-Introduccion-a-Python.ipynb
- * -rw-r--r--@   1 macm1  staff    403307  8 mar 12:57 2022-09-12-Introduccion-a-la-terminal.ipynb
+   * -rw-r--r--@   1 macm1  staff    318729  8 mar 12:57 2021-02-11-Introduccion-a-Python.ipynb
+   * -rw-r--r--@   1 macm1  staff    403307  8 mar 12:57 2022-09-12-Introduccion-a-la-terminal.ipynb
    * -rw-r--r--@   1 macm1  staff    501764 29 ene 17:29 2023-12-09-embeddings.ipynb
    * -rw-r--r--@   1 macm1  staff    625416 29 ene 17:29 2021-06-15-Manejo-de-datos-con-Pandas.ipynb
    * -rw-r--r--@   1 macm1  staff    737433 29 ene 17:29 2024-07-18-Florence-2-fine-tuning.ipynb

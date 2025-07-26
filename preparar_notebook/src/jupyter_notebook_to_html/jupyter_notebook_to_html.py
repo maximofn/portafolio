@@ -625,6 +625,15 @@ def input_code_to_html(code_content: str, is_html_post: bool = False) -> str:
     Returns:
         HTML string with the code highlighted and wrapped in appropriate containers.
     """
+    # First replace special content for python post
+    code_content = code_content.replace("print('Este es el blog de \\\\MaximoFN\\\\')", "print('Este es el blog de \\\\\\\\MaximoFN\\\\\\\\')")
+    code_content = code_content.replace("print('Este es el blog de \\nMaximoFN')", "print('Este es el blog de \\\\nMaximoFN')")
+    code_content = code_content.replace("print('Esto no se imprimirá \\rEste es el blog de MaximoFN')", "print('Esto no se imprimirá \\\\rEste es el blog de MaximoFN')")
+    code_content = code_content.replace("print('Este es el blog de \\tMaximoFN')", "print('Este es el blog de \\\\tMaximoFN')")
+    code_content = code_content.replace("print('Este es el blog de \\bMaximoFN')", "print('Este es el blog de \\\\bMaximoFN')")
+    code_content = code_content.replace("print('\\115\\141\\170\\151\\155\\157\\106\\116')", "print('\\\\115\\\\141\\\\170\\\\151\\\\155\\\\157\\\\106\\\\116')")
+    code_content = code_content.replace("print('\\x4d\\x61\\x78\\x69\\x6d\\x6f\\x46\\x4e')", "print('\\\\x4d\\\\x61\\\\x78\\\\x69\\\\x6d\\\\x6f\\\\x46\\\\x4e')")
+    
     # Create the Pygments lexer and formatter
     lexer = PythonLexer()
     # Configure formatter to generate HTML without line numbers and with specific CSS classes
@@ -733,6 +742,9 @@ def output_code_to_html(output_content: str) -> str:
     Returns:
         HTML string with the output wrapped in appropriate Jupyter output containers.
     """
+    # First replace special content for python post
+    output_content = output_content.replace("Este es el blog de \\MaximoFN\\", "Este es el blog de \\\\MaximoFN\\\\")
+
     # First, remove ANSI escape codes from the output content
     output_content = _remove_ansi_escape_codes(output_content)
     

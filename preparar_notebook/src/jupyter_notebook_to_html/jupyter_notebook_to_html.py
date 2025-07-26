@@ -805,6 +805,9 @@ def output_code_to_html(output_content: str) -> str:
         # Stream outputs now also properly escape HTML characters for correct display
         escaped_content = convert_spaces_to_html_entities(processed_content)
         
+        # Escape backslashes that are followed by spaces and newlines (for git log ASCII art)
+        escaped_content = re.sub(r'\\(\s+\n)', r'\\\\\1', escaped_content)
+        
         html_output = f'''<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
@@ -854,7 +857,7 @@ def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_con
                 block_type, block_content = list(specific_block.items())[0]
 
                 if block_type == "text":
-                    if "If we pass the model the following prompt" in block_content:
+                    if "Se ha hecho el merge, veamos qué ha pasado con el log en la rama" in block_content:
                         debug_print = True
                     # Text blocks might contain headers or simple paragraphs.
                     # The generic_markdown_to_specific_markdowns might return larger text blocks
@@ -869,7 +872,7 @@ def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_con
                         debug_print = True
                     html_output_parts.append(convert_table_to_html(block_content))
                 elif block_type == "list":
-                    if "Sin embargo, si usamos" in block_content:
+                    if "Sincronizarlos mediante" in block_content:
                         debug_print = True
                     html_output_parts.append(convert_list_to_html(block_content))
                 elif block_type == "link":
@@ -918,8 +921,8 @@ def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_con
         
         elif "output_code" in item:
             code_content = item["output_code"]
-            if "# We iterate one batch ahead to check when we are at the end" in code_content:
-                print("debugging")
+            if "*   274529c (HEAD " in code_content:
+                debug_print = True
             # Use the new output_code_to_html function for proper output structure
             html_output_parts.append(output_code_to_html(code_content))
         

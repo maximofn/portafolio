@@ -545,6 +545,16 @@ class TestMarkdownUnorderedListToHtml(unittest.TestCase):
         expected_html = '<ul>\n  <li><strong>Selector de clase</strong>: Selecciona todos los elementos que tengan una clase. Se utiliza el nombre de la clase. Por ejemplo, <code>.clase</code> selecciona todos los elementos que tengan la clase <code>clase</code>. Esto es útil, porque si queremos que todos los botones sean iguales, en el HTML ponemos <code>&lt;button class="boton"&gt;</code> y en el CSS ponemos <code>.boton &#123; /* estilos */ &#125;</code>. Así todos los botones tendrán los mismos estilos, y si queremos que un botón sea diferente, le ponemos otra clase.</li>\n</ul>'
         self.assertEqual(markdown_to_html_updated(markdown), expected_html)
 
+    def test_markdown_to_html_greater_than_sign_in_list(self):
+        markdown = '<li>Sincronizarlos mediante <code>git remote add origin <URL></code></li>'
+        expected_html = '<ul>\n  <li>Sincronizarlos mediante <code>git remote add origin &lt;URL&gt;</code></li>\n</ul>'
+        self.assertEqual(markdown_to_html_updated(markdown), expected_html)
+    
+    def test_markdown_to_html_greater_than_sign_in_list_2(self):
+        markdown = ' * Primero crear un repositorio remoto vacío, en mi caso he creado el repositorio `notebook_git` en GitHub que más tarde borraré\n * Obtener la URL del repositorio o dirección SSH\n * Sincronizarlos mediante `git remote add origin <URL>`\n'
+        expected_html = '<ul>\n  <li>Primero crear un repositorio remoto vacío, en mi caso he creado el repositorio <code>notebook_git</code> en GitHub que más tarde borraré</li>\n  <li>Obtener la URL del repositorio o dirección SSH</li>\n  <li>Sincronizarlos mediante <code>git remote add origin &lt;URL&gt;</code></li>\n</ul>'
+        self.assertEqual(markdown_to_html_updated(markdown), expected_html)
+
 class TestMarkdownOrderedListToHtml(unittest.TestCase):
 
     def test_simple_ordered_list(self):

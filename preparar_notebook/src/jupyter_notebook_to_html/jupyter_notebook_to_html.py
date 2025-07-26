@@ -625,6 +625,15 @@ def input_code_to_html(code_content: str, is_html_post: bool = False) -> str:
     Returns:
         HTML string with the code highlighted and wrapped in appropriate containers.
     """
+    # First replace special content for python post
+    code_content = code_content.replace("print('Este es el blog de \\\\MaximoFN\\\\')", "print('Este es el blog de \\\\\\\\MaximoFN\\\\\\\\')")
+    code_content = code_content.replace("print('Este es el blog de \\nMaximoFN')", "print('Este es el blog de \\\\nMaximoFN')")
+    code_content = code_content.replace("print('Esto no se imprimirá \\rEste es el blog de MaximoFN')", "print('Esto no se imprimirá \\\\rEste es el blog de MaximoFN')")
+    code_content = code_content.replace("print('Este es el blog de \\tMaximoFN')", "print('Este es el blog de \\\\tMaximoFN')")
+    code_content = code_content.replace("print('Este es el blog de \\bMaximoFN')", "print('Este es el blog de \\\\bMaximoFN')")
+    code_content = code_content.replace("print('\\115\\141\\170\\151\\155\\157\\106\\116')", "print('\\\\115\\\\141\\\\170\\\\151\\\\155\\\\157\\\\106\\\\116')")
+    code_content = code_content.replace("print('\\x4d\\x61\\x78\\x69\\x6d\\x6f\\x46\\x4e')", "print('\\\\x4d\\\\x61\\\\x78\\\\x69\\\\x6d\\\\x6f\\\\x46\\\\x4e')")
+    
     # Create the Pygments lexer and formatter
     lexer = PythonLexer()
     # Configure formatter to generate HTML without line numbers and with specific CSS classes
@@ -733,6 +742,9 @@ def output_code_to_html(output_content: str) -> str:
     Returns:
         HTML string with the output wrapped in appropriate Jupyter output containers.
     """
+    # First replace special content for python post
+    output_content = output_content.replace("Este es el blog de \\MaximoFN\\", "Este es el blog de \\\\MaximoFN\\\\")
+
     # First, remove ANSI escape codes from the output content
     output_content = _remove_ansi_escape_codes(output_content)
     
@@ -805,6 +817,9 @@ def output_code_to_html(output_content: str) -> str:
         # Stream outputs now also properly escape HTML characters for correct display
         escaped_content = convert_spaces_to_html_entities(processed_content)
         
+        # Escape backslashes that are followed by spaces and newlines (for git log ASCII art)
+        escaped_content = re.sub(r'\\(\s+\n)', r'\\\\\1', escaped_content)
+        
         html_output = f'''<section class="section-block-code-cell-">
 <div class="output-wrapper">
 <div class="output-area">
@@ -817,6 +832,49 @@ def output_code_to_html(output_content: str) -> str:
 </div>
 </section>'''
     
+    html_output = html_output.replace("\\\n&#x20;", "\\\\\n&#x20;")
+    html_output = html_output.replace(" \\\n", " \\\\\n")
+
+    # Replace html_output for terminal post
+    html_output = html_output.replace("&amp;lt; MaximoFN &amp;gt;", "< MaximoFN >")
+    html_output = html_output.replace("&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;\\   ^__^", "&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;\\\\   ^__^")
+    html_output = html_output.replace("&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;\\  (oo)\\_______", "&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;\\\\  (oo)\\\\_______")
+    html_output = html_output.replace("&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(__)\\       )\\/\\", "&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(__)\\\\       )\\\\/\\")
+    html_output = html_output.replace("&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;\\                    / \\  //\\", "&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;\\\\                    / \\\\  //\\")
+    html_output = html_output.replace("&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;\\    |\\___/|      /   \\//  \\\\", "&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;\\\\    |\\\\___/|      /   \\\\//  \\\\\\")
+    html_output = html_output.replace("&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;/0  0  \\__  /    //  | \\ \\", "&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;/0  0  \\\\__  /    //  | \\\\ \\")
+    html_output = html_output.replace("&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;/     /  \\/_/    //   |  \\  \\", "&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;/     /  \\\\/_/    //   |  \\\\  \\")
+    html_output = html_output.replace("&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;@_^_@&#x27;/   \\/_   //    |   \\   \\", "&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;@_^_@&#x27;/   \\\\/_   //    |   \\\\   \\")
+    html_output = html_output.replace("&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;//_^_/     \\/_ //     |    \\    \\", "&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;//_^_/     \\\\/_ //     |    \\\\    \\")
+    html_output = html_output.replace("&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;( //) |        \\///      |     \\     \\", "&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;( //) |        \\\\///      |     \\\\     \\")
+
+    html_output = html_output.replace('&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;( / /) _|_ /   )  //       |      \\     _\\','&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;( / /) _|_ /   )  //       |      \\\\     _\\')
+    html_output = html_output.replace('&#x20;&#x20;&#x20;&#x20;( // /) &#x27;/,_ _ _/  ( ; -.    |    _ _\\.-~        .-~~~^-.','&#x20;&#x20;&#x20;&#x20;( // /) &#x27;/,_ _ _/  ( ; -.    |    _ _\\\\.-~        .-~~~^-.')
+    html_output = html_output.replace('&#x20;&#x20;(( / / )) ,-&#x7B;        _      `-.|.-~-.           .~         `.','&#x20;&#x20;(( / / )) ,-&#x7B;        _      `-.|.-~-.           .~         `.')
+    html_output = html_output.replace('(( // / ))  &#x27;/\\      /                 ~-. _ .-~      .-~^-.  \\','(( // / ))  &#x27;/\\\\      /                 ~-. _ .-~      .-~^-.  \\')
+    html_output = html_output.replace('(( /// ))      `.   &#x7B;            &#x7D;                   /      \\  \\','(( /// ))      `.   &#x7B;            &#x7D;                   /      \\\\  \\')
+    html_output = html_output.replace('&#x20;&#x20;(( / ))     .----~-.\\        \\-&#x27;                 .~         \\  `. \\^-.','&#x20;&#x20;(( / ))     .----~-.\\\\        \\\\-&#x27;                 .~         \\\\  `. \\\\^-.')
+    html_output = html_output.replace('&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;///.----..&amp;gt;        \\             _ -~             `.  ^-`  ^-_','&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;///.----..>        \\\\             _ -~             `.  ^-`  ^-_')
+    html_output = html_output.replace('&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;///-._ _ _ _ _ _ _&#x7D;^ - - - - ~                     ~-- ,.-~','&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;///-._ _ _ _ _ _ _&#x7D;^ - - - - ~                     ~-- ,.-~')
+    html_output = html_output.replace('&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;/.-~','&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;/.-~')
+    html_output = html_output.replace('&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;\\                    ^    /^','&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;\\\\                    ^    /^')
+    html_output = html_output.replace('&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;\\                  / \\  // \\','&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;\\\\                  / \\\\  // \\')
+    html_output = html_output.replace('&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;\\   |\\___/|      /   \\//  .\\','&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;\\\\   |\\\\___/|      /   \\\\//  .\\')
+    html_output = html_output.replace('&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;\\  /O  O  \\__  /    //  | \\ \\           *----*','&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;\\\\  /O  O  \\\\__  /    //  | \\\\ \\\\           *----*')
+    html_output = html_output.replace('&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;/     /  \\/_/    //   |  \\  \\          \\   |','&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;/     /  \\\\/_/    //   |  \\\\  \\\\          \\\\   |')
+    html_output = html_output.replace('&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;/     /  \\\\/_/    //   |  \\\\  \\          \\   |','&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;/     /  \\\\/_/    //   |  \\\\  \\\\          \\\\   |')
+    html_output = html_output.replace('&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;@___@`    \\/_   //    |   \\   \\         \\/\\ \\','&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;@___@`    \\\\/_   //    |   \\\\   \\\\         \\\\/\\\\ \\')
+    html_output = html_output.replace('&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;0/0/|       \\/_ //     |    \\    \\         \\  \\','&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;0/0/|       \\\\/_ //     |    \\\\    \\\\         \\\\  \\')
+    html_output = html_output.replace('&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;0/0/0/0/|        \\///      |     \\     \\       |  |','&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;0/0/0/0/|        \\\\///      |     \\\\     \\\\       |  |')
+    html_output = html_output.replace('&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;0/0/0/0/0/_|_ /   (  //       |      \\     _\\     |  /','&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;0/0/0/0/0/_|_ /   (  //       |      \\\\     _\\\\     |  /')
+    html_output = html_output.replace('&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;0/0/0/0/0/0/`/,_ _ _/  ) ; -.    |    _ _\\.-~       /   /','&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;0/0/0/0/0/0/`/,_ _ _/  ) ; -.    |    _ _\\\\.-~       /   /')
+    html_output = html_output.replace('&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;,-&#x7D;        _      *-.|.-~-.           .~    ~','&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;,-&#x7D;        _      *-.|.-~-.           .~    ~')
+    html_output = html_output.replace('&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;\\     \\__/        `/\\      /                 ~-. _ .-~      /','&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;\\\\     \\\\__/        `/\\\\      /                 ~-. _ .-~      /')
+    html_output = html_output.replace('&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;\\____(oo)           *.   &#x7D;            &#x7B;                   /','&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;\\\\____(oo)           *.   &#x7D;            &#x7B;                   /')
+    html_output = html_output.replace('&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(    (--)          .----~-.\\        \\-`                 .~','&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;(    (--)          .----~-.\\\\        \\\\-`                 .~')
+    html_output = html_output.replace('&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;//__\\\\  \\__ Ack!   ///.----..&amp;lt;        \\             _ -~','&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;//__\\\\\\\\  \\\\__ Ack!   ///.----..<        \\\\             _ -~')
+    html_output = html_output.replace('&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;//    \\\\               ///-._ _ _ _ _ _ _&#x7B;^ - - - - ~','&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;//    \\\\\\\\               ///-._ _ _ _ _ _ _&#x7B;^ - - - - ~')
+
     return html_output
 
 def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_contents_in_xml_format, is_html_post: bool = False):
@@ -851,21 +909,23 @@ def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_con
                 block_type, block_content = list(specific_block.items())[0]
 
                 if block_type == "text":
-                    if "Sin embargo, si usamos" in block_content:
-                        print("debugging")
+                    if "Se ha hecho el merge, veamos qué ha pasado con el log en la rama" in block_content:
+                        debug_print = True
                     # Text blocks might contain headers or simple paragraphs.
                     # The generic_markdown_to_specific_markdowns might return larger text blocks
                     # that need further processing for headers, paragraphs etc.
                     html_output_parts.append(_process_text_block(block_content))
                 elif block_type == "code":
                     if "Convert the response to LangChain format" in block_content:
-                        print("debugging")
+                        debug_print = True
                     html_output_parts.append(convert_code_to_html(block_content, include_language_class=True))
                 elif block_type == "table":
+                    if "{{" in block_content:
+                        debug_print = True
                     html_output_parts.append(convert_table_to_html(block_content))
                 elif block_type == "list":
-                    if "Sin embargo, si usamos" in block_content:
-                        print("debugging")
+                    if "Sincronizarlos mediante" in block_content:
+                        debug_print = True
                     html_output_parts.append(convert_list_to_html(block_content))
                 elif block_type == "link":
                     # Need to determine if it's internal or external
@@ -913,6 +973,8 @@ def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_con
         
         elif "output_code" in item:
             code_content = item["output_code"]
+            if "*   274529c (HEAD " in code_content:
+                debug_print = True
             # Use the new output_code_to_html function for proper output structure
             html_output_parts.append(output_code_to_html(code_content))
         

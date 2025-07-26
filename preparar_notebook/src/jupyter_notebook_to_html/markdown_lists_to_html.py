@@ -301,12 +301,67 @@ def process_links_in_text(text):
     code_placeholders = {}
     placeholder_counter = 0
     
-    # Helper function to escape braces in code content and store it
+    # Helper function to escape HTML special characters in code content and store it
     def escape_braces_in_code(match):
         nonlocal placeholder_counter
         code_content = match.group(1)
-        # Escape curly braces as HTML entities
-        code_content = code_content.replace('{', '&#123;').replace('}', '&#125;')
+        
+        # Escape HTML tags but only if they are actual HTML elements
+        def escape_html_tags(text):
+            import re
+            
+            # List of common HTML tags that should be escaped
+            html_tags = {
+                'a', 'abbr', 'address', 'area', 'article', 'aside', 'audio', 'b', 'base', 'bdi', 'bdo', 
+                'blockquote', 'body', 'br', 'button', 'canvas', 'caption', 'cite', 'code', 'col', 
+                'colgroup', 'data', 'datalist', 'dd', 'del', 'details', 'dfn', 'dialog', 'div', 'dl', 
+                'dt', 'em', 'embed', 'fieldset', 'figcaption', 'figure', 'footer', 'form', 'h1', 'h2', 
+                'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hgroup', 'hr', 'html', 'i', 'iframe', 
+                'img', 'input', 'ins', 'kbd', 'label', 'legend', 'li', 'link', 'main', 'map', 'mark', 
+                'meta', 'meter', 'nav', 'noscript', 'object', 'ol', 'optgroup', 'option', 'output', 
+                'p', 'param', 'picture', 'pre', 'progress', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 
+                'script', 'section', 'select', 'small', 'source', 'span', 'strong', 'style', 'sub', 
+                'summary', 'sup', 'svg', 'table', 'tbody', 'td', 'template', 'textarea', 'tfoot', 
+                'th', 'thead', 'time', 'title', 'tr', 'track', 'u', 'ul', 'var', 'video', 'wbr'
+            }
+            
+            # Pattern to match tags: <tagname> or <tagname attributes> or </tagname>
+            html_tag_pattern = r'<(/?)([a-zA-Z][a-zA-Z0-9]*)((?:\s+[^>]*)?)\s*>'
+            
+            def replace_tag(match):
+                slash = match.group(1)  # '/' for closing tags
+                tag_name = match.group(2).lower()  # tag name
+                attributes = match.group(3) or ''  # attributes
+                
+                # Only escape if it's a known HTML tag
+                if tag_name in html_tags:
+                    return f'&lt;{slash}{tag_name}{attributes}&gt;'
+                else:
+                    # Not a known HTML tag, leave it as is
+                    return match.group(0)
+            
+            # For markdown backticks, escape known HTML tags
+            text = re.sub(html_tag_pattern, replace_tag, text)
+            
+            # Also escape placeholder patterns like <URL>, <PATH>, etc. (typically all caps)
+            # but NOT descriptive text like <indice de argumento>
+            placeholder_pattern = r'<([A-Z][A-Z_]*[A-Z]?)>'
+            text = re.sub(placeholder_pattern, r'&lt;\1&gt;', text)
+            
+            return text
+        
+        # Escape all braces in code content
+        def escape_all_braces(text):
+            # Simply escape all { and } to HTML entities
+            text = text.replace('{', '&#123;').replace('}', '&#125;')
+            return text
+        
+        # Apply HTML tag escaping
+        code_content = escape_html_tags(code_content)
+        
+        # Apply brace escaping - escape all braces
+        code_content = escape_all_braces(code_content)
+        
         final_code = f'<code>{code_content}</code>'
         
         # Create a unique placeholder
@@ -316,8 +371,87 @@ def process_links_in_text(text):
         
         return placeholder
     
+    # Helper function to process existing HTML <code> tags
+    def process_existing_code_tags(match):
+        code_content = match.group(1)
+        
+        # Apply the same escaping logic as escape_braces_in_code but without creating placeholders
+        # Escape HTML tags but only if they are actual HTML elements
+        def escape_html_tags(text):
+            import re
+            
+            # List of common HTML tags that should be escaped
+            html_tags = {
+                'a', 'abbr', 'address', 'area', 'article', 'aside', 'audio', 'b', 'base', 'bdi', 'bdo', 
+                'blockquote', 'body', 'br', 'button', 'canvas', 'caption', 'cite', 'code', 'col', 
+                'colgroup', 'data', 'datalist', 'dd', 'del', 'details', 'dfn', 'dialog', 'div', 'dl', 
+                'dt', 'em', 'embed', 'fieldset', 'figcaption', 'figure', 'footer', 'form', 'h1', 'h2', 
+                'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hgroup', 'hr', 'html', 'i', 'iframe', 
+                'img', 'input', 'ins', 'kbd', 'label', 'legend', 'li', 'link', 'main', 'map', 'mark', 
+                'meta', 'meter', 'nav', 'noscript', 'object', 'ol', 'optgroup', 'option', 'output', 
+                'p', 'param', 'picture', 'pre', 'progress', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 
+                'script', 'section', 'select', 'small', 'source', 'span', 'strong', 'style', 'sub', 
+                'summary', 'sup', 'svg', 'table', 'tbody', 'td', 'template', 'textarea', 'tfoot', 
+                'th', 'thead', 'time', 'title', 'tr', 'track', 'u', 'ul', 'var', 'video', 'wbr'
+            }
+            
+            # Pattern to match tags: <tagname> or <tagname attributes> or </tagname>
+            html_tag_pattern = r'<(/?)([a-zA-Z][a-zA-Z0-9]*)((?:\s+[^>]*)?)\s*>'
+            
+            def replace_tag(match):
+                slash = match.group(1)  # '/' for closing tags
+                tag_name = match.group(2).lower()  # tag name
+                attributes = match.group(3) or ''  # attributes
+                
+                # Only escape if it's a known HTML tag
+                if tag_name in html_tags:
+                    return f'&lt;{slash}{tag_name}{attributes}&gt;'
+                else:
+                    # Not a known HTML tag, leave it as is
+                    return match.group(0)
+            
+            # First, replace known HTML tags
+            text = re.sub(html_tag_pattern, replace_tag, text)
+            
+            # Then escape any remaining < and > characters that are not part of already escaped tags
+            # This will catch things like <URL> that are not valid HTML tags
+            # Simple approach: escape < and > that are not part of HTML tags
+            text = text.replace('<', '&lt;').replace('>', '&gt;')
+            
+            # But restore the HTML tags that should not be escaped
+            for tag in html_tags:
+                # Restore opening tags
+                text = text.replace(f'&lt;{tag}&gt;', f'<{tag}>')
+                text = text.replace(f'&lt;{tag} ', f'<{tag} ')
+                # Restore closing tags
+                text = text.replace(f'&lt;/{tag}&gt;', f'</{tag}>')
+            
+            return text
+        
+        # Escape all braces in code content
+        def escape_all_braces(text):
+            # Simply escape all { and } to HTML entities
+            text = text.replace('{', '&#123;').replace('}', '&#125;')
+            return text
+        
+        # Apply HTML tag escaping
+        code_content = escape_html_tags(code_content)
+        
+        # Apply brace escaping - escape all braces
+        code_content = escape_all_braces(code_content)
+        
+        return f'<code>{code_content}</code>'
+    
     # IMPORTANT: Process inline code FIRST to prevent $ symbols inside code from being treated as math
-    # First process inline code with double backticks
+    
+    # Check if we have existing HTML <code> tags (not generated from markdown backticks)
+    has_existing_html_code = bool(re.search(r'<code>', text) and not re.search(r'`[^`]*`', text))
+    
+    if has_existing_html_code:
+        # First process existing HTML <code> tags only if they already exist and there are no backticks
+        text = re.sub(r'<code>(.*?)</code>', process_existing_code_tags, text)
+    
+    # Then process inline code with double backticks
     text = re.sub(r'``([^`]+?)``', escape_braces_in_code, text)
     
     # Then process inline code with single backticks (but not those already processed)
@@ -430,6 +564,7 @@ def markdown_to_html_updated(markdown_text):
     Handles lists starting with '-', '*', or '+'.
     Indentation (2 spaces) determines nesting.
     Also handles ordered lists.
+    Additionally handles existing HTML <li> elements.
     """
     lines = markdown_text.strip().split('\n')
     html_lines = []
@@ -437,6 +572,9 @@ def markdown_to_html_updated(markdown_text):
 
     # Regex for ordered list items (e.g., "1. item", "01. item")
     ordered_item_pattern = re.compile(r"^\s*(\d+)\.\s+(.*)")
+    
+    # Regex for existing HTML <li> elements
+    html_li_pattern = re.compile(r'^\s*<li>(.*)</li>\s*$')
 
     def get_indent_level(line_text):
         leading_spaces = 0
@@ -483,6 +621,9 @@ def markdown_to_html_updated(markdown_text):
         # Try to match ordered list first
         ordered_match = ordered_item_pattern.match(stripped_line)
         is_unordered_list_item = stripped_line.startswith(('-', '*', '+')) and stripped_line[1:2] == ' '
+        
+        # Check for existing HTML <li> elements
+        html_li_match = html_li_pattern.match(stripped_line)
 
         current_list_type = None
         item_content = ""
@@ -494,6 +635,10 @@ def markdown_to_html_updated(markdown_text):
         elif is_unordered_list_item:
             current_list_type = 'ul'
             item_content = process_links_in_text(line.strip()[2:].strip())
+        elif html_li_match:
+            # Handle existing HTML <li> elements - treat as unordered list items
+            current_list_type = 'ul'
+            item_content = process_links_in_text(html_li_match.group(1).strip())
 
         if current_list_type:
             # Close lists that are deeper than the current item's level

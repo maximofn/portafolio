@@ -207,6 +207,22 @@ class TestMarkdownCodeToHtml(unittest.TestCase):
       <div class='highlight'><pre><code class="language-python"># Define the function that calls the model<br>def call_model(state: MessagesState):<br>"""<br>Llamar al modelo con los mensajes dados<br><br>Args:<br>state: MessagesState<br><br>Devuelve:<br>dict: A dictionary containing the generated text and the thread ID<br>"""<br># Convert LangChain messages to HuggingFace format<br>hf_messages = []<br>for msg in state["messages"]:<br>if isinstance(msg, HumanMessage):<br>hf_messages.append(&#123;"role": "user", "content": msg.content&#125;)<br>elif isinstance(msg, AIMessage):<br>hf_messages.append(&#123;"role": "assistant", "content": msg.content&#125;)<br>    <br># Call the API<br>response = model.chat_completion(<br>messages=hf_messages,<br>temperature=0.5,<br>max_tokens=64,<br>top_p=0.7<br>)<br>    <br># Convert the response to LangChain format<br>ai_message = AIMessage(content=response.choices[0].message.content)<br>return &#123;"messages": state["messages"] + [ai_message]&#125;</code></pre></div>
       </section>'''
         self.assertEqual(html, expected_html)
+    
+    def test_code_open_brace_3(self):
+        markdown_content = '```c\nfor (i = 0; i < rows; i++): {\n  for (j = 0; j < columns; j++): {\n    c[i][j] = a[i][j]*b[i][j];\n  }\n}\n```'
+        html = markdown_code_to_html(markdown_content)
+        expected_html = '''<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-c">for (i = 0; i &lt; rows; i++): &#123;<br>  for (j = 0; j &lt; columns; j++): &#123;<br>    c[i][j] = a[i][j]*b[i][j];<br>  &#125;<br>&#125;</code></pre></div>
+      </section>'''
+        self.assertEqual(html, expected_html)
+
+    def test_code_greater_than_sign_in_html(self):
+        markdown_content = '```html\n<div>\n    <p>Texto</p>\n</div>\n```'
+        html = markdown_code_to_html(markdown_content)
+        expected_html = '''<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-html">&lt;div&gt;<br>&#x20;&#x20;&lt;p&gt;Texto&lt;/p&gt;<br>&lt;/div&gt;</code></pre></div>
+      </section>'''
+        self.assertEqual(html, expected_html)
 
 class TestMarkdownImageToHtml(unittest.TestCase):
 
@@ -517,6 +533,26 @@ class TestMarkdownUnorderedListToHtml(unittest.TestCase):
     def test_markdown_to_html_brace_into_code(self):
         markdown = ' * Podemos remplazar el valor de una cadena de un argumento mediante `${<indice de argumento>/cadena que se quiere sustituir/cadena nueva}`, es decir, si tenemos `${1/hola/hello}` sustituirá la palabra `hola` por la palabra `hello` en el argumento 1\n * Sin embargo, si usamos `${<índice de argumento>/#cadena que se quiere sustituir/cadena nueva}`, solo sustituirá la cadena en el argumento si este argumento empieza por dicha cadena\n'
         expected_html = '<ul>\n  <li>Podemos remplazar el valor de una cadena de un argumento mediante <code>$&#123;<indice de argumento>/cadena que se quiere sustituir/cadena nueva&#125;</code>, es decir, si tenemos <code>$&#123;1/hola/hello&#125;</code> sustituirá la palabra <code>hola</code> por la palabra <code>hello</code> en el argumento 1</li>\n  <li>Sin embargo, si usamos <code>$&#123;<índice de argumento>/#cadena que se quiere sustituir/cadena nueva&#125;</code>, solo sustituirá la cadena en el argumento si este argumento empieza por dicha cadena</li>\n</ul>'
+        self.assertEqual(markdown_to_html_updated(markdown), expected_html)
+    
+    def test_markdown_to_html_brace_into_code_2(self):
+        markdown = '* `{{ if .System }}`system`{{ .System }}``{{ end }}`:\n'
+        expected_html = '<ul>\n  <li><code>&#123;&#123; if .System &#125;&#125;</code>system<code>&#123;&#123; .System &#125;&#125;</code><code>&#123;&#123; end &#125;&#125;</code>:</li>\n</ul>'
+        self.assertEqual(markdown_to_html_updated(markdown), expected_html)
+    
+    def test_markdown_to_html_grather_than_sign_into_code(self):
+        markdown = '- **Selector de clase**: Selecciona todos los elementos que tengan una clase. Se utiliza el nombre de la clase. Por ejemplo, `.clase` selecciona todos los elementos que tengan la clase `clase`. Esto es útil, porque si queremos que todos los botones sean iguales, en el HTML ponemos `<button class="boton">` y en el CSS ponemos `.boton { /* estilos */ }`. Así todos los botones tendrán los mismos estilos, y si queremos que un botón sea diferente, le ponemos otra clase.'
+        expected_html = '<ul>\n  <li><strong>Selector de clase</strong>: Selecciona todos los elementos que tengan una clase. Se utiliza el nombre de la clase. Por ejemplo, <code>.clase</code> selecciona todos los elementos que tengan la clase <code>clase</code>. Esto es útil, porque si queremos que todos los botones sean iguales, en el HTML ponemos <code>&lt;button class="boton"&gt;</code> y en el CSS ponemos <code>.boton &#123; /* estilos */ &#125;</code>. Así todos los botones tendrán los mismos estilos, y si queremos que un botón sea diferente, le ponemos otra clase.</li>\n</ul>'
+        self.assertEqual(markdown_to_html_updated(markdown), expected_html)
+
+    def test_markdown_to_html_greater_than_sign_in_list(self):
+        markdown = '<li>Sincronizarlos mediante <code>git remote add origin <URL></code></li>'
+        expected_html = '<ul>\n  <li>Sincronizarlos mediante <code>git remote add origin &lt;URL&gt;</code></li>\n</ul>'
+        self.assertEqual(markdown_to_html_updated(markdown), expected_html)
+    
+    def test_markdown_to_html_greater_than_sign_in_list_2(self):
+        markdown = ' * Primero crear un repositorio remoto vacío, en mi caso he creado el repositorio `notebook_git` en GitHub que más tarde borraré\n * Obtener la URL del repositorio o dirección SSH\n * Sincronizarlos mediante `git remote add origin <URL>`\n'
+        expected_html = '<ul>\n  <li>Primero crear un repositorio remoto vacío, en mi caso he creado el repositorio <code>notebook_git</code> en GitHub que más tarde borraré</li>\n  <li>Obtener la URL del repositorio o dirección SSH</li>\n  <li>Sincronizarlos mediante <code>git remote add origin &lt;URL&gt;</code></li>\n</ul>'
         self.assertEqual(markdown_to_html_updated(markdown), expected_html)
 
 class TestMarkdownOrderedListToHtml(unittest.TestCase):
@@ -1066,60 +1102,31 @@ Val 3   | Val 4 |
 </table>'''
         self.assertEqual(markdown_table_to_html(markdown).strip(), expected_html.strip())
     
-    # def test_markdown_table_to_html_with_link(self):
-    #     markdown = '|PreTokenizer|Descripción|Ejemplo|\n|---|---|---|\n|ByteLevel|Divide en espacios en blanco mientras reasigna todos los bytes a un conjunto de caracteres visibles. Esta técnica fue introducida por OpenAI con GPT-2 y tiene algunas propiedades más o menos buenas: Como mapea sobre bytes, un tokenizador que utilice esto sólo requiere 256 caracteres como alfabeto inicial (el número de valores que puede tener un byte), frente a los más de 130.000 caracteres Unicode. Una consecuencia del punto anterior es que es absolutamente innecesario tener un token desconocido usando esto ya que podemos representar cualquier cosa con 256 tokens. Para caracteres no ascii, se vuelve completamente ilegible, ¡pero funciona!|`Hello my friend, how are you?` se divide en `Hello`, `Ġmy`, `Ġfriend`, `,`, `Ġhow`, `Ġare`, `Ġyou`, `?`|\n|Whitespace|Divide en límites de palabra usando la siguiente expresión regular: `\\w+[^\\w\\s]+`. En mi post sobre [expresiones regulares](https://maximofn.com/regular-expressions/) puedes entender qué hace|`Hello there!` se divide en `Hello`, `there`, `!`|\n|WhitespaceSplit|Se divide en cualquier carácter de espacio en blanco|`Hello there!` se divide en `Hello`, `there!`|\n|Punctuation|Aislará todos los caracteres de puntuación|`Hello?` se divide en `Hello`, `?`|\n|Metaspace|Separa los espacios en blanco y los sustituye por un carácter especial "▁" (U+2581)|`Hello there` se divide en `Hello`, `▁there`|\n|CharDelimiterSplit|Divisiones en un carácter determinado|Ejemplo con el caracter `x`: `Helloxthere` se divide en `Hello`, `there`|\n|Digits|Divide los números de cualquier otro carácter|`Hello123there` se divide en `Hello`, `123`, `there`|\n|Split|Pretokenizador versátil que divide según el patrón y el comportamiento proporcionados. El patrón se puede invertir si es necesario. El patrón debe ser una cadena personalizada o una [regex](https://maximofn.com/regular-expressions/). El comportamiento debe ser `removed`, `isolated`, `merged_with_previous`, `merged_with_next`, `contiguous`. Para invertir se indica con un booleano|Ejemplo con pattern=`" "`, behavior=`isolated`, invert=`False`: `Hello, how are you?` se divide en `Hello,`, ` `, `how`, ` `, `are`, ` `, `you?`|'
-    #     expected_html = '''<table>
-    #     <thead>
-    #       <tr>
-    #         <th>PreTokenizer</th>
-    #         <th>Descripción</th>
-    #         <th>Ejemplo</th>
-    #       </tr>
-    #     </thead>
-    #     <tbody>
-    #       <tr>
-    #         <td>ByteLevel</td>
-    #         <td>Divide en espacios en blanco mientras reasigna todos los bytes a un conjunto de caracteres visibles. Esta técnica fue introducida por OpenAI con GPT-2 y tiene algunas propiedades más o menos buenas: Como mapea sobre bytes, un tokenizador que utilice esto sólo requiere 256 caracteres como alfabeto inicial (el número de valores que puede tener un byte), frente a los más de 130.000 caracteres Unicode. Una consecuencia del punto anterior es que es absolutamente innecesario tener un token desconocido usando esto ya que podemos representar cualquier cosa con 256 tokens. Para caracteres no ascii, se vuelve completamente ilegible, ¡pero funciona!</td>
-    #         <td><code>Hello my friend, how are you?</code> se divide en <code>Hello</code>, <code>&#x60;Ġmy&#x60;</code>, <code>&#x60;Ġfriend&#x60;</code>, <code>,</code>, <code>&#x60;Ġhow&#x60;</code>, <code>&#x60;Ġare&#x60;</code>, <code>&#x60;Ġyou&#x60;</code>, <code>?</code></td>
-    #       </tr>
-    #       <tr>
-    #         <td>Whitespace</td>
-    #         <td>Divide en límites de palabra usando la siguiente expresión regular: <code>\w+[^\w\s]+</code>. En mi post sobre <a href="https://maximofn.com/regular-expressions/">expresiones regulares</a> puedes entender qué hace</td>
-    #         <td><code>&#x60;Hello there!&#x60;</code> se divide en <code>Hello</code>, <code>there</code>, <code>!</code></td>
-    #       </tr>
-    #       <tr>
-    #         <td>WhitespaceSplit</td>
-    #         <td>Se divide en cualquier carácter de espacio en blanco</td>
-    #         <td><code>&#x60;Hello there!&#x60;</code> se divide en <code>Hello</code>, <code>there!</code></td>
-    #       </tr>
-    #       <tr>
-    #         <td>Punctuation</td>
-    #         <td>Aislará todos los caracteres de puntuación</td>
-    #         <td><code>&#x60;Hello?&#x60;</code> se divide en <code>Hello</code>, <code>?</code></td>
-    #       </tr>
-    #       <tr>
-    #         <td>Metaspace</td>
-    #         <td>Separa los espacios en blanco y los sustituye por un carácter especial "▁" (U+2581)</td>
-    #         <td><code>&#x60;Hello there&#x60;</code> se divide en <code>Hello</code>, <code>&#x60;▁there&#x60;</code></td>
-    #       </tr>
-    #       <tr>
-    #         <td>CharDelimiterSplit</td>
-    #         <td>Divisiones en un carácter determinado</td>
-    #         <td>Ejemplo con el caracter <code>&#x60;x&#x60;</code>: <code>&#x60;Helloxthere&#x60;</code> se divide en <code>Hello</code>, <code>there</code></td>
-    #       </tr>
-    #       <tr>
-    #         <td>Digits</td>
-    #         <td>Divide los números de cualquier otro carácter</td>
-    #         <td><code>&#x60;Hello123there&#x60;</code> se divide en <code>Hello</code>, <code>123</code>, <code>there</code></td>
-    #       </tr>
-    #       <tr>
-    #         <td>Split</td>
-    #         <td>Pretokenizador versátil que divide según el patrón y el comportamiento proporcionados. El patrón se puede invertir si es necesario. El patrón debe ser una cadena personalizada o una <a href="https://maximofn.com/regular-expressions/">regex</a>. El comportamiento debe ser <code>removed</code>, <code>isolated</code>, <code>merged_with_previous</code>, <code>merged_with_next</code>, <code>contiguous</code>. Para invertir se indica con un booleano</td>
-    #         <td>Ejemplo con pattern=<code>&#x60;" "&#x60;</code>, behavior=<code>&#x60;isolated&#x60;</code>, invert=<code>&#x60;False&#x60;</code>: <code>&#x60;Hello, how are you?&#x60;</code> se divide en <code>Hello,</code>, <code>&#x60; &#x60;</code>, <code>how</code>, <code>&#x60; &#x60;</code>, <code>are</code>, <code>&#x60; &#x60;</code>, <code>you?</code></td>
-    #       </tr>
-    #     </tbody>
-    #   </table>'''
-    #     self.assertEqual(markdown_table_to_html(markdown).strip(), expected_html.strip())
+    def test_markdown_table_to_html_with_braces(self):
+        markdown = '| Variable | Descripción |\n| --- | --- |\n| {{ .System }} | El mensaje del sistema utilizado para especificar un comportamiento personalizado. |\n| {{ .Prompt }} | El mensaje de aviso del usuario. |\n| {{ .Response }} | La respuesta del modelo. Al generar una respuesta, se omite el texto después de esta variable. |\n'
+        expected_html = '''<table>
+  <thead>
+    <tr>
+      <th>Variable</th>
+      <th>Descripción</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>&#123;&#123; .System &#125;&#125;</td>
+      <td>El mensaje del sistema utilizado para especificar un comportamiento personalizado.</td>
+    </tr>
+    <tr>
+      <td>&#123;&#123; .Prompt &#125;&#125;</td>
+      <td>El mensaje de aviso del usuario.</td>
+    </tr>
+    <tr>
+      <td>&#123;&#123; .Response &#125;&#125;</td>
+      <td>La respuesta del modelo. Al generar una respuesta, se omite el texto después de esta variable.</td>
+    </tr>
+  </tbody>
+</table>'''
+        self.assertEqual(markdown_table_to_html(markdown).strip(), expected_html.strip())
 
 class TestMarkdownToHtml(unittest.TestCase):
     def setUp(self):
@@ -1650,6 +1657,16 @@ $$E = mc^2$$'''
 &#125;
 ```
 </code></pre>
+</section>'''
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+    
+    def test_markdown_to_html_code_open_backslash(self):
+        markdown = "\n                  __    __    __    __\n                 /  \\  /  \\  /  \\  /  \\\n                /    \\/    \\/    \\/    \\\n███████████████/  /██/  /██/  /██/  /████████████████████████"
+        expected_html = '''<section class="section-block-markdown-cell">
+<p>__    __    __    __</p>
+<p>/  \  /  \  /  \  /  \</p>
+<p>/    \/    \/    \/    \</p>
+<p>███████████████/  /██/  /██/  /██/  /████████████████████████</p>
 </section>'''
         self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
 

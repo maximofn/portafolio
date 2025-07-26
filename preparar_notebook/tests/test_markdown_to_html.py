@@ -216,12 +216,12 @@ class TestMarkdownCodeToHtml(unittest.TestCase):
       </section>'''
         self.assertEqual(html, expected_html)
 
-    def test_code_grather_than_sign_in_css(self):
+    def test_code_greater_than_sign_in_html(self):
         markdown_content = '```html\n<div>\n    <p>Texto</p>\n</div>\n```'
         html = markdown_code_to_html(markdown_content)
         expected_html = '''<section class="section-block-markdown-cell">
-        <div class='highlight'><pre><code class="language-html">&lt;div&gt;<br>    &lt;p&gt;Texto&lt;/p&gt;<br>&lt;/div&gt;</code></pre></div>
-        </section>'''
+      <div class='highlight'><pre><code class="language-html">&lt;div&gt;<br>&#x20;&#x20;&lt;p&gt;Texto&lt;/p&gt;<br>&lt;/div&gt;</code></pre></div>
+      </section>'''
         self.assertEqual(html, expected_html)
 
 class TestMarkdownImageToHtml(unittest.TestCase):

@@ -301,12 +301,59 @@ def process_links_in_text(text):
     code_placeholders = {}
     placeholder_counter = 0
     
-    # Helper function to escape braces in code content and store it
+    # Helper function to escape HTML special characters in code content and store it
     def escape_braces_in_code(match):
         nonlocal placeholder_counter
         code_content = match.group(1)
-        # Escape curly braces as HTML entities
-        code_content = code_content.replace('{', '&#123;').replace('}', '&#125;')
+        
+        # Escape HTML tags but only if they are actual HTML elements
+        def escape_html_tags(text):
+            import re
+            
+            # List of common HTML tags that should be escaped
+            html_tags = {
+                'a', 'abbr', 'address', 'area', 'article', 'aside', 'audio', 'b', 'base', 'bdi', 'bdo', 
+                'blockquote', 'body', 'br', 'button', 'canvas', 'caption', 'cite', 'code', 'col', 
+                'colgroup', 'data', 'datalist', 'dd', 'del', 'details', 'dfn', 'dialog', 'div', 'dl', 
+                'dt', 'em', 'embed', 'fieldset', 'figcaption', 'figure', 'footer', 'form', 'h1', 'h2', 
+                'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hgroup', 'hr', 'html', 'i', 'iframe', 
+                'img', 'input', 'ins', 'kbd', 'label', 'legend', 'li', 'link', 'main', 'map', 'mark', 
+                'meta', 'meter', 'nav', 'noscript', 'object', 'ol', 'optgroup', 'option', 'output', 
+                'p', 'param', 'picture', 'pre', 'progress', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 
+                'script', 'section', 'select', 'small', 'source', 'span', 'strong', 'style', 'sub', 
+                'summary', 'sup', 'svg', 'table', 'tbody', 'td', 'template', 'textarea', 'tfoot', 
+                'th', 'thead', 'time', 'title', 'tr', 'track', 'u', 'ul', 'var', 'video', 'wbr'
+            }
+            
+            # Pattern to match tags: <tagname> or <tagname attributes> or </tagname>
+            html_tag_pattern = r'<(/?)([a-zA-Z][a-zA-Z0-9]*)((?:\s+[^>]*)?)\s*>'
+            
+            def replace_tag(match):
+                slash = match.group(1)  # '/' for closing tags
+                tag_name = match.group(2).lower()  # tag name
+                attributes = match.group(3) or ''  # attributes
+                
+                # Only escape if it's a known HTML tag
+                if tag_name in html_tags:
+                    return f'&lt;{slash}{tag_name}{attributes}&gt;'
+                else:
+                    # Not a known HTML tag, leave it as is
+                    return match.group(0)
+            
+            return re.sub(html_tag_pattern, replace_tag, text)
+        
+        # Escape all braces in code content
+        def escape_all_braces(text):
+            # Simply escape all { and } to HTML entities
+            text = text.replace('{', '&#123;').replace('}', '&#125;')
+            return text
+        
+        # Apply HTML tag escaping
+        code_content = escape_html_tags(code_content)
+        
+        # Apply brace escaping - escape all braces
+        code_content = escape_all_braces(code_content)
+        
         final_code = f'<code>{code_content}</code>'
         
         # Create a unique placeholder

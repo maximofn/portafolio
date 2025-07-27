@@ -64,8 +64,6 @@ MLX_QWEN_3_14B = "MLX_Qwen3_14B"
 # Get model from .env file, get CORRECTOR_MODEL variable
 dotenv.load_dotenv()
 MODEL = os.getenv("CORRECTOR_MODEL")
-print("*"*100)
-print(f"Model: {MODEL}")
 
 def apply_corrections(model, line, debug=False):
     # If line is empty, return it

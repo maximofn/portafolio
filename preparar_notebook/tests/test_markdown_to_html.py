@@ -1612,8 +1612,11 @@ $$E = mc^2$$'''
     def test_markdown_to_html_title_with_inline_code(self):
         markdown = '## Instalar `uv`'
         expected_html = '''<section class="section-block-markdown-cell">
-<h2>Instalar <code>uv</code></h2>
+<h2 id="Instalar uv">Instalar <code>uv</code><a class="anchor-link" href="#Instalar uv">¶</a></h2>
 </section>'''
+        print("*"*100)
+        print(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip())
+        print(expected_html.strip())
         self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
     
     def test_markdown_to_html_link_and_text(self):
@@ -1667,6 +1670,13 @@ $$E = mc^2$$'''
 <p>/  \  /  \  /  \  /  \</p>
 <p>/    \/    \/    \/    \</p>
 <p>███████████████/  /██/  /██/  /██/  /████████████████████████</p>
+</section>'''
+        self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+
+    def test_markdown_to_html_code_title_with_braces_into_code(self):
+        markdown = "Le pedimos los issues del repositorio `transformers` de `huggingface`. Tras pensar un rato nos dice que va a usar la `tool` `list_repository_issues` con los argumentos `{'owner': 'huggingface', 'repo_name': 'transformers'}`."
+        expected_html = '''<section class="section-block-markdown-cell">
+<p>Le pedimos los issues del repositorio <code>transformers</code> de <code>huggingface</code>. Tras pensar un rato nos dice que va a usar la <code>tool</code> <code>list_repository_issues</code> con los argumentos <code>&#123;'owner': 'huggingface', 'repo_name': 'transformers'&#125;</code>.</p>
 </section>'''
         self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
 

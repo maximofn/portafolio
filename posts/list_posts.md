@@ -51,6 +51,7 @@
    * -rw-r--r--@   1 macm1  staff    855429 29 ene 17:29 2023-02-04-Blip-2.ipynb
    * -rw-r--r--@   1 macm1  staff   1293934 11 jun 19:12 2025-05-19-LangGraph.ipynb
    * -rw-r--r--@   1 macm1  staff  16634750 29 ene 17:29 2024-06-23-Florence-2:-Advancing-a-Unified-Representation-for-a-Variety-of-Vision-Tasks.ipynb
+   * -rw-r--r--@   1 macm1  staff  16634750 29 ene 17:29 2025-07-13-MCP.ipynb
 
  Patrón de búsqueda: 
 (?<!const opening_brace = ')\{(?!\[|svg_path|opening_brace|closing_brace| metadata_page| colors| svg_paths|page_title|languaje|description|keywords|metadata_page.author|colors.background_color|end_url|image_path)|(?<!svg_path|opening_brace|closing_brace|const closing_brace = '|metadata_page |colors |svg_paths |page_title|languaje|description|keywords|metadata_page.author|colors.background_color|end_url|image_path|\])\}

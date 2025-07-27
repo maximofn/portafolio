@@ -713,7 +713,8 @@ def input_code_to_html(code_content: str, is_html_post: bool = False) -> str:
 {highlighted_code}</div>
 </section>'''
     
-
+    # Replace \033 with \\033
+    html_output = html_output.replace('\\033', '\\\\033')
     
     return html_output
 

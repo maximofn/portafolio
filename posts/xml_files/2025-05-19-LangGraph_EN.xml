@@ -11,11 +11,11 @@
 * **Nodes**: Represent the processing units of the application, such as calling an LLM or a tool. They are Python functions that run when the node is called.
 * Take the state as input
 * Perform some operation
-* Return the updated state* **Edges**: Represent the transitions between nodes. They define the logic of how the graph will be executed, that is, which node will run after another. They can be:
+* Return the updated state
+* **Edges**: Represent the transitions between nodes. They define the logic of how the graph will be executed, that is, which node will run after another. They can be:
 * Directs: Go from one node to another
 * Conditionals: Depend on a condition
-* **State**: Represents the state of the application, that is, it contains all the necessary information for the application. It is maintained during the execution of the application. It is defined by the user, so you need to think carefully about what will be stored in it.
-</markdown>
+* **State**: Represents the state of the application, that is, it contains all the necessary information for the application. It is maintained during the execution of the application. It is defined by the user, so you need to think carefully about what will be stored in it.</markdown>
   <markdown>![LangGraph concept](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/LangGraph_concept.webp)</markdown>
   <markdown>All `LangGraph` graphs start from a `START` node and end at an `END` node.</markdown>
   <markdown>## Installation of LangGraph</markdown>
@@ -29,38 +29,35 @@ or install from Conda:
 
 ```bash
 conda install langgraph
-```
-</markdown>
+```</markdown>
   <markdown>## Installation of Hugging Face and Anthropic Modules</markdown>
   <markdown>We are going to use a language model from `Hugging Face`, so we need to install its langgraph package.
 
 ```bash
-pip install langchain-huggingface```
-</markdown>
+pip install langchain-huggingface
+```</markdown>
   <markdown>For one part we are going to use `Sonnet 3.7`, then we will explain why. So we also install the `Anthropic` package.
 
 ```bash
-pip install langchain_anthropic```
-</markdown>
+pip install langchain_anthropic
+```</markdown>
   <markdown>## Hugging Face API Key</markdown>
   <markdown>We are going to use `Qwen/Qwen2.5-72B-Instruct` through `Hugging Face Inference Endpoints`, so we need an API KEY.</markdown>
   <markdown>To be able to use the `Inference Endpoints` of HuggingFace, the first thing you need is to have an account on HuggingFace. Once you have one, you need to go to [Access tokens](https://huggingface.co/settings/keys) in your profile settings and generate a new token.
 
-We need to give it a name. In my case, I'm going to call it `langgraph` and enable the permission `Make calls to inference providers`. It will create a token that we need to copy.
-</markdown>
+We need to give it a name. In my case, I'm going to call it `langgraph` and enable the permission `Make calls to inference providers`. It will create a token that we need to copy.</markdown>
   <markdown>To manage the token, we are going to create a file in the same path where we are working called `.env` and we will put the token we have copied into the file in the following way:
 
 ``` bash
-HUGGINGFACE_LANGGRAPH="hf_...."```
-</markdown>
+HUGGINGFACE_LANGGRAPH="hf_...."
+```</markdown>
   <markdown>Now, to obtain the token, we need to have `dotenv` installed, which we install through
 
 ```bash
 pip install python-dotenv
 ```
 
-We run the following
-</markdown>
+We run the following</markdown>
   <input_code>import os
 import dotenv
 
@@ -77,12 +74,10 @@ o
 
 ``` bash
 conda install -c conda-forge huggingface_hub
-```
-</markdown>
+```</markdown>
   <markdown>Now we have to choose which model we are going to use. You can see the available models on the [Supported models](https://huggingface.co/docs/api-inference/supported-models) page of the `Inference Endpoints` documentation from Hugging Face.
 
-We are going to use `Qwen2.5-72B-Instruct` which is a very good model.
-</markdown>
+We are going to use `Qwen2.5-72B-Instruct` which is a very good model.</markdown>
   <input_code>MODEL = "Qwen/Qwen2.5-72B-Instruct"</input_code>
   <markdown>Now we can create the client</markdown>
   <input_code>from huggingface_hub import InferenceClient
@@ -112,8 +107,7 @@ print(response)</input_code>
   <markdown>We are going to create a simple chatbot using `LangGraph`. This chatbot will respond directly to the user's messages. Although it is simple, it will serve to see the basic concepts of building graphs with `LangGraph`.</markdown>
   <markdown>As its name suggests, `LangGraph` is a library for handling graphs. So we start by creating a graph [StateGraph](https://langchain-ai.github.io/langgraph/reference/graphs/#langgraph.graph.state.StateGraph).
 
-A `StateGraph` defines the structure of our chatbot as a `state machine`. We will add `nodes` to our graph to represent the `llm`s, `tool`s, and `functions`, where the `llm`s can make use of these `tool`s and `functions`; and we add `edges` to specify how the bot should transition between those `nodes`.
-</markdown>
+A `StateGraph` defines the structure of our chatbot as a `state machine`. We will add `nodes` to our graph to represent the `llm`s, `tool`s, and `functions`, where the `llm`s can make use of these `tool`s and `functions`; and we add `edges` to specify how the bot should transition between those `nodes`.</markdown>
   <markdown>So we start by creating a `StateGraph` that needs a `State` class to handle the graph state. Since we are now going to create a simple chatbot, we only need to handle a list of messages in the state.</markdown>
   <input_code>from typing import Annotated
 
@@ -135,18 +129,17 @@ graph_builder = StateGraph(State)</input_code>
 
 New message lists will arrive, so they will be added to the existing message list. Each message list contains an `ID`, so they are added with this `ID`. This ensures that messages are only added, not replaced, unless a new message has the same `ID` as an existing one, in which case it is replaced.
 
-`add_messages` is a [reducer function](https://langchain-ai.github.io/langgraph/concepts/low_level/#reducers), it is a function responsible for updating the state.
-</markdown>
+`add_messages` is a [reducer function](https://langchain-ai.github.io/langgraph/concepts/low_level/#reducers), it is a function responsible for updating the state.</markdown>
   <markdown>The graph `graph_builder` that we have created receives a state `State` and returns a new state `State`. Additionally, it updates the list of messages.</markdown>
   <markdown>&gt; **Concept**
 &gt;
 &gt; When defining a graph, the first step is to define its `State`. The `State` includes the graph schema and the `reducer functions` that handle state updates.
 &gt;
-&gt; In our example, `State` is of type `TypedDict` (typed dictionary) with one key: `messages`.&gt;
+&gt; In our example, `State` is of type `TypedDict` (typed dictionary) with one key: `messages`.
+&gt;
 &gt; `add_messages` is a `reducer function` used to add new messages to the list instead of overwriting them in the list. If a state key does not have a `reducer function`, each value coming from that key will overwrite the previous values.
 &gt;
-&gt; `add_messages` is a `reducer function` of langgraph, but we will be able to create our own
-</markdown>
+&gt; `add_messages` is a `reducer function` of langgraph, but we will be able to create our own</markdown>
   <markdown>Now we are going to add the `chatbot` node to the graph. Nodes represent units of work. Usually, they are regular `Python` functions.</markdown>
   <markdown>We add a node with the `add_node` method that receives the name of the node and the function that will be executed.</markdown>
   <markdown>So we are going to create an LLM with HuggingFace, then we will create a chat model with `LangChain` that will reference the created LLM. Once we have defined a chat model, we define the function that will be executed in the node of our graph. That function will make a call to the created chat model and return the result.</markdown>
@@ -180,8 +173,8 @@ graph_builder.add_node("chatbot_node", chatbot_function)</input_code>
   <output_code>&lt;langgraph.graph.state.StateGraph at 0x130548440&gt;</output_code>
   <markdown>We have used [ChatHuggingFace](https://python.langchain.com/api_reference/huggingface/chat_models/langchain_huggingface.chat_models.huggingface.ChatHuggingFace.html#langchain_huggingface.chat_models.huggingface.ChatHuggingFace) which is a chat of the type [BaseChatModel](https://python.langchain.com/api_reference/core/language_models/langchain_core.language_models.chat_models.BaseChatModel.html#langchain_core.language_models.chat_models.BaseChatModel) that is a base chat type of `LangChain`. Once we created the `BaseChatModel`, we created the function `chatbot_function` that will run when the node is executed. And finally, we created the node `chatbot_node` and indicated that it has to execute the function `chatbot_function`.</markdown>
   <markdown>&gt; **Notice**
-&gt;&gt; The node function `chatbot_function` takes the state `State` as input and returns a dictionary that contains an update to the list `messages` for the key `messages`. This is the basic pattern for all functions of the node `LangGraph`.
-</markdown>
+&gt;
+&gt; The node function `chatbot_function` takes the state `State` as input and returns a dictionary that contains an update to the list `messages` for the key `messages`. This is the basic pattern for all functions of the node `LangGraph`.</markdown>
   <markdown>The `reducer function` of our graph `add_messages` will add the response messages from the `llm` to any message that is already in the state.</markdown>
   <markdown>Next, we add an `entry` node. This tells our graph where to start its work each time we run it.</markdown>
   <input_code>from langgraph.graph import START
@@ -195,8 +188,7 @@ graph_builder.add_edge("chatbot_node", END)</input_code>
   <output_code>&lt;langgraph.graph.state.StateGraph at 0x130548440&gt;</output_code>
   <markdown>We have imported `START` and `END` which can be found in [constants](https://langchain-ai.github.io/langgraph/reference/constants/) and are the first and the last node of our graph.
 
-Normally they are virtual nodes
-</markdown>
+Normally they are virtual nodes</markdown>
   <markdown>Finally, we need to compile our graph. To do this, we use the graph construction method `compile()`. This creates a `CompiledGraph` that we can use to run our application.</markdown>
   <input_code>graph = graph_builder.compile()</input_code>
   <markdown>We can visualize the graph using the `get_graph` method and one of the "drawing" methods, such as `draw_ascii` or `draw_mermaid_png`. Each drawing method requires additional dependencies.</markdown>
@@ -209,8 +201,8 @@ except Exception as e:
   <output_code>&lt;IPython.core.display.Image object&gt;</output_code>
   <markdown>Now we can test the chatbot!</markdown>
   <markdown>&gt; **Tip**
-&gt;&gt; In the following code block, you can exit the chat loop at any time by typing `quit`, `exit`, or `q`.
-</markdown>
+&gt;
+&gt; In the following code block, you can exit the chat loop at any time by typing `quit`, `exit`, or `q`.</markdown>
   <input_code># Colors for the terminal
 COLOR_GREEN = "\033[32m"
 COLOR_YELLOW = "\033[33m"
@@ -336,8 +328,7 @@ from langgraph.graph import StateGraph
 
 class State(TypedDict):
 messages: Annotated[list, add_messages]
-```
-</markdown>
+```</markdown>
   <markdown>To access the messages, we do it as with any dictionary, using `state["messages"]`</markdown>
   <markdown>##### Typing with `dataclass`</markdown>
   <markdown>Another option is to use the Python `dataclass` typing</markdown>
@@ -350,8 +341,7 @@ from langgraph.graph import StateGraph
 @dataclass
 class State:
 messages: Annotated[list, add_messages]
-```
-</markdown>
+```</markdown>
   <markdown>As can be seen, it is similar to typing with dictionaries, but now, since the state is a class, we access the messages through `state.messages`</markdown>
   <markdown>##### Typing with `Pydantic`</markdown>
   <markdown>`Pydantic` is a widely used library for type hinting data in Python. It offers the possibility to add type checking. We are going to check that the message starts with `'User'`, `'Assistant'`, or `'System'`.</markdown>
@@ -375,8 +365,7 @@ try:
 state = PydanticState(messages=["Hello"])
 except ValidationError as e:
 print("Validation Error:", e)
-```
-</markdown>
+```</markdown>
   <markdown>#### Reducers</markdown>
   <markdown>As we have said, we need to use a function of type `Reducer` to indicate how to update the state, since otherwise the state values will be overwritten.</markdown>
   <markdown>Let's see an example of a graph where we don't use a `Reducer` function to indicate how to update the state</markdown>
@@ -798,8 +787,8 @@ Each of these mammals has unique adaptations and behaviors that make them incred
 If this continues to grow, there will come a point when we have a very long context, which will mean a higher token expenditure, potentially leading to greater economic costs, and also resulting in increased latency.
 
 Moreover, with very long contexts, LLMs start to perform worse.
-In the latest models, as of the writing of this post, performance of the LLM starts to decline above 8k context tokens.
-</markdown>
+
+In the latest models, as of the writing of this post, performance of the LLM starts to decline above 8k context tokens.</markdown>
   <markdown>So we are going to look at several ways to manage this</markdown>
   <markdown>##### Modify the context with `Reducer` functions</markdown>
   <markdown>We have seen that with `Reducer` functions we can modify the state messages.</markdown>
@@ -1468,8 +1457,7 @@ display(Image(graph.get_graph().draw_mermaid_png()))</input_code>
 
 ![updates vs values](https://cdn.prod.website-files.com/65b8cd72835ceeacd4449a53/66dbaf892d24625a201744e5_streaming1.png)
 
-While `updates` gives us each new result, `values` gives us the entire history of results.
-</markdown>
+While `updates` gives us each new result, `values` gives us the entire history of results.</markdown>
   <markdown>###### Updates</markdown>
   <input_code>for chunk in graph.stream({"messages": [HumanMessage(content="hi! I'm Máximo")]}, stream_mode="updates"):
     print(chunk['chatbot_node']['messages'][-1].content)</input_code>
@@ -1642,8 +1630,7 @@ except Exception as e:
 
 ![graph with subgraphs](https://cdn.prod.website-files.com/65b8cd72835ceeacd4449a53/66dbb1abf89f2d847ee6f1ff_sub-graph1.png)
 
-So what we are going to do is first define each of the subgraphs separately and then add them to the main graph.
-</markdown>
+So what we are going to do is first define each of the subgraphs separately and then add them to the main graph.</markdown>
   <markdown>##### Subgraph for log error analysis</markdown>
   <markdown>We import the necessary libraries</markdown>
   <input_code>from IPython.display import Image, display
@@ -2247,8 +2234,8 @@ Image(app.get_graph().draw_mermaid_png())</input_code>
   <markdown>Before we start, we need to install the [Tavily](https://python.langchain.com/docs/integrations/tools/tavily_search/) search engine, which is a web search tool that allows us to look up information on the web.
 
 ```bash
-pip install -U tavily-python langchain_community```
-</markdown>
+pip install -U tavily-python langchain_community
+```</markdown>
   <markdown>After that, we need to create an [API KEY](https://app.tavily.com/home), write it in our `.env` file, and load it into a variable.</markdown>
   <input_code>import dotenv
 import os
@@ -2327,8 +2314,7 @@ def chatbot_function(state: State):
   <markdown>Later we will do this with the [ToolNode](https://langchain-ai.github.io/langgraph/reference/prebuilt/#toolnode) method of `LangGraph`, but first we will build it ourselves to understand how it works.</markdown>
   <markdown>We are going to implement the `BasicToolNode` class, which checks the most recent message in the state and calls the `tools_list` if the message contains `tool_calls`.
 
-It is based on the support for `tool_calling` in `LLMs`, which is available in `Anthropic`, `HuggingFace`, `Google Gemini`, `OpenAI`, and several other `LLM` providers.
-</markdown>
+It is based on the support for `tool_calling` in `LLMs`, which is available in `Anthropic`, `HuggingFace`, `Google Gemini`, `OpenAI`, and several other `LLM` providers.</markdown>
   <input_code>from langchain_core.messages import ToolMessage
 
 class BasicToolNode:
@@ -2383,8 +2369,7 @@ basic_tool_node = BasicToolNode(tools=tools_list)</input_code>
 
 `ToolMessage` contains the result of an invocation of a `tool`.
 
-That is, as soon as we have the result of using a `Tool`, we pass it to the LLM for processing.
-</markdown>
+That is, as soon as we have the result of using a `Tool`, we pass it to the LLM for processing.</markdown>
   <markdown>With the `basic_tool_node` object (which is an object of the class `BasicToolNode` that we have created), we can now make the LLM execute `tool`s</markdown>
   <markdown>Now, just like we did when building a basic chatbot, we are going to create the graph and add nodes to it.</markdown>
   <input_code># Create graph
@@ -2492,8 +2477,7 @@ while True:
 [33mAssistant: [0mGoodbye!
 </output_code>
   <markdown>As you can see, I first asked him how the Real Madrid did in their last La Liga match against Leganés.
-As it is something current, he has decided to use the search tool, which has yielded the result.
-</markdown>
+As it is something current, he has decided to use the search tool, which has yielded the result.</markdown>
   <markdown>However, when I asked him which players played, he didn't know what I was talking about, that's because the conversation context is not being maintained. So the next thing we are going to do is add a memory to the agent so it can keep track of the conversation context.</markdown>
   <markdown>Let's write everything together so it's more readable</markdown>
   <input_code>from typing import Annotated
@@ -2730,8 +2714,7 @@ This victory is significant for Real Madrid as they continue their push for the 
   <markdown>Our chatbot can now use tools to answer users' questions, but it doesn't remember the context of previous interactions. This limits its ability to have coherent and multi-turn conversations.</markdown>
   <markdown>`LangGraph` solves this problem through persistent checkpoints or `checkpoints`. If we provide a `checkpointer` when compiling the graph and a `thread_id` when calling the graph, `LangGraph` automatically saves the state after each iteration in the conversation.
 
-When we invoke the graph again using the same `thread_id`, the graph will load its saved state, allowing the chatbot to continue where it left off.
-</markdown>
+When we invoke the graph again using the same `thread_id`, the graph will load its saved state, allowing the chatbot to continue where it left off.</markdown>
   <markdown>We will see later that this `checkpointing` is much more powerful than simple chat memory: it allows saving and resuming complex states at any time for error recovery, workflows with `human in the loop`, interactions over time, and more. But before we get to all of that, let's add checkpoints to enable multi-iteration conversations.</markdown>
   <input_code>import os
 import dotenv
@@ -2745,8 +2728,8 @@ TAVILY_API_KEY = os.getenv("TAVILY_LANGGRAPH_API_KEY")</input_code>
 
 memory = MemorySaver()</input_code>
   <markdown>&gt; **Notice**
-&gt;&gt; We are using an in-memory `checkpointer`, meaning it is stored in RAM and when the graph execution finishes, it is deleted. This works for our case, as it is an example to learn how to use `LangGraph`. In a production application, it is likely that this would need to be changed to use `SqliteSaver` or `PostgresSaver` and connect to our own database.
-</markdown>
+&gt;
+&gt; We are using an in-memory `checkpointer`, meaning it is stored in RAM and when the graph execution finishes, it is deleted. This works for our case, as it is an example to learn how to use `LangGraph`. In a production application, it is likely that this would need to be changed to use `SqliteSaver` or `PostgresSaver` and connect to our own database.</markdown>
   <markdown>Below, we define the graph.</markdown>
   <input_code>from typing import Annotated
 
@@ -3410,9 +3393,9 @@ display(Image(graph.get_graph().draw_mermaid_png()))</input_code>
   <markdown>As we can see, we have:
 
 * Message filtering function: If there are more than 2 messages in the state, all messages except the last 2 are removed.
-* Message trimming function: Messages exceeding 100 tokens are removed.* Chatbot function: The model is run with the filtered and trimmed messages. Additionally, if there is a summary, it is added to the system message.
-* Summary function: A summary of the conversation is created.
-</markdown>
+* Message trimming function: Messages exceeding 100 tokens are removed.
+* Chatbot function: The model is run with the filtered and trimmed messages. Additionally, if there is a summary, it is added to the system message.
+* Summary function: A summary of the conversation is created.</markdown>
   <markdown>We create a function to print the graph messages.</markdown>
   <input_code># Colors for the terminal
 COLOR_GREEN = "\033[32m"
@@ -4754,7 +4737,8 @@ Qwen: Hello! How can I assist you today? Whether you need help with information,
 Create a summary of the conversation above.
 Qwen: [Provided the summary you are now reading.]
 		
-¿Hay algo más en lo que necesites ayuda?		
+¿Hay algo más en lo que necesites ayuda?
+		
 **Qwen:** [Extended the summary you are now reading.]
 		
 ---
@@ -4779,8 +4763,7 @@ Si tienes preguntas específicas o aspectos de LangGraph que te interesen, ¡no 
 I would like to know about using LangSmith with Hugging Face LLMs, the integration of Hugging Face
 ```
 
-That is, the filtering function only keeps the last 2 messages.
-</markdown>
+That is, the filtering function only keeps the last 2 messages.</markdown>
   <markdown>But later we can see
 
 ```markdown
@@ -4805,7 +4788,8 @@ Resumen de la conversación: ¡Claro! Aquí tienes un resumen extendido de la co
 Si tienes preguntas específicas o aspectos de LangGraph que te interesen, no dudes en hacérmelo saber!
 		
 **User:** This is a summary of the conversation to date: Sure! Here's a summary of the conversation above:
-HelloQwen: Hello! How can I assist you today? Whether you need help with information, a specific task, or just want to chat, I'm here to help.
+Hello
+Qwen: Hello! How can I assist you today? Whether you need help with information, a specific task, or just want to chat, I'm here to help.
 The instruction provided is not part of a conversation but rather a standalone request to create a summary. Since there is no preceding conversation to summarize, I will translate the given text as requested:
 
 ```
@@ -4829,16 +4813,15 @@ Qwen: [Provided the summary you are now reading.]
 ------------------------------------------------
 ```
 
-That is, the trimming function removes the assistant's message because it exceeds 100 tokens.
-</markdown>
+That is, the trimming function removes the assistant's message because it exceeds 100 tokens.</markdown>
   <markdown>Even by deleting messages, so the LLM doesn't have them as context, we can still have a conversation thanks to the summary of the conversation that we are generating.</markdown>
   <markdown>#### Save state in SQLite</markdown>
   <markdown>We have seen how to save the state of the graph in memory, but once we finish the process, that memory is lost, so we are going to see how to save it in SQLite.</markdown>
   <markdown>First we need to install the `sqlite` package for LangGraph.
 
 ```bash
-pip install langgraph-checkpoint-sqlite```
-</markdown>
+pip install langgraph-checkpoint-sqlite
+```</markdown>
   <markdown>We import the `sqlite` and `langgraph-checkpoint-sqlite` libraries. Previously, when we saved the state in memory, we used `memory_saver`. Now, we will use `SqliteSaver` to save the state in an SQLite database.</markdown>
   <input_code>import sqlite3
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -5099,8 +5082,7 @@ while True:
   <markdown>## Long-term memory, memory between threads</markdown>
   <markdown>Memory is a cognitive function that allows people to store, retrieve, and use information to understand their present and future based on their past.
 
-There are several types of [memory](https://langchain-ai.github.io/langgraph/concepts/memory) that can be used in AI applications.
-</markdown>
+There are several types of [memory](https://langchain-ai.github.io/langgraph/concepts/memory) that can be used in AI applications.</markdown>
   <markdown>### Introduction to LangGraph Memory Store</markdown>
   <markdown>LangGraph provides the [LangGraph Memory Store](https://langchain-ai.github.io/langgraph/reference/store/#langgraph.store.base.BaseStore), which is a way to save and retrieve long-term memory across different threads. This way, in a conversation, a user can indicate that they like something, and in another conversation, the chatbot can retrieve this information to generate a more personalized response.</markdown>
   <markdown>This is a class for persistent key-value stores (`key`-`value`).</markdown>
@@ -5109,8 +5091,7 @@ There are several types of [memory](https://langchain-ai.github.io/langgraph/con
 * A unique `key`
 * The `value` of the object
 
-Let's see an example
-</markdown>
+Let's see an example</markdown>
   <input_code>import uuid
 from langgraph.store.memory import InMemoryStore
 
@@ -5604,8 +5585,7 @@ existing_memory.value</input_code>
   <markdown>#### Update Structured Schemas with Trustcall</markdown>
   <markdown>In the previous example, we created user profiles with structured data
 
-In fact, what happens under the hood is that the user profile is regenerated with each interaction. This generates an unnecessary expense of tokens and can lead to the loss of important user profile information.
-</markdown>
+In fact, what happens under the hood is that the user profile is regenerated with each interaction. This generates an unnecessary expense of tokens and can lead to the loss of important user profile information.</markdown>
   <markdown>So to solve it, we are going to use the [TrustCall](https://github.com/hinthornw/trustcall) library, which is an open source library for updating JSON schemas. When it needs to update a JSON schema, it does so incrementally, that is, it doesn't delete the previous schema, but rather adds the new fields.</markdown>
   <markdown>Let's create a conversation example to see how it works.</markdown>
   <input_code>from langchain_core.messages import HumanMessage, AIMessage
@@ -5987,8 +5967,7 @@ Is there a particular league or playing style you prefer in soccer?
   <markdown>#### Chatbot with user document collections updated with Trustcall</markdown>
   <markdown>Another approach is to store a collection of documents instead of saving the user profile in a single document. This way, we are not tied to a single closed schema.
 
-Let's see how to do it
-</markdown>
+Let's see how to do it</markdown>
   <input_code>from langgraph.graph import StateGraph, MessagesState, START, END
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
@@ -6373,11 +6352,11 @@ Tool Calls:
 Tool Calls:
 human_assistance (0)
 Call ID: 0
-Args:I need some expert guidance for building an AI agent. Could you provide advice on key considerations, best practices, and potential pitfalls to avoid?
+Args:
+I need some expert guidance for building an AI agent. Could you provide advice on key considerations, best practices, and potential pitfalls to avoid?
 ```
 
-But then the execution was interrupted. Let's check the status of the graph.
-</markdown>
+But then the execution was interrupted. Let's check the status of the graph.</markdown>
   <input_code>snapshot = graph.get_state(config)
 snapshot.next</input_code>
   <output_code>('tools',)</output_code>
@@ -6389,32 +6368,27 @@ from langchain_core.tools import tool
 
 @tool
 def human_assistance(query: str) -&gt; str:
-"""
-Solicite asistencia de un experto humano. Use esta herramienta SOLAMENTE UNA VEZ por conversación.
-Sure, I understand your instructions. Please provide me with the Markdown text you would like translated to English, and I will handle it according to your guidelines.
-basado en la información recibida, sin llamar a esta herramienta nuevamente.
+    """
+    Request assistance from a human expert. Use this tool ONLY ONCE per conversation.
+    After receiving the expert's response, you should provide an elaborated response to the user based on the information received
+    based on the information received, without calling this tool again.
 
-Args:
-La consulta para preguntar al experto humano.
+    Args:
+        query: The query to ask the human expert.
 
-Devuelve:
-La respuesta del experto humano. 
-
-(Note: This is not a translation but an example of how you should format your response. Please provide the actual translation for the given Markdown text.)
-"""
-```markdown
-human_response = interrupt({"query": query})
-```
-return human_response["data"]
-```
-</markdown>
+    Returns:
+        The response from the human expert.
+    """
+    human_response = interrupt({"query": query})
+    return human_response["data"]
+```</markdown>
   <markdown>Calling the `interrupt` tool will stop the execution, similar to the Python `input()` function.
 
 Progress is maintained based on our choice of [checkpointer](https://langchain-ai.github.io/langgraph/concepts/persistence/#checkpointer-libraries). That is, the choice of where the graph state is saved. So if we are persisting (saving the graph state) with a database like `SQLite`, `Postgres`, etc., we can resume execution at any time as long as the database is alive.
 
 Here we are persisting (saving the state of the graph) with the checkpoint pointer in memory RAM, so we can resume at any time while our Python kernel is running. In my case, as long as I don't reset the kernel of my Jupyter Notebook.
-To resume execution, we pass a [Command](https://langchain-ai.github.io/langgraph/concepts/human_in_the_loop/#the-command-primitive) object that contains the data expected by the tool. The format of this data can be customized based on our needs. Here, we only need a dictionary with a `data` key.
-</markdown>
+
+To resume execution, we pass a [Command](https://langchain-ai.github.io/langgraph/concepts/human_in_the_loop/#the-command-primitive) object that contains the data expected by the tool. The format of this data can be customized based on our needs. Here, we only need a dictionary with a `data` key.</markdown>
   <input_code>human_response = (
     "We, the experts are here to help! We'd recommend you check out LangGraph to build your agent."
     "It's much more reliable and extensible than simple autonomous agents."
@@ -7269,8 +7243,7 @@ None
   <markdown>&gt; Note: We will be using Sonnet 3.7 for this section, as at the time of writing the post, it is the best model for use with agents, and it is the only one that understands when to call the tools and when not to.</markdown>
   <markdown>So far, we have relied on a simple state with an input and a list of messages. You can get quite far with this simple state, but if you want to define more complex behavior without relying on the message list, you can add additional fields to the state.
 
-Here we are going to see a new scenario, in which the chatbot is using the search tool to find specific information, and forwarding it to a human for review. We will make the chatbot investigate the birthday of an entity. We will add `name` and `birthday` as state keys.
-</markdown>
+Here we are going to see a new scenario, in which the chatbot is using the search tool to find specific information, and forwarding it to a human for review. We will make the chatbot investigate the birthday of an entity. We will add `name` and `birthday` as state keys.</markdown>
   <markdown>First we load the values of the API keys</markdown>
   <input_code>import os
 import dotenv
@@ -7410,8 +7383,7 @@ except Exception as e:
   <output_code>&lt;IPython.core.display.Image object&gt;</output_code>
   <markdown>Let's ask our chatbot to find the "birthday" of the `LangGraph` library.
 
-We will direct the chatbot to the `human_assistance` tool once it has the required information. The arguments `name` and `birthday` are mandatory for the `human_assistance` tool, so they prompt the chatbot to generate proposals for these fields.
-</markdown>
+We will direct the chatbot to the `human_assistance` tool once it has the required information. The arguments `name` and `birthday` are mandatory for the `human_assistance` tool, so they prompt the chatbot to generate proposals for these fields.</markdown>
   <input_code>user_input = (
     "Can you look up when LangGraph was released? "
     "When you have the answer, use the human_assistance tool for review."

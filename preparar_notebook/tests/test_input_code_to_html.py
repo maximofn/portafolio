@@ -94,6 +94,44 @@ class TestInputCodeToHtml(unittest.TestCase):
         html = input_code_to_html(input_code)
         self.assertEqual(html, expected_html)
 
+    def test_color_escape_codes(self):
+        input_code = '# Colors for the terminal\nCOLOR_GREEN = "\\033[32m"\nCOLOR_YELLOW = "\\033[33m"\nCOLOR_RESET = "\\033[0m"\n\n\ndef stream_graph_updates(user_input: str):\n    for event in graph.stream({"messages": [{"role": "user", "content": user_input}]}):\n        for value in event.values():\n            print(f"{COLOR_GREEN}User: {COLOR_RESET}{user_input}")\n            print(f"{COLOR_YELLOW}Assistant: {COLOR_RESET}{value[\'messages\'][-1].content}")\n\n\nwhile True:\n    try:\n        user_input = input("User: ")\n        if user_input.lower() in ["quit", "exit", "q"]:\n            print(f"{COLOR_GREEN}User: {COLOR_RESET}{user_input}")\n            print(f"{COLOR_YELLOW}Assistant: {COLOR_RESET}Goodbye!")\n            break\n        \n        events =stream_graph_updates(user_input)\n    except:\n        # fallback if input() is not available\n        user_input = "What do you know about LangGraph?"\n        print("User: " + user_input)\n        stream_graph_updates(user_input)\n        break'
+        expected_html = '''<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Colors for the terminal</span>
+<span class="n">COLOR_GREEN</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\\\\033</span><span class="s2">[32m&quot;</span>
+<span class="n">COLOR_YELLOW</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\\\\033</span><span class="s2">[33m&quot;</span>
+<span class="n">COLOR_RESET</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\\\\033</span><span class="s2">[0m&quot;</span>
+<span class="w"> </span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">stream_graph_updates</span><span class="p">(</span><span class="n">user_input</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">stream</span><span class="p">({</span><span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">user_input</span><span class="p">}]}):</span>
+<span class="w">        </span><span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">event</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+<span class="w">            </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">COLOR_GREEN</span><span class="si">}</span><span class="s2">User: </span><span class="si">{</span><span class="n">COLOR_RESET</span><span class="si">}{</span><span class="n">user_input</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">COLOR_YELLOW</span><span class="si">}</span><span class="s2">Assistant: </span><span class="si">{</span><span class="n">COLOR_RESET</span><span class="si">}{</span><span class="n">value</span><span class="p">[</span><span class="s1">&#39;messages&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">content</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="w"> </span>
+
+<span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+<span class="w">    </span><span class="k">try</span><span class="p">:</span>
+<span class="w">        </span><span class="n">user_input</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;User: &quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="k">if</span> <span class="n">user_input</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;quit&quot;</span><span class="p">,</span> <span class="s2">&quot;exit&quot;</span><span class="p">,</span> <span class="s2">&quot;q&quot;</span><span class="p">]:</span>
+<span class="w">            </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">COLOR_GREEN</span><span class="si">}</span><span class="s2">User: </span><span class="si">{</span><span class="n">COLOR_RESET</span><span class="si">}{</span><span class="n">user_input</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">COLOR_YELLOW</span><span class="si">}</span><span class="s2">Assistant: </span><span class="si">{</span><span class="n">COLOR_RESET</span><span class="si">}</span><span class="s2">Goodbye!&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">break</span>
+<span class="w">        </span>
+<span class="w">        </span><span class="n">events</span> <span class="o">=</span><span class="n">stream_graph_updates</span><span class="p">(</span><span class="n">user_input</span><span class="p">)</span>
+<span class="w">    </span><span class="k">except</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># fallback if input() is not available</span>
+<span class="w">        </span><span class="n">user_input</span> <span class="o">=</span> <span class="s2">&quot;What do you know about LangGraph?&quot;</span>
+<span class="w">        </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;User: &quot;</span> <span class="o">+</span> <span class="n">user_input</span><span class="p">)</span>
+<span class="w">        </span><span class="n">stream_graph_updates</span><span class="p">(</span><span class="n">user_input</span><span class="p">)</span>
+<span class="w">        </span><span class="k">break</span>
+</pre></div>
+</div>
+</section>'''
+        html = input_code_to_html(input_code)
+        self.assertEqual(html, expected_html)
+
 if __name__ == '__main__':
     # It's good practice to ensure that only one unittest.main() call remains,
     # especially if tests might interfere (though less likely with simple unit tests).

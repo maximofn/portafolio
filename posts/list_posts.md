@@ -49,7 +49,7 @@
    * -rw-r--r--@   1 macm1  staff    625416 29 ene 17:29 2021-06-15-Manejo-de-datos-con-Pandas.ipynb
    * -rw-r--r--@   1 macm1  staff    737433 29 ene 17:29 2024-07-18-Florence-2-fine-tuning.ipynb
    * -rw-r--r--@   1 macm1  staff    855429 29 ene 17:29 2023-02-04-Blip-2.ipynb
- * -rw-r--r--@   1 macm1  staff   1293934 11 jun 19:12 2025-05-19-LangGraph.ipynb
+   * -rw-r--r--@   1 macm1  staff   1293934 11 jun 19:12 2025-05-19-LangGraph.ipynb
    * -rw-r--r--@   1 macm1  staff  16634750 29 ene 17:29 2024-06-23-Florence-2:-Advancing-a-Unified-Representation-for-a-Variety-of-Vision-Tasks.ipynb
 
  Patrón de búsqueda: 

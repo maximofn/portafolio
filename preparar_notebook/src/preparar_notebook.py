@@ -25,8 +25,6 @@ def parse_args():
     parser.add_argument('--yes_convert_to_html', action='store_true', help='Convert the notebook to html')
     parser.add_argument('--no_add_to_json', action='store_true', help='Do not add the astro metadata to the json file')
     parser.add_argument('--yes_add_to_json', action='store_true', help='Add the astro metadata to the json file')
-    parser.add_argument('--no_add_to_sitemap', action='store_true', help='Do not add the astro metadata to the sitemap file')
-    parser.add_argument('--yes_add_to_sitemap', action='store_true', help='Add the astro metadata to the sitemap file')
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -43,8 +41,6 @@ if __name__ == "__main__":
     yes_convert_to_html = args.yes_convert_to_html
     no_add_to_json = args.no_add_to_json
     yes_add_to_json = args.yes_add_to_json
-    no_add_to_sitemap = args.no_add_to_sitemap
-    yes_add_to_sitemap = args.yes_add_to_sitemap
 
     # Get metadata from notebook
     notebook_metadata = get_notebook_metadata(notebook_path)

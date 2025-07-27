@@ -400,8 +400,10 @@ def _process_text_block(text_content: str) -> str:
         if '`' in corrected_title:
             # Process inline code in the title
             processed_title = _process_inline_code(corrected_title)
-            # Return simple header without anchor link when code is present
-            return f'<h{level}>{processed_title}</h{level}>'
+            # Remove <code> and </code> from the title
+            header_id = processed_title.replace('<code>', '').replace('</code>', '')
+            # Return header with anchor link
+            return f'<h{level} id="{header_id}">{processed_title}<a class="anchor-link" href="#{header_id}">¶</a></h{level}>'
         else:
             # Create ID without accents (normalize for URL-friendly IDs)
             header_id = _remove_accents(title.strip())

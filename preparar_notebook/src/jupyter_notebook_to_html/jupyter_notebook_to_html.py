@@ -28,8 +28,10 @@ def _process_inline_code(text: str) -> str:
     """
     def escape_and_wrap(match):
         code_content = match.group(1)
-        # Escape characters that have special meaning in HTML, then replace with hex codes for test compatibility
-        escaped_content = html.escape(code_content, quote=True).replace('&lt;', '&#x3C;').replace('&gt;', '&#x3E;')
+        # Escape characters that have special meaning in HTML, but don't escape quotes
+        escaped_content = html.escape(code_content, quote=False).replace('&lt;', '&#x3C;').replace('&gt;', '&#x3E;')
+        # Escape braces for HTML display
+        escaped_content = escaped_content.replace('{', '&#123;').replace('}', '&#125;')
         return f'<code>{escaped_content}</code>'
 
     # Process inline code with double backticks first

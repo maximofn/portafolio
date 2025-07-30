@@ -385,6 +385,147 @@ class TestMarkdownLinkToHtml(unittest.TestCase):
             '<a href="/internal-page"></a>'
         )
 
+    def test_markdown_to_html_internal_link_with_spanish_language(self):
+        """Test internal links with Spanish language (default behavior)"""
+        self.assertEqual(
+            markdown_to_html_internal_link("[Homepage](/home)", "ES"),
+            '<a href="/home">Homepage</a>'
+        )
+        self.assertEqual(
+            markdown_to_html_internal_link("[Blog](/blog/posts)", "ES"),
+            '<a href="/blog/posts">Blog</a>'
+        )
+        self.assertEqual(
+            markdown_to_html_internal_link("[Docs](/docs/api)", "ES"),
+            '<a href="/docs/api">Docs</a>'
+        )
+
+    def test_markdown_to_html_internal_link_with_english_language(self):
+        """Test internal links with English language (should add /en prefix)"""
+        self.assertEqual(
+            markdown_to_html_internal_link("[Homepage](/home)", "EN"),
+            '<a href="/en/home">Homepage</a>'
+        )
+        self.assertEqual(
+            markdown_to_html_internal_link("[Blog](/blog/posts)", "EN"),
+            '<a href="/en/blog/posts">Blog</a>'
+        )
+        self.assertEqual(
+            markdown_to_html_internal_link("[Docs](/docs/api)", "EN"),
+            '<a href="/en/docs/api">Docs</a>'
+        )
+        self.assertEqual(
+            markdown_to_html_internal_link("[About](/about-us)", "EN"),
+            '<a href="/en/about-us">About</a>'
+        )
+
+    def test_markdown_to_html_internal_link_with_portuguese_language(self):
+        """Test internal links with Portuguese language (should add /pt prefix)"""
+        self.assertEqual(
+            markdown_to_html_internal_link("[Homepage](/home)", "PT"),
+            '<a href="/pt/home">Homepage</a>'
+        )
+        self.assertEqual(
+            markdown_to_html_internal_link("[Blog](/blog/posts)", "PT"),
+            '<a href="/pt/blog/posts">Blog</a>'
+        )
+        self.assertEqual(
+            markdown_to_html_internal_link("[Docs](/docs/api)", "PT"),
+            '<a href="/pt/docs/api">Docs</a>'
+        )
+        self.assertEqual(
+            markdown_to_html_internal_link("[Sobre](/sobre-nos)", "PT"),
+            '<a href="/pt/sobre-nos">Sobre</a>'
+        )
+
+    def test_markdown_to_html_internal_link_default_language_behavior(self):
+        """Test that default language behavior is Spanish (no prefix)"""
+        # Without language parameter should default to Spanish behavior
+        self.assertEqual(
+            markdown_to_html_internal_link("[Home](/home)"),
+            '<a href="/home">Home</a>'
+        )
+        # Explicitly setting default should be same as no parameter
+        self.assertEqual(
+            markdown_to_html_internal_link("[Home](/home)", "ES"),
+            '<a href="/home">Home</a>'
+        )
+
+    def test_markdown_to_html_internal_link_external_links_not_affected(self):
+        """Test that external links are not affected by language parameter"""
+        external_link = "[Google](https://google.com)"
+        # Should return original for all languages since it's not an internal link
+        self.assertEqual(
+            markdown_to_html_internal_link(external_link, "ES"),
+            external_link
+        )
+        self.assertEqual(
+            markdown_to_html_internal_link(external_link, "EN"),
+            external_link
+        )
+        self.assertEqual(
+            markdown_to_html_internal_link(external_link, "PT"),
+            external_link
+        )
+
+    def test_markdown_to_html_internal_link_malformed_links_not_affected(self):
+        """Test that malformed links are not affected by language parameter"""
+        malformed_links = [
+            "Not a link",
+            "[Missing URL]()",
+            "[No closing bracket(/internal)",
+            "[No opening paren]/internal)"
+        ]
+        
+        for malformed_link in malformed_links:
+            # Should return original for all languages since links are malformed
+            self.assertEqual(
+                markdown_to_html_internal_link(malformed_link, "ES"),
+                malformed_link
+            )
+            self.assertEqual(
+                markdown_to_html_internal_link(malformed_link, "EN"),
+                malformed_link
+            )
+            self.assertEqual(
+                markdown_to_html_internal_link(malformed_link, "PT"),
+                malformed_link
+            )
+
+    def test_markdown_to_html_internal_link_complex_paths(self):
+        """Test internal links with complex paths in different languages"""
+        complex_link = "[Deep Page](/category/subcategory/page)"
+        
+        self.assertEqual(
+            markdown_to_html_internal_link(complex_link, "ES"),
+            '<a href="/category/subcategory/page">Deep Page</a>'
+        )
+        self.assertEqual(
+            markdown_to_html_internal_link(complex_link, "EN"),
+            '<a href="/en/category/subcategory/page">Deep Page</a>'
+        )
+        self.assertEqual(
+            markdown_to_html_internal_link(complex_link, "PT"),
+            '<a href="/pt/category/subcategory/page">Deep Page</a>'
+        )
+
+    def test_markdown_to_html_internal_link_empty_text(self):
+        """Test internal links with empty link text in different languages"""
+        empty_text_link = "[](/internal-page)"
+        
+        self.assertEqual(
+            markdown_to_html_internal_link(empty_text_link, "ES"),
+            '<a href="/internal-page"></a>'
+        )
+        self.assertEqual(
+            markdown_to_html_internal_link(empty_text_link, "EN"),
+            '<a href="/en/internal-page"></a>'
+        )
+        self.assertEqual(
+            markdown_to_html_internal_link(empty_text_link, "PT"),
+            '<a href="/pt/internal-page"></a>'
+        )
+
 class TestMarkdownUnorderedListToHtml(unittest.TestCase):
 
     def test_simple_list_hyphen(self):
@@ -1679,6 +1820,261 @@ $$E = mc^2$$'''
 <p>Le pedimos los issues del repositorio <code>transformers</code> de <code>huggingface</code>. Tras pensar un rato nos dice que va a usar la <code>tool</code> <code>list_repository_issues</code> con los argumentos <code>&#123;'owner': 'huggingface', 'repo_name': 'transformers'&#125;</code>.</p>
 </section>'''
         self.assertEqual(jupyter_notebook_contents_in_xml_format_to_html(markdown).strip(), expected_html.strip())
+
+class TestMaximofnUrlModification(unittest.TestCase):
+    """
+    Tests for the maximofn.com URL modification functionality.
+    When language is 'EN', maximofn.com URLs should be modified to include '/en' suffix.
+    """
+    
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        pass
+
+    def test_maximofn_com_url_en_language_with_www_and_slash(self):
+        """Test https://www.maximofn.com/ with EN language should become https://www.maximofn.com/en"""
+        markdown = "[Mi blog](https://www.maximofn.com/)"
+        expected_html = '''<section class="section-block-markdown-cell">
+<p><a href="https://www.maximofn.com/en">Mi blog</a></p>
+</section>'''
+        result = jupyter_notebook_contents_in_xml_format_to_html(markdown, language="EN")
+        self.assertEqual(result.strip(), expected_html.strip())
+
+    def test_maximofn_com_url_en_language_with_www_no_slash(self):
+        """Test https://www.maximofn.com with EN language should become https://www.maximofn.com/en"""
+        markdown = "[Mi blog](https://www.maximofn.com)"
+        expected_html = '''<section class="section-block-markdown-cell">
+<p><a href="https://www.maximofn.com/en">Mi blog</a></p>
+</section>'''
+        result = jupyter_notebook_contents_in_xml_format_to_html(markdown, language="EN")
+        self.assertEqual(result.strip(), expected_html.strip())
+
+    def test_maximofn_com_url_en_language_no_www_with_slash(self):
+        """Test https://maximofn.com/ with EN language should become https://maximofn.com/en"""
+        markdown = "[Mi blog](https://maximofn.com/)"
+        expected_html = '''<section class="section-block-markdown-cell">
+<p><a href="https://maximofn.com/en">Mi blog</a></p>
+</section>'''
+        result = jupyter_notebook_contents_in_xml_format_to_html(markdown, language="EN")
+        self.assertEqual(result.strip(), expected_html.strip())
+
+    def test_maximofn_com_url_en_language_no_www_no_slash(self):
+        """Test https://maximofn.com with EN language should become https://maximofn.com/en"""
+        markdown = "[Mi blog](https://maximofn.com)"
+        expected_html = '''<section class="section-block-markdown-cell">
+<p><a href="https://maximofn.com/en">Mi blog</a></p>
+</section>'''
+        result = jupyter_notebook_contents_in_xml_format_to_html(markdown, language="EN")
+        self.assertEqual(result.strip(), expected_html.strip())
+
+    def test_maximofn_com_url_http_en_language(self):
+        """Test http://maximofn.com with EN language should become http://maximofn.com/en"""
+        markdown = "[Mi blog](http://maximofn.com)"
+        expected_html = '''<section class="section-block-markdown-cell">
+<p><a href="http://maximofn.com/en">Mi blog</a></p>
+</section>'''
+        result = jupyter_notebook_contents_in_xml_format_to_html(markdown, language="EN")
+        self.assertEqual(result.strip(), expected_html.strip())
+
+    def test_maximofn_com_url_http_www_en_language(self):
+        """Test http://www.maximofn.com with EN language should become http://www.maximofn.com/en"""
+        markdown = "[Mi blog](http://www.maximofn.com)"
+        expected_html = '''<section class="section-block-markdown-cell">
+<p><a href="http://www.maximofn.com/en">Mi blog</a></p>
+</section>'''
+        result = jupyter_notebook_contents_in_xml_format_to_html(markdown, language="EN")
+        self.assertEqual(result.strip(), expected_html.strip())
+
+    def test_maximofn_com_url_es_language_should_not_modify(self):
+        """Test https://www.maximofn.com/ with ES language should NOT be modified"""
+        markdown = "[Mi blog](https://www.maximofn.com/)"
+        expected_html = '''<section class="section-block-markdown-cell">
+<p><a href="https://www.maximofn.com/">Mi blog</a></p>
+</section>'''
+        result = jupyter_notebook_contents_in_xml_format_to_html(markdown, language="ES")
+        self.assertEqual(result.strip(), expected_html.strip())
+
+    def test_maximofn_com_url_pt_language_should_not_modify(self):
+        """Test https://www.maximofn.com with PT language should NOT be modified"""
+        markdown = "[Mi blog](https://www.maximofn.com)"
+        expected_html = '''<section class="section-block-markdown-cell">
+<p><a href="https://www.maximofn.com/pt">Mi blog</a></p>
+</section>'''
+        result = jupyter_notebook_contents_in_xml_format_to_html(markdown, language="PT")
+        self.assertEqual(result.strip(), expected_html.strip())
+
+    def test_other_external_url_en_language_should_not_modify(self):
+        """Test that other external URLs are NOT modified even with EN language"""
+        markdown = "[Google](https://www.google.com/)"
+        expected_html = '''<section class="section-block-markdown-cell">
+<p><a href="https://www.google.com/">Google</a></p>
+</section>'''
+        result = jupyter_notebook_contents_in_xml_format_to_html(markdown, language="EN")
+        self.assertEqual(result.strip(), expected_html.strip())
+
+    def test_github_url_en_language_should_not_modify(self):
+        """Test that GitHub URLs are NOT modified even with EN language"""
+        markdown = "[GitHub](https://github.com/user/repo)"
+        expected_html = '''<section class="section-block-markdown-cell">
+<p><a href="https://github.com/user/repo">GitHub</a></p>
+</section>'''
+        result = jupyter_notebook_contents_in_xml_format_to_html(markdown, language="EN")
+        self.assertEqual(result.strip(), expected_html.strip())
+
+    def test_multiple_maximofn_links_en_language(self):
+        """Test multiple maximofn.com links in same markdown with EN language"""
+        markdown = '''[Blog principal](https://www.maximofn.com/) y también [sin www](https://maximofn.com)'''
+        expected_html = '''<section class="section-block-markdown-cell">
+<p><a href="https://www.maximofn.com/en">Blog principal</a> y también <a href="https://maximofn.com/en">sin www</a></p>
+</section>'''
+        result = jupyter_notebook_contents_in_xml_format_to_html(markdown, language="EN")
+        print("*"*100)
+        print(f"expected_html: {expected_html.strip()}")
+        print(f"result:        {result.strip()}")
+        self.assertEqual(result.strip(), expected_html.strip())
+
+    def test_mixed_maximofn_and_external_links_en_language(self):
+        """Test mix of maximofn.com and external links with EN language"""
+        markdown = '''Visita [mi blog](https://www.maximofn.com/) y también [Google](https://www.google.com)'''
+        expected_html = '''<section class="section-block-markdown-cell">
+<p>Visita <a href="https://www.maximofn.com/en">mi blog</a> y también <a href="https://www.google.com">Google</a></p>
+</section>'''
+        result = jupyter_notebook_contents_in_xml_format_to_html(markdown, language="EN")
+        print("*"*100)
+        print(f"expected_html: {expected_html.strip()}")
+        print(f"result:        {result.strip()}")
+        self.assertEqual(result.strip(), expected_html.strip())
+
+    def test_maximofn_link_with_existing_path_en_language(self):
+        """Test that maximofn.com URLs with existing paths are NOT modified"""
+        markdown = "[Blog post](https://www.maximofn.com/blog/post-title)"
+        expected_html = '''<section class="section-block-markdown-cell">
+<p><a href="/en/blog/post-title">Blog post</a></p>
+</section>'''
+        result = jupyter_notebook_contents_in_xml_format_to_html(markdown, language="EN")
+        self.assertEqual(result.strip(), expected_html.strip())
+
+    def test_maximofn_link_with_en_path_already_en_language(self):
+        """Test that maximofn.com URLs with /en already present are NOT modified"""
+        markdown = "[English blog](https://www.maximofn.com/en/)"
+        expected_html = '''<section class="section-block-markdown-cell">
+<p><a href="https://www.maximofn.com/en/">English blog</a></p>
+</section>'''
+        result = jupyter_notebook_contents_in_xml_format_to_html(markdown, language="EN")
+        self.assertEqual(result.strip(), expected_html.strip())
+
+    def test_default_language_should_be_es(self):
+        """Test that default language (ES) does NOT modify maximofn.com URLs"""
+        markdown = "[Mi blog](https://www.maximofn.com/)"
+        expected_html = '''<section class="section-block-markdown-cell">
+<p><a href="https://www.maximofn.com/">Mi blog</a></p>
+</section>'''
+        # No language parameter specified, should default to ES
+        result = jupyter_notebook_contents_in_xml_format_to_html(markdown)
+        self.assertEqual(result.strip(), expected_html.strip())
+
+
+class TestInternalLinkLanguageIntegration(unittest.TestCase):
+    """Test internal link language functionality integrated with the main conversion function"""
+
+    def setUp(self):
+        """Set up test environment"""
+        pass
+
+    def tearDown(self):
+        """Clean up after tests"""
+        pass
+
+    def test_internal_link_spanish_language_integration(self):
+        """Test internal links with Spanish language in full conversion"""
+        markdown_content = "[Mi página](/mi-pagina)"
+        html_output = jupyter_notebook_contents_in_xml_format_to_html(markdown_content, language="ES")
+        
+        # Should not add any prefix for Spanish
+        self.assertIn('<a href="/mi-pagina">Mi página</a>', html_output)
+
+    def test_internal_link_english_language_integration(self):
+        """Test internal links with English language in full conversion"""
+        markdown_content = "[My page](/my-page)"
+        html_output = jupyter_notebook_contents_in_xml_format_to_html(markdown_content, language="EN")
+        
+        # Should add /en prefix for English
+        self.assertIn('<a href="/en/my-page">My page</a>', html_output)
+
+    def test_internal_link_portuguese_language_integration(self):
+        """Test internal links with Portuguese language in full conversion"""
+        markdown_content = "[Minha página](/minha-pagina)"
+        html_output = jupyter_notebook_contents_in_xml_format_to_html(markdown_content, language="PT")
+        
+        # Should add /pt prefix for Portuguese
+        self.assertIn('<a href="/pt/minha-pagina">Minha página</a>', html_output)
+
+    def test_internal_link_complex_path_english_integration(self):
+        """Test internal links with complex paths in English"""
+        markdown_content = "[Tutorial](/tutorials/python/advanced)"
+        html_output = jupyter_notebook_contents_in_xml_format_to_html(markdown_content, language="EN")
+        
+        # Should add /en prefix to the complete path
+        self.assertIn('<a href="/en/tutorials/python/advanced">Tutorial</a>', html_output)
+
+    def test_internal_link_complex_path_portuguese_integration(self):
+        """Test internal links with complex paths in Portuguese"""
+        markdown_content = "[Tutorial](/tutoriais/python/avancado)"
+        html_output = jupyter_notebook_contents_in_xml_format_to_html(markdown_content, language="PT")
+        
+        # Should add /pt prefix to the complete path
+        self.assertIn('<a href="/pt/tutoriais/python/avancado">Tutorial</a>', html_output)
+
+    def test_multiple_internal_links_english_integration(self):
+        """Test multiple internal links in English"""
+        markdown_content = "[Home](/home)\n\n[About](/about)\n\n[Contact](/contact)"
+        html_output = jupyter_notebook_contents_in_xml_format_to_html(markdown_content, language="EN")
+        
+        # All internal links should have /en prefix
+        self.assertIn('<a href="/en/home">Home</a>', html_output)
+        self.assertIn('<a href="/en/about">About</a>', html_output)
+        self.assertIn('<a href="/en/contact">Contact</a>', html_output)
+
+    def test_mixed_internal_external_links_english_integration(self):
+        """Test mix of internal and external links in English"""
+        markdown_content = "[Home](/home)\n\n[Google](https://google.com)\n\n[Blog](/blog)"
+        html_output = jupyter_notebook_contents_in_xml_format_to_html(markdown_content, language="EN")
+        
+        # Internal links should have /en prefix
+        self.assertIn('<a href="/en/home">Home</a>', html_output)
+        self.assertIn('<a href="/en/blog">Blog</a>', html_output)
+        # External link should remain unchanged
+        self.assertIn('<a href="https://google.com">Google</a>', html_output)
+
+    def test_internal_link_default_language_integration(self):
+        """Test that default language behavior is Spanish"""
+        markdown_content = "[Inicio](/inicio)"
+        html_output = jupyter_notebook_contents_in_xml_format_to_html(markdown_content)
+        
+        # Should not add any prefix for default Spanish
+        self.assertIn('<a href="/inicio">Inicio</a>', html_output)
+
+    def test_internal_link_with_text_blocks_english_integration(self):
+        """Test internal links mixed with text blocks in English"""
+        markdown_content = "This is some text.\n\n[My page](/my-page)\n\nMore text here."
+        html_output = jupyter_notebook_contents_in_xml_format_to_html(markdown_content, language="EN")
+        
+        # Should add /en prefix to internal link
+        self.assertIn('<a href="/en/my-page">My page</a>', html_output)
+        # Should also contain the text
+        self.assertIn('This is some text.', html_output)
+        self.assertIn('More text here.', html_output)
+
+    def test_internal_link_with_special_characters_portuguese_integration(self):
+        """Test internal links with special characters in Portuguese"""
+        markdown_content = "[Configuração](/configuracao)"
+        html_output = jupyter_notebook_contents_in_xml_format_to_html(markdown_content, language="PT")
+        
+        # Should add /pt prefix and preserve special characters
+        self.assertIn('<a href="/pt/configuracao">Configuração</a>', html_output)
+
 
 if __name__ == '__main__':
     # It's good practice to ensure that only one unittest.main() call remains,

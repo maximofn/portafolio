@@ -364,11 +364,12 @@ def _process_block_math(text: str) -> str:
     
     return re.sub(pattern, replace_block_math, text, flags=re.DOTALL)
 
-def _process_inline_links(text: str) -> str:
+def _process_inline_links(text: str, language: str = "ES") -> str:
     """
     Processes inline links in a text string.
     Converts [text](url) to appropriate HTML link tags.
     Handles links that span multiple lines by removing newlines from link text.
+    Applies language-specific URL modifications for maximofn.com links.
     """
     # First process external links (http:// or https://)
     # Updated pattern to handle multiline links using re.DOTALL flag
@@ -376,7 +377,18 @@ def _process_inline_links(text: str) -> str:
     def replace_external_link(match):
         link_text = match.group(1).replace('\n', '')  # Remove newlines from link text
         link_url = match.group(2)
-        return f'<a href="{link_url}">{link_text}</a>'
+        
+        # Apply maximofn.com URL modification based on language
+        markdown_link = f'[{link_text}]({link_url})'
+        modified_markdown_link = _modify_maximofn_url_for_language(markdown_link, language)
+        
+        # Extract the modified URL from the markdown link
+        url_match = re.match(r'\[.*?\]\((.*?)\)', modified_markdown_link)
+        if url_match:
+            modified_url = url_match.group(1)
+            return f'<a href="{modified_url}">{link_text}</a>'
+        else:
+            return f'<a href="{link_url}">{link_text}</a>'
     text = re.sub(external_pattern, replace_external_link, text, flags=re.DOTALL)
     
     # Then process internal links (starting with /)
@@ -389,7 +401,7 @@ def _process_inline_links(text: str) -> str:
     
     return text
 
-def _process_text_block(text_content: str) -> str:
+def _process_text_block(text_content: str, language: str = "ES") -> str:
     """
     Processes a 'text' block, converting Markdown headers and paragraphs to HTML.
     """
@@ -470,7 +482,7 @@ def _process_text_block(text_content: str) -> str:
     text_content = _process_block_math(text_content)
     
     # Process inline links BEFORE splitting into lines to handle multiline links
-    text_content = _process_inline_links(text_content)
+    text_content = _process_inline_links(text_content, language)
     
     # Handle headers (H1 to H6) with anchor links
     # Order matters: H6 before H1 to avoid partial matches
@@ -882,7 +894,40 @@ def output_code_to_html(output_content: str) -> str:
 
     return html_output
 
-def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_contents_in_xml_format, is_html_post: bool = False):
+def _modify_maximofn_url_for_language(markdown_link: str, language: str) -> str:
+    """
+    Modifies maximofn.com URLs to include language suffix when language is 'EN'.
+    
+    Args:
+        markdown_link: The markdown link string (e.g., "[Link text](https://maximofn.com)")
+        language: The language code ('EN', 'ES', etc.)
+        
+    Returns:
+        The modified markdown link string with '/en' added for English language
+    """
+    # Only modify if language is English
+    if language != "EN" and language != "PT":
+        return markdown_link
+    
+    # Pattern to extract URL from markdown link
+    match = re.match(r"(\[.*?\])\((https?://(?:www\.)?maximofn\.com)(/?)?\)", markdown_link)
+    if match:
+        link_text = match.group(1)  # [Link text]
+        base_url = match.group(2)   # https://www.maximofn.com or https://maximofn.com
+        trailing_slash = match.group(3) or ""  # / if present
+        
+        # Remove trailing slash if present, then add /en
+        clean_url = base_url.rstrip('/')
+        if language == "EN":
+            modified_url = f"{clean_url}/en"
+        elif language == "PT":
+            modified_url = f"{clean_url}/pt"
+        
+        return f"{link_text}({modified_url})"
+    
+    return markdown_link
+
+def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_contents_in_xml_format, is_html_post: bool = False, language: str = "ES"):
     """
     Converts a list of content blocks or a single markdown string to HTML.
     Each content block is a dictionary with a type (e.g., "markdown", "input_code")
@@ -919,7 +964,7 @@ def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_con
                     # Text blocks might contain headers or simple paragraphs.
                     # The generic_markdown_to_specific_markdowns might return larger text blocks
                     # that need further processing for headers, paragraphs etc.
-                    html_output_parts.append(_process_text_block(block_content))
+                    html_output_parts.append(_process_text_block(block_content, language))
                 elif block_type == "code":
                     if "Convert the response to LangChain format" in block_content:
                         debug_print = True
@@ -946,17 +991,20 @@ def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_con
                     
                     if match and match.group(2).strip():
                         # This is a link followed by additional text, treat as text block
-                        html_output_parts.append(_process_text_block(block_content))
+                        html_output_parts.append(_process_text_block(block_content, language))
                     elif re.match(r"\[.*\]\((https?://.*)\)", block_content):
-                        link_html = markdown_to_html_external_link(block_content)
+                        # Modify maximofn.com URLs for English language
+                        modified_block_content = _modify_maximofn_url_for_language(block_content, language)
+                        link_html = markdown_to_html_external_link(modified_block_content)
                         html_output_parts.append(f"<p>{link_html}</p>")
                     elif re.match(r"\[.*\]\((/.*)\)", block_content): # Matches /path type links
-                        link_html = markdown_to_html_internal_link(block_content)
+                        # Process internal links with language support
+                        link_html = markdown_to_html_internal_link(block_content, language)
                         html_output_parts.append(f"<p>{link_html}</p>")
                     else:
                         # Fallback or unhandled link type, pass as is or wrap in <p>?
                         # For now, pass as is, which _process_text_block might wrap in <p> if it was part of text
-                        html_output_parts.append(_process_text_block(block_content))
+                        html_output_parts.append(_process_text_block(block_content, language))
                 elif block_type == "image":
                     # Images are often inline, _process_text_block might be more appropriate
                     # if they are not on their own line. However, generic_markdown_to_specific_markdowns
@@ -966,7 +1014,7 @@ def jupyter_notebook_contents_in_xml_format_to_html(list_of_jupyter_notebook_con
                     html_output_parts.append(convert_image_to_html(block_content))
                 else:
                     # Unknown specific markdown type, treat as text for now
-                    html_output_parts.append(_process_text_block(block_content))
+                    html_output_parts.append(_process_text_block(block_content, language))
             
             # Close the section
             html_output_parts.append(f"</section>")

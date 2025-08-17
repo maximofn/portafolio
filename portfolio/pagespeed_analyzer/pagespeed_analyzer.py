@@ -93,7 +93,7 @@ class PageSpeedAnalyzer:
         params = {
             'url': url,
             'strategy': strategy,
-            'category': 'performance'
+            'category': ['performance', 'accessibility', 'best-practices', 'seo']
         }
         
         if self.api_key:
@@ -109,9 +109,16 @@ class PageSpeedAnalyzer:
             audits = lighthouse_result.get('audits', {})
             categories = lighthouse_result.get('categories', {})
             
-            # Performance score
+            # All category scores
             performance = categories.get('performance', {})
+            accessibility = categories.get('accessibility', {})
+            best_practices = categories.get('best-practices', {})
+            seo = categories.get('seo', {})
+            
             performance_score = performance.get('score', 0) * 100 if performance.get('score') is not None else 0
+            accessibility_score = accessibility.get('score', 0) * 100 if accessibility.get('score') is not None else 0
+            best_practices_score = best_practices.get('score', 0) * 100 if best_practices.get('score') is not None else 0
+            seo_score = seo.get('score', 0) * 100 if seo.get('score') is not None else 0
             
             # Core Web Vitals
             fcp = audits.get('first-contentful-paint', {}).get('numericValue', 0) / 1000  # Convert to seconds
@@ -127,6 +134,9 @@ class PageSpeedAnalyzer:
                 'url': url,
                 'strategy': strategy,
                 'performance_score': round(performance_score, 1),
+                'accessibility_score': round(accessibility_score, 1),
+                'best_practices_score': round(best_practices_score, 1),
+                'seo_score': round(seo_score, 1),
                 'first_contentful_paint': round(fcp, 2),
                 'largest_contentful_paint': round(lcp, 2),
                 'cumulative_layout_shift': round(cls, 3),
@@ -239,14 +249,18 @@ class PageSpeedAnalyzer:
             if not results:
                 continue
                 
-            scores = [r['performance_score'] for r in results]
+            perf_scores = [r['performance_score'] for r in results]
+            acc_scores = [r['accessibility_score'] for r in results]
+            bp_scores = [r['best_practices_score'] for r in results]
+            seo_scores = [r['seo_score'] for r in results]
             fcp_values = [r['first_contentful_paint'] for r in results]
             lcp_values = [r['largest_contentful_paint'] for r in results]
             
-            print(f"\n{strategy} Performance:")
-            print(f"  Average Score: {sum(scores) / len(scores):.1f}")
-            print(f"  Best Score: {max(scores):.1f}")
-            print(f"  Worst Score: {min(scores):.1f}")
+            print(f"\n{strategy} Results:")
+            print(f"  Performance:     Avg: {sum(perf_scores) / len(perf_scores):.1f} | Best: {max(perf_scores):.1f} | Worst: {min(perf_scores):.1f}")
+            print(f"  Accessibility:   Avg: {sum(acc_scores) / len(acc_scores):.1f} | Best: {max(acc_scores):.1f} | Worst: {min(acc_scores):.1f}")
+            print(f"  Best Practices:  Avg: {sum(bp_scores) / len(bp_scores):.1f} | Best: {max(bp_scores):.1f} | Worst: {min(bp_scores):.1f}")
+            print(f"  SEO:             Avg: {sum(seo_scores) / len(seo_scores):.1f} | Best: {max(seo_scores):.1f} | Worst: {min(seo_scores):.1f}")
             print(f"  Average FCP: {sum(fcp_values) / len(fcp_values):.2f}s")
             print(f"  Average LCP: {sum(lcp_values) / len(lcp_values):.2f}s")
 

@@ -33,9 +33,5 @@ export default defineConfig({
       external: []
     }
   },
-  compressHTML: true,
-  experimental: {
-    // Enable performance optimizations
-    optimizeHoistedScript: true
-  }
+  compressHTML: true
 });

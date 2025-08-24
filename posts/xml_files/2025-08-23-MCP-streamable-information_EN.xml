@@ -1,0 +1,1124 @@
+<?xml version='1.0' encoding='utf-8'?>
+<notebook>
+  <markdown># Stream information in MCP</markdown>
+  <markdown>When we use MCP, the task we are executing may be lengthy, and we want the client to be able to see the progress of the task. Although in the post on [MCP](https://www.maximofn.com/en/mcp) we saw a way to do this using `Context`, as the MCP protocol has evolved, we can now use it in a better way.</markdown>
+  <markdown>## Server</markdown>
+  <markdown>In the [MCP](https://www.maximofn.com/en/mcp) post, we saw that we could create an MCP server using</markdown>
+  <markdown>Create an mcp object of the FastMCP class
+
+``` python
+from fastmcp import FastMCP
+
+# Create FastMCP server
+mcp = FastMCP(
+    name="MCP server name",
+    instructions="MCP server instructions",
+)
+```</markdown>
+  <markdown>Create tools by adding decorators to functions
+
+``` python
+@mcp.tool
+def tool_name(param1: str, param2: int) -&gt; str:
+    return "result"
+```</markdown>
+  <markdown>And run the server using the `run` method. We could also set http as the transport layer.
+
+``` python
+mcp.run(
+    transport="http",
+    host="0.0.0.0",
+    port=8000
+)
+```</markdown>
+  <markdown>Now we import the `create_streamable_http_app` function from the `fastmcp.server.http` package and use it to create an HTTP application that supports streaming.
+
+```python
+from fastmcp.server.http import create_streamable_http_app
+
+app = create_streamable_http_app(
+    server=mcp,
+    streamable_http_path="/mcp/",
+    stateless_http=False,  # Keep session state
+    debug=True
+)
+```</markdown>
+  <markdown>We create a server with `uvicorn`
+
+``` python
+import uvicorn
+
+# Configure uvicorn
+config = uvicorn.Config(
+    app=app,
+    host=host,
+    port=port,
+    log_level="info",
+    access_log=False
+)
+
+# Run server
+server = uvicorn.Server(config)
+await server.serve()
+```</markdown>
+  <markdown>And we execute it asynchronously.
+
+``` python
+import asyncio
+
+asyncio.run(run_streaming_server())
+```</markdown>
+  <markdown>### Server implementation</markdown>
+  <markdown>Now that we have explained how to create the server, let's create one.</markdown>
+  <markdown>#### Create virtual environment for the server</markdown>
+  <markdown>First, we create the folder where we are going to develop it.</markdown>
+  <input_code>!mkdir MCP_streamable_server</input_code>
+  <markdown>We create the environment with `uv`</markdown>
+  <input_code>!cd MCP_streamable_server &amp;&amp; uv init .</input_code>
+  <output_code>Initialized project `[36mmcp-streamable-server[39m` at `[36m/Users/macm1/Documents/web/portafolio/posts/notebooks_translated/MCP_streamable_server[39m`
+</output_code>
+  <markdown>We started it</markdown>
+  <input_code>!cd MCP_streamable_server &amp;&amp; uv venv</input_code>
+  <output_code>Using CPython [36m3.12.8[39m
+Creating virtual environment at: [36m.venv[39m
+Activate with: [32msource .venv/bin/activate[39m
+</output_code>
+  <markdown>We install the necessary libraries</markdown>
+  <input_code>!cd MCP_streamable_server &amp;&amp; uv add fastmcp uvicorn</input_code>
+  <output_code>[2K[2mResolved [1m64 packages[0m [2min 673ms[0m[0m                                        [0m
+[2K[37m⠙[0m [2mPreparing packages...[0m (0/4)                                                   [37m⠋[0m [2mPreparing packages...[0m (0/0)                                                   
+[2K[1A[37m⠙[0m [2mPreparing packages...[0m (0/4)--------------[0m[0m     0 B/87.93 KiB           [1A
+[2K[1A[37m⠙[0m [2mPreparing packages...[0m (0/4)--------------[0m[0m     0 B/87.93 KiB           [1A
+[2mrequests            [0m [32m[2m------------------------------[0m[0m     0 B/63.22 KiB
+[2K[2A[37m⠙[0m [2mPreparing packages...[0m (0/4)--------------[0m[0m     0 B/87.93 KiB           [2A
+[2mrequests            [0m [32m[2m------------------------------[0m[0m     0 B/63.22 KiB
+[2K[2A[37m⠙[0m [2mPreparing packages...[0m (0/4)--------------[0m[0m 16.00 KiB/87.93 KiB         [2A
+[2mrequests            [0m [32m--------[2m----------------------[0m[0m 14.88 KiB/63.22 KiB
+[2K[2A[37m⠙[0m [2mPreparing packages...[0m (0/4)--------------[0m[0m 16.00 KiB/87.93 KiB         [2A
+[2mrequests            [0m [32m--------[2m----------------------[0m[0m 14.88 KiB/63.22 KiB
+[2K[2A[37m⠙[0m [2mPreparing packages...[0m (0/4)--------------[0m[0m 32.00 KiB/87.93 KiB         [2A
+[2mrequests            [0m [32m--------[2m----------------------[0m[0m 14.88 KiB/63.22 KiB
+[2K[2A[37m⠙[0m [2mPreparing packages...[0m (0/4)m-------------[0m[0m 48.00 KiB/87.93 KiB         [2A
+[2mrequests            [0m [32m--------[2m----------------------[0m[0m 14.88 KiB/63.22 KiB
+[2K[2A[37m⠙[0m [2mPreparing packages...[0m (0/4)--[2m--------[0m[0m 64.00 KiB/87.93 KiB         [2A
+[2mrequests            [0m [32m--------[2m----------------------[0m[0m 14.88 KiB/63.22 KiB
+[2K[2A[37m⠙[0m [2mPreparing packages...[0m (0/4)--------[2m--[0m[0m 80.00 KiB/87.93 KiB         [2A
+[2mrequests            [0m [32m---------------[2m---------------[0m[0m 30.88 KiB/63.22 KiB
+[2K[2A[37m⠙[0m [2mPreparing packages...[0m (0/4)--------[2m--[0m[0m 80.00 KiB/87.93 KiB         [2A
+[2mrequests            [0m [32m---------------[2m---------------[0m[0m 30.88 KiB/63.22 KiB
+[2K[2A[37m⠙[0m [2mPreparing packages...[0m (0/4)----------[2m[0m[0m 87.93 KiB/87.93 KiB         [2A
+[2K[1A[37m⠙[0m [2mPreparing packages...[0m (0/4)--------------[0m[0m 30.88 KiB/63.22 KiB         [1A
+[2K[1A[37m⠙[0m [2mPreparing packages...[0m (0/4)---[2m-------[0m[0m 46.88 KiB/63.22 KiB         [1A
+[2K[1A[37m⠙[0m [2mPreparing packages...[0m (0/4)----------[2m[0m[0m 62.88 KiB/63.22 KiB         [1A
+[2K[1A[37m⠙[0m [2mPreparing packages...[0m (0/4)----------[2m[0m[0m 62.88 KiB/63.22 KiB         [1A
+[2mrequests            [0m [32m------------------------------[2m[0m[0m 62.88 KiB/63.22 KiB
+[2K[2A[37m⠙[0m [2mPreparing packages...[0m (0/4)--------------[0m[0m     0 B/157.71 KiB          [2A
+[2mrequests            [0m [32m------------------------------[2m[0m[0m 63.22 KiB/63.22 KiB
+[2K[2A[37m⠙[0m [2mPreparing packages...[0m (0/4)--------------[0m[0m     0 B/157.71 KiB          [2A
+[2K[1A[37m⠙[0m [2mPreparing packages...[0m (0/4)--------------[0m[0m     0 B/157.71 KiB          [1A
+[2K[1A[37m⠙[0m [2mPreparing packages...[0m (0/4)--------------[0m[0m 16.00 KiB/157.71 KiB        [1A
+[2K[1A[37m⠙[0m [2mPreparing packages...[0m (0/4)--------------[0m[0m 16.00 KiB/157.71 KiB        [1A
+[2mlazy-object-proxy   [0m [32m[2m------------------------------[0m[0m     0 B/26.12 KiB
+[2K[2A[37m⠙[0m [2mPreparing packages...[0m (0/4)--------------[0m[0m 16.00 KiB/157.71 KiB        [2A
+[2mlazy-object-proxy   [0m [32m-------------------[2m-----------[0m[0m 16.00 KiB/26.12 KiB
+[2K[2A[37m⠙[0m [2mPreparing packages...[0m (0/4)--------------[0m[0m 16.00 KiB/157.71 KiB        [2A
+[2K[2mPrepared [1m4 packages[0m [2min 180ms[0m[0m                                                 [1A
+[2K[2mInstalled [1m61 packages[0m [2min 140ms[0m[0mtor==0.6.3                    [0m
+ [32m+[39m [1mannotated-types[0m[2m==0.7.0[0m
+ [32m+[39m [1manyio[0m[2m==4.10.0[0m
+ [32m+[39m [1mattrs[0m[2m==25.3.0[0m
+ [32m+[39m [1mauthlib[0m[2m==1.6.1[0m
+ [32m+[39m [1mcertifi[0m[2m==2025.8.3[0m
+ [32m+[39m [1mcffi[0m[2m==1.17.1[0m
+ [32m+[39m [1mcharset-normalizer[0m[2m==3.4.3[0m
+ [32m+[39m [1mclick[0m[2m==8.2.1[0m
+ [32m+[39m [1mcryptography[0m[2m==45.0.6[0m
+ [32m+[39m [1mcyclopts[0m[2m==3.22.5[0m
+ [32m+[39m [1mdnspython[0m[2m==2.7.0[0m
+ [32m+[39m [1mdocstring-parser[0m[2m==0.17.0[0m
+ [32m+[39m [1mdocutils[0m[2m==0.22[0m
+ [32m+[39m [1memail-validator[0m[2m==2.2.0[0m
+ [32m+[39m [1mexceptiongroup[0m[2m==1.3.0[0m
+ [32m+[39m [1mfastmcp[0m[2m==2.11.3[0m
+ [32m+[39m [1mh11[0m[2m==0.16.0[0m
+ [32m+[39m [1mhttpcore[0m[2m==1.0.9[0m
+ [32m+[39m [1mhttpx[0m[2m==0.28.1[0m
+ [32m+[39m [1mhttpx-sse[0m[2m==0.4.1[0m
+ [32m+[39m [1midna[0m[2m==3.10[0m
+ [32m+[39m [1misodate[0m[2m==0.7.2[0m
+ [32m+[39m [1mjsonschema[0m[2m==4.25.1[0m
+ [32m+[39m [1mjsonschema-path[0m[2m==0.3.4[0m
+ [32m+[39m [1mjsonschema-specifications[0m[2m==2025.4.1[0m
+ [32m+[39m [1mlazy-object-proxy[0m[2m==1.12.0[0m
+ [32m+[39m [1mmarkdown-it-py[0m[2m==4.0.0[0m
+ [32m+[39m [1mmarkupsafe[0m[2m==3.0.2[0m
+ [32m+[39m [1mmcp[0m[2m==1.13.1[0m
+ [32m+[39m [1mmdurl[0m[2m==0.1.2[0m
+ [32m+[39m [1mmore-itertools[0m[2m==10.7.0[0m
+ [32m+[39m [1mopenapi-core[0m[2m==0.19.5[0m
+ [32m+[39m [1mopenapi-pydantic[0m[2m==0.5.1[0m
+ [32m+[39m [1mopenapi-schema-validator[0m[2m==0.6.3[0m
+ [32m+[39m [1mopenapi-spec-validator[0m[2m==0.7.2[0m
+ [32m+[39m [1mparse[0m[2m==1.20.2[0m
+ [32m+[39m [1mpathable[0m[2m==0.4.4[0m
+ [32m+[39m [1mpycparser[0m[2m==2.22[0m
+ [32m+[39m [1mpydantic[0m[2m==2.11.7[0m
+ [32m+[39m [1mpydantic-core[0m[2m==2.33.2[0m
+ [32m+[39m [1mpydantic-settings[0m[2m==2.10.1[0m
+ [32m+[39m [1mpygments[0m[2m==2.19.2[0m
+ [32m+[39m [1mpyperclip[0m[2m==1.9.0[0m
+ [32m+[39m [1mpython-dotenv[0m[2m==1.1.1[0m
+ [32m+[39m [1mpython-multipart[0m[2m==0.0.20[0m
+ [32m+[39m [1mpyyaml[0m[2m==6.0.2[0m
+ [32m+[39m [1mreferencing[0m[2m==0.36.2[0m
+ [32m+[39m [1mrequests[0m[2m==2.32.5[0m
+ [32m+[39m [1mrfc3339-validator[0m[2m==0.1.4[0m
+ [32m+[39m [1mrich[0m[2m==14.1.0[0m
+ [32m+[39m [1mrich-rst[0m[2m==1.3.1[0m
+ [32m+[39m [1mrpds-py[0m[2m==0.27.0[0m
+ [32m+[39m [1msix[0m[2m==1.17.0[0m
+ [32m+[39m [1msniffio[0m[2m==1.3.1[0m
+ [32m+[39m [1msse-starlette[0m[2m==3.0.2[0m
+ [32m+[39m [1mstarlette[0m[2m==0.47.2[0m
+ [32m+[39m [1mtyping-extensions[0m[2m==4.14.1[0m
+ [32m+[39m [1mtyping-inspection[0m[2m==0.4.1[0m
+ [32m+[39m [1murllib3[0m[2m==2.5.0[0m
+ [32m+[39m [1muvicorn[0m[2m==0.35.0[0m
+ [32m+[39m [1mwerkzeug[0m[2m==3.1.1[0m
+</output_code>
+  <markdown>#### Server code</markdown>
+  <markdown>Now let's create the server code. We are going to create a server with everything we have discussed above and with four tools that simulate very long tasks.</markdown>
+  <input_code>%%writefile MCP_streamable_server/server.py
+
+#!/usr/bin/env python3
+"""
+MCP server for streaming and partial results.
+Shows how to send real-time progress updates to the client.
+"""
+
+import asyncio
+import uvicorn
+from typing import Dict, List, Any
+from fastmcp import FastMCP, Context
+from fastmcp.server.http import create_streamable_http_app
+
+
+# Create MCP server instance
+mcp = FastMCP(
+    name="Streaming Server",
+    instructions="Streaming Server with real-time progress updates"
+)
+
+
+@mcp.tool
+async def long_running_task(
+    name: str = "Task", 
+    steps: int = 10,
+    context: Context = None
+) -&gt; Dict[str, Any]:
+    """
+    Long running task with real-time progress updates.
+    
+    Args:
+        name: Task name
+        steps: Number of steps to execute
+    """
+    if context:
+        await context.info(f"🚀 Initializing {name} with {steps} steps...")
+    
+    results = []
+    
+    for i in range(steps):
+        # Simulate work
+        await asyncio.sleep(1)
+        
+        # Create partial result
+        partial_result = f"Step {i + 1}: Processed {name}"
+        results.append(partial_result)
+        
+        # Report progress
+        if context:
+            await context.report_progress(
+                progress=i + 1,
+                total=steps,
+                message=f"Step {i + 1}/{steps} - {partial_result}"
+            )
+            
+            await context.debug(f"✅ {partial_result}")
+    
+    if context:
+        await context.info(f"🎉 {name} completed successfully!")
+    
+    return {
+        "task_name": name,
+        "steps_completed": steps,
+        "results": results,
+        "status": "completed"
+    }
+
+
+@mcp.tool
+async def streaming_data_processor(
+    data_size: int = 100,
+    context: Context = None
+) -&gt; Dict[str, Any]:
+    """
+    Processes data sending real-time progress updates.
+    
+    Args:
+        data_size: Number of data items to process
+    """
+    if context:
+        await context.info(f"📊 Procesando {data_size} elementos de datos...")
+    
+    processed = []
+    batch_size = max(1, data_size // 10)  # Process in batches
+    
+    for i in range(0, data_size, batch_size):
+        batch_end = min(i + batch_size, data_size)
+        
+        # Simulate batch processing
+        await asyncio.sleep(0.5)
+        
+        # Process batch
+        batch_results = [f"item_{j}" for j in range(i, batch_end)]
+        processed.extend(batch_results)
+        
+        # Report progress
+        if context:
+            progress = len(processed)
+            await context.report_progress(
+                progress=progress,
+                total=data_size,
+                message=f"Processed {progress}/{data_size} items"
+            )
+            
+            await context.debug(f"Batch processed: {i}-{batch_end-1}")
+    
+    if context:
+        await context.info(f"✅ Processing completed: {len(processed)} items")
+    
+    return {
+        "total_processed": len(processed),
+        "processed_items": processed[:10],  # Show first 10 items
+        "status": "completed"
+    }
+
+
+@mcp.tool
+async def file_upload_simulation(
+    file_count: int = 5,
+    context: Context = None
+) -&gt; Dict[str, Any]:
+    """
+    Simulates file upload with progress updates.
+    
+    Args:
+        file_count: Number of files to upload
+    """
+    if context:
+        await context.info(f"📤 Starting upload of {file_count} files...")
+    
+    uploaded_files = []
+    
+    for i in range(file_count):
+        file_name = f"file_{i+1}.dat"
+        
+        if context:
+            await context.info(f"Uploading {file_name}...")
+        
+        # Simulate upload by chunks
+        chunks = 10
+        for chunk in range(chunks):
+            await asyncio.sleep(0.2)  # Simulate upload time
+            
+            if context:
+                await context.report_progress(
+                    progress=(i * chunks) + chunk + 1,
+                    total=file_count * chunks,
+                    message=f"Uploading {file_name} - chunk {chunk+1}/{chunks}"
+                )
+        
+        uploaded_files.append({
+            "name": file_name,
+            "size": f"{(i+1) * 1024} KB",
+            "status": "uploaded"
+        })
+        
+        if context:
+            await context.debug(f"✅ {file_name} uploaded successfully")
+    
+    if context:
+        await context.info(f"🎉 Upload completed: {len(uploaded_files)} files")
+    
+    return {
+        "uploaded_count": len(uploaded_files),
+        "files": uploaded_files,
+        "total_size": sum(int(f["size"].split()[0]) for f in uploaded_files),
+        "status": "completed"
+    }
+
+
+@mcp.tool
+async def realtime_monitoring(
+    duration_seconds: int = 30,
+    context: Context = None
+) -&gt; Dict[str, Any]:
+    """
+    Real-time monitoring with periodic updates.
+    
+    Args:
+        duration_seconds: Monitoring duration in seconds
+    """
+    if context:
+        await context.info(f"📡 Starting monitoring for {duration_seconds} seconds...")
+    
+    metrics = []
+    interval = 2  # Update every 2 seconds
+    total_intervals = duration_seconds // interval
+    
+    for i in range(total_intervals):
+        # Simulate metrics
+        import random
+        cpu_usage = random.randint(20, 80)
+        memory_usage = random.randint(40, 90)
+        network_io = random.randint(100, 1000)
+        
+        metric = {
+            "timestamp": i * interval,
+            "cpu": cpu_usage,
+            "memory": memory_usage,
+            "network_io": network_io
+        }
+        metrics.append(metric)
+        
+        if context:
+            await context.report_progress(
+                progress=i + 1,
+                total=total_intervals,
+                message=f"Monitoring active - CPU: {cpu_usage}%, MEM: {memory_usage}%, NET: {network_io}KB/s"
+            )
+            
+            await context.debug(f"Metrics collected: interval {i+1}")
+        
+        await asyncio.sleep(interval)
+    
+    if context:
+        await context.info(f"📊 Monitoring completed: {len(metrics)} data points")
+    
+    avg_cpu = sum(m["cpu"] for m in metrics) / len(metrics)
+    avg_memory = sum(m["memory"] for m in metrics) / len(metrics)
+    
+    return {
+        "duration": duration_seconds,
+        "data_points": len(metrics),
+        "avg_cpu": round(avg_cpu, 2),
+        "avg_memory": round(avg_memory, 2),
+        "metrics": metrics,
+        "status": "completed"
+    }
+
+
+async def run_streaming_server(host: str = "127.0.0.1", port: int = 8000):
+    """Run the streaming server."""
+    print(f"🚀 Starting MCP streaming server on {host}:{port}")
+    
+    # Create Starlette application with streaming support
+    app = create_streamable_http_app(
+        server=mcp,
+        streamable_http_path="/mcp/",
+        stateless_http=False,  # Keep session state
+        debug=True
+    )
+    
+    # Configure uvicorn
+    config = uvicorn.Config(
+        app=app,
+        host=host,
+        port=port,
+        log_level="info",
+        access_log=False
+    )
+    
+    # Run server
+    server = uvicorn.Server(config)
+    print(f"✅ Server ready at http://{host}:{port}/mcp/")
+    print("📡 Available tools:")
+    print("  - long_running_task: Long running task with progress")
+    print("  - streaming_data_processor: Data processing")
+    print("  - file_upload_simulation: File upload simulation")
+    print("  - realtime_monitoring: Real-time monitoring")
+    
+    await server.serve()
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(run_streaming_server())
+    except KeyboardInterrupt:
+        print("\n⏹️  Server stopped by user")
+    except Exception as e:
+        print(f"❌ Error running server: {e}")</input_code>
+  <output_code>Writing MCP_streamable_server/server.py
+</output_code>
+  <markdown>## Client</markdown>
+  <markdown>Previously, we created a client using the `Client` class from `fastmcp`.
+
+``` python
+from fastmcp import Client
+
+client = Client(
+    server_url="http://localhost:8000/mcp/",
+    name="MCP client name",
+    instructions="MCP client instructions",
+)
+```
+
+And with the client, we called the server tools.</markdown>
+  <markdown>Now we use the `StreamableHttpTransport` class from `fastmcp.client.transports` to create a transport layer that supports streaming, and we create the client as before, except that we specify the transport layer.
+
+``` python
+from fastmcp import Client
+from fastmcp.client.transports import StreamableHttpTransport
+
+transport = StreamableHttpTransport(
+    url="http://localhost:8000/mcp/",
+    sse_read_timeout=60.0  # Timeout for streaming
+)
+
+client = Client(transport=transport)
+```</markdown>
+  <markdown>Everything else remains the same.</markdown>
+  <markdown>### Client implementation</markdown>
+  <markdown>Now that we have explained how to create the client that supports streaming, let's implement it.</markdown>
+  <markdown>#### Create the virtual environment for the customer</markdown>
+  <markdown>First, we create the folder where we are going to develop it.</markdown>
+  <input_code>!mkdir MCP_streamable_client</input_code>
+  <markdown>We create the environment with `uv`</markdown>
+  <input_code>!cd MCP_streamable_client &amp;&amp; uv init .</input_code>
+  <output_code>Initialized project `[36mmcp-streamable-client[39m` at `[36m/Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client[39m`
+</output_code>
+  <markdown>We started it</markdown>
+  <input_code>!cd MCP_streamable_server &amp;&amp; uv venv</input_code>
+  <output_code>Using CPython [36m3.12.8[39m
+Creating virtual environment at: [36m.venv[39m
+Activate with: [32msource .venv/bin/activate[39m
+</output_code>
+  <markdown>We install the necessary libraries</markdown>
+  <input_code>!cd MCP_streamable_client &amp;&amp; uv add fastmcp</input_code>
+  <output_code>Using CPython [36m3.12.8[39m
+Creating virtual environment at: [36m.venv[39m
+[2K[2mResolved [1m64 packages[0m [2min 517ms[0m[0m                                        [0m
+[2K[37m⠙[0m [2mPreparing packages...[0m (0/1)                                                   [37m⠋[0m [2mPreparing packages...[0m (0/0)                                                   
+[2K[1A[37m⠙[0m [2mPreparing packages...[0m (0/1)--------------[0m[0m     0 B/233.99 KiB          [1A
+[2K[1A[37m⠙[0m [2mPreparing packages...[0m (0/1)--------------[0m[0m 16.00 KiB/233.99 KiB        [1A
+[2K[1A[37m⠙[0m [2mPreparing packages...[0m (0/1)--------------[0m[0m 32.00 KiB/233.99 KiB        [1A
+[2K[1A[37m⠙[0m [2mPreparing packages...[0m (0/1)--------------[0m[0m 48.00 KiB/233.99 KiB        [1A
+[2K[1A[37m⠙[0m [2mPreparing packages...[0m (0/1)--------------[0m[0m 64.00 KiB/233.99 KiB        [1A
+[2K[1A[37m⠙[0m [2mPreparing packages...[0m (0/1)--------------[0m[0m 80.00 KiB/233.99 KiB        [1A
+[2K[1A[37m⠙[0m [2mPreparing packages...[0m (0/1)--------------[0m[0m 96.00 KiB/233.99 KiB        [1A
+[2K[1A[37m⠙[0m [2mPreparing packages...[0m (0/1)--------------[0m[0m 112.00 KiB/233.99 KiB       [1A
+[2K[1A[37m⠙[0m [2mPreparing packages...[0m (0/1)m-------------[0m[0m 128.00 KiB/233.99 KiB       [1A
+[2K[1A[37m⠙[0m [2mPreparing packages...[0m (0/1)[2m-----------[0m[0m 144.00 KiB/233.99 KiB       [1A
+[2K[1A[37m⠙[0m [2mPreparing packages...[0m (0/1)-[2m---------[0m[0m 160.00 KiB/233.99 KiB       [1A
+[2K[1A[37m⠙[0m [2mPreparing packages...[0m (0/1)---[2m-------[0m[0m 176.00 KiB/233.99 KiB       [1A
+[2K[1A[37m⠙[0m [2mPreparing packages...[0m (0/1)-----[2m-----[0m[0m 192.00 KiB/233.99 KiB       [1A
+[2K[1A[37m⠙[0m [2mPreparing packages...[0m (0/1)-------[2m---[0m[0m 208.00 KiB/233.99 KiB       [1A
+[2K[1A[37m⠙[0m [2mPreparing packages...[0m (0/1)---------[2m-[0m[0m 224.00 KiB/233.99 KiB       [1A
+[2K[2mPrepared [1m1 package[0m [2min 182ms[0m[0m                                                  [1A
+[2K[2mInstalled [1m61 packages[0m [2min 96ms[0m[0m                               [0m
+ [32m+[39m [1mannotated-types[0m[2m==0.7.0[0m
+ [32m+[39m [1manyio[0m[2m==4.10.0[0m
+ [32m+[39m [1mattrs[0m[2m==25.3.0[0m
+ [32m+[39m [1mauthlib[0m[2m==1.6.2[0m
+ [32m+[39m [1mcertifi[0m[2m==2025.8.3[0m
+ [32m+[39m [1mcffi[0m[2m==1.17.1[0m
+ [32m+[39m [1mcharset-normalizer[0m[2m==3.4.3[0m
+ [32m+[39m [1mclick[0m[2m==8.2.1[0m
+ [32m+[39m [1mcryptography[0m[2m==45.0.6[0m
+ [32m+[39m [1mcyclopts[0m[2m==3.22.5[0m
+ [32m+[39m [1mdnspython[0m[2m==2.7.0[0m
+ [32m+[39m [1mdocstring-parser[0m[2m==0.17.0[0m
+ [32m+[39m [1mdocutils[0m[2m==0.22[0m
+ [32m+[39m [1memail-validator[0m[2m==2.2.0[0m
+ [32m+[39m [1mexceptiongroup[0m[2m==1.3.0[0m
+ [32m+[39m [1mfastmcp[0m[2m==2.11.3[0m
+ [32m+[39m [1mh11[0m[2m==0.16.0[0m
+ [32m+[39m [1mhttpcore[0m[2m==1.0.9[0m
+ [32m+[39m [1mhttpx[0m[2m==0.28.1[0m
+ [32m+[39m [1mhttpx-sse[0m[2m==0.4.1[0m
+ [32m+[39m [1midna[0m[2m==3.10[0m
+ [32m+[39m [1misodate[0m[2m==0.7.2[0m
+ [32m+[39m [1mjsonschema[0m[2m==4.25.1[0m
+ [32m+[39m [1mjsonschema-path[0m[2m==0.3.4[0m
+ [32m+[39m [1mjsonschema-specifications[0m[2m==2025.4.1[0m
+ [32m+[39m [1mlazy-object-proxy[0m[2m==1.12.0[0m
+ [32m+[39m [1mmarkdown-it-py[0m[2m==4.0.0[0m
+ [32m+[39m [1mmarkupsafe[0m[2m==3.0.2[0m
+ [32m+[39m [1mmcp[0m[2m==1.13.1[0m
+ [32m+[39m [1mmdurl[0m[2m==0.1.2[0m
+ [32m+[39m [1mmore-itertools[0m[2m==10.7.0[0m
+ [32m+[39m [1mopenapi-core[0m[2m==0.19.5[0m
+ [32m+[39m [1mopenapi-pydantic[0m[2m==0.5.1[0m
+ [32m+[39m [1mopenapi-schema-validator[0m[2m==0.6.3[0m
+ [32m+[39m [1mopenapi-spec-validator[0m[2m==0.7.2[0m
+ [32m+[39m [1mparse[0m[2m==1.20.2[0m
+ [32m+[39m [1mpathable[0m[2m==0.4.4[0m
+ [32m+[39m [1mpycparser[0m[2m==2.22[0m
+ [32m+[39m [1mpydantic[0m[2m==2.11.7[0m
+ [32m+[39m [1mpydantic-core[0m[2m==2.33.2[0m
+ [32m+[39m [1mpydantic-settings[0m[2m==2.10.1[0m
+ [32m+[39m [1mpygments[0m[2m==2.19.2[0m
+ [32m+[39m [1mpyperclip[0m[2m==1.9.0[0m
+ [32m+[39m [1mpython-dotenv[0m[2m==1.1.1[0m
+ [32m+[39m [1mpython-multipart[0m[2m==0.0.20[0m
+ [32m+[39m [1mpyyaml[0m[2m==6.0.2[0m
+ [32m+[39m [1mreferencing[0m[2m==0.36.2[0m
+ [32m+[39m [1mrequests[0m[2m==2.32.5[0m
+ [32m+[39m [1mrfc3339-validator[0m[2m==0.1.4[0m
+ [32m+[39m [1mrich[0m[2m==14.1.0[0m
+ [32m+[39m [1mrich-rst[0m[2m==1.3.1[0m
+ [32m+[39m [1mrpds-py[0m[2m==0.27.0[0m
+ [32m+[39m [1msix[0m[2m==1.17.0[0m
+ [32m+[39m [1msniffio[0m[2m==1.3.1[0m
+ [32m+[39m [1msse-starlette[0m[2m==3.0.2[0m
+ [32m+[39m [1mstarlette[0m[2m==0.47.2[0m
+ [32m+[39m [1mtyping-extensions[0m[2m==4.14.1[0m
+ [32m+[39m [1mtyping-inspection[0m[2m==0.4.1[0m
+ [32m+[39m [1murllib3[0m[2m==2.5.0[0m
+ [32m+[39m [1muvicorn[0m[2m==0.35.0[0m
+ [32m+[39m [1mwerkzeug[0m[2m==3.1.1[0m
+</output_code>
+  <markdown>#### Client code</markdown>
+  <markdown>Now let's create the client code. We are going to create a client with everything we have discussed above, which will run the four server tools and display the progress of each one.</markdown>
+  <input_code>%%writefile MCP_streamable_client/client.py
+
+#!/usr/bin/env python3
+"""
+MCP client for streaming and partial results.
+Shows how to receive and handle partial results from the server.
+"""
+
+import asyncio
+import json
+import time
+from typing import Any, Dict, List, Optional, Callable
+from dataclasses import dataclass, field
+from datetime import datetime
+
+from fastmcp import Client
+from fastmcp.client.transports import StreamableHttpTransport
+
+@dataclass
+class ProgressUpdate:
+    """Represents a progress update."""
+    progress: float
+    total: float
+    message: str
+    percentage: float
+    timestamp: datetime = field(default_factory=datetime.now)
+
+
+@dataclass  
+class TaskResult:
+    """Represents the result of a task."""
+    task_name: str
+    result: Dict[str, Any]
+    progress_updates: List[ProgressUpdate]
+    duration: float
+    success: bool
+    error_message: Optional[str] = None
+
+
+class StreamingProgressHandler:
+    """Handles streaming progress in a visual way."""
+    
+    def __init__(self, task_name: str):
+        self.task_name = task_name
+        self.progress_updates: List[ProgressUpdate] = []
+        self.start_time = time.time()
+        
+    async def __call__(self, progress: float, total: float, message: str):
+        """Callback called when there are progress updates."""
+        percentage = (progress / total) * 100 if total &gt; 0 else 0
+        
+        update = ProgressUpdate(
+            progress=progress,
+            total=total,
+            message=message,
+            percentage=percentage
+        )
+        self.progress_updates.append(update)
+        
+        # Display progress visually
+        self._display_progress(update)
+    
+    def _display_progress(self, update: ProgressUpdate):
+        """Display progress visually."""
+        bar_length = 30
+        filled_length = int(bar_length * update.percentage / 100)
+        bar = '█' * filled_length + '░' * (bar_length - filled_length)
+        
+        elapsed = time.time() - self.start_time
+
+        print(f"\t📊 {self.task_name}: |{bar}| {update.percentage:.1f}% "
+              f"({update.progress:.0f}/{update.total:.0f}) - "
+              f"{update.message} [{elapsed:.1f}s]")
+        
+        if update.progress &gt;= update.total:
+            print()  # New line when complete
+
+
+class MCPStreamingClient:
+    """MCP client with streaming capabilities."""
+    
+    def __init__(self, server_url: str = "http://localhost:8000/mcp/"):
+        self.server_url = server_url
+        self.transport = None
+        self.client = None
+        
+    async def __aenter__(self):
+        """Initialize connection to the server."""
+            
+        self.transport = StreamableHttpTransport(
+            url=self.server_url,
+            sse_read_timeout=60.0  # Timeout for streaming
+        )
+        
+        self.client = Client(transport=self.transport)
+        await self.client.__aenter__()
+        return self
+        
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Close connection."""
+        if self.client:
+            await self.client.__aexit__(exc_type, exc_val, exc_tb)
+    
+    async def test_connection(self) -&gt; bool:
+        """Test connection to the server."""
+        try:
+            if not self.client:
+                print(f"❌ Client not initialized")
+                return False
+                
+            result = await self.client.ping()
+            print(f"✅ Connection established with the server")
+            return True
+        except Exception as e:
+            print(f"❌ Error de conexión: {e}")
+            return False
+    
+    async def call_streaming_tool(
+        self,
+        tool_name: str,
+        parameters: Dict[str, Any],
+        progress_callback: Optional[Callable] = None
+    ) -&gt; TaskResult:
+        """Call a tool with progress handling."""
+        start_time = time.time()
+        
+        try:
+            if not self.client:
+                raise Exception("Client not initialized")
+                
+            print(f"Executing {tool_name} tool:")
+            
+            result = await self.client.call_tool(
+                tool_name,
+                parameters,
+                progress_handler=progress_callback
+            )
+            
+            duration = time.time() - start_time
+            
+            # FastMCP returns a CallToolResult object with content attribute
+            result_data = result.content if hasattr(result, 'content') else result
+            
+            # If result_data is a list of TextContent, extract the text
+            if isinstance(result_data, list) and len(result_data) &gt; 0:
+                # Handle list of TextContent objects
+                if hasattr(result_data[0], 'text'):
+                    result_data = result_data[0].text
+            
+            # If result_data is string, try to parse it as JSON
+            if isinstance(result_data, str):
+                try:
+                    result_data = json.loads(result_data)
+                except json.JSONDecodeError:
+                    result_data = {"output": result_data}
+            
+            return TaskResult(
+                task_name=tool_name,
+                result=result_data,
+                progress_updates=getattr(progress_callback, 'progress_updates', []),
+                duration=duration,
+                success=True
+            )
+            
+        except Exception as e:
+            duration = time.time() - start_time
+            
+            return TaskResult(
+                task_name=tool_name,
+                result={},
+                progress_updates=getattr(progress_callback, 'progress_updates', []),
+                duration=duration,
+                success=False,
+                error_message=str(e)
+            )
+    
+    async def list_available_tools(self) -&gt; List[str]:
+        """List available tools on the server."""
+        try:
+            if not self.client:
+                print(f"❌ Client not initialized")
+                return []
+                
+            tools = await self.client.list_tools()
+            # FastMCP returns a list of tools directly
+            if isinstance(tools, list):
+                return [tool.name for tool in tools]
+            # If it has attribute tools
+            elif hasattr(tools, 'tools'):
+                return [tool.name for tool in tools.tools]
+            else:
+                return []
+        except Exception as e:
+            print(f"❌ Error listing tools: {e}")
+            return []
+
+
+async def demo_long_running_task(client: MCPStreamingClient) -&gt; TaskResult:
+    """Demo of long running task with progress."""
+    print("\n" + "="*60)
+    print("📋 DEMO: Long Running Task with Progress")
+    print("="*60)
+    
+    progress_handler = StreamingProgressHandler("Long Running Task")
+    
+    result = await client.call_streaming_tool(
+        "long_running_task",
+        {"name": "Data Processing", "steps": 8},
+        progress_callback=progress_handler
+    )
+    
+    if result.success:
+        print(f"✅ Task completed in {result.duration:.2f}s")
+        print(f"📊 Progress updates received: {len(result.progress_updates)}")
+        # Safe handling of the result
+        status = result.result.get('status', 'N/A') if isinstance(result.result, dict) else 'N/A'
+        print(f"📋 Result: {status}")
+    else:
+        print(f"❌ Task failed: {result.error_message}")
+    
+    return result
+
+
+async def demo_data_processing(client: MCPStreamingClient) -&gt; TaskResult:
+    """Demo of data processing."""
+    print("\n" + "="*60)
+    print("💾 DEMO: Data Processing")
+    print("="*60)
+    
+    progress_handler = StreamingProgressHandler("Procesamiento")
+    
+    result = await client.call_streaming_tool(
+        "streaming_data_processor",
+        {"data_size": 50},
+        progress_callback=progress_handler
+    )
+    
+    if result.success:
+        print(f"✅ Processing completed in {result.duration:.2f}s")
+        # Safe handling of the result
+        total = result.result.get('total_processed', 0) if isinstance(result.result, dict) else 0
+        print(f"📊 Processed elements: {total}")
+    else:
+        print(f"❌ Processing failed: {result.error_message}")
+    
+    return result
+
+
+async def demo_file_upload(client: MCPStreamingClient) -&gt; TaskResult:
+    """Demo of file upload."""
+    print("\n" + "="*60)
+    print("📤 DEMO: File Upload")
+    print("="*60)
+    
+    progress_handler = StreamingProgressHandler("File Upload")
+    
+    result = await client.call_streaming_tool(
+        "file_upload_simulation",
+        {"file_count": 3},
+        progress_callback=progress_handler
+    )
+    
+    if result.success:
+        print(f"✅ Upload completed in {result.duration:.2f}s")
+        # Safe handling of the result
+        count = result.result.get('uploaded_count', 0) if isinstance(result.result, dict) else 0
+        print(f"📁 Uploaded files: {count}")
+    else:
+        print(f"❌ Upload failed: {result.error_message}")
+    
+    return result
+
+
+async def demo_realtime_monitoring(client: MCPStreamingClient) -&gt; TaskResult:
+    """Demo of real-time monitoring."""
+    print("\n" + "="*60)
+    print("📡 DEMO: Real-time Monitoring")
+    print("="*60)
+    
+    progress_handler = StreamingProgressHandler("Monitoring")
+    
+    result = await client.call_streaming_tool(
+        "realtime_monitoring",
+        {"duration_seconds": 20},
+        progress_callback=progress_handler
+    )
+    
+    if result.success:
+        print(f"✅ Monitoring completed in {result.duration:.2f}s")
+        # Safe handling of the result
+        if isinstance(result.result, dict):
+            print(f"📊 Average CPU: {result.result.get('avg_cpu', 0)}%")
+            print(f"💾 Average memory: {result.result.get('avg_memory', 0)}%")
+        else:
+            print(f"📊 Result: {result.result}")
+    else:
+        print(f"❌ Monitoring failed: {result.error_message}")
+    
+    return result
+
+
+def print_summary(results: List[TaskResult]):
+    """Print summary of all tasks."""
+    print("\n" + "="*100)
+    print("📈 EXECUTION SUMMARY")
+    print("="*100)
+    
+    for result in results:
+        status = "\t✅ SUCCESS" if result.success else "\t❌ FAILURE"
+        print(f"{status} {result.task_name}: {result.duration:.2f}s "
+              f"({len(result.progress_updates)} updates)")
+    
+    total_time = sum(r.duration for r in results)
+    successful = len([r for r in results if r.success])
+    
+    print(f"\n📊 Total: {successful}/{len(results)} successful tasks")
+    print(f"⏱️  Total time: {total_time:.2f}s")
+
+
+async def run_streaming_demo():
+    """Run complete streaming client demo."""
+    print("MCP Streaming Client")
+    print("="*100)
+    
+    try:
+        async with MCPStreamingClient() as client:
+            # Test connection
+            if not await client.test_connection():
+                print("❌ Could not connect to the server. Make sure it's running.")
+                return
+            
+            # List tools
+            tools = await client.list_available_tools()
+            print("🔧 Available tools:")
+            for tool in tools:
+                print(f"\t * {tool}")
+            
+            # Run demos
+            results = []
+            
+            # Demo 1: Long running task
+            result1 = await demo_long_running_task(client)
+            results.append(result1)
+            
+            await asyncio.sleep(1)  # Pause between demos
+            
+            # Demo 2: Data processing  
+            result2 = await demo_data_processing(client)
+            results.append(result2)
+            
+            await asyncio.sleep(1)
+            
+            # Demo 3: File upload
+            result3 = await demo_file_upload(client)
+            results.append(result3)
+            
+            await asyncio.sleep(1)
+            
+            # Demo 4: Real-time monitoring
+            result4 = await demo_realtime_monitoring(client)
+            results.append(result4)
+            
+            # Final summary
+            print_summary(results)
+            
+    except Exception as e:
+        print(f"❌ Error in the demo: {e}")
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(run_streaming_demo())
+    except KeyboardInterrupt:
+        print("\n⏹️  Demo interrupted by the user")
+    except Exception as e:
+        print(f"❌ Error running demo: {e}")</input_code>
+  <output_code>Writing MCP_streamable_client/client.py
+</output_code>
+  <markdown>## Execution</markdown>
+  <markdown>Now that we have the server and the client, we run them.</markdown>
+  <markdown>First, we set up the server.</markdown>
+  <input_code>!cd MCP_streamable_server &amp;&amp; source .venv/bin/activate &amp;&amp; uv run server.py</input_code>
+  <output_code>🚀 Starting MCP streaming server on 127.0.0.1:8000
+✅ Server ready at http://127.0.0.1:8000/mcp/
+📡 Available tools:
+  - long_running_task: Long running task with progress
+  - streaming_data_processor: Data processing
+  - file_upload_simulation: File upload simulation
+  - realtime_monitoring: Real-time monitoring
+[32mINFO[0m:     Started server process [[36m62601[0m]
+[32mINFO[0m:     Waiting for application startup.
+[32mINFO[0m:     Application startup complete.
+[32mINFO[0m:     Uvicorn running on [1mhttp://127.0.0.1:8000[0m (Press CTRL+C to quit)
+
+
+</output_code>
+  <markdown>Once it is up and running, we execute the client.</markdown>
+  <input_code>!cd MCP_streamable_client &amp;&amp; source .venv/bin/activate &amp;&amp; uv run client.py</input_code>
+  <output_code>MCP Streaming Client
+====================================================================================================
+✅ Connection established with the server
+🔧 Available tools:
+	 * long_running_task
+	 * streaming_data_processor
+	 * file_upload_simulation
+	 * realtime_monitoring
+
+============================================================
+📋 DEMO: Long Running Task with Progress
+============================================================
+Executing long_running_task tool:
+[2;36m[08/23/25 11:19:20][0m[2;36m [0m[34mINFO    [0m Server log: 🚀 Initializing Data      ]8;id=664702;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py\[2mlogging.py[0m]8;;\[2m:[0m]8;id=102228;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py#40\[2m40[0m]8;;\
+[2;36m                    [0m         Processing with [1;36m8[0m steps[33m...[0m            [2m             [0m
+	📊 Long Running Task: |███░░░░░░░░░░░░░░░░░░░░░░░░░░░| 12.5% (1/8) - Step 1/8 - Step 1: Processed Data Processing [1.0s]
+	📊 Long Running Task: |███████░░░░░░░░░░░░░░░░░░░░░░░| 25.0% (2/8) - Step 2/8 - Step 2: Processed Data Processing [2.0s]
+	📊 Long Running Task: |███████████░░░░░░░░░░░░░░░░░░░| 37.5% (3/8) - Step 3/8 - Step 3: Processed Data Processing [3.0s]
+	📊 Long Running Task: |███████████████░░░░░░░░░░░░░░░| 50.0% (4/8) - Step 4/8 - Step 4: Processed Data Processing [4.0s]
+	📊 Long Running Task: |██████████████████░░░░░░░░░░░░| 62.5% (5/8) - Step 5/8 - Step 5: Processed Data Processing [5.0s]
+	📊 Long Running Task: |██████████████████████░░░░░░░░| 75.0% (6/8) - Step 6/8 - Step 6: Processed Data Processing [6.0s]
+	📊 Long Running Task: |██████████████████████████░░░░| 87.5% (7/8) - Step 7/8 - Step 7: Processed Data Processing [7.0s]
+	📊 Long Running Task: |██████████████████████████████| 100.0% (8/8) - Step 8/8 - Step 8: Processed Data Processing [8.0s]
+
+[2;36m[08/23/25 11:19:28][0m[2;36m [0m[34mINFO    [0m Server log: 🎉 Data Processing        ]8;id=444005;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py\[2mlogging.py[0m]8;;\[2m:[0m]8;id=432539;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py#40\[2m40[0m]8;;\
+[2;36m                    [0m         completed successfully!               [2m             [0m
+✅ Task completed in 8.03s
+📊 Progress updates received: 8
+📋 Result: completed
+
+============================================================
+💾 DEMO: Data Processing
+============================================================
+Executing streaming_data_processor tool:
+[2;36m[08/23/25 11:19:29][0m[2;36m [0m[34mINFO    [0m Server log: 📊 Procesando [1;36m50[0m          ]8;id=212017;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py\[2mlogging.py[0m]8;;\[2m:[0m]8;id=588573;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py#40\[2m40[0m]8;;\
+[2;36m                    [0m         elementos de datos[33m...[0m                 [2m             [0m
+	📊 Procesamiento: |███░░░░░░░░░░░░░░░░░░░░░░░░░░░| 10.0% (5/50) - Processed 5/50 items [0.5s]
+	📊 Procesamiento: |██████░░░░░░░░░░░░░░░░░░░░░░░░| 20.0% (10/50) - Processed 10/50 items [1.0s]
+	📊 Procesamiento: |█████████░░░░░░░░░░░░░░░░░░░░░| 30.0% (15/50) - Processed 15/50 items [1.5s]
+	📊 Procesamiento: |████████████░░░░░░░░░░░░░░░░░░| 40.0% (20/50) - Processed 20/50 items [2.0s]
+	📊 Procesamiento: |███████████████░░░░░░░░░░░░░░░| 50.0% (25/50) - Processed 25/50 items [2.5s]
+	📊 Procesamiento: |██████████████████░░░░░░░░░░░░| 60.0% (30/50) - Processed 30/50 items [3.0s]
+	📊 Procesamiento: |█████████████████████░░░░░░░░░| 70.0% (35/50) - Processed 35/50 items [3.5s]
+	📊 Procesamiento: |████████████████████████░░░░░░| 80.0% (40/50) - Processed 40/50 items [4.0s]
+	📊 Procesamiento: |███████████████████████████░░░| 90.0% (45/50) - Processed 45/50 items [4.5s]
+	📊 Procesamiento: |██████████████████████████████| 100.0% (50/50) - Processed 50/50 items [5.0s]
+
+[2;36m[08/23/25 11:19:34][0m[2;36m [0m[34mINFO    [0m Server log: ✅ Processing completed:  ]8;id=495673;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py\[2mlogging.py[0m]8;;\[2m:[0m]8;id=761216;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py#40\[2m40[0m]8;;\
+[2;36m                    [0m         [1;36m50[0m items                              [2m             [0m
+✅ Processing completed in 5.03s
+📊 Processed elements: 50
+
+============================================================
+📤 DEMO: File Upload
+============================================================
+Executing file_upload_simulation tool:
+[2;36m[08/23/25 11:19:35][0m[2;36m [0m[34mINFO    [0m Server log: 📤 Starting upload of [1;36m3[0m   ]8;id=903659;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py\[2mlogging.py[0m]8;;\[2m:[0m]8;id=90481;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py#40\[2m40[0m]8;;\
+[2;36m                    [0m         files[33m...[0m                              [2m             [0m
+[2;36m                   [0m[2;36m [0m[34mINFO    [0m Server log: Uploading file_1.dat[33m...[0m   ]8;id=894672;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py\[2mlogging.py[0m]8;;\[2m:[0m]8;id=979097;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py#40\[2m40[0m]8;;\
+	📊 File Upload: |█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░| 3.3% (1/30) - Uploading file_1.dat - chunk 1/10 [0.2s]
+	📊 File Upload: |██░░░░░░░░░░░░░░░░░░░░░░░░░░░░| 6.7% (2/30) - Uploading file_1.dat - chunk 2/10 [0.4s]
+	📊 File Upload: |███░░░░░░░░░░░░░░░░░░░░░░░░░░░| 10.0% (3/30) - Uploading file_1.dat - chunk 3/10 [0.6s]
+	📊 File Upload: |████░░░░░░░░░░░░░░░░░░░░░░░░░░| 13.3% (4/30) - Uploading file_1.dat - chunk 4/10 [0.8s]
+	📊 File Upload: |████░░░░░░░░░░░░░░░░░░░░░░░░░░| 16.7% (5/30) - Uploading file_1.dat - chunk 5/10 [1.0s]
+	📊 File Upload: |██████░░░░░░░░░░░░░░░░░░░░░░░░| 20.0% (6/30) - Uploading file_1.dat - chunk 6/10 [1.2s]
+	📊 File Upload: |███████░░░░░░░░░░░░░░░░░░░░░░░| 23.3% (7/30) - Uploading file_1.dat - chunk 7/10 [1.4s]
+	📊 File Upload: |████████░░░░░░░░░░░░░░░░░░░░░░| 26.7% (8/30) - Uploading file_1.dat - chunk 8/10 [1.6s]
+	📊 File Upload: |█████████░░░░░░░░░░░░░░░░░░░░░| 30.0% (9/30) - Uploading file_1.dat - chunk 9/10 [1.8s]
+	📊 File Upload: |█████████░░░░░░░░░░░░░░░░░░░░░| 33.3% (10/30) - Uploading file_1.dat - chunk 10/10 [2.0s]
+[2;36m[08/23/25 11:19:37][0m[2;36m [0m[34mINFO    [0m Server log: Uploading file_2.dat[33m...[0m   ]8;id=537276;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py\[2mlogging.py[0m]8;;\[2m:[0m]8;id=555236;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py#40\[2m40[0m]8;;\
+	📊 File Upload: |███████████░░░░░░░░░░░░░░░░░░░| 36.7% (11/30) - Uploading file_2.dat - chunk 1/10 [2.2s]
+	📊 File Upload: |████████████░░░░░░░░░░░░░░░░░░| 40.0% (12/30) - Uploading file_2.dat - chunk 2/10 [2.4s]
+	📊 File Upload: |█████████████░░░░░░░░░░░░░░░░░| 43.3% (13/30) - Uploading file_2.dat - chunk 3/10 [2.6s]
+	📊 File Upload: |██████████████░░░░░░░░░░░░░░░░| 46.7% (14/30) - Uploading file_2.dat - chunk 4/10 [2.8s]
+	📊 File Upload: |███████████████░░░░░░░░░░░░░░░| 50.0% (15/30) - Uploading file_2.dat - chunk 5/10 [3.0s]
+	📊 File Upload: |████████████████░░░░░░░░░░░░░░| 53.3% (16/30) - Uploading file_2.dat - chunk 6/10 [3.2s]
+	📊 File Upload: |█████████████████░░░░░░░░░░░░░| 56.7% (17/30) - Uploading file_2.dat - chunk 7/10 [3.4s]
+	📊 File Upload: |██████████████████░░░░░░░░░░░░| 60.0% (18/30) - Uploading file_2.dat - chunk 8/10 [3.6s]
+	📊 File Upload: |██████████████████░░░░░░░░░░░░| 63.3% (19/30) - Uploading file_2.dat - chunk 9/10 [3.8s]
+	📊 File Upload: |███████████████████░░░░░░░░░░░| 66.7% (20/30) - Uploading file_2.dat - chunk 10/10 [4.0s]
+[2;36m[08/23/25 11:19:39][0m[2;36m [0m[34mINFO    [0m Server log: Uploading file_3.dat[33m...[0m   ]8;id=170215;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py\[2mlogging.py[0m]8;;\[2m:[0m]8;id=598020;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py#40\[2m40[0m]8;;\
+	📊 File Upload: |█████████████████████░░░░░░░░░| 70.0% (21/30) - Uploading file_3.dat - chunk 1/10 [4.2s]
+	📊 File Upload: |██████████████████████░░░░░░░░| 73.3% (22/30) - Uploading file_3.dat - chunk 2/10 [4.4s]
+	📊 File Upload: |███████████████████████░░░░░░░| 76.7% (23/30) - Uploading file_3.dat - chunk 3/10 [4.6s]
+	📊 File Upload: |████████████████████████░░░░░░| 80.0% (24/30) - Uploading file_3.dat - chunk 4/10 [4.8s]
+	📊 File Upload: |█████████████████████████░░░░░| 83.3% (25/30) - Uploading file_3.dat - chunk 5/10 [5.0s]
+	📊 File Upload: |██████████████████████████░░░░| 86.7% (26/30) - Uploading file_3.dat - chunk 6/10 [5.2s]
+	📊 File Upload: |███████████████████████████░░░| 90.0% (27/30) - Uploading file_3.dat - chunk 7/10 [5.4s]
+	📊 File Upload: |████████████████████████████░░| 93.3% (28/30) - Uploading file_3.dat - chunk 8/10 [5.6s]
+	📊 File Upload: |█████████████████████████████░| 96.7% (29/30) - Uploading file_3.dat - chunk 9/10 [5.9s]
+	📊 File Upload: |██████████████████████████████| 100.0% (30/30) - Uploading file_3.dat - chunk 10/10 [6.1s]
+
+[2;36m[08/23/25 11:19:41][0m[2;36m [0m[34mINFO    [0m Server log: 🎉 Upload completed: [1;36m3[0m    ]8;id=658055;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py\[2mlogging.py[0m]8;;\[2m:[0m]8;id=313220;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py#40\[2m40[0m]8;;\
+[2;36m                    [0m         files                                 [2m             [0m
+✅ Upload completed in 6.06s
+📁 Uploaded files: 3
+
+============================================================
+📡 DEMO: Real-time Monitoring
+============================================================
+Executing realtime_monitoring tool:
+[2;36m[08/23/25 11:19:42][0m[2;36m [0m[34mINFO    [0m Server log: 📡 Starting monitoring    ]8;id=50717;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py\[2mlogging.py[0m]8;;\[2m:[0m]8;id=158771;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py#40\[2m40[0m]8;;\
+[2;36m                    [0m         for [1;36m20[0m seconds[33m...[0m                     [2m             [0m
+	📊 Monitoring: |███░░░░░░░░░░░░░░░░░░░░░░░░░░░| 10.0% (1/10) - Monitoring active - CPU: 57%, MEM: 62%, NET: 211KB/s [0.0s]
+	📊 Monitoring: |██████░░░░░░░░░░░░░░░░░░░░░░░░| 20.0% (2/10) - Monitoring active - CPU: 31%, MEM: 48%, NET: 675KB/s [2.0s]
+	📊 Monitoring: |█████████░░░░░░░░░░░░░░░░░░░░░| 30.0% (3/10) - Monitoring active - CPU: 45%, MEM: 71%, NET: 721KB/s [4.0s]
+	📊 Monitoring: |████████████░░░░░░░░░░░░░░░░░░| 40.0% (4/10) - Monitoring active - CPU: 62%, MEM: 87%, NET: 879KB/s [6.0s]
+	📊 Monitoring: |███████████████░░░░░░░░░░░░░░░| 50.0% (5/10) - Monitoring active - CPU: 29%, MEM: 55%, NET: 120KB/s [8.0s]
+	📊 Monitoring: |██████████████████░░░░░░░░░░░░| 60.0% (6/10) - Monitoring active - CPU: 80%, MEM: 77%, NET: 819KB/s [10.0s]
+	📊 Monitoring: |█████████████████████░░░░░░░░░| 70.0% (7/10) - Monitoring active - CPU: 59%, MEM: 69%, NET: 438KB/s [12.0s]
+	📊 Monitoring: |████████████████████████░░░░░░| 80.0% (8/10) - Monitoring active - CPU: 73%, MEM: 68%, NET: 774KB/s [14.0s]
+	📊 Monitoring: |███████████████████████████░░░| 90.0% (9/10) - Monitoring active - CPU: 68%, MEM: 42%, NET: 528KB/s [16.0s]
+	📊 Monitoring: |██████████████████████████████| 100.0% (10/10) - Monitoring active - CPU: 69%, MEM: 42%, NET: 707KB/s [18.0s]
+
+[2;36m[08/23/25 11:20:02][0m[2;36m [0m[34mINFO    [0m Server log: 📊 Monitoring completed:  ]8;id=795212;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py\[2mlogging.py[0m]8;;\[2m:[0m]8;id=762919;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py#40\[2m40[0m]8;;\
+[2;36m                    [0m         [1;36m10[0m data points                        [2m             [0m
+✅ Monitoring completed in 20.03s
+📊 Average CPU: 57.3%
+💾 Average memory: 62.1%
+
+====================================================================================================
+📈 EXECUTION SUMMARY
+====================================================================================================
+	✅ SUCCESS long_running_task: 8.03s (8 updates)
+	✅ SUCCESS streaming_data_processor: 5.03s (10 updates)
+	✅ SUCCESS file_upload_simulation: 6.06s (30 updates)
+	✅ SUCCESS realtime_monitoring: 20.03s (10 updates)
+
+📊 Total: 4/4 successful tasks
+⏱️  Total time: 39.14s
+</output_code>
+  <markdown>As you can see, we have obtained from the server the process for each of the tool executions.</markdown>
+</notebook>

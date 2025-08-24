@@ -1,0 +1,1286 @@
+<section class="section-block-markdown-cell">
+<h1 id="Streaming de informacao no MCP">Streaming de informação no MCP<a class="anchor-link" href="#Streaming de informacao no MCP">¶</a></h1>
+</section>
+<section class="section-block-markdown-cell">
+<p>Quando usamos o MCP, pode ser que a tarefa que estamos executando seja longa e queiramos que o cliente possa ver o progresso da tarefa. Embora no post sobre <a href="https://www.maximofn.com/pt-br/mcp">MCP</a> tenhamos visto uma maneira de fazer isso usando <code>Context</code>, como o protocolo MCP evoluiu, agora podemos usá-lo de uma maneira melhor.</p>
+</section>
+<section class="section-block-markdown-cell">
+<h2 id="Servidor">Servidor<a class="anchor-link" href="#Servidor">¶</a></h2>
+</section>
+<section class="section-block-markdown-cell">
+<p>No post do <a href="https://www.maximofn.com/pt-br/mcp">MCP</a>, vimos que podíamos criar um servidor MCP usando</p>
+</section>
+<section class="section-block-markdown-cell">
+<p>Criar um objeto mcp da classe FastMCP</p>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python">from fastmcp import FastMCP<br><br># Create FastMCP server<br>mcp = FastMCP(<br>&#x20;&#x20;name="MCP server name",<br>&#x20;&#x20;instructions="MCP server instructions",<br>)</code></pre></div>
+      </section>
+</section>
+<section class="section-block-markdown-cell">
+<p>Criar tools adicionando decoradores às funções</p>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python">@mcp.tool<br>def tool_name(param1: str, param2: int) -&gt; str:<br>&#x20;&#x20;return "result"</code></pre></div>
+      </section>
+</section>
+<section class="section-block-markdown-cell">
+<p>E executar o servidor usando o método <code>run</code>. Além disso, poderíamos definir http como camada de transporte.</p>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python">mcp.run(<br>&#x20;&#x20;transport="http",<br>&#x20;&#x20;host="0.0.0.0",<br>&#x20;&#x20;port=8000<br>)</code></pre></div>
+      </section>
+</section>
+<section class="section-block-markdown-cell">
+<p>Agora importamos a função <code>create_streamable_http_app</code> do pacote <code>fastmcp.server.http</code> e a usamos para criar um aplicativo HTTP que suporta streaming.</p>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python">from fastmcp.server.http import create_streamable_http_app<br><br>app = create_streamable_http_app(<br>&#x20;&#x20;server=mcp,<br>&#x20;&#x20;streamable_http_path="/mcp/",<br>&#x20;&#x20;stateless_http=False,  # Keep session state<br>&#x20;&#x20;debug=True<br>)</code></pre></div>
+      </section>
+</section>
+<section class="section-block-markdown-cell">
+<p>Criamos um servidor com <code>uvicorn</code></p>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python">import uvicorn<br><br># Configure uvicorn<br>config = uvicorn.Config(<br>&#x20;&#x20;app=app,<br>&#x20;&#x20;host=host,<br>&#x20;&#x20;port=port,<br>&#x20;&#x20;log_level="info",<br>&#x20;&#x20;access_log=False<br>)<br><br># Run server<br>server = uvicorn.Server(config)<br>await server.serve()</code></pre></div>
+      </section>
+</section>
+<section class="section-block-markdown-cell">
+<p>E o executamos de forma assíncrona.</p>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python">import asyncio<br><br>asyncio.run(run_streaming_server())</code></pre></div>
+      </section>
+</section>
+<section class="section-block-markdown-cell">
+<h3 id="Implementacao do servidor">Implementação do servidor<a class="anchor-link" href="#Implementacao do servidor">¶</a></h3>
+</section>
+<section class="section-block-markdown-cell">
+<p>Agora que explicamos como criar o servidor, vamos criar um.</p>
+</section>
+<section class="section-block-markdown-cell">
+<h4 id="Criar ambiente virtual para o servidor">Criar ambiente virtual para o servidor<a class="anchor-link" href="#Criar ambiente virtual para o servidor">¶</a></h4>
+</section>
+<section class="section-block-markdown-cell">
+<p>Primeiro criamos a pasta onde vamos desenvolvê-lo.</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="err">!</span><span class="n">mkdir</span> <span class="n">MCP_streamable_server</span>
+</pre></div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<p>Criamos o ambiente com <code>uv</code></p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="err">!</span><span class="n">cd</span> <span class="n">MCP_streamable_server</span> <span class="o">&amp;</span></span><span class="o">&amp;</span> <span class="n">uv</span> <span class="n">init</span> <span class="o">.</span>
+</pre></div>
+</div>
+</section>
+<section class="section-block-code-cell-">
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>Initialized project `mcp-streamable-server` at `/Users/macm1/Documents/web/portafolio/posts/MCP_streamable_server`
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<p>Iniciamos o ambiente</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="err">!</span><span class="n">cd</span> <span class="n">MCP_streamable_server</span> <span class="o">&amp;</span></span><span class="o">&amp;</span> <span class="n">uv</span> <span class="n">venv</span>
+</pre></div>
+</div>
+</section>
+<section class="section-block-code-cell-">
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>Using CPython 3.12.8
+Creating virtual environment at: .venv
+Activate with: source .venv/bin/activate
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<p>Instalamos as bibliotecas necessárias</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="err">!</span><span class="n">cd</span> <span class="n">MCP_streamable_server</span> <span class="o">&amp;</span></span><span class="o">&amp;</span> <span class="n">uv</span> <span class="n">add</span> <span class="n">fastmcp</span> <span class="n">uvicorn</span>
+</pre></div>
+</div>
+</section>
+<section class="section-block-code-cell-">
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>Resolved 64 packages in 673ms                                        
+⠙ Preparing packages... (0/4)                                                   ⠋ Preparing packages... (0/0)                                                   
+⠙ Preparing packages... (0/4)--------------     0 B/87.93 KiB           
+⠙ Preparing packages... (0/4)--------------     0 B/87.93 KiB           
+requests             ------------------------------     0 B/63.22 KiB
+⠙ Preparing packages... (0/4)--------------     0 B/87.93 KiB           
+requests             ------------------------------     0 B/63.22 KiB
+⠙ Preparing packages... (0/4)-------------- 16.00 KiB/87.93 KiB         
+requests             ------------------------------ 14.88 KiB/63.22 KiB
+⠙ Preparing packages... (0/4)-------------- 16.00 KiB/87.93 KiB         
+requests             ------------------------------ 14.88 KiB/63.22 KiB
+⠙ Preparing packages... (0/4)-------------- 32.00 KiB/87.93 KiB         
+requests             ------------------------------ 14.88 KiB/63.22 KiB
+⠙ Preparing packages... (0/4)m------------- 48.00 KiB/87.93 KiB         
+requests             ------------------------------ 14.88 KiB/63.22 KiB
+⠙ Preparing packages... (0/4)---------- 64.00 KiB/87.93 KiB         
+requests             ------------------------------ 14.88 KiB/63.22 KiB
+⠙ Preparing packages... (0/4)---------- 80.00 KiB/87.93 KiB         
+requests             ------------------------------ 30.88 KiB/63.22 KiB
+⠙ Preparing packages... (0/4)---------- 80.00 KiB/87.93 KiB         
+requests             ------------------------------ 30.88 KiB/63.22 KiB
+⠙ Preparing packages... (0/4)---------- 87.93 KiB/87.93 KiB         
+⠙ Preparing packages... (0/4)-------------- 30.88 KiB/63.22 KiB         
+⠙ Preparing packages... (0/4)---------- 46.88 KiB/63.22 KiB         
+⠙ Preparing packages... (0/4)---------- 62.88 KiB/63.22 KiB         
+⠙ Preparing packages... (0/4)---------- 62.88 KiB/63.22 KiB         
+requests             ------------------------------ 62.88 KiB/63.22 KiB
+⠙ Preparing packages... (0/4)--------------     0 B/157.71 KiB          
+requests             ------------------------------ 63.22 KiB/63.22 KiB
+⠙ Preparing packages... (0/4)--------------     0 B/157.71 KiB          
+⠙ Preparing packages... (0/4)--------------     0 B/157.71 KiB          
+⠙ Preparing packages... (0/4)-------------- 16.00 KiB/157.71 KiB        
+⠙ Preparing packages... (0/4)-------------- 16.00 KiB/157.71 KiB        
+lazy-object-proxy    ------------------------------     0 B/26.12 KiB
+⠙ Preparing packages... (0/4)-------------- 16.00 KiB/157.71 KiB        
+lazy-object-proxy    ------------------------------ 16.00 KiB/26.12 KiB
+⠙ Preparing packages... (0/4)-------------- 16.00 KiB/157.71 KiB        
+Prepared 4 packages in 180ms                                                 
+Installed 61 packages in 140mstor==0.6.3                    
+ + annotated-types==0.7.0
+ + anyio==4.10.0
+ + attrs==25.3.0
+ + authlib==1.6.1
+ + certifi==2025.8.3
+ + cffi==1.17.1
+ + charset-normalizer==3.4.3
+ + click==8.2.1
+ + cryptography==45.0.6
+ + cyclopts==3.22.5
+ + dnspython==2.7.0
+ + docstring-parser==0.17.0
+ + docutils==0.22
+ + email-validator==2.2.0
+ + exceptiongroup==1.3.0
+ + fastmcp==2.11.3
+ + h11==0.16.0
+ + httpcore==1.0.9
+ + httpx==0.28.1
+ + httpx-sse==0.4.1
+ + idna==3.10
+ + isodate==0.7.2
+ + jsonschema==4.25.1
+ + jsonschema-path==0.3.4
+ + jsonschema-specifications==2025.4.1
+ + lazy-object-proxy==1.12.0
+ + markdown-it-py==4.0.0
+ + markupsafe==3.0.2
+ + mcp==1.13.1
+ + mdurl==0.1.2
+ + more-itertools==10.7.0
+ + openapi-core==0.19.5
+ + openapi-pydantic==0.5.1
+ + openapi-schema-validator==0.6.3
+ + openapi-spec-validator==0.7.2
+ + parse==1.20.2
+ + pathable==0.4.4
+ + pycparser==2.22
+ + pydantic==2.11.7
+ + pydantic-core==2.33.2
+ + pydantic-settings==2.10.1
+ + pygments==2.19.2
+ + pyperclip==1.9.0
+ + python-dotenv==1.1.1
+ + python-multipart==0.0.20
+ + pyyaml==6.0.2
+ + referencing==0.36.2
+ + requests==2.32.5
+ + rfc3339-validator==0.1.4
+ + rich==14.1.0
+ + rich-rst==1.3.1
+ + rpds-py==0.27.0
+ + six==1.17.0
+ + sniffio==1.3.1
+ + sse-starlette==3.0.2
+ + starlette==0.47.2
+ + typing-extensions==4.14.1
+ + typing-inspection==0.4.1
+ + urllib3==2.5.0
+ + uvicorn==0.35.0
+ + werkzeug==3.1.1
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<h4 id="Codigo do servidor">Código do servidor<a class="anchor-link" href="#Codigo do servidor">¶</a></h4>
+</section>
+<section class="section-block-markdown-cell">
+<p>Agora vamos criar o código do servidor. Vamos criar um servidor com tudo o que falamos anteriormente e com quatro tools que simulam tarefas muito longas.</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="o">%%</span><span class="n">writefile</span> <span class="n">MCP_streamable_server</span><span class="o">/</span><span class="n">server</span><span class="o">.</span><span class="n">py</span>
+<span class="w"> </span>
+<span class="c1">#!/usr/bin/env python3</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">MCP server for streaming and partial results.</span>
+<span class="sd">Shows how to send real-time progress updates to the client.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="w"> </span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastmcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastMCP</span><span class="p">,</span> <span class="n">Context</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastmcp.server.http</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_streamable_http_app</span>
+<span class="w"> </span>
+
+<span class="c1"># Create MCP server instance</span>
+<span class="n">mcp</span> <span class="o">=</span> <span class="n">FastMCP</span><span class="p">(</span>
+<span class="w">    </span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Streaming Server&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">instructions</span><span class="o">=</span><span class="s2">&quot;Streaming Server with real-time progress updates&quot;</span>
+<span class="p">)</span>
+<span class="w"> </span>
+
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">long_running_task</span><span class="p">(</span>
+<span class="w">    </span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Task&quot;</span><span class="p">,</span> 
+<span class="w">    </span><span class="n">steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+<span class="w">    </span><span class="n">context</span><span class="p">:</span> <span class="n">Context</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Long running task with real-time progress updates.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        name: Task name</span>
+<span class="sd">        steps: Number of steps to execute</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<span class="w">    </span><span class="k">if</span> <span class="n">context</span><span class="p">:</span>
+<span class="w">        </span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;🚀 Initializing </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> with </span><span class="si">{</span><span class="n">steps</span><span class="si">}</span><span class="s2"> steps...&quot;</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">steps</span><span class="p">):</span>
+<span class="w">        </span><span class="c1"># Simulate work</span>
+<span class="w">        </span><span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">        </span>
+<span class="w">        </span><span class="c1"># Create partial result</span>
+<span class="w">        </span><span class="n">partial_result</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Step </span><span class="si">{</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">: Processed </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="w">        </span><span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">partial_result</span><span class="p">)</span>
+<span class="w">        </span>
+<span class="w">        </span><span class="c1"># Report progress</span>
+<span class="w">        </span><span class="k">if</span> <span class="n">context</span><span class="p">:</span>
+<span class="w">            </span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">report_progress</span><span class="p">(</span>
+<span class="w">                </span><span class="n">progress</span><span class="o">=</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+<span class="w">                </span><span class="n">total</span><span class="o">=</span><span class="n">steps</span><span class="p">,</span>
+<span class="w">                </span><span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Step </span><span class="si">{</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">steps</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">partial_result</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="w">            </span><span class="p">)</span>
+<span class="w">            </span>
+<span class="w">            </span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✅ </span><span class="si">{</span><span class="n">partial_result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">if</span> <span class="n">context</span><span class="p">:</span>
+<span class="w">        </span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;🎉 </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> completed successfully!&quot;</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">return</span> <span class="p">{</span>
+<span class="w">        </span><span class="s2">&quot;task_name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;steps_completed&quot;</span><span class="p">:</span> <span class="n">steps</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;results&quot;</span><span class="p">:</span> <span class="n">results</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;completed&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w"> </span>
+
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">streaming_data_processor</span><span class="p">(</span>
+<span class="w">    </span><span class="n">data_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+<span class="w">    </span><span class="n">context</span><span class="p">:</span> <span class="n">Context</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Processes data sending real-time progress updates.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        data_size: Number of data items to process</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<span class="w">    </span><span class="k">if</span> <span class="n">context</span><span class="p">:</span>
+<span class="w">        </span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;📊 Procesando </span><span class="si">{</span><span class="n">data_size</span><span class="si">}</span><span class="s2"> elementos de datos...&quot;</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="n">processed</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="w">    </span><span class="n">batch_size</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">data_size</span> <span class="o">//</span> <span class="mi">10</span><span class="p">)</span>  <span class="c1"># Process in batches</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">data_size</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">):</span>
+<span class="w">        </span><span class="n">batch_end</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">data_size</span><span class="p">)</span>
+<span class="w">        </span>
+<span class="w">        </span><span class="c1"># Simulate batch processing</span>
+<span class="w">        </span><span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="w">        </span>
+<span class="w">        </span><span class="c1"># Process batch</span>
+<span class="w">        </span><span class="n">batch_results</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;item_</span><span class="si">{</span><span class="n">j</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">batch_end</span><span class="p">)]</span>
+<span class="w">        </span><span class="n">processed</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">batch_results</span><span class="p">)</span>
+<span class="w">        </span>
+<span class="w">        </span><span class="c1"># Report progress</span>
+<span class="w">        </span><span class="k">if</span> <span class="n">context</span><span class="p">:</span>
+<span class="w">            </span><span class="n">progress</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">processed</span><span class="p">)</span>
+<span class="w">            </span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">report_progress</span><span class="p">(</span>
+<span class="w">                </span><span class="n">progress</span><span class="o">=</span><span class="n">progress</span><span class="p">,</span>
+<span class="w">                </span><span class="n">total</span><span class="o">=</span><span class="n">data_size</span><span class="p">,</span>
+<span class="w">                </span><span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Processed </span><span class="si">{</span><span class="n">progress</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">data_size</span><span class="si">}</span><span class="s2"> items&quot;</span>
+<span class="w">            </span><span class="p">)</span>
+<span class="w">            </span>
+<span class="w">            </span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Batch processed: </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">batch_end</span><span class="o">-</span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">if</span> <span class="n">context</span><span class="p">:</span>
+<span class="w">        </span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✅ Processing completed: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">processed</span><span class="p">)</span><span class="si">}</span><span class="s2"> items&quot;</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">return</span> <span class="p">{</span>
+<span class="w">        </span><span class="s2">&quot;total_processed&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">processed</span><span class="p">),</span>
+<span class="w">        </span><span class="s2">&quot;processed_items&quot;</span><span class="p">:</span> <span class="n">processed</span><span class="p">[:</span><span class="mi">10</span><span class="p">],</span>  <span class="c1"># Show first 10 items</span>
+<span class="w">        </span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;completed&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w"> </span>
+
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">file_upload_simulation</span><span class="p">(</span>
+<span class="w">    </span><span class="n">file_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+<span class="w">    </span><span class="n">context</span><span class="p">:</span> <span class="n">Context</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Simulates file upload with progress updates.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        file_count: Number of files to upload</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<span class="w">    </span><span class="k">if</span> <span class="n">context</span><span class="p">:</span>
+<span class="w">        </span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;📤 Starting upload of </span><span class="si">{</span><span class="n">file_count</span><span class="si">}</span><span class="s2"> files...&quot;</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="n">uploaded_files</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">file_count</span><span class="p">):</span>
+<span class="w">        </span><span class="n">file_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;file_</span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">.dat&quot;</span>
+<span class="w">        </span>
+<span class="w">        </span><span class="k">if</span> <span class="n">context</span><span class="p">:</span>
+<span class="w">            </span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Uploading </span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+<span class="w">        </span>
+<span class="w">        </span><span class="c1"># Simulate upload by chunks</span>
+<span class="w">        </span><span class="n">chunks</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="w">        </span><span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">chunks</span><span class="p">):</span>
+<span class="w">            </span><span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.2</span><span class="p">)</span>  <span class="c1"># Simulate upload time</span>
+<span class="w">            </span>
+<span class="w">            </span><span class="k">if</span> <span class="n">context</span><span class="p">:</span>
+<span class="w">                </span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">report_progress</span><span class="p">(</span>
+<span class="w">                    </span><span class="n">progress</span><span class="o">=</span><span class="p">(</span><span class="n">i</span> <span class="o">*</span> <span class="n">chunks</span><span class="p">)</span> <span class="o">+</span> <span class="n">chunk</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+<span class="w">                    </span><span class="n">total</span><span class="o">=</span><span class="n">file_count</span> <span class="o">*</span> <span class="n">chunks</span><span class="p">,</span>
+<span class="w">                    </span><span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Uploading </span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2"> - chunk </span><span class="si">{</span><span class="n">chunk</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">chunks</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="w">                </span><span class="p">)</span>
+<span class="w">        </span>
+<span class="w">        </span><span class="n">uploaded_files</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+<span class="w">            </span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">file_name</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="si">}</span><span class="s2"> KB&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;uploaded&quot;</span>
+<span class="w">        </span><span class="p">})</span>
+<span class="w">        </span>
+<span class="w">        </span><span class="k">if</span> <span class="n">context</span><span class="p">:</span>
+<span class="w">            </span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✅ </span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2"> uploaded successfully&quot;</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">if</span> <span class="n">context</span><span class="p">:</span>
+<span class="w">        </span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;🎉 Upload completed: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">uploaded_files</span><span class="p">)</span><span class="si">}</span><span class="s2"> files&quot;</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">return</span> <span class="p">{</span>
+<span class="w">        </span><span class="s2">&quot;uploaded_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">uploaded_files</span><span class="p">),</span>
+<span class="w">        </span><span class="s2">&quot;files&quot;</span><span class="p">:</span> <span class="n">uploaded_files</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;total_size&quot;</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="s2">&quot;size&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">uploaded_files</span><span class="p">),</span>
+<span class="w">        </span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;completed&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w"> </span>
+
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">realtime_monitoring</span><span class="p">(</span>
+<span class="w">    </span><span class="n">duration_seconds</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
+<span class="w">    </span><span class="n">context</span><span class="p">:</span> <span class="n">Context</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Real-time monitoring with periodic updates.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        duration_seconds: Monitoring duration in seconds</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<span class="w">    </span><span class="k">if</span> <span class="n">context</span><span class="p">:</span>
+<span class="w">        </span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;📡 Starting monitoring for </span><span class="si">{</span><span class="n">duration_seconds</span><span class="si">}</span><span class="s2"> seconds...&quot;</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="n">metrics</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="w">    </span><span class="n">interval</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1"># Update every 2 seconds</span>
+<span class="w">    </span><span class="n">total_intervals</span> <span class="o">=</span> <span class="n">duration_seconds</span> <span class="o">//</span> <span class="n">interval</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">total_intervals</span><span class="p">):</span>
+<span class="w">        </span><span class="c1"># Simulate metrics</span>
+<span class="w">        </span><span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<span class="w">        </span><span class="n">cpu_usage</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">80</span><span class="p">)</span>
+<span class="w">        </span><span class="n">memory_usage</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">90</span><span class="p">)</span>
+<span class="w">        </span><span class="n">network_io</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+<span class="w">        </span>
+<span class="w">        </span><span class="n">metric</span> <span class="o">=</span> <span class="p">{</span>
+<span class="w">            </span><span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">i</span> <span class="o">*</span> <span class="n">interval</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;cpu&quot;</span><span class="p">:</span> <span class="n">cpu_usage</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;memory&quot;</span><span class="p">:</span> <span class="n">memory_usage</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;network_io&quot;</span><span class="p">:</span> <span class="n">network_io</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="n">metrics</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">metric</span><span class="p">)</span>
+<span class="w">        </span>
+<span class="w">        </span><span class="k">if</span> <span class="n">context</span><span class="p">:</span>
+<span class="w">            </span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">report_progress</span><span class="p">(</span>
+<span class="w">                </span><span class="n">progress</span><span class="o">=</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+<span class="w">                </span><span class="n">total</span><span class="o">=</span><span class="n">total_intervals</span><span class="p">,</span>
+<span class="w">                </span><span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Monitoring active - CPU: </span><span class="si">{</span><span class="n">cpu_usage</span><span class="si">}</span><span class="s2">%, MEM: </span><span class="si">{</span><span class="n">memory_usage</span><span class="si">}</span><span class="s2">%, NET: </span><span class="si">{</span><span class="n">network_io</span><span class="si">}</span><span class="s2">KB/s&quot;</span>
+<span class="w">            </span><span class="p">)</span>
+<span class="w">            </span>
+<span class="w">            </span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Metrics collected: interval </span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="w">        </span>
+<span class="w">        </span><span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">interval</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">if</span> <span class="n">context</span><span class="p">:</span>
+<span class="w">        </span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;📊 Monitoring completed: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">metrics</span><span class="p">)</span><span class="si">}</span><span class="s2"> data points&quot;</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="n">avg_cpu</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="s2">&quot;cpu&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">metrics</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">metrics</span><span class="p">)</span>
+<span class="w">    </span><span class="n">avg_memory</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="s2">&quot;memory&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">metrics</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">metrics</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">return</span> <span class="p">{</span>
+<span class="w">        </span><span class="s2">&quot;duration&quot;</span><span class="p">:</span> <span class="n">duration_seconds</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;data_points&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">metrics</span><span class="p">),</span>
+<span class="w">        </span><span class="s2">&quot;avg_cpu&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">avg_cpu</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+<span class="w">        </span><span class="s2">&quot;avg_memory&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">avg_memory</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+<span class="w">        </span><span class="s2">&quot;metrics&quot;</span><span class="p">:</span> <span class="n">metrics</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;completed&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w"> </span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">run_streaming_server</span><span class="p">(</span><span class="n">host</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8000</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run the streaming server.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;🚀 Starting MCP streaming server on </span><span class="si">{</span><span class="n">host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="c1"># Create Starlette application with streaming support</span>
+<span class="w">    </span><span class="n">app</span> <span class="o">=</span> <span class="n">create_streamable_http_app</span><span class="p">(</span>
+<span class="w">        </span><span class="n">server</span><span class="o">=</span><span class="n">mcp</span><span class="p">,</span>
+<span class="w">        </span><span class="n">streamable_http_path</span><span class="o">=</span><span class="s2">&quot;/mcp/&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="n">stateless_http</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># Keep session state</span>
+<span class="w">        </span><span class="n">debug</span><span class="o">=</span><span class="kc">True</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="c1"># Configure uvicorn</span>
+<span class="w">    </span><span class="n">config</span> <span class="o">=</span> <span class="n">uvicorn</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span>
+<span class="w">        </span><span class="n">app</span><span class="o">=</span><span class="n">app</span><span class="p">,</span>
+<span class="w">        </span><span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span>
+<span class="w">        </span><span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">,</span>
+<span class="w">        </span><span class="n">log_level</span><span class="o">=</span><span class="s2">&quot;info&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="n">access_log</span><span class="o">=</span><span class="kc">False</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="c1"># Run server</span>
+<span class="w">    </span><span class="n">server</span> <span class="o">=</span> <span class="n">uvicorn</span><span class="o">.</span><span class="n">Server</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✅ Server ready at http://</span><span class="si">{</span><span class="n">host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">/mcp/&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;📡 Available tools:&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  - long_running_task: Long running task with progress&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  - streaming_data_processor: Data processing&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  - file_upload_simulation: File upload simulation&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  - realtime_monitoring: Real-time monitoring&quot;</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">await</span> <span class="n">server</span><span class="o">.</span><span class="n">serve</span><span class="p">()</span>
+<span class="w"> </span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="w">    </span><span class="k">try</span><span class="p">:</span>
+<span class="w">        </span><span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">run_streaming_server</span><span class="p">())</span>
+<span class="w">    </span><span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+<span class="w">        </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">⏹️  Server stopped by user&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<span class="w">        </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;❌ Error running server: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section class="section-block-code-cell-">
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>Writing MCP_streamable_server/server.py
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<h2 id="Cliente">Cliente<a class="anchor-link" href="#Cliente">¶</a></h2>
+</section>
+<section class="section-block-markdown-cell">
+<p>Antes criávamos um cliente com a classe <code>Client</code> do <code>fastmcp</code>.</p>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python">from fastmcp import Client<br><br>client = Client(<br>&#x20;&#x20;server_url="http://localhost:8000/mcp/",<br>&#x20;&#x20;name="MCP client name",<br>&#x20;&#x20;instructions="MCP client instructions",<br>)</code></pre></div>
+      </section>
+<p>E com o cliente, chamávamos as tools do servidor.</p>
+</section>
+<section class="section-block-markdown-cell">
+<p>Agora usamos a classe <code>StreamableHttpTransport</code> de <code>fastmcp.client.transports</code> para criar uma camada de transporte que suporte streaming e criamos o cliente da mesma forma que antes, só que indicamos a camada de transporte.</p>
+<section class="section-block-markdown-cell">
+      <div class='highlight'><pre><code class="language-python">from fastmcp import Client<br>from fastmcp.client.transports import StreamableHttpTransport<br><br>transport = StreamableHttpTransport(<br>&#x20;&#x20;url="http://localhost:8000/mcp/",<br>&#x20;&#x20;sse_read_timeout=60.0  # Timeout for streaming<br>)<br><br>client = Client(transport=transport)</code></pre></div>
+      </section>
+</section>
+<section class="section-block-markdown-cell">
+<p>O restante permanece igual.</p>
+</section>
+<section class="section-block-markdown-cell">
+<h3 id="Implementacao do cliente">Implementação do cliente<a class="anchor-link" href="#Implementacao do cliente">¶</a></h3>
+</section>
+<section class="section-block-markdown-cell">
+<p>Agora que explicamos como criar o cliente que suporta o streaming, vamos implementá-lo.</p>
+</section>
+<section class="section-block-markdown-cell">
+<h4 id="Criar o ambiente virtual para o cliente">Criar o ambiente virtual para o cliente<a class="anchor-link" href="#Criar o ambiente virtual para o cliente">¶</a></h4>
+</section>
+<section class="section-block-markdown-cell">
+<p>Primeiro criamos a pasta onde vamos desenvolvê-lo.</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="err">!</span><span class="n">mkdir</span> <span class="n">MCP_streamable_client</span>
+</pre></div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<p>Criamos o ambiente com <code>uv</code></p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="err">!</span><span class="n">cd</span> <span class="n">MCP_streamable_client</span> <span class="o">&amp;</span></span><span class="o">&amp;</span> <span class="n">uv</span> <span class="n">init</span> <span class="o">.</span>
+</pre></div>
+</div>
+</section>
+<section class="section-block-code-cell-">
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>Initialized project `mcp-streamable-client` at `/Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client`
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<p>Iniciamos no ambiente</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="err">!</span><span class="n">cd</span> <span class="n">MCP_streamable_server</span> <span class="o">&amp;</span></span><span class="o">&amp;</span> <span class="n">uv</span> <span class="n">venv</span>
+</pre></div>
+</div>
+</section>
+<section class="section-block-code-cell-">
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>Using CPython 3.12.8
+Creating virtual environment at: .venv
+Activate with: source .venv/bin/activate
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<p>Instalamos as bibliotecas necessárias</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="err">!</span><span class="n">cd</span> <span class="n">MCP_streamable_client</span> <span class="o">&amp;</span></span><span class="o">&amp;</span> <span class="n">uv</span> <span class="n">add</span> <span class="n">fastmcp</span>
+</pre></div>
+</div>
+</section>
+<section class="section-block-code-cell-">
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>Using CPython 3.12.8
+Creating virtual environment at: .venv
+Resolved 64 packages in 517ms                                        
+⠙ Preparing packages... (0/1)                                                   ⠋ Preparing packages... (0/0)                                                   
+⠙ Preparing packages... (0/1)--------------     0 B/233.99 KiB          
+⠙ Preparing packages... (0/1)-------------- 16.00 KiB/233.99 KiB        
+⠙ Preparing packages... (0/1)-------------- 32.00 KiB/233.99 KiB        
+⠙ Preparing packages... (0/1)-------------- 48.00 KiB/233.99 KiB        
+⠙ Preparing packages... (0/1)-------------- 64.00 KiB/233.99 KiB        
+⠙ Preparing packages... (0/1)-------------- 80.00 KiB/233.99 KiB        
+⠙ Preparing packages... (0/1)-------------- 96.00 KiB/233.99 KiB        
+⠙ Preparing packages... (0/1)-------------- 112.00 KiB/233.99 KiB       
+⠙ Preparing packages... (0/1)m------------- 128.00 KiB/233.99 KiB       
+⠙ Preparing packages... (0/1)[2m----------- 144.00 KiB/233.99 KiB       
+⠙ Preparing packages... (0/1)---------- 160.00 KiB/233.99 KiB       
+⠙ Preparing packages... (0/1)---------- 176.00 KiB/233.99 KiB       
+⠙ Preparing packages... (0/1)---------- 192.00 KiB/233.99 KiB       
+⠙ Preparing packages... (0/1)---------- 208.00 KiB/233.99 KiB       
+⠙ Preparing packages... (0/1)---------- 224.00 KiB/233.99 KiB       
+Prepared 1 package in 182ms                                                  
+Installed 61 packages in 96ms                               
+ + annotated-types==0.7.0
+ + anyio==4.10.0
+ + attrs==25.3.0
+ + authlib==1.6.2
+ + certifi==2025.8.3
+ + cffi==1.17.1
+ + charset-normalizer==3.4.3
+ + click==8.2.1
+ + cryptography==45.0.6
+ + cyclopts==3.22.5
+ + dnspython==2.7.0
+ + docstring-parser==0.17.0
+ + docutils==0.22
+ + email-validator==2.2.0
+ + exceptiongroup==1.3.0
+ + fastmcp==2.11.3
+ + h11==0.16.0
+ + httpcore==1.0.9
+ + httpx==0.28.1
+ + httpx-sse==0.4.1
+ + idna==3.10
+ + isodate==0.7.2
+ + jsonschema==4.25.1
+ + jsonschema-path==0.3.4
+ + jsonschema-specifications==2025.4.1
+ + lazy-object-proxy==1.12.0
+ + markdown-it-py==4.0.0
+ + markupsafe==3.0.2
+ + mcp==1.13.1
+ + mdurl==0.1.2
+ + more-itertools==10.7.0
+ + openapi-core==0.19.5
+ + openapi-pydantic==0.5.1
+ + openapi-schema-validator==0.6.3
+ + openapi-spec-validator==0.7.2
+ + parse==1.20.2
+ + pathable==0.4.4
+ + pycparser==2.22
+ + pydantic==2.11.7
+ + pydantic-core==2.33.2
+ + pydantic-settings==2.10.1
+ + pygments==2.19.2
+ + pyperclip==1.9.0
+ + python-dotenv==1.1.1
+ + python-multipart==0.0.20
+ + pyyaml==6.0.2
+ + referencing==0.36.2
+ + requests==2.32.5
+ + rfc3339-validator==0.1.4
+ + rich==14.1.0
+ + rich-rst==1.3.1
+ + rpds-py==0.27.0
+ + six==1.17.0
+ + sniffio==1.3.1
+ + sse-starlette==3.0.2
+ + starlette==0.47.2
+ + typing-extensions==4.14.1
+ + typing-inspection==0.4.1
+ + urllib3==2.5.0
+ + uvicorn==0.35.0
+ + werkzeug==3.1.1
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<h4 id="Codigo do cliente">Código do cliente<a class="anchor-link" href="#Codigo do cliente">¶</a></h4>
+</section>
+<section class="section-block-markdown-cell">
+<p>Agora vamos criar o código do cliente. Vamos criar um cliente com tudo o que falamos anteriormente, que executará as quatro tools do servidor e mostrará o progresso de cada uma delas.</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="o">%%</span><span class="n">writefile</span> <span class="n">MCP_streamable_client</span><span class="o">/</span><span class="n">client</span><span class="o">.</span><span class="n">py</span>
+<span class="w"> </span>
+<span class="c1">#!/usr/bin/env python3</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">MCP client for streaming and partial results.</span>
+<span class="sd">Shows how to receive and handle partial results from the server.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="w"> </span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Callable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="w"> </span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastmcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastmcp.client.transports</span><span class="w"> </span><span class="kn">import</span> <span class="n">StreamableHttpTransport</span>
+<span class="w"> </span>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ProgressUpdate</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents a progress update.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="n">progress</span><span class="p">:</span> <span class="nb">float</span>
+<span class="w">    </span><span class="n">total</span><span class="p">:</span> <span class="nb">float</span>
+<span class="w">    </span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
+<span class="w">    </span><span class="n">percentage</span><span class="p">:</span> <span class="nb">float</span>
+<span class="w">    </span><span class="n">timestamp</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">)</span>
+<span class="w"> </span>
+
+<span class="nd">@dataclass</span>  
+<span class="k">class</span><span class="w"> </span><span class="nc">TaskResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents the result of a task.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="n">task_name</span><span class="p">:</span> <span class="nb">str</span>
+<span class="w">    </span><span class="n">result</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+<span class="w">    </span><span class="n">progress_updates</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ProgressUpdate</span><span class="p">]</span>
+<span class="w">    </span><span class="n">duration</span><span class="p">:</span> <span class="nb">float</span>
+<span class="w">    </span><span class="n">success</span><span class="p">:</span> <span class="nb">bool</span>
+<span class="w">    </span><span class="n">error_message</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="w"> </span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">StreamingProgressHandler</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles streaming progress in a visual way.&quot;&quot;&quot;</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="bp">self</span><span class="o">.</span><span class="n">task_name</span> <span class="o">=</span> <span class="n">task_name</span>
+<span class="w">        </span><span class="bp">self</span><span class="o">.</span><span class="n">progress_updates</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ProgressUpdate</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="w">        </span><span class="bp">self</span><span class="o">.</span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="w">        </span>
+<span class="w">    </span><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">progress</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">total</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Callback called when there are progress updates.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="n">percentage</span> <span class="o">=</span> <span class="p">(</span><span class="n">progress</span> <span class="o">/</span> <span class="n">total</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span> <span class="k">if</span> <span class="n">total</span> <span class="o">&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
+<span class="w">        </span>
+<span class="w">        </span><span class="n">update</span> <span class="o">=</span> <span class="n">ProgressUpdate</span><span class="p">(</span>
+<span class="w">            </span><span class="n">progress</span><span class="o">=</span><span class="n">progress</span><span class="p">,</span>
+<span class="w">            </span><span class="n">total</span><span class="o">=</span><span class="n">total</span><span class="p">,</span>
+<span class="w">            </span><span class="n">message</span><span class="o">=</span><span class="n">message</span><span class="p">,</span>
+<span class="w">            </span><span class="n">percentage</span><span class="o">=</span><span class="n">percentage</span>
+<span class="w">        </span><span class="p">)</span>
+<span class="w">        </span><span class="bp">self</span><span class="o">.</span><span class="n">progress_updates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">update</span><span class="p">)</span>
+<span class="w">        </span>
+<span class="w">        </span><span class="c1"># Display progress visually</span>
+<span class="w">        </span><span class="bp">self</span><span class="o">.</span><span class="n">_display_progress</span><span class="p">(</span><span class="n">update</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">def</span><span class="w"> </span><span class="nf">_display_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">update</span><span class="p">:</span> <span class="n">ProgressUpdate</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Display progress visually.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="n">bar_length</span> <span class="o">=</span> <span class="mi">30</span>
+<span class="w">        </span><span class="n">filled_length</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">bar_length</span> <span class="o">*</span> <span class="n">update</span><span class="o">.</span><span class="n">percentage</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span>
+<span class="w">        </span><span class="n">bar</span> <span class="o">=</span> <span class="s1">&#39;█&#39;</span> <span class="o">*</span> <span class="n">filled_length</span> <span class="o">+</span> <span class="s1">&#39;░&#39;</span> <span class="o">*</span> <span class="p">(</span><span class="n">bar_length</span> <span class="o">-</span> <span class="n">filled_length</span><span class="p">)</span>
+<span class="w">        </span>
+<span class="w">        </span><span class="n">elapsed</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span>
+<span class="w"> </span>
+<span class="w">        </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">📊 </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">task_name</span><span class="si">}</span><span class="s2">: |</span><span class="si">{</span><span class="n">bar</span><span class="si">}</span><span class="s2">| </span><span class="si">{</span><span class="n">update</span><span class="o">.</span><span class="n">percentage</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">% &quot;</span>
+<span class="w">              </span><span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">update</span><span class="o">.</span><span class="n">progress</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">update</span><span class="o">.</span><span class="n">total</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">) - &quot;</span>
+<span class="w">              </span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">update</span><span class="o">.</span><span class="n">message</span><span class="si">}</span><span class="s2"> [</span><span class="si">{</span><span class="n">elapsed</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">s]&quot;</span><span class="p">)</span>
+<span class="w">        </span>
+<span class="w">        </span><span class="k">if</span> <span class="n">update</span><span class="o">.</span><span class="n">progress</span> <span class="o">&amp;</span><span class="n">gt</span><span class="p">;</span><span class="o">=</span> <span class="n">update</span><span class="o">.</span><span class="n">total</span><span class="p">:</span>
+<span class="w">            </span><span class="nb">print</span><span class="p">()</span>  <span class="c1"># New line when complete</span>
+<span class="w"> </span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MCPStreamingClient</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;MCP client with streaming capabilities.&quot;&quot;&quot;</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;http://localhost:8000/mcp/&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="bp">self</span><span class="o">.</span><span class="n">server_url</span> <span class="o">=</span> <span class="n">server_url</span>
+<span class="w">        </span><span class="bp">self</span><span class="o">.</span><span class="n">transport</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="w">        </span><span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="w">        </span>
+<span class="w">    </span><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="fm">__aenter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize connection to the server.&quot;&quot;&quot;</span>
+<span class="w">            </span>
+<span class="w">        </span><span class="bp">self</span><span class="o">.</span><span class="n">transport</span> <span class="o">=</span> <span class="n">StreamableHttpTransport</span><span class="p">(</span>
+<span class="w">            </span><span class="n">url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">server_url</span><span class="p">,</span>
+<span class="w">            </span><span class="n">sse_read_timeout</span><span class="o">=</span><span class="mf">60.0</span>  <span class="c1"># Timeout for streaming</span>
+<span class="w">        </span><span class="p">)</span>
+<span class="w">        </span>
+<span class="w">        </span><span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="n">transport</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">transport</span><span class="p">)</span>
+<span class="w">        </span><span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="fm">__aenter__</span><span class="p">()</span>
+<span class="w">        </span><span class="k">return</span> <span class="bp">self</span>
+<span class="w">        </span>
+<span class="w">    </span><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="fm">__aexit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Close connection.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">:</span>
+<span class="w">            </span><span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="fm">__aexit__</span><span class="p">(</span><span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Test connection to the server.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="k">try</span><span class="p">:</span>
+<span class="w">            </span><span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">:</span>
+<span class="w">                </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;❌ Client not initialized&quot;</span><span class="p">)</span>
+<span class="w">                </span><span class="k">return</span> <span class="kc">False</span>
+<span class="w">                </span>
+<span class="w">            </span><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span>
+<span class="w">            </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✅ Connection established with the server&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">return</span> <span class="kc">True</span>
+<span class="w">        </span><span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<span class="w">            </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;❌ Error de conexión: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">return</span> <span class="kc">False</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call_streaming_tool</span><span class="p">(</span>
+<span class="w">        </span><span class="bp">self</span><span class="p">,</span>
+<span class="w">        </span><span class="n">tool_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="w">        </span><span class="n">parameters</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+<span class="w">        </span><span class="n">progress_callback</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="w">    </span><span class="p">)</span> <span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="n">TaskResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Call a tool with progress handling.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="w">        </span>
+<span class="w">        </span><span class="k">try</span><span class="p">:</span>
+<span class="w">            </span><span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">:</span>
+<span class="w">                </span><span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Client not initialized&quot;</span><span class="p">)</span>
+<span class="w">                </span>
+<span class="w">            </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Executing </span><span class="si">{</span><span class="n">tool_name</span><span class="si">}</span><span class="s2"> tool:&quot;</span><span class="p">)</span>
+<span class="w">            </span>
+<span class="w">            </span><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span>
+<span class="w">                </span><span class="n">tool_name</span><span class="p">,</span>
+<span class="w">                </span><span class="n">parameters</span><span class="p">,</span>
+<span class="w">                </span><span class="n">progress_handler</span><span class="o">=</span><span class="n">progress_callback</span>
+<span class="w">            </span><span class="p">)</span>
+<span class="w">            </span>
+<span class="w">            </span><span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+<span class="w">            </span>
+<span class="w">            </span><span class="c1"># FastMCP returns a CallToolResult object with content attribute</span>
+<span class="w">            </span><span class="n">result_data</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">content</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s1">&#39;content&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="n">result</span>
+<span class="w">            </span>
+<span class="w">            </span><span class="c1"># If result_data is a list of TextContent, extract the text</span>
+<span class="w">            </span><span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result_data</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">result_data</span><span class="p">)</span> <span class="o">&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="mi">0</span><span class="p">:</span>
+<span class="w">                </span><span class="c1"># Handle list of TextContent objects</span>
+<span class="w">                </span><span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">result_data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;text&#39;</span><span class="p">):</span>
+<span class="w">                    </span><span class="n">result_data</span> <span class="o">=</span> <span class="n">result_data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span>
+<span class="w">            </span>
+<span class="w">            </span><span class="c1"># If result_data is string, try to parse it as JSON</span>
+<span class="w">            </span><span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result_data</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">                </span><span class="k">try</span><span class="p">:</span>
+<span class="w">                    </span><span class="n">result_data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result_data</span><span class="p">)</span>
+<span class="w">                </span><span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
+<span class="w">                    </span><span class="n">result_data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;output&quot;</span><span class="p">:</span> <span class="n">result_data</span><span class="p">}</span>
+<span class="w">            </span>
+<span class="w">            </span><span class="k">return</span> <span class="n">TaskResult</span><span class="p">(</span>
+<span class="w">                </span><span class="n">task_name</span><span class="o">=</span><span class="n">tool_name</span><span class="p">,</span>
+<span class="w">                </span><span class="n">result</span><span class="o">=</span><span class="n">result_data</span><span class="p">,</span>
+<span class="w">                </span><span class="n">progress_updates</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">progress_callback</span><span class="p">,</span> <span class="s1">&#39;progress_updates&#39;</span><span class="p">,</span> <span class="p">[]),</span>
+<span class="w">                </span><span class="n">duration</span><span class="o">=</span><span class="n">duration</span><span class="p">,</span>
+<span class="w">                </span><span class="n">success</span><span class="o">=</span><span class="kc">True</span>
+<span class="w">            </span><span class="p">)</span>
+<span class="w">            </span>
+<span class="w">        </span><span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<span class="w">            </span><span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+<span class="w">            </span>
+<span class="w">            </span><span class="k">return</span> <span class="n">TaskResult</span><span class="p">(</span>
+<span class="w">                </span><span class="n">task_name</span><span class="o">=</span><span class="n">tool_name</span><span class="p">,</span>
+<span class="w">                </span><span class="n">result</span><span class="o">=</span><span class="p">{},</span>
+<span class="w">                </span><span class="n">progress_updates</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">progress_callback</span><span class="p">,</span> <span class="s1">&#39;progress_updates&#39;</span><span class="p">,</span> <span class="p">[]),</span>
+<span class="w">                </span><span class="n">duration</span><span class="o">=</span><span class="n">duration</span><span class="p">,</span>
+<span class="w">                </span><span class="n">success</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="w">                </span><span class="n">error_message</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+<span class="w">            </span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_available_tools</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;List available tools on the server.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="k">try</span><span class="p">:</span>
+<span class="w">            </span><span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">:</span>
+<span class="w">                </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;❌ Client not initialized&quot;</span><span class="p">)</span>
+<span class="w">                </span><span class="k">return</span> <span class="p">[]</span>
+<span class="w">                </span>
+<span class="w">            </span><span class="n">tools</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">list_tools</span><span class="p">()</span>
+<span class="w">            </span><span class="c1"># FastMCP returns a list of tools directly</span>
+<span class="w">            </span><span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tools</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+<span class="w">                </span><span class="k">return</span> <span class="p">[</span><span class="n">tool</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">tool</span> <span class="ow">in</span> <span class="n">tools</span><span class="p">]</span>
+<span class="w">            </span><span class="c1"># If it has attribute tools</span>
+<span class="w">            </span><span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">tools</span><span class="p">,</span> <span class="s1">&#39;tools&#39;</span><span class="p">):</span>
+<span class="w">                </span><span class="k">return</span> <span class="p">[</span><span class="n">tool</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">tool</span> <span class="ow">in</span> <span class="n">tools</span><span class="o">.</span><span class="n">tools</span><span class="p">]</span>
+<span class="w">            </span><span class="k">else</span><span class="p">:</span>
+<span class="w">                </span><span class="k">return</span> <span class="p">[]</span>
+<span class="w">        </span><span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<span class="w">            </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;❌ Error listing tools: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">return</span> <span class="p">[]</span>
+<span class="w"> </span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">demo_long_running_task</span><span class="p">(</span><span class="n">client</span><span class="p">:</span> <span class="n">MCPStreamingClient</span><span class="p">)</span> <span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="n">TaskResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Demo of long running task with progress.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;=&quot;</span><span class="o">*</span><span class="mi">60</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;📋 DEMO: Long Running Task with Progress&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span><span class="o">*</span><span class="mi">60</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="n">progress_handler</span> <span class="o">=</span> <span class="n">StreamingProgressHandler</span><span class="p">(</span><span class="s2">&quot;Long Running Task&quot;</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">call_streaming_tool</span><span class="p">(</span>
+<span class="w">        </span><span class="s2">&quot;long_running_task&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Data Processing&quot;</span><span class="p">,</span> <span class="s2">&quot;steps&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">},</span>
+<span class="w">        </span><span class="n">progress_callback</span><span class="o">=</span><span class="n">progress_handler</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">success</span><span class="p">:</span>
+<span class="w">        </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✅ Task completed in </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">duration</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;📊 Progress updates received: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">progress_updates</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="c1"># Safe handling of the result</span>
+<span class="w">        </span><span class="n">status</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;status&#39;</span><span class="p">,</span> <span class="s1">&#39;N/A&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">result</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="s1">&#39;N/A&#39;</span>
+<span class="w">        </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;📋 Result: </span><span class="si">{</span><span class="n">status</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="k">else</span><span class="p">:</span>
+<span class="w">        </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;❌ Task failed: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">error_message</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">return</span> <span class="n">result</span>
+<span class="w"> </span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">demo_data_processing</span><span class="p">(</span><span class="n">client</span><span class="p">:</span> <span class="n">MCPStreamingClient</span><span class="p">)</span> <span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="n">TaskResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Demo of data processing.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;=&quot;</span><span class="o">*</span><span class="mi">60</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;💾 DEMO: Data Processing&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span><span class="o">*</span><span class="mi">60</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="n">progress_handler</span> <span class="o">=</span> <span class="n">StreamingProgressHandler</span><span class="p">(</span><span class="s2">&quot;Procesamiento&quot;</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">call_streaming_tool</span><span class="p">(</span>
+<span class="w">        </span><span class="s2">&quot;streaming_data_processor&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="p">{</span><span class="s2">&quot;data_size&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">},</span>
+<span class="w">        </span><span class="n">progress_callback</span><span class="o">=</span><span class="n">progress_handler</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">success</span><span class="p">:</span>
+<span class="w">        </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✅ Processing completed in </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">duration</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="c1"># Safe handling of the result</span>
+<span class="w">        </span><span class="n">total</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;total_processed&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">result</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="mi">0</span>
+<span class="w">        </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;📊 Processed elements: </span><span class="si">{</span><span class="n">total</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="k">else</span><span class="p">:</span>
+<span class="w">        </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;❌ Processing failed: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">error_message</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">return</span> <span class="n">result</span>
+<span class="w"> </span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">demo_file_upload</span><span class="p">(</span><span class="n">client</span><span class="p">:</span> <span class="n">MCPStreamingClient</span><span class="p">)</span> <span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="n">TaskResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Demo of file upload.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;=&quot;</span><span class="o">*</span><span class="mi">60</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;📤 DEMO: File Upload&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span><span class="o">*</span><span class="mi">60</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="n">progress_handler</span> <span class="o">=</span> <span class="n">StreamingProgressHandler</span><span class="p">(</span><span class="s2">&quot;File Upload&quot;</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">call_streaming_tool</span><span class="p">(</span>
+<span class="w">        </span><span class="s2">&quot;file_upload_simulation&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="p">{</span><span class="s2">&quot;file_count&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">},</span>
+<span class="w">        </span><span class="n">progress_callback</span><span class="o">=</span><span class="n">progress_handler</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">success</span><span class="p">:</span>
+<span class="w">        </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✅ Upload completed in </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">duration</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="c1"># Safe handling of the result</span>
+<span class="w">        </span><span class="n">count</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;uploaded_count&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">result</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="mi">0</span>
+<span class="w">        </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;📁 Uploaded files: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="k">else</span><span class="p">:</span>
+<span class="w">        </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;❌ Upload failed: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">error_message</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">return</span> <span class="n">result</span>
+<span class="w"> </span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">demo_realtime_monitoring</span><span class="p">(</span><span class="n">client</span><span class="p">:</span> <span class="n">MCPStreamingClient</span><span class="p">)</span> <span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="n">TaskResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Demo of real-time monitoring.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;=&quot;</span><span class="o">*</span><span class="mi">60</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;📡 DEMO: Real-time Monitoring&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span><span class="o">*</span><span class="mi">60</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="n">progress_handler</span> <span class="o">=</span> <span class="n">StreamingProgressHandler</span><span class="p">(</span><span class="s2">&quot;Monitoring&quot;</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">call_streaming_tool</span><span class="p">(</span>
+<span class="w">        </span><span class="s2">&quot;realtime_monitoring&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="p">{</span><span class="s2">&quot;duration_seconds&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">},</span>
+<span class="w">        </span><span class="n">progress_callback</span><span class="o">=</span><span class="n">progress_handler</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">success</span><span class="p">:</span>
+<span class="w">        </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✅ Monitoring completed in </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">duration</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="c1"># Safe handling of the result</span>
+<span class="w">        </span><span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">result</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">            </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;📊 Average CPU: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;avg_cpu&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;💾 Average memory: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;avg_memory&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="k">else</span><span class="p">:</span>
+<span class="w">            </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;📊 Result: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="k">else</span><span class="p">:</span>
+<span class="w">        </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;❌ Monitoring failed: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">error_message</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">return</span> <span class="n">result</span>
+<span class="w"> </span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">print_summary</span><span class="p">(</span><span class="n">results</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TaskResult</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Print summary of all tasks.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;=&quot;</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;📈 EXECUTION SUMMARY&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+<span class="w">        </span><span class="n">status</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">✅ SUCCESS&quot;</span> <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">success</span> <span class="k">else</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">❌ FAILURE&quot;</span>
+<span class="w">        </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">status</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">task_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">duration</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">s &quot;</span>
+<span class="w">              </span><span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">progress_updates</span><span class="p">)</span><span class="si">}</span><span class="s2"> updates)&quot;</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="n">total_time</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">duration</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">)</span>
+<span class="w">    </span><span class="n">successful</span> <span class="o">=</span> <span class="nb">len</span><span class="p">([</span><span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span> <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">success</span><span class="p">])</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">📊 Total: </span><span class="si">{</span><span class="n">successful</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span><span class="si">}</span><span class="s2"> successful tasks&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;⏱️  Total time: </span><span class="si">{</span><span class="n">total_time</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span>
+<span class="w"> </span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">run_streaming_demo</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run complete streaming client demo.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MCP Streaming Client&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="k">try</span><span class="p">:</span>
+<span class="w">        </span><span class="k">async</span> <span class="k">with</span> <span class="n">MCPStreamingClient</span><span class="p">()</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+<span class="w">            </span><span class="c1"># Test connection</span>
+<span class="w">            </span><span class="k">if</span> <span class="ow">not</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">test_connection</span><span class="p">():</span>
+<span class="w">                </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;❌ Could not connect to the server. Make sure it&#39;s running.&quot;</span><span class="p">)</span>
+<span class="w">                </span><span class="k">return</span>
+<span class="w">            </span>
+<span class="w">            </span><span class="c1"># List tools</span>
+<span class="w">            </span><span class="n">tools</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">list_available_tools</span><span class="p">()</span>
+<span class="w">            </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;🔧 Available tools:&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">for</span> <span class="n">tool</span> <span class="ow">in</span> <span class="n">tools</span><span class="p">:</span>
+<span class="w">                </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2"> * </span><span class="si">{</span><span class="n">tool</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="w">            </span>
+<span class="w">            </span><span class="c1"># Run demos</span>
+<span class="w">            </span><span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="w">            </span>
+<span class="w">            </span><span class="c1"># Demo 1: Long running task</span>
+<span class="w">            </span><span class="n">result1</span> <span class="o">=</span> <span class="k">await</span> <span class="n">demo_long_running_task</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+<span class="w">            </span><span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result1</span><span class="p">)</span>
+<span class="w">            </span>
+<span class="w">            </span><span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Pause between demos</span>
+<span class="w">            </span>
+<span class="w">            </span><span class="c1"># Demo 2: Data processing  </span>
+<span class="w">            </span><span class="n">result2</span> <span class="o">=</span> <span class="k">await</span> <span class="n">demo_data_processing</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+<span class="w">            </span><span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result2</span><span class="p">)</span>
+<span class="w">            </span>
+<span class="w">            </span><span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">            </span>
+<span class="w">            </span><span class="c1"># Demo 3: File upload</span>
+<span class="w">            </span><span class="n">result3</span> <span class="o">=</span> <span class="k">await</span> <span class="n">demo_file_upload</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+<span class="w">            </span><span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result3</span><span class="p">)</span>
+<span class="w">            </span>
+<span class="w">            </span><span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">            </span>
+<span class="w">            </span><span class="c1"># Demo 4: Real-time monitoring</span>
+<span class="w">            </span><span class="n">result4</span> <span class="o">=</span> <span class="k">await</span> <span class="n">demo_realtime_monitoring</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+<span class="w">            </span><span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result4</span><span class="p">)</span>
+<span class="w">            </span>
+<span class="w">            </span><span class="c1"># Final summary</span>
+<span class="w">            </span><span class="n">print_summary</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+<span class="w">            </span>
+<span class="w">    </span><span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<span class="w">        </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;❌ Error in the demo: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="w"> </span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="w">    </span><span class="k">try</span><span class="p">:</span>
+<span class="w">        </span><span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">run_streaming_demo</span><span class="p">())</span>
+<span class="w">    </span><span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+<span class="w">        </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">⏹️  Demo interrupted by the user&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<span class="w">        </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;❌ Error running demo: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section class="section-block-code-cell-">
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>Writing MCP_streamable_client/client.py
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<h2 id="Execucao">Execução<a class="anchor-link" href="#Execucao">¶</a></h2>
+</section>
+<section class="section-block-markdown-cell">
+<p>Agora que temos o servidor e o cliente, vamos executá-los.</p>
+</section>
+<section class="section-block-markdown-cell">
+<p>Primeiro, iniciamos o servidor</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="err">!</span><span class="n">cd</span> <span class="n">MCP_streamable_server</span> <span class="o">&amp;</span></span><span class="o">&amp;</span> <span class="n">source</span> <span class="o">.</span><span class="n">venv</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span> <span class="o">&amp;</span></span><span class="o">&amp;</span> <span class="n">uv</span> <span class="n">run</span> <span class="n">server</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+</section>
+<section class="section-block-code-cell-">
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>🚀 Starting MCP streaming server on 127.0.0.1:8000
+✅ Server ready at http://127.0.0.1:8000/mcp/
+📡 Available tools:
+&#x20;&#x20;- long_running_task: Long running task with progress
+&#x20;&#x20;- streaming_data_processor: Data processing
+&#x20;&#x20;- file_upload_simulation: File upload simulation
+&#x20;&#x20;- realtime_monitoring: Real-time monitoring
+INFO:     Started server process [62601]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<p>Depois de iniciado, executamos o cliente.</p>
+</section>
+<section class="section-block-code-cell-">
+<div class="input-code">
+<div class="highlight hl-ipython3"><pre><span></span><span class="err">!</span><span class="n">cd</span> <span class="n">MCP_streamable_client</span> <span class="o">&amp;</span></span><span class="o">&amp;</span> <span class="n">source</span> <span class="o">.</span><span class="n">venv</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span> <span class="o">&amp;</span></span><span class="o">&amp;</span> <span class="n">uv</span> <span class="n">run</span> <span class="n">client</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+</section>
+<section class="section-block-code-cell-">
+<div class="output-wrapper">
+<div class="output-area">
+<div class="prompt"></div>
+<div class="output-subarea-output-stream-output-stdout-output-text">
+<pre>MCP Streaming Client
+====================================================================================================
+✅ Connection established with the server
+🔧 Available tools:
+	 * long_running_task
+	 * streaming_data_processor
+	 * file_upload_simulation
+	 * realtime_monitoring
+
+============================================================
+📋 DEMO: Long Running Task with Progress
+============================================================
+Executing long_running_task tool:
+[08/23/25 11:19:20] INFO     Server log: 🚀 Initializing Data      ]8;id=664702;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py\logging.py]8;;\:]8;id=102228;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py#40\40]8;;\\
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;Processing with 8 steps...                         
+	📊 Long Running Task: |███░░░░░░░░░░░░░░░░░░░░░░░░░░░| 12.5% (1/8) - Step 1/8 - Step 1: Processed Data Processing [1.0s]
+	📊 Long Running Task: |███████░░░░░░░░░░░░░░░░░░░░░░░| 25.0% (2/8) - Step 2/8 - Step 2: Processed Data Processing [2.0s]
+	📊 Long Running Task: |███████████░░░░░░░░░░░░░░░░░░░| 37.5% (3/8) - Step 3/8 - Step 3: Processed Data Processing [3.0s]
+	📊 Long Running Task: |███████████████░░░░░░░░░░░░░░░| 50.0% (4/8) - Step 4/8 - Step 4: Processed Data Processing [4.0s]
+	📊 Long Running Task: |██████████████████░░░░░░░░░░░░| 62.5% (5/8) - Step 5/8 - Step 5: Processed Data Processing [5.0s]
+	📊 Long Running Task: |██████████████████████░░░░░░░░| 75.0% (6/8) - Step 6/8 - Step 6: Processed Data Processing [6.0s]
+	📊 Long Running Task: |██████████████████████████░░░░| 87.5% (7/8) - Step 7/8 - Step 7: Processed Data Processing [7.0s]
+	📊 Long Running Task: |██████████████████████████████| 100.0% (8/8) - Step 8/8 - Step 8: Processed Data Processing [8.0s]
+
+[08/23/25 11:19:28] INFO     Server log: 🎉 Data Processing        ]8;id=444005;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py\logging.py]8;;\:]8;id=432539;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py#40\40]8;;\\
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;completed successfully!                            
+✅ Task completed in 8.03s
+📊 Progress updates received: 8
+📋 Result: completed
+
+============================================================
+💾 DEMO: Data Processing
+============================================================
+Executing streaming_data_processor tool:
+[08/23/25 11:19:29] INFO     Server log: 📊 Procesando 50          ]8;id=212017;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py\logging.py]8;;\:]8;id=588573;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py#40\40]8;;\\
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;elementos de datos...                              
+	📊 Procesamiento: |███░░░░░░░░░░░░░░░░░░░░░░░░░░░| 10.0% (5/50) - Processed 5/50 items [0.5s]
+	📊 Procesamiento: |██████░░░░░░░░░░░░░░░░░░░░░░░░| 20.0% (10/50) - Processed 10/50 items [1.0s]
+	📊 Procesamiento: |█████████░░░░░░░░░░░░░░░░░░░░░| 30.0% (15/50) - Processed 15/50 items [1.5s]
+	📊 Procesamiento: |████████████░░░░░░░░░░░░░░░░░░| 40.0% (20/50) - Processed 20/50 items [2.0s]
+	📊 Procesamiento: |███████████████░░░░░░░░░░░░░░░| 50.0% (25/50) - Processed 25/50 items [2.5s]
+	📊 Procesamiento: |██████████████████░░░░░░░░░░░░| 60.0% (30/50) - Processed 30/50 items [3.0s]
+	📊 Procesamiento: |█████████████████████░░░░░░░░░| 70.0% (35/50) - Processed 35/50 items [3.5s]
+	📊 Procesamiento: |████████████████████████░░░░░░| 80.0% (40/50) - Processed 40/50 items [4.0s]
+	📊 Procesamiento: |███████████████████████████░░░| 90.0% (45/50) - Processed 45/50 items [4.5s]
+	📊 Procesamiento: |██████████████████████████████| 100.0% (50/50) - Processed 50/50 items [5.0s]
+
+[08/23/25 11:19:34] INFO     Server log: ✅ Processing completed:  ]8;id=495673;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py\logging.py]8;;\:]8;id=761216;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py#40\40]8;;\\
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;50 items                                           
+✅ Processing completed in 5.03s
+📊 Processed elements: 50
+
+============================================================
+📤 DEMO: File Upload
+============================================================
+Executing file_upload_simulation tool:
+[08/23/25 11:19:35] INFO     Server log: 📤 Starting upload of 3   ]8;id=903659;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py\logging.py]8;;\:]8;id=90481;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py#40\40]8;;\\
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;files...                                           
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;INFO     Server log: Uploading file_1.dat...   ]8;id=894672;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py\logging.py]8;;\:]8;id=979097;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py#40\40]8;;\
+	📊 File Upload: |█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░| 3.3% (1/30) - Uploading file_1.dat - chunk 1/10 [0.2s]
+	📊 File Upload: |██░░░░░░░░░░░░░░░░░░░░░░░░░░░░| 6.7% (2/30) - Uploading file_1.dat - chunk 2/10 [0.4s]
+	📊 File Upload: |███░░░░░░░░░░░░░░░░░░░░░░░░░░░| 10.0% (3/30) - Uploading file_1.dat - chunk 3/10 [0.6s]
+	📊 File Upload: |████░░░░░░░░░░░░░░░░░░░░░░░░░░| 13.3% (4/30) - Uploading file_1.dat - chunk 4/10 [0.8s]
+	📊 File Upload: |████░░░░░░░░░░░░░░░░░░░░░░░░░░| 16.7% (5/30) - Uploading file_1.dat - chunk 5/10 [1.0s]
+	📊 File Upload: |██████░░░░░░░░░░░░░░░░░░░░░░░░| 20.0% (6/30) - Uploading file_1.dat - chunk 6/10 [1.2s]
+	📊 File Upload: |███████░░░░░░░░░░░░░░░░░░░░░░░| 23.3% (7/30) - Uploading file_1.dat - chunk 7/10 [1.4s]
+	📊 File Upload: |████████░░░░░░░░░░░░░░░░░░░░░░| 26.7% (8/30) - Uploading file_1.dat - chunk 8/10 [1.6s]
+	📊 File Upload: |█████████░░░░░░░░░░░░░░░░░░░░░| 30.0% (9/30) - Uploading file_1.dat - chunk 9/10 [1.8s]
+	📊 File Upload: |█████████░░░░░░░░░░░░░░░░░░░░░| 33.3% (10/30) - Uploading file_1.dat - chunk 10/10 [2.0s]
+[08/23/25 11:19:37] INFO     Server log: Uploading file_2.dat...   ]8;id=537276;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py\logging.py]8;;\:]8;id=555236;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py#40\40]8;;\
+	📊 File Upload: |███████████░░░░░░░░░░░░░░░░░░░| 36.7% (11/30) - Uploading file_2.dat - chunk 1/10 [2.2s]
+	📊 File Upload: |████████████░░░░░░░░░░░░░░░░░░| 40.0% (12/30) - Uploading file_2.dat - chunk 2/10 [2.4s]
+	📊 File Upload: |█████████████░░░░░░░░░░░░░░░░░| 43.3% (13/30) - Uploading file_2.dat - chunk 3/10 [2.6s]
+	📊 File Upload: |██████████████░░░░░░░░░░░░░░░░| 46.7% (14/30) - Uploading file_2.dat - chunk 4/10 [2.8s]
+	📊 File Upload: |███████████████░░░░░░░░░░░░░░░| 50.0% (15/30) - Uploading file_2.dat - chunk 5/10 [3.0s]
+	📊 File Upload: |████████████████░░░░░░░░░░░░░░| 53.3% (16/30) - Uploading file_2.dat - chunk 6/10 [3.2s]
+	📊 File Upload: |█████████████████░░░░░░░░░░░░░| 56.7% (17/30) - Uploading file_2.dat - chunk 7/10 [3.4s]
+	📊 File Upload: |██████████████████░░░░░░░░░░░░| 60.0% (18/30) - Uploading file_2.dat - chunk 8/10 [3.6s]
+	📊 File Upload: |██████████████████░░░░░░░░░░░░| 63.3% (19/30) - Uploading file_2.dat - chunk 9/10 [3.8s]
+	📊 File Upload: |███████████████████░░░░░░░░░░░| 66.7% (20/30) - Uploading file_2.dat - chunk 10/10 [4.0s]
+[08/23/25 11:19:39] INFO     Server log: Uploading file_3.dat...   ]8;id=170215;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py\logging.py]8;;\:]8;id=598020;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py#40\40]8;;\
+	📊 File Upload: |█████████████████████░░░░░░░░░| 70.0% (21/30) - Uploading file_3.dat - chunk 1/10 [4.2s]
+	📊 File Upload: |██████████████████████░░░░░░░░| 73.3% (22/30) - Uploading file_3.dat - chunk 2/10 [4.4s]
+	📊 File Upload: |███████████████████████░░░░░░░| 76.7% (23/30) - Uploading file_3.dat - chunk 3/10 [4.6s]
+	📊 File Upload: |████████████████████████░░░░░░| 80.0% (24/30) - Uploading file_3.dat - chunk 4/10 [4.8s]
+	📊 File Upload: |█████████████████████████░░░░░| 83.3% (25/30) - Uploading file_3.dat - chunk 5/10 [5.0s]
+	📊 File Upload: |██████████████████████████░░░░| 86.7% (26/30) - Uploading file_3.dat - chunk 6/10 [5.2s]
+	📊 File Upload: |███████████████████████████░░░| 90.0% (27/30) - Uploading file_3.dat - chunk 7/10 [5.4s]
+	📊 File Upload: |████████████████████████████░░| 93.3% (28/30) - Uploading file_3.dat - chunk 8/10 [5.6s]
+	📊 File Upload: |█████████████████████████████░| 96.7% (29/30) - Uploading file_3.dat - chunk 9/10 [5.9s]
+	📊 File Upload: |██████████████████████████████| 100.0% (30/30) - Uploading file_3.dat - chunk 10/10 [6.1s]
+
+[08/23/25 11:19:41] INFO     Server log: 🎉 Upload completed: 3    ]8;id=658055;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py\logging.py]8;;\:]8;id=313220;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py#40\40]8;;\\
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;files                                              
+✅ Upload completed in 6.06s
+📁 Uploaded files: 3
+
+============================================================
+📡 DEMO: Real-time Monitoring
+============================================================
+Executing realtime_monitoring tool:
+[08/23/25 11:19:42] INFO     Server log: 📡 Starting monitoring    ]8;id=50717;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py\logging.py]8;;\:]8;id=158771;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py#40\40]8;;\\
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;for 20 seconds...                                  
+	📊 Monitoring: |███░░░░░░░░░░░░░░░░░░░░░░░░░░░| 10.0% (1/10) - Monitoring active - CPU: 57%, MEM: 62%, NET: 211KB/s [0.0s]
+	📊 Monitoring: |██████░░░░░░░░░░░░░░░░░░░░░░░░| 20.0% (2/10) - Monitoring active - CPU: 31%, MEM: 48%, NET: 675KB/s [2.0s]
+	📊 Monitoring: |█████████░░░░░░░░░░░░░░░░░░░░░| 30.0% (3/10) - Monitoring active - CPU: 45%, MEM: 71%, NET: 721KB/s [4.0s]
+	📊 Monitoring: |████████████░░░░░░░░░░░░░░░░░░| 40.0% (4/10) - Monitoring active - CPU: 62%, MEM: 87%, NET: 879KB/s [6.0s]
+	📊 Monitoring: |███████████████░░░░░░░░░░░░░░░| 50.0% (5/10) - Monitoring active - CPU: 29%, MEM: 55%, NET: 120KB/s [8.0s]
+	📊 Monitoring: |██████████████████░░░░░░░░░░░░| 60.0% (6/10) - Monitoring active - CPU: 80%, MEM: 77%, NET: 819KB/s [10.0s]
+	📊 Monitoring: |█████████████████████░░░░░░░░░| 70.0% (7/10) - Monitoring active - CPU: 59%, MEM: 69%, NET: 438KB/s [12.0s]
+	📊 Monitoring: |████████████████████████░░░░░░| 80.0% (8/10) - Monitoring active - CPU: 73%, MEM: 68%, NET: 774KB/s [14.0s]
+	📊 Monitoring: |███████████████████████████░░░| 90.0% (9/10) - Monitoring active - CPU: 68%, MEM: 42%, NET: 528KB/s [16.0s]
+	📊 Monitoring: |██████████████████████████████| 100.0% (10/10) - Monitoring active - CPU: 69%, MEM: 42%, NET: 707KB/s [18.0s]
+
+[08/23/25 11:20:02] INFO     Server log: 📊 Monitoring completed:  ]8;id=795212;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py\logging.py]8;;\:]8;id=762919;file:///Users/macm1/Documents/web/portafolio/posts/MCP_streamable_client/.venv/lib/python3.12/site-packages/fastmcp/client/logging.py#40\40]8;;\\
+&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;10 data points                                     
+✅ Monitoring completed in 20.03s
+📊 Average CPU: 57.3%
+💾 Average memory: 62.1%
+
+====================================================================================================
+📈 EXECUTION SUMMARY
+====================================================================================================
+	✅ SUCCESS long_running_task: 8.03s (8 updates)
+	✅ SUCCESS streaming_data_processor: 5.03s (10 updates)
+	✅ SUCCESS file_upload_simulation: 6.06s (30 updates)
+	✅ SUCCESS realtime_monitoring: 20.03s (10 updates)
+
+📊 Total: 4/4 successful tasks
+⏱️  Total time: 39.14s
+</pre>
+</div>
+</div>
+</div>
+</section>
+<section class="section-block-markdown-cell">
+<p>Como se pode ver, obtivemos do servidor o processo de cada uma das execuções das tools.</p>
+</section>

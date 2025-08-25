@@ -392,47 +392,6 @@ async def demo_resumable_data_processing(client: MCPResumableClient):
         print(f"🆔 Task ID: {result.get('task_id', 'N/A')}")
 
 
-# async def demo_large_file_download(client: MCPResumableClient):
-#     """Demo of resumable file download."""
-#     print("\n" + "="*60)
-#     print("📥 DEMO: Large File Download")
-#     print("="*60)
-    
-#     result = await client.call_resumable_tool(
-#         "large_file_download",
-#         {
-#             "file_url": "https://example.com/dataset.zip",
-#             "file_size_mb": 200,
-#             "chunk_size_mb": 25
-#         }
-#     )
-    
-#     if "error" not in result:
-#         print(f"📁 Download: {result.get('total_size_mb', 0)} MB in {result.get('total_chunks', 0)} chunks")
-#         print(f"🆔 Task ID: {result.get('task_id', 'N/A')}")
-
-
-# async def demo_ml_training(client: MCPResumableClient):
-#     """Demo of ML training resumable."""
-#     print("\n" + "="*60)
-#     print("🤖 DEMO: ML Training")
-#     print("="*60)
-    
-#     result = await client.call_resumable_tool(
-#         "machine_learning_training",
-#         {
-#             "model_name": "customer_classifier",
-#             "total_epochs": 30,
-#             "batch_size": 64
-#         }
-#     )
-    
-#     if "error" not in result:
-#         print(f"🎯 Final accuracy: {result.get('final_accuracy', 0):.4f}")
-#         print(f"📉 Loss final: {result.get('final_loss', 0):.4f}")
-#         print(f"🆔 Task ID: {result.get('task_id', 'N/A')}")
-
-
 async def interactive_demo(client: MCPResumableClient):
     """Interactive demo with options."""
     

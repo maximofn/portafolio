@@ -431,68 +431,6 @@ class DurabilityClient:
         print(f"   Active background tasks: {stats.get('active_background_tasks', 0)}")
 
 
-#         # Show initial statistics
-#         await client_manager.print_server_stats(client)
-#         print()
-        
-#         # Show existing tasks
-#         await client_manager.print_task_list(client)
-#         print()
-        
-#         # 1. Data migration
-#         migration_uri = await client_manager.start_data_migration(
-#             client, 
-#             record_count=300
-#         )
-#         tasks_to_monitor.append(("Data migration", migration_uri))
-        
-#         # 2. Batch processing  
-#         batch_uri = await client_manager.start_batch_processing(
-#             client,
-#             batch_size=25,
-#             total_items=200,
-#             processing_delay=0.2
-#         )
-#         tasks_to_monitor.append(("Batch processing", batch_uri))
-        
-#         # 3. ML training
-#         ml_uri = await client_manager.start_ml_training(
-#             client,
-#             model_name="clasificador-sentimientos",
-#             epochs=30
-#         )
-#         tasks_to_monitor.append(("ML training", ml_uri))
-        
-#         # Monitor all tasks in parallel
-#         async def monitor_task(task_name: str, task_uri: str):
-#             print(f"\n🔍 Starting monitoring: {task_name}")
-#             final_status = await client_manager.poll_task_until_complete(
-#                 client, 
-#                 task_uri,
-#                 poll_interval=1.0,
-#                 max_duration=120.0
-#             )
-#             print(f"✨ Monitoring completed: {task_name}\n")
-#             return task_name, final_status
-        
-#         # Execute the monitoring in parallel
-#         monitoring_tasks = [
-#             monitor_task(name, uri) for name, uri in tasks_to_monitor
-#         ]
-        
-#         print("🎉 Final summary:")
-#         for task_name, final_status in completed_tasks:
-#             status = final_status.get("status", "unknown")
-#             print(f"   {task_name}: {status.upper()}")
-        
-#         # Show final statistics
-#         await client_manager.print_server_stats(client)
-#         print()
-
-#         # Show final task list
-#         await client_manager.print_task_list(client)
-
-
 async def interactive_demo(server_path: Optional[str] = None):
     """Interactive demo to explore the system."""
     print("🚀 Interactive Demo of the MCP Durability System")

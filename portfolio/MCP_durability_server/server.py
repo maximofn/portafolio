@@ -407,6 +407,7 @@ async def start_data_migration(
         Resource URI to track progress
     """
     await ctx.info(f"Starting migration of {record_count} records from {source_path} to {destination_path}")
+    print(f"Starting migration of {record_count} records from {source_path} to {destination_path}")
     
     async def migration_task(task_id: str, context: Context, manager: DurableTaskManager):
         """Simulated data migration task."""
@@ -415,7 +416,7 @@ async def start_data_migration(
         
         for batch_start in range(0, record_count, batch_size):
             # Simulate batch processing
-            await asyncio.sleep(2)  # Simulate work
+            await asyncio.sleep(1)  # Simulate work
             
             batch_end = min(batch_start + batch_size, record_count)
             migrated = batch_end
@@ -425,9 +426,15 @@ async def start_data_migration(
             message = f"Migrated {migrated}/{record_count} records"
             
             await manager.update_task_progress(task_id, progress_pct, 100.0, message)
-            await context.report_progress(migrated, record_count, message)
+            try:
+                await context.report_progress(migrated, record_count, message)
+            except Exception:
+                pass
         
-        await context.info(f"Data migration completed: {migrated} records")
+        try:
+            await context.info(f"Data migration completed: {migrated} records")
+        except Exception:
+            pass
         
         return {
             "migrated_records": migrated,
@@ -453,7 +460,7 @@ async def start_batch_processing(
     batch_size: int,
     total_items: int,
     ctx: Context,
-    processing_delay: float = 0.5
+    processing_delay: float = 10
 ) -> str:
     """
     Starts a batch processing task.
@@ -474,7 +481,7 @@ async def start_batch_processing(
         processed = 0
         
         for i in range(0, total_items, batch_size):
-            await asyncio.sleep(processing_delay)
+            await asyncio.sleep(processing_delay)   # Simulate work
             batch_end = min(i + batch_size, total_items)
             processed = batch_end
             
@@ -528,7 +535,7 @@ async def start_ml_training(
         """Simulated ML training task."""
         for epoch in range(1, epochs + 1):
             # Simulate training of an epoch
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(10)
             
             # Simulate training metrics
             loss = 1.0 - (epoch / epochs) * 0.8 + (epoch % 10) * 0.01
@@ -623,4 +630,4 @@ if __name__ == "__main__":
     print("  - task://list: Lists all tasks")
     print("  - task://list/{status}: Lists tasks by status")
     
-    server.run(transport="stdio")
+    server.run(transport="http", host="127.0.0.1", port=8080)

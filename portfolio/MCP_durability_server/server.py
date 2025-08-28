@@ -489,9 +489,15 @@ async def start_batch_processing(
             message = f"Processed {processed}/{total_items} items"
             
             await manager.update_task_progress(task_id, progress, 100.0, message)
-            await context.report_progress(processed, total_items, message)
+            try:
+                await context.report_progress(processed, total_items, message)
+            except Exception:
+                pass
         
-        await context.info(f"Batch processing completed: {processed} items")
+        try:
+            await context.info(f"Batch processing completed: {processed} items")
+        except Exception:
+            pass
         
         return {
             "processed": processed, 
@@ -545,9 +551,15 @@ async def start_ml_training(
             message = f"Epoch {epoch}/{epochs} - Loss: {loss:.4f}, Accuracy: {accuracy:.4f}"
             
             await manager.update_task_progress(task_id, progress, 100.0, message)
-            await context.report_progress(epoch, epochs, message)
+            try:
+                await context.report_progress(epoch, epochs, message)
+            except Exception:
+                pass
         
-        await context.info(f"Model '{model_name}' training completed")
+        try:
+            await context.info(f"Model '{model_name}' training completed")
+        except Exception:
+            pass
         
         return {
             "model_name": model_name,

@@ -141,7 +141,7 @@ class Test_jupyter_notebook_to_html(unittest.TestCase):
         pass
 
     def test_add_witdh_and_height_to_image(self):
-        img_url = "https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/BPE_tokenizer.webp"
+        img_url = "https://images.maximofn.com/BPE_tokenizer.webp"
         html_content = f"akdsjak\n<img src=\"{img_url}\" alt=\"image test\">\ndasdaks"
         html_content_formatted = f"akdsjak\n<img src=\"{img_url}\" width=\"770\" height=\"728\" alt=\"image test\">\ndasdaks"
         formatted_html_content = add_witdh_and_height_to_image(html_content)

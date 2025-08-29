@@ -323,8 +323,8 @@ class TestMarkdownImageToHtml(unittest.TestCase):
         self.assertEqual(markdown_image_to_html(markdown), expected_html)
 
     def test_image_gif(self):
-        markdown = '![Transformer - encoder-decoder (no detokenizer)](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/Transformer%20-%20encoder-decoder%20(no%20detokenizer).gif)'
-        expected_html = '<img src="https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/Transformer%20-%20encoder-decoder%20(no%20detokenizer).gif" alt="Transformer - encoder-decoder (no detokenizer)">'
+        markdown = '![Transformer - encoder-decoder (no detokenizer)](https://images.maximofn.com/Transformer%20-%20encoder-decoder%20(no%20detokenizer).gif)'
+        expected_html = '<img src="https://images.maximofn.com/Transformer%20-%20encoder-decoder%20(no%20detokenizer).gif" alt="Transformer - encoder-decoder (no detokenizer)">'
         self.assertEqual(markdown_image_to_html(markdown), expected_html)
 
 class TestMarkdownLinkToHtml(unittest.TestCase):

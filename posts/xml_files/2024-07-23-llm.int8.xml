@@ -3,18 +3,18 @@
   <markdown># llm.int8() - 8-bit Matrix Multiplication for Transformers at Scale</markdown>
   <markdown>En el post [LLMs quantization](https://maximofn.com/llms-quantization/) explicamos la importancia de la cuantización de los LLMs para ahorrar memoria. Además, explicamos que existe una manera de cuantización que es la [cuantización de punto cero](https://maximofn.com/llms-quantization/#Cuantizaci%C3%B3n-de-punto-cero) que consiste en transformar los valores de los parámetros de los pesos linealmente, pero esto tiene el problema de la degradación de los modelos de lenguaje a partir del momento en que superan los 2.7B de parámetros
 
-![llm.int8()-degradation](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-degradation.webp)</markdown>
+![llm.int8()-degradation](https://images.maximofn.com/llm.int8-degradation.webp)</markdown>
   <markdown>## Cuantización vectorial</markdown>
   <markdown>Como la cuantización de todos los parámetros de los modelos produce error en los grandes modelos de lenguaje, lo que proponen en el paper [llm.int8()](https://arxiv.org/abs/2208.07339) es realizar la cuantización vectorial, es decir, separar las matrices de los pesos en vectores, de manera que algunos de esos vectores se pueden cuantizar en 8 bits, mientras que otros no. Por lo que los que sí se pueden cuantizar en 8 bits se cuantizan y se realizan las multiplicaciones matriciales en formato INT8, mientras que los vectores que no pueden ser cuantizados se mantienen en formato FP16 y se realizan las multiplicaciones en formato FP16.</markdown>
   <markdown>Veámoslo con un ejemplo
 
 Supongamos que tenemos la matriz
 
-![llm.int8()-A](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-A.webp)
+![llm.int8()-A](https://images.maximofn.com/llm.int8-A.webp)
 
 y la queremos multiplicar por la matriz
 
-![llm.int8()-B](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-B.webp)
+![llm.int8()-B](https://images.maximofn.com/llm.int8-B.webp)
 
 Establecemos un valor umbral y todas las columnas de la primera matriz que tengan un valor mayor a ese umbral se dejan en formato FP16. Las filas equivalentes a las filas de la primera matriz, en la segunda matriz también se dejan en formato FP16.
 
@@ -26,29 +26,29 @@ El resto de filas y columnas que no se dejan en formato FP16 se cuantizan en 8 b
 
 Así que separamos la primera matriz en las dos submatrices
 
-![llm.int8()-A_separated](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-A_separated_.webp)
+![llm.int8()-A_separated](https://images.maximofn.com/llm.int8-A_separated_.webp)
 
 Y la segunda matriz en las dos matrices
 
-![llm.int8()-B_separated](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-B_separated_.webp)</markdown>
+![llm.int8()-B_separated](https://images.maximofn.com/llm.int8-B_separated_.webp)</markdown>
   <markdown>Multiplicamos las matrices en INT8 por un lado
 
-![llm.int8()-AxB-int8](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB-int8_.webp)
+![llm.int8()-AxB-int8](https://images.maximofn.com/llm.int8-AxB-int8_.webp)
 
 Y las que están en formato FP16 por otro lado
 
-![llm.int8()-AxB-fp16](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB-fp16_.webp)
+![llm.int8()-AxB-fp16](https://images.maximofn.com/llm.int8-AxB-fp16_.webp)
 
 Como se puede ver, multiplicar las matrices en formato INT8 nos da como resultado una matriz de tamaño 3x2, y multiplicar las matrices en formato FP16 nos da como resultado otra matriz de tamaño 3x2, por lo que si las sumamos
 
-![llm.int8()-fp16+int8](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-fp16int8_.webp)
+![llm.int8()-fp16+int8](https://images.maximofn.com/llm.int8-fp16int8_.webp)
 
 Curiosamente, nos da el mismo resultado que si hubiésemos multiplicado las matrices originales
 
-![llm.int8()-AxB](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB_.webp)</markdown>
+![llm.int8()-AxB](https://images.maximofn.com/llm.int8-AxB_.webp)</markdown>
   <markdown>Para poder ver por qué ocurre esto, si desarrollamos el producto vectorial de las dos matrices originales
 
-![llm.int8()-AxB-explained](https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/llm.int8-AxB-explained.webp)
+![llm.int8()-AxB-explained](https://images.maximofn.com/llm.int8-AxB-explained.webp)
 
 Vemos que la separación que hemos hecho no da problemas</markdown>
   <markdown>Por tanto, podemos concluir, que podemos separar filas y columnas de las matrices para realizar las multiplicaciones matriciales. Esta separación se hará cuando algún elemento de la fila o la columna sea mayor que un valor umbral, de manera que als filas o columnas que no tengan un valor mayor a ese umbral se codificarán en INT8 ocupando solo un byte y las filas o columnas que tengan algún elemento mayor que ese umbral se pasarán a FP16 ocupando 2 bytes. De esta manera no tendremos problemas de redondeo, ya que los cálculos que hagamos en INT8 los haremos con valores que hagan que las multiplicaciones no superen el rango de los 8 bits.</markdown>

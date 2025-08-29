@@ -8,18 +8,18 @@ from get_notebook_metadata import get_image_width_height, get_image_extension, g
 
 class Test_get_notebook_metadata(unittest.TestCase):
     def test_get_image_width_height(self):
-        width, height = get_image_width_height('https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/GPTQ-thumbnail.webp')
+        width, height = get_image_width_height('https://images.maximofn.com/GPTQ-thumbnail.webp')
         self.assertEqual(width, 1024)
         self.assertEqual(height, 1024)
 
     @patch('sys.stdout')    # Mock the stdout to avoid printing to the console
     def test_get_image_width_height_invalid_url(self, mock_stdout):
         with self.assertRaises(SystemExit) as cm:
-            get_image_width_height('https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/brrrrrr.webp')
+            get_image_width_height('https://images.maximofn.com/brrrrrr.webp')
         self.assertEqual(cm.exception.code, 1)
     
     def test_get_image_extension(self):
-        extension = get_image_extension('https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/GPTQ-thumbnail.webp')
+        extension = get_image_extension('https://images.maximofn.com/GPTQ-thumbnail.webp')
         self.assertEqual(extension, 'webp')
 
     @patch('sys.stdout')    # Mock the stdout to avoid printing to the console
@@ -42,8 +42,8 @@ class Test_get_notebook_metadata(unittest.TestCase):
         self.assertEqual(keywords_es, "python, introducción, tutorial, básico, principiantes")
         self.assertEqual(keywords_en, "python, introduction, tutorial, basic, beginners")
         self.assertEqual(keywords_pt, "python, introdução, tutorial, básico, iniciantes")
-        self.assertEqual(image, "https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/icon-python.webp")
-        self.assertEqual(image_hover_path, "https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/icon-python.webp")
+        self.assertEqual(image, "https://images.maximofn.com/icon-python.webp")
+        self.assertEqual(image_hover_path, "https://images.maximofn.com/icon-python.webp")
         self.assertEqual(witdh, 800)
         self.assertEqual(height, 336)
         self.assertEqual(image_extension, "webp")

@@ -24,7 +24,7 @@ PORTUGUESE = "PT"
 LANGUAGES = [SPANISH, ENGLISH, PORTUGUESE]
 LANGUAJES_DICT = {SPANISH: "spanish", ENGLISH: "english", PORTUGUESE: "portuguese"}
 
-CLOUDFLARE_HREF = "https://pub-fb664c455eca46a2ba762a065ac900f7.r2.dev/"
+CLOUDFLARE_HREF = "https://images.maximofn.com/"
 
 open_brace = "{"
 closing_brace = "}"
